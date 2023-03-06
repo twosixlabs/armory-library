@@ -1,15 +1,5 @@
-image: "python3.10"
+include:
+  - project: 'jatic/cdao/cicd'
+    file: '.gitlab-ci.yml'
+    ref: 'main'
 
-before_script:
-  - python --version
-  - pip install .[developer,pytorch]
-
-stages:
-  - Static Analysis
-
-flake8:
-  stage: Static Analysis
-  script:
-    - black
-    - isort
-    - python -m flake8 --config=.flake8
