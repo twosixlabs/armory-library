@@ -14,7 +14,7 @@ import requests
 import armory
 from armory import environment, paths
 from armory.configuration import load_global_config
-from armory.docker.host_management import HostManagementInstance
+# from armory.docker.host_management import HostManagementInstance
 from armory.docker.management import ArmoryInstance, ManagementInstance
 from armory.logs import added_filters, is_debug, log
 from armory.utils.printing import bold, red
