@@ -25,14 +25,14 @@ import armory.logs
 from armory.logs import log
 from armory.utils.configuration import load_config, load_config_stdin
 from armory.utils.version import to_docker_tag
-import docker
+# import docker
 
 
-class PortNumber(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        if not 0 < values < 2**16:
-            raise argparse.ArgumentError(self, "port numbers must be in (0, 65535]")
-        setattr(namespace, self.dest, values)
+# class PortNumber(argparse.Action):
+#     def __call__(self, parser, namespace, values, option_string=None):
+#         if not 0 < values < 2**16:
+#             raise argparse.ArgumentError(self, "port numbers must be in (0, 65535]")
+#         setattr(namespace, self.dest, values)
 
 
 def sorted_unique_nonnegative_numbers(values, warning_string):
@@ -75,20 +75,20 @@ class Command(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
-class DockerImage(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        images = armory.docker.images.IMAGE_MAP
-        if values in images.values():
-            setattr(namespace, self.dest, values)
-        elif values.lower() in images.keys():
-            setattr(namespace, self.dest, images[values])
-        else:
-            log.info(
-                f"WARNING: {values} not in "
-                f"{list(images.keys()) + list(images.values())}. "
-                "Attempting to load custom Docker image."
-            )
-            setattr(namespace, self.dest, values)
+# class DockerImage(argparse.Action):
+#     def __call__(self, parser, namespace, values, option_string=None):
+#         images = armory.docker.images.IMAGE_MAP
+#         if values in images.values():
+#             setattr(namespace, self.dest, values)
+#         elif values.lower() in images.keys():
+#             setattr(namespace, self.dest, images[values])
+#         else:
+#             log.info(
+#                 f"WARNING: {values} not in "
+#                 f"{list(images.keys()) + list(images.values())}. "
+#                 "Attempting to load custom Docker image."
+#             )
+#             setattr(namespace, self.dest, values)
 
 
 OLD_SCENARIOS = [
@@ -144,19 +144,19 @@ def _jupyter(parser):
     )
 
 
-def _port(parser):
-    parser.add_argument(
-        "-p",
-        "--port",
-        type=int,
-        action=PortNumber,
-        metavar="",
-        default=None,
-        help=(
-            "Port number {0, ..., 65535} to expose from docker container. If --jupyter "
-            "flag is set then this port will be used for the jupyter server."
-        ),
-    )
+# def _port(parser):
+#     parser.add_argument(
+#         "-p",
+#         "--port",
+#         type=int,
+#         action=PortNumber,
+#         metavar="",
+#         default=None,
+#         help=(
+#             "Port number {0, ..., 65535} to expose from docker container. If --jupyter "
+#             "flag is set then this port will be used for the jupyter server."
+#         ),
+#     )
 
 
 def _no_gpu(parser):
@@ -183,33 +183,33 @@ def _gpus(parser):
     )
 
 
-def _docker_image(parser):
-    parser.add_argument(
-        "docker_image",
-        metavar="<docker image>",
-        type=str,
-        help="docker image framework: 'armory', or 'pytorch-deepspeech'",
-        action=DockerImage,
-    )
+# def _docker_image(parser):
+#     parser.add_argument(
+#         "docker_image",
+#         metavar="<docker image>",
+#         type=str,
+#         help="docker image framework: 'armory', or 'pytorch-deepspeech'",
+#         action=DockerImage,
+#     )
 
 
-def _docker_image_optional(parser):
-    parser.add_argument(
-        "--docker-image",
-        default=armory.docker.images.ARMORY_IMAGE_NAME,
-        metavar="<docker image>",
-        type=str,
-        help="docker image framework: 'armory', or 'pytorch-deepspeech'",
-        action=DockerImage,
-    )
+# def _docker_image_optional(parser):
+#     parser.add_argument(
+#         "--docker-image",
+#         default=armory.docker.images.ARMORY_IMAGE_NAME,
+#         metavar="<docker image>",
+#         type=str,
+#         help="docker image framework: 'armory', or 'pytorch-deepspeech'",
+#         action=DockerImage,
+#     )
 
 
-def _skip_docker_images(parser):
-    parser.add_argument(
-        "--skip-docker-images",
-        action="store_true",
-        help="Whether to skip downloading docker images",
-    )
+# def _skip_docker_images(parser):
+#     parser.add_argument(
+#         "--skip-docker-images",
+#         action="store_true",
+#         help="Whether to skip downloading docker images",
+#     )
 
 
 def _no_docker(parser):
@@ -291,12 +291,12 @@ def run(command_args, prog, description) -> int:
     )
     _debug(parser)
     _interactive(parser)
-    _jupyter(parser)
-    _port(parser)
+    # _jupyter(parser)
+    # _port(parser)
     _use_gpu(parser)
     _no_gpu(parser)
     _gpus(parser)
-    _no_docker(parser)
+    # _no_docker(parser)
     _root(parser)
     _index(parser)
     _classes(parser)
@@ -384,7 +384,7 @@ def run(command_args, prog, description) -> int:
     if args.classes:
         config["dataset"]["class_ids"] = args.classes
 
-    rig = Evaluator(config, no_docker=args.no_docker, root=args.root)
+    rig = Evaluator(config, no_docker=true, root=false)
     exit_code = rig.run(
         interactive=args.interactive,
         jupyter=args.jupyter,
@@ -399,85 +399,85 @@ def run(command_args, prog, description) -> int:
     return exit_code
 
 
-def _pull_docker_images(docker_client=None):
-    if docker_client is None:
-        docker_client = docker.from_env(version="auto")
-    for image in armory.docker.images.IMAGE_MAP.values():
-        try:
-            docker_client.images.get(image)
-        except docker.errors.ImageNotFound:
-            try:
-                log.info(f"Image {image} was not found. Downloading...")
-                repository, tag = ":".split(image)
-                armory.docker.images.pull_verbose(docker_client, repository, tag=tag)
-            except docker.errors.NotFound:
-                log.exception(
-                    f"Docker image {image} does not exist for this version. "
-                    f"Please run 'python docker/build.py {image}' before running armory"
-                )
-                raise ValueError(f"Docker image {image} not built")
+# def _pull_docker_images(docker_client=None):
+#     if docker_client is None:
+#         docker_client = docker.from_env(version="auto")
+#     for image in armory.docker.images.IMAGE_MAP.values():
+#         try:
+#             docker_client.images.get(image)
+#         except docker.errors.ImageNotFound:
+#             try:
+#                 log.info(f"Image {image} was not found. Downloading...")
+#                 repository, tag = ":".split(image)
+#                 armory.docker.images.pull_verbose(docker_client, repository, tag=tag)
+#             except docker.errors.NotFound:
+#                 log.exception(
+#                     f"Docker image {image} does not exist for this version. "
+#                     f"Please run 'python docker/build.py {image}' before running armory"
+#                 )
+#                 raise ValueError(f"Docker image {image} not built")
 
 
-def download(command_args, prog, description):
-    """
-    Script to download all datasets and model weights for offline usage.
-    """
-    parser = argparse.ArgumentParser(prog=prog, description=description)
-    _debug(parser)
-    _docker_image_optional(parser)
-    _skip_docker_images(parser)
-    parser.add_argument(
-        metavar="<download data config file>",
-        dest="download_config",
-        type=str,
-        default="armory/configs/download_data.json",
-        action=DownloadConfig,
-        help=f"Configuration for download of data. See {DEFAULT_SCENARIO}. Note: file must be under current working directory.",
-    )
-    parser.add_argument(
-        metavar="<scenario>",
-        dest="scenario",
-        type=str,
-        default="all",
-        help="scenario for which to download data, 'list' for available scenarios, or blank to download all scenarios",
-        nargs="?",
-    )
-    _no_docker(parser)
+# def download(command_args, prog, description):
+#     """
+#     Script to download all datasets and model weights for offline usage.
+#     """
+#     parser = argparse.ArgumentParser(prog=prog, description=description)
+#     _debug(parser)
+#     _docker_image_optional(parser)
+#     _skip_docker_images(parser)
+#     parser.add_argument(
+#         metavar="<download data config file>",
+#         dest="download_config",
+#         type=str,
+#         default="armory/configs/download_data.json",
+#         action=DownloadConfig,
+#         help=f"Configuration for download of data. See {DEFAULT_SCENARIO}. Note: file must be under current working directory.",
+#     )
+#     parser.add_argument(
+#         metavar="<scenario>",
+#         dest="scenario",
+#         type=str,
+#         default="all",
+#         help="scenario for which to download data, 'list' for available scenarios, or blank to download all scenarios",
+#         nargs="?",
+#     )
+#     _no_docker(parser)
 
-    args = parser.parse_args(command_args)
-    armory.logs.update_filters(args.log_level, args.debug)
+#     args = parser.parse_args(command_args)
+#     armory.logs.update_filters(args.log_level, args.debug)
 
-    if args.no_docker:
-        log.info("Downloading requested datasets and model weights in host mode...")
-        paths.set_mode("host")
-        from armory.data import datasets, model_weights
+#     if args.no_docker:
+#         log.info("Downloading requested datasets and model weights in host mode...")
+#         paths.set_mode("host")
+#         from armory.data import datasets, model_weights
 
-        datasets.download_all(args.download_config, args.scenario)
-        model_weights.download_all(args.download_config, args.scenario)
-        return
+#         datasets.download_all(args.download_config, args.scenario)
+#         model_weights.download_all(args.download_config, args.scenario)
+#         return
 
-    if args.skip_docker_images:
-        log.info("Skipping docker image downloads...")
-    else:
-        log.info("Downloading all docker images...")
-        _pull_docker_images()
+#     if args.skip_docker_images:
+#         log.info("Skipping docker image downloads...")
+#     else:
+#         log.info("Downloading all docker images...")
+#         _pull_docker_images()
 
-    log.info("Downloading requested datasets and model weights...")
-    config = {"sysconfig": {"docker_image": args.docker_image}}
+#     log.info("Downloading requested datasets and model weights...")
+#     config = {"sysconfig": {"docker_image": args.docker_image}}
 
-    rig = Evaluator(config)
-    cmd = "; ".join(
-        [
-            "from armory.data import datasets",
-            "from armory.data import model_weights",
-            "from armory.logs import log, update_filters",
-            f"update_filters({args.log_level}, {args.debug})",
-            f'datasets.download_all("{args.download_config}", "{args.scenario}")',
-            f'model_weights.download_all("{args.download_config}", "{args.scenario}")',
-        ]
-    )
-    exit_code = rig.run(command=f"python -c '{cmd}'")
-    sys.exit(exit_code)
+#     rig = Evaluator(config)
+#     cmd = "; ".join(
+#         [
+#             "from armory.data import datasets",
+#             "from armory.data import model_weights",
+#             "from armory.logs import log, update_filters",
+#             f"update_filters({args.log_level}, {args.debug})",
+#             f'datasets.download_all("{args.download_config}", "{args.scenario}")',
+#             f'model_weights.download_all("{args.download_config}", "{args.scenario}")',
+#         ]
+#     )
+#     exit_code = rig.run(command=f"python -c '{cmd}'")
+#     sys.exit(exit_code)
 
 
 def _get_path(name, default_path, absolute_required=True):
@@ -648,10 +648,10 @@ def configure(command_args, prog, description):
 
 def launch(command_args, prog, description):
     parser = argparse.ArgumentParser(prog=prog, description=description)
-    _docker_image(parser)
+    # _docker_image(parser)
     _debug(parser)
-    _interactive(parser)
-    _jupyter(parser)
+    # _interactive(parser)
+    # _jupyter(parser)
     _port(parser)
     _use_gpu(parser)
     _no_gpu(parser)
@@ -661,7 +661,7 @@ def launch(command_args, prog, description):
     args = parser.parse_args(command_args)
     armory.logs.update_filters(args.log_level, args.debug)
 
-    config = {"sysconfig": {"docker_image": args.docker_image}}
+    # config = {"sysconfig": {"docker_image": args.docker_image}}
     _set_gpus(config, args.use_gpu, args.no_gpu, args.gpus)
     (config, args) = arguments.merge_config_and_args(config, args)
 
@@ -684,7 +684,7 @@ def exec(command_args, prog, description):
     delimiter = "--"
     usage = f"armory exec <docker image> [-d] [--use-gpu] {delimiter} <exec command>"
     parser = argparse.ArgumentParser(prog=prog, description=description, usage=usage)
-    _docker_image(parser)
+    # _docker_image(parser)
     _debug(parser)
     _use_gpu(parser)
     _gpus(parser)
