@@ -18,14 +18,13 @@ classifiers = [
 
 dependencies = [
     "setuptools_scm",
-    "docker",
+    # "docker",
     "jsonschema",
     "loguru",
     "pytest",
     "PyYAML",
     "requests",
     "toml",
-]
 
 [project.urls]
 Homepage = "https://github.com/twosixlabs/armory"
@@ -63,23 +62,18 @@ engine = [
     "opencv-python == 4.5.5.62",          # Needed for CARLA baseline scenario
     "opencv-python-headless == 4.5.5.62", # Needed for CARLA baseline scenario
     "tensorboardx",
-]
 
-pytorch = [
+    # pytorch
     "armory-testbed[engine,datasets,math]",
     "torch",
     "torchaudio",
     "torchvision",
-]
 
-tensorflow = [
-    "armory-testbed[engine,datasets,math]",
+    # tensorflow
     "tf-models-official",
     "tensorflow >= 2.10.0",
-]
 
-deepspeech = [
-    "armory-testbed[pytorch,engine,datasets,math]",
+    # deepspeech
     "python-levenshtein",
     "torchmetrics < 0.8.0",
     "sox",
@@ -87,41 +81,47 @@ deepspeech = [
     "google-cloud-storage",
     "transformers",
     "pytorch-lightning < 1.5.0",
-]
 
-math = [
+    # math
     "numpy",
     "pandas",
     "scipy >= 1.4.1",
     "scikit-learn < 1.1.0",   # ART requires scikit-learn >=0.22.2,<1.1.0
     "matplotlib",
-]
 
-datasets = [
-    "armory-testbed[tensorflow]",
+    # datasets
     "tensorflow-datasets >= 4.6.0",
     "protobuf",
-]
 
-datasets-builder = [
-    "armory-testbed[datasets,engine]",
+    # datasets-builder
     "apache-beam >= 2.22.0",
-]
 
-jupyter = [
+    # jupyter
     "jupyterlab",
     "jupyterlab_widgets",
     "ipywidgets",
 ]
 
-all = [
-    "armory-testbed[developer]",
-    "armory-testbed[engine]",
-    "armory-testbed[math]",
-    "armory-testbed[jupyter]",
-    "armory-testbed[datasets]",
-    "armory-testbed[pytorch]",
-    "armory-testbed[tensorflow]",
+[project.urls]
+Source        = "https://github.com/twosixlabs/armory"
+Documentation = "https://armory.readthedocs.io/en/latest/"
+
+[project.scripts]
+armory = "armory.__main__:main"
+
+
+# please see docs/getting_started.md#the-armory-flavors for how these
+# optional dependencies work
+[project.optional-dependencies]
+developer =[
+    "hatch", # build tool
+    "wheel", # build tool
+    "mkdocs",
+    "black[jupyter]==22.*",
+    "isort",
+    "flake8",
+    "bandit[toml]", # code scanning
+    "hydra-core",   # configuration
 ]
 
 [build-system]
