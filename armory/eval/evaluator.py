@@ -14,7 +14,7 @@ import requests
 import armory
 from armory import environment, paths
 from armory.configuration import load_global_config
-# from armory.docker.host_management import HostManagementInstance
+from armory.docker.host_management import HostManagementInstance
 from armory.docker.management import ArmoryInstance, ManagementInstance
 from armory.logs import added_filters, is_debug, log
 from armory.utils.printing import bold, red
@@ -24,7 +24,7 @@ class Evaluator(object):
     def __init__(
         self,
         config: dict,
-        no_docker: bool = False,
+        no_docker: bool = True,
         root: bool = False,
     ):
         log.info("Constructing Evaluator Object")
@@ -48,29 +48,37 @@ class Evaluator(object):
         self.output_dir = os.path.join(self.host_paths.output_dir, eval_id)
         self.tmp_dir = os.path.join(self.host_paths.tmp_dir, eval_id)
 
-        if self.config["sysconfig"].get("use_gpu", None):
-            kwargs = dict(runtime="nvidia")
-        else:
-            kwargs = dict(runtime="runc")
+        # if self.config["sysconfig"].get("use_gpu", None):
+        #     kwargs = dict(runtime="nvidia")
+        # else:
+        #     kwargs = dict(runtime="runc")
         image_name = self.config["sysconfig"].get("docker_image")
         kwargs["image_name"] = image_name
         self.no_docker = not image_name or no_docker
-        self.root = root
+
+
+        self.no_docker = True
+        self.root = False
+        kwargs["image_name"] = None
+
 
         # Retrieve environment variables that should be used in evaluation
         log.info("Retrieving Environment Variables")
         self.extra_env_vars = dict()
         self._gather_env_variables()
 
-        if self.no_docker:
-            if self.root:
-                raise ValueError("running with --root is incompatible with --no-docker")
-            if kwargs["image_name"] is not None:
-                log.warning("Running in --no-docker mode. Setting 'image_name' to None")
-            kwargs["image_name"] = None
-            self.manager = HostManagementInstance()
-        else:
-            self.manager = ManagementInstance(**kwargs)
+        self.manager = ManagementInstance(**kwargs)
+
+        # if self.no_docker:
+        #     if self.root:
+        #         raise ValueError("running with --root is incompatible with --no-docker")
+        #     if kwargs["image_name"] is not None:
+        #         log.warning("Running in --no-docker mode. Setting 'image_name' to None")
+        #     kwargs["image_name"] = None
+        #     self.manager = HostManagementInstance()
+        # else:
+        #     self.manager = ManagementInstance(**kwargs)
+
 
     def _gather_env_variables(self):
         """
