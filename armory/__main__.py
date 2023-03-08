@@ -31,14 +31,13 @@ import sys
 from jsonschema import ValidationError
 
 import armory
+import armory.logs as logger
 from armory import arguments, paths
 from armory.configuration import load_global_config, save_config
 from armory.eval import Evaluator
-import armory.logs
-from armory.logs import log
+# from armory.logs import log
 from armory.utils.configuration import load_config, load_config_stdin
 from armory.utils.version import to_docker_tag
-import docker
 
 
 class PortNumber(argparse.Action):
@@ -60,7 +59,7 @@ def sorted_unique_nonnegative_numbers(values, warning_string):
     numbers = [int(x) for x in values.split(",")]
     sorted_unique_numbers = sorted(set(numbers))
     if numbers != sorted_unique_numbers:
-        log.info(
+        logger.log.info(
             f"WARNING: {warning_string} sorted and made unique: {sorted_unique_numbers}"
         )
     return sorted_unique_numbers
@@ -96,7 +95,7 @@ class DockerImage(argparse.Action):
         elif values.lower() in images.keys():
             setattr(namespace, self.dest, images[values])
         else:
-            log.info(
+            logger.log.info(
                 f"WARNING: {values} not in "
                 f"{list(images.keys()) + list(images.values())}. "
                 "Attempting to load custom Docker image."
@@ -273,7 +272,7 @@ def _set_gpus(config, use_gpu, no_gpu, gpus):
 
     if gpus:
         if not use_gpu:
-            log.info("--gpus field specified. Setting --use-gpu to True")
+            logger.log.info("--gpus field specified. Setting --use-gpu to True")
             use_gpu = True
         config["sysconfig"]["gpus"] = gpus
 
@@ -360,40 +359,40 @@ def run(command_args, prog, description) -> int:
     try:
         if args.filepath == "-":
             if sys.stdin.isatty():
-                log.error(
+                logger.log.error(
                     "Cannot read config from raw 'stdin'; must pipe or redirect a file"
                 )
                 return 1
-            log.info("Reading config from stdin...")
+            logger.log.info("Reading config from stdin...")
             config = load_config_stdin()
         else:
             config = load_config(args.filepath)
     except ValidationError as e:
-        log.error(
+        logger.log.error(
             f"Could not validate config: {e.message} @ {'.'.join(e.absolute_path)}"
         )
         return 1
     except json.decoder.JSONDecodeError:
         if args.filepath == "-":
-            log.error("'stdin' did not provide a json-parsable input")
+            logger.log.error("'stdin' did not provide a json-parsable input")
         else:
-            log.error(f"Could not decode '{args.filepath}' as a json file.")
+            logger.log.error(f"Could not decode '{args.filepath}' as a json file.")
             if not args.filepath.lower().endswith(".json"):
-                log.warning(f"{args.filepath} is not a '*.json' file")
+                logger.log.warning(f"{args.filepath} is not a '*.json' file")
         return 1
     _set_gpus(config, args.use_gpu, args.no_gpu, args.gpus)
     _set_outputs(config, args.output_dir, args.output_filename)
-    log.debug(f"unifying sysconfig {config['sysconfig']} and args {args}")
+    logger.log.debug(f"unifying sysconfig {config['sysconfig']} and args {args}")
     (config, args) = arguments.merge_config_and_args(config, args)
 
     if args.num_eval_batches and args.index:
         raise ValueError("Cannot have --num-eval-batches and --index")
     if args.index and config["dataset"].get("index"):
-        log.info("Overriding index in config with command line argument")
+        logger.log.info("Overriding index in config with command line argument")
     if args.index:
         config["dataset"]["index"] = args.index
     if args.classes and config["dataset"].get("class_ids"):
-        log.info("Overriding class_ids in config with command line argument")
+        logger.log.info("Overriding class_ids in config with command line argument")
     if args.classes:
         config["dataset"]["class_ids"] = args.classes
 
@@ -420,11 +419,11 @@ def _pull_docker_images(docker_client=None):
             docker_client.images.get(image)
         except docker.errors.ImageNotFound:
             try:
-                log.info(f"Image {image} was not found. Downloading...")
+                logger.log.info(f"Image {image} was not found. Downloading...")
                 repository, tag = ":".split(image)
                 armory.docker.images.pull_verbose(docker_client, repository, tag=tag)
             except docker.errors.NotFound:
-                log.exception(
+                logger.log.exception(
                     f"Docker image {image} does not exist for this version. "
                     f"Please run 'python docker/build.py {image}' before running armory"
                 )
@@ -461,7 +460,7 @@ def download(command_args, prog, description):
     armory.logs.update_filters(args.log_level, args.debug)
 
     if args.no_docker:
-        log.info("Downloading requested datasets and model weights in host mode...")
+        logger.log.info("Downloading requested datasets and model weights in host mode...")
         paths.set_mode("host")
         from armory.data import datasets, model_weights
 
@@ -470,12 +469,12 @@ def download(command_args, prog, description):
         return
 
     if args.skip_docker_images:
-        log.info("Skipping docker image downloads...")
+        logger.log.info("Skipping docker image downloads...")
     else:
-        log.info("Downloading all docker images...")
+        logger.log.info("Downloading all docker images...")
         _pull_docker_images()
 
-    log.info("Downloading requested datasets and model weights...")
+    logger.log.info("Downloading requested datasets and model weights...")
     config = {"sysconfig": {"docker_image": args.docker_image}}
 
     rig = Evaluator(config)
