@@ -1,14 +1,12 @@
+import argparse
+from pathlib import Path
 import re
 import sys
-import argparse
-
-from pathlib import Path
 
 try:
     import tomllib  # Python 3.11
 except ImportError:
-    import toml     # Python 3.10
-
+    import toml  # Python 3.10
 
 from armory.cli import CLI
 
@@ -25,15 +23,13 @@ class EmphemeralCLI(CLI):
         #     return 1
         return 1
 
-
     def run(self):
         command = self.args[0]
         data = self.commands.get(command, False)
         if data:
-            module  = self.module_loader(data['module'], data['path'])
+            module = self.module_loader(data["module"], data["path"])
             return module.init(args=self.args)
         sys.exit(f"{self.usage()}")
-
 
     def usage(self):
         line_index = 4
@@ -51,26 +47,26 @@ class EmphemeralCLI(CLI):
             line_index += 1
         return "\n".join(lines)
 
-
     def locate_commands(self):
         skip_names = ("__init__.py", "__main__.py", "ephemeral.py")
-        commands   = { f.stem: {
+        commands = {
+            f.stem: {
                 "path": f,
                 "name": f.stem,
                 "module": f"{f.stem.capitalize()}CLI",
-                "description": self.parse_docstring(f)['command']['description']
+                "description": self.parse_docstring(f)["command"]["description"],
             }
-            for f in Path(__file__).parent.iterdir() if f.is_file() and f.name not in skip_names
+            for f in Path(__file__).parent.iterdir()
+            if f.is_file() and f.name not in skip_names
         }
         return commands
 
-
     def parse_docstring(self, filepath, strict=False):
-        docstring_regex = r'^[\'\"]{3}(?P<docstring>.*?)[\"\']{3}'
-        docmatch = re.search(docstring_regex,filepath.read_text(), re.DOTALL)
+        docstring_regex = r"^[\'\"]{3}(?P<docstring>.*?)[\"\']{3}"
+        docmatch = re.search(docstring_regex, filepath.read_text(), re.DOTALL)
         if docmatch is not None:
             try:
-                return toml.loads(docmatch.group('docstring'))
+                return toml.loads(docmatch.group("docstring"))
             except Exception as err:
                 if strict:
                     raise err

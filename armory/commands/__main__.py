@@ -15,20 +15,17 @@ import os
 import re
 import sys
 
-import docker
 from jsonschema import ValidationError
 
 import armory
-
-from armory.logs import log
-
-from armory import paths
-from armory import arguments
+from armory import arguments, paths
 from armory.configuration import load_global_config, save_config
-from armory.eval import Evaluator
 from armory.docker import images
-from armory.utils.configuration import load_config, load_config_stdin
+from armory.eval import Evaluator
 import armory.logs
+from armory.logs import log
+from armory.utils.configuration import load_config, load_config_stdin
+import docker
 
 
 class PortNumber(argparse.Action):
@@ -451,8 +448,7 @@ def download(command_args, prog, description):
     if args.no_docker:
         log.info("Downloading requested datasets and model weights in host mode...")
         paths.set_mode("host")
-        from armory.data import datasets
-        from armory.data import model_weights
+        from armory.data import datasets, model_weights
 
         datasets.download_all(args.download_config, args.scenario)
         model_weights.download_all(args.download_config, args.scenario)
