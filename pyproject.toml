@@ -95,7 +95,7 @@ Source        = "https://github.com/twosixlabs/armory"
 Documentation = "https://armory.readthedocs.io/en/latest/"
 
 [project.scripts]
-armory = "armory.cli:main"
+armory = "armory.__main__:main"
 
 
 # please see docs/getting_started.md#the-armory-flavors for how these
