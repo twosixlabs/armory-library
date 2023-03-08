@@ -34,14 +34,13 @@ classifiers = [
 ]
 
 dependencies = [
-    "setuptools_scm",
-    # "docker",
-    "jsonschema",
-    "loguru",
-    "pytest",
-    "PyYAML",
-    "requests",
-    "toml",
+    "setuptools_scm",  # versioning
+    "loguru",          # logging
+    "pytest",          # testing
+    "requests",        # http requests
+    "jsonschema",      # config validation
+    "PyYAML",          # config parsing
+    "toml",            # config parsing
 
     # engine
     "adversarial-robustness-toolbox == 1.13.0",
@@ -51,14 +50,14 @@ dependencies = [
     "ffmpeg-python",       # Needed for armory.utils.export
     "pydub",               # this is in ART's extra-requires
     "tidecv",              # Needed for TIDE metrics
+    # "tensorboardx",
+
     # Both `opencv-python` and `opencv-python-headless` must specify
     # the same version.
     "opencv-python == 4.5.5.62",          # Needed for CARLA baseline scenario
     "opencv-python-headless == 4.5.5.62", # Needed for CARLA baseline scenario
-    "tensorboardx",
 
     # pytorch
-    "armory-testbed[engine,datasets,math]",
     "torch",
     "torchaudio",
     "torchvision",
@@ -89,11 +88,6 @@ dependencies = [
 
     # datasets-builder
     "apache-beam >= 2.22.0",
-
-    # jupyter
-    "jupyterlab",
-    "jupyterlab_widgets",
-    "ipywidgets",
 ]
 
 [project.urls]
