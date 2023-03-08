@@ -35,16 +35,15 @@ import armory.logs as logger
 from armory import arguments, paths
 from armory.configuration import load_global_config, save_config
 from armory.eval import Evaluator
-# from armory.logs import log
 from armory.utils.configuration import load_config, load_config_stdin
 from armory.utils.version import to_docker_tag
 
 
-class PortNumber(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        if not 0 < values < 2**16:
-            raise argparse.ArgumentError(self, "port numbers must be in (0, 65535]")
-        setattr(namespace, self.dest, values)
+# class PortNumber(argparse.Action):
+#     def __call__(self, parser, namespace, values, option_string=None):
+#         if not 0 < values < 2**16:
+#             raise argparse.ArgumentError(self, "port numbers must be in (0, 65535]")
+#         setattr(namespace, self.dest, values)
 
 
 def sorted_unique_nonnegative_numbers(values, warning_string):
@@ -156,19 +155,19 @@ def _jupyter(parser):
     )
 
 
-def _port(parser):
-    parser.add_argument(
-        "-p",
-        "--port",
-        type=int,
-        action=PortNumber,
-        metavar="",
-        default=None,
-        help=(
-            "Port number {0, ..., 65535} to expose from docker container. If --jupyter "
-            "flag is set then this port will be used for the jupyter server."
-        ),
-    )
+# def _port(parser):
+#     parser.add_argument(
+#         "-p",
+#         "--port",
+#         type=int,
+#         action=PortNumber,
+#         metavar="",
+#         default=None,
+#         help=(
+#             "Port number {0, ..., 65535} to expose from docker container. If --jupyter "
+#             "flag is set then this port will be used for the jupyter server."
+#         ),
+#     )
 
 
 def _no_gpu(parser):
@@ -304,7 +303,7 @@ def run(command_args, prog, description) -> int:
     _debug(parser)
     _interactive(parser)
     _jupyter(parser)
-    _port(parser)
+    # _port(parser)
     _use_gpu(parser)
     _no_gpu(parser)
     _gpus(parser)
@@ -400,7 +399,7 @@ def run(command_args, prog, description) -> int:
     exit_code = rig.run(
         interactive=args.interactive,
         jupyter=args.jupyter,
-        host_port=args.port,
+        host_port=None,
         check_run=args.check,
         num_eval_batches=args.num_eval_batches,
         skip_benign=args.skip_benign,
@@ -664,7 +663,7 @@ def launch(command_args, prog, description):
     _debug(parser)
     _interactive(parser)
     _jupyter(parser)
-    _port(parser)
+    # _port(parser)
     _use_gpu(parser)
     _no_gpu(parser)
     _gpus(parser)
@@ -686,7 +685,7 @@ def launch(command_args, prog, description):
     exit_code = rig.run(
         interactive=args.interactive,
         jupyter=args.jupyter,
-        host_port=args.port,
+        host_port=None,
         command="true # No-op",
     )
     sys.exit(exit_code)
