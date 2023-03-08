@@ -1,63 +1,64 @@
-'''
+"""
 [command]
 name        = "run"
 description = "Run armory from config file"
-'''
+"""
 
 from armory.cli import CLI
 
 
 class RunCLI(CLI):
-  name = "run"
-  description = "Run armory from config file"
-  flags = [
-      (["-v", "--version"], {
-          "action":  "version",
-          "help":    "Show the version and exit.",
-          "version": "1" #CLI.usage
-      }),
-      (["-p", "--prefix"], {
-          "type": str,
-          "help": "Override of default output filename prefix."
-      })
-      # (["-h", "--help"], {
-      #     "help":    "Show help message.",
-      #     "action":  "help",
-      #     "default": argparse.SUPPRESS,
-      #     "dest":    "help"
-      # })
-  ]
-
-  def setup(self):
-    print('run.init')
-    self.config(
-        flags = self.flags,
-        positional=[
+    name = "run"
+    description = "Run armory from config file"
+    flags = [
+        (
+            ["-v", "--version"],
             {
-                'title': "Scenario Config Path",
-                'description': "Path to the scenario config file",
-            }
-        ],
-        # actions=[]
-        # func=main
-    )
+                "action": "version",
+                "help": "Show the version and exit.",
+                "version": "1",  # CLI.usage
+            },
+        ),
+        (
+            ["-p", "--prefix"],
+            {"type": str, "help": "Override of default output filename prefix."},
+        )
+        # (["-h", "--help"], {
+        #     "help":    "Show help message.",
+        #     "action":  "help",
+        #     "default": argparse.SUPPRESS,
+        #     "dest":    "help"
+        # })
+    ]
+
+    def setup(self):
+        print("run.init")
+        self.config(
+            flags=self.flags,
+            positional=[
+                {
+                    "title": "Scenario Config Path",
+                    "description": "Path to the scenario config file",
+                }
+            ],
+            # actions=[]
+            # func=main
+        )
+
+    def usage(self):
+        print("run.usage")
+        # self.setup()
+        # self.parser.print_help(sys.stderr)
+        return self.parser.format_help()
+
+    def run(self):
+        print("run.run")
+        # args = self.parser.parse_known_args(self.args)
+        # print(args)
+        return 0
 
 
-  def usage(self):
-    print("run.usage")
-    # self.setup()
-    # self.parser.print_help(sys.stderr)
-    return self.parser.format_help()
-
-
-  def run(self):
-    print('run.run')
-    # args = self.parser.parse_known_args(self.args)
-    # print(args)
-    return 0
-
-
-'''
+"""
 {
   "runtime": "nvidia",
   "remove": true,
@@ -114,11 +115,11 @@ class RunCLI(CLI):
     "ARMORY_VERSION": "0.15.4"
   }
 }
-'''
+"""
 
-'''
+"""
 python -m armory.scenarios.main eyJfZGVzY3JpcHRpb24iOiAiQmFzZWxpbmUgY2lmYXIxMCBpbWFnZSBjbGFzc2lmaWNhdGlvbiIsICJhZGhvYyI6IG51bGwsICJhdHRhY2siOiB7Imtub3dsZWRnZSI6ICJ3aGl0ZSIsICJrd2FyZ3MiOiB7ImJhdGNoX3NpemUiOiAxLCAiZXBzIjogMC4wMzEsICJlcHNfc3RlcCI6IDAuMDA3LCAibWF4X2l0ZXIiOiAyMCwgIm51bV9yYW5kb21faW5pdCI6IDEsICJyYW5kb21fZXBzIjogZmFsc2UsICJ0YXJnZXRlZCI6IGZhbHNlLCAidmVyYm9zZSI6IGZhbHNlfSwgIm1vZHVsZSI6ICJhcnQuYXR0YWNrcy5ldmFzaW9uIiwgIm5hbWUiOiAiUHJvamVjdGVkR3JhZGllbnREZXNjZW50IiwgInVzZV9sYWJlbCI6IHRydWV9LCAiZGF0YXNldCI6IHsiYmF0Y2hfc2l6ZSI6IDY0LCAiZnJhbWV3b3JrIjogIm51bXB5IiwgIm1vZHVsZSI6ICJhcm1vcnkuZGF0YS5kYXRhc2V0cyIsICJuYW1lIjogImNpZmFyMTAifSwgImRlZmVuc2UiOiBudWxsLCAibWV0cmljIjogeyJtZWFucyI6IHRydWUsICJwZXJ0dXJiYXRpb24iOiAibGluZiIsICJyZWNvcmRfbWV0cmljX3Blcl9zYW1wbGUiOiBmYWxzZSwgInRhc2siOiBbImNhdGVnb3JpY2FsX2FjY3VyYWN5Il19LCAibW9kZWwiOiB7ImZpdCI6IHRydWUsICJmaXRfa3dhcmdzIjogeyJuYl9lcG9jaHMiOiAyMH0sICJtb2RlbF9rd2FyZ3MiOiB7fSwgIm1vZHVsZSI6ICJhcm1vcnkuYmFzZWxpbmVfbW9kZWxzLnB5dG9yY2guY2lmYXIiLCAibmFtZSI6ICJnZXRfYXJ0X21vZGVsIiwgIndlaWdodHNfZmlsZSI6IG51bGwsICJ3cmFwcGVyX2t3YXJncyI6IHt9fSwgInNjZW5hcmlvIjogeyJrd2FyZ3MiOiB7fSwgIm1vZHVsZSI6ICJhcm1vcnkuc2NlbmFyaW9zLmltYWdlX2NsYXNzaWZpY2F0aW9uIiwgIm5hbWUiOiAiSW1hZ2VDbGFzc2lmaWNhdGlvblRhc2sifSwgInN5c2NvbmZpZyI6IHsiZG9ja2VyX2ltYWdlIjogInR3b3NpeGFybW9yeS9weXRvcmNoIiwgImV4dGVybmFsX2dpdGh1Yl9yZXBvIjogbnVsbCwgImdwdXMiOiAiYWxsIiwgIm91dHB1dF9kaXIiOiBudWxsLCAib3V0cHV0X2ZpbGVuYW1lIjogbnVsbCwgInVzZV9ncHUiOiB0cnVlLCAiZmlsZXBhdGgiOiAic2NlbmFyaW9fY29uZmlncy9jaWZhcjEwX2Jhc2VsaW5lLmpzb24iLCAiY2hlY2siOiB0cnVlfSwgImV2YWxfaWQiOiAiMjAyMi0xMC0wM1QxNDI4MjYuNjc0NjkyIn0= --check --base64
-'''
+"""
 
 ###############################
 # TODO:
@@ -273,7 +274,6 @@ python -m armory.scenarios.main eyJfZGVzY3JpcHRpb24iOiAiQmFzZWxpbmUgY2lmYXIxMCBp
 #     sys.exit(exit_code)
 
 
-
 # positional arguments:
 #   <json_config>         json config file. Use '-' to accept standard input or pipe.
 
@@ -303,6 +303,3 @@ python -m armory.scenarios.main eyJfZGVzY3JpcHRpb24iOiAiQmFzZWxpbmUgY2lmYXIxMCBp
 #   --skip-attack         #  Skip attack generation and metric calculations
 #   --skip-misclassified  #  Skip attack of inputs that are already misclassified
 #   --validate-config     #  Validate model configuration against several checks
-
-
-

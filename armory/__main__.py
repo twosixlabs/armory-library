@@ -14,10 +14,10 @@ This runs an arbitrary config file. Results are output to the `outputs/` directo
 # TODO: Remove this temp hack -CW
 import torch
 
-torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.set_default_tensor_type(torch.cuda.FloatTensor)
 
-if torch.device.type == 'cpu':
+if torch.device.type == "cpu":
     print("WARNING: Running on CPU")
 #########################################
 
@@ -31,13 +31,12 @@ import sys
 from jsonschema import ValidationError
 
 import armory
-import armory.logs as logger
 from armory import arguments, paths
 from armory.configuration import load_global_config, save_config
 from armory.eval import Evaluator
+import armory.logs as logger
 from armory.utils.configuration import load_config, load_config_stdin
 from armory.utils.version import to_docker_tag
-
 
 OLD_SCENARIOS = [
     "https://github.com/twosixlabs/armory-example/blob/master/scenario_download_configs/scenarios-set1.json"
@@ -540,18 +539,12 @@ def main() -> int:
     # command, (function, description)
     program = "armory"
     commands = {
-        "run": (
-            run,
-            "run armory from config file"
-        ),
+        "run": (run, "run armory from config file"),
         "download": (
             download,
             "download datasets and model weights used for a given evaluation scenario",
         ),
-        "configure": (
-            configure,
-            "set up armory and dataset paths"
-        ),
+        "configure": (configure, "set up armory and dataset paths"),
     }
 
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
