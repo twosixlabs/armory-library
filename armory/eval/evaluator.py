@@ -52,22 +52,20 @@ class Evaluator(object):
         #     kwargs = dict(runtime="nvidia")
         # else:
         #     kwargs = dict(runtime="runc")
-        image_name = self.config["sysconfig"].get("docker_image")
-        kwargs["image_name"] = image_name
-        self.no_docker = not image_name or no_docker
+        # image_name = self.config["sysconfig"].get("docker_image")
+        # self.no_docker = not image_name or no_docker
 
 
+        kwargs = dict(image_name=None)
         self.no_docker = True
         self.root = False
-        kwargs["image_name"] = None
-
 
         # Retrieve environment variables that should be used in evaluation
         log.info("Retrieving Environment Variables")
         self.extra_env_vars = dict()
         self._gather_env_variables()
 
-        self.manager = ManagementInstance(**kwargs)
+        self.manager = HostManagementInstance()
 
         # if self.no_docker:
         #     if self.root:
@@ -157,10 +155,10 @@ class Evaluator(object):
     ) -> int:
         exit_code = 0
         if self.no_docker:
-            if jupyter or interactive or command:
-                raise ValueError(
-                    "jupyter, interactive, or bash commands only supported when running Docker containers."
-                )
+            # if jupyter or interactive or command:
+            #     raise ValueError(
+            #         "jupyter, interactive, or bash commands only supported when running Docker containers."
+            #     )
             runner = self.manager.start_armory_instance(
                 envs=self.extra_env_vars,
             )
@@ -202,38 +200,38 @@ class Evaluator(object):
                 user=self.get_id(),
             )
             try:
-                if jupyter:
-                    self._run_jupyter(
-                        runner,
-                        ports,
-                        check_run=check_run,
-                        num_eval_batches=num_eval_batches,
-                        skip_benign=skip_benign,
-                        skip_attack=skip_attack,
-                        skip_misclassified=skip_misclassified,
-                    )
-                elif interactive:
-                    self._run_interactive_bash(
-                        runner,
-                        check_run=check_run,
-                        num_eval_batches=num_eval_batches,
-                        skip_benign=skip_benign,
-                        skip_attack=skip_attack,
-                        skip_misclassified=skip_misclassified,
-                        validate_config=validate_config,
-                    )
-                elif command:
-                    exit_code = self._run_command(runner, command)
-                else:
-                    exit_code = self._run_config(
-                        runner,
-                        check_run=check_run,
-                        num_eval_batches=num_eval_batches,
-                        skip_benign=skip_benign,
-                        skip_attack=skip_attack,
-                        skip_misclassified=skip_misclassified,
-                        validate_config=validate_config,
-                    )
+                # if jupyter:
+                #     self._run_jupyter(
+                #         runner,
+                #         ports,
+                #         check_run=check_run,
+                #         num_eval_batches=num_eval_batches,
+                #         skip_benign=skip_benign,
+                #         skip_attack=skip_attack,
+                #         skip_misclassified=skip_misclassified,
+                #     )
+                # elif interactive:
+                #     self._run_interactive_bash(
+                #         runner,
+                #         check_run=check_run,
+                #         num_eval_batches=num_eval_batches,
+                #         skip_benign=skip_benign,
+                #         skip_attack=skip_attack,
+                #         skip_misclassified=skip_misclassified,
+                #         validate_config=validate_config,
+                #     )
+                # elif command:
+                #     exit_code = self._run_command(runner, command)
+                # else:
+                exit_code = self._run_config(
+                    runner,
+                    check_run=check_run,
+                    num_eval_batches=num_eval_batches,
+                    skip_benign=skip_benign,
+                    skip_attack=skip_attack,
+                    skip_misclassified=skip_misclassified,
+                    validate_config=validate_config,
+                )
             except KeyboardInterrupt:
                 log.warning("keyboard interrupt caught")
             finally:
@@ -389,76 +387,76 @@ class Evaluator(object):
         while True:
             time.sleep(1)
 
-    def _run_jupyter(
-        self,
-        runner: ArmoryInstance,
-        ports: dict,
-        check_run=False,
-        num_eval_batches=None,
-        skip_benign=None,
-        skip_attack=None,
-        skip_misclassified=None,
-    ) -> None:
-        if not self.root:
-            log.warning("Running Jupyter Lab as root inside the container.")
+    # def _run_jupyter(
+    #     self,
+    #     runner: ArmoryInstance,
+    #     ports: dict,
+    #     check_run=False,
+    #     num_eval_batches=None,
+    #     skip_benign=None,
+    #     skip_attack=None,
+    #     skip_misclassified=None,
+    # ) -> None:
+    #     if not self.root:
+    #         log.warning("Running Jupyter Lab as root inside the container.")
 
-        user_group_id = self.get_id()
-        port = list(ports.keys())[0]
-        tmp_dir = os.path.join(self.host_paths.tmp_dir, self.config["eval_id"])
-        os.makedirs(tmp_dir)
-        self.tmp_config = os.path.join(tmp_dir, "interactive-config.json")
-        docker_config_path = os.path.join(
-            paths.runtime_paths().tmp_dir,
-            self.config["eval_id"],
-            "interactive-config.json",
-        )
-        with open(self.tmp_config, "w") as f:
-            f.write(json.dumps(self.config, sort_keys=True, indent=4) + "\n")
-        init_options = self._constructor_options(
-            check_run=check_run,
-            num_eval_batches=num_eval_batches,
-            skip_benign=skip_benign,
-            skip_attack=skip_attack,
-            skip_misclassified=skip_misclassified,
-        )
-        lines = [
-            "About to launch jupyter.",
-            bold("# To connect on the command line as well, in a new terminal, run:"),
-            bold(
-                red(
-                    f"docker exec -it -u {user_group_id} {runner.docker_container.short_id} bash"
-                )
-            ),
-            "",
-        ]
-        if "scenario" in self.config:
-            # If not, config is not valid to load into scenario
-            lines.extend(
-                [
-                    bold("# To run, inside of a notebook:"),
-                    bold(
-                        red(
-                            "from armory.scenarios.main import get as get_scenario\n"
-                            f's = get_scenario("{docker_config_path}"{init_options}).load()\n'
-                            "s.evaluate()"
-                        )
-                    ),
-                    "",
-                ]
-            )
-        lines.extend(
-            [
-                bold("# To gracefully shut down container, press: Ctrl-C"),
-                "",
-                "Jupyter notebook log:",
-            ]
-        )
-        log.info("\n".join(lines))
-        runner.exec_cmd(
-            f"jupyter lab --ip=0.0.0.0 --port {port} --no-browser",
-            user=user_group_id,
-            expect_sentinel=False,
-        )
+    #     user_group_id = self.get_id()
+    #     port = list(ports.keys())[0]
+    #     tmp_dir = os.path.join(self.host_paths.tmp_dir, self.config["eval_id"])
+    #     os.makedirs(tmp_dir)
+    #     self.tmp_config = os.path.join(tmp_dir, "interactive-config.json")
+    #     docker_config_path = os.path.join(
+    #         paths.runtime_paths().tmp_dir,
+    #         self.config["eval_id"],
+    #         "interactive-config.json",
+    #     )
+    #     with open(self.tmp_config, "w") as f:
+    #         f.write(json.dumps(self.config, sort_keys=True, indent=4) + "\n")
+    #     init_options = self._constructor_options(
+    #         check_run=check_run,
+    #         num_eval_batches=num_eval_batches,
+    #         skip_benign=skip_benign,
+    #         skip_attack=skip_attack,
+    #         skip_misclassified=skip_misclassified,
+    #     )
+    #     lines = [
+    #         "About to launch jupyter.",
+    #         bold("# To connect on the command line as well, in a new terminal, run:"),
+    #         bold(
+    #             red(
+    #                 f"docker exec -it -u {user_group_id} {runner.docker_container.short_id} bash"
+    #             )
+    #         ),
+    #         "",
+    #     ]
+    #     if "scenario" in self.config:
+    #         # If not, config is not valid to load into scenario
+    #         lines.extend(
+    #             [
+    #                 bold("# To run, inside of a notebook:"),
+    #                 bold(
+    #                     red(
+    #                         "from armory.scenarios.main import get as get_scenario\n"
+    #                         f's = get_scenario("{docker_config_path}"{init_options}).load()\n'
+    #                         "s.evaluate()"
+    #                     )
+    #                 ),
+    #                 "",
+    #             ]
+    #         )
+    #     lines.extend(
+    #         [
+    #             bold("# To gracefully shut down container, press: Ctrl-C"),
+    #             "",
+    #             "Jupyter notebook log:",
+    #         ]
+    #     )
+    #     log.info("\n".join(lines))
+    #     runner.exec_cmd(
+    #         f"jupyter lab --ip=0.0.0.0 --port {port} --no-browser",
+    #         user=user_group_id,
+    #         expect_sentinel=False,
+    #     )
 
     def _build_options(
         self,
@@ -470,8 +468,9 @@ class Evaluator(object):
         validate_config,
     ):
         options = ""
-        if self.no_docker:
-            options += " --no-docker"
+        # if self.no_docker:
+        options += " --no-docker"
+
         if check_run:
             options += " --check"
         if is_debug():
