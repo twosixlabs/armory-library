@@ -9,11 +9,12 @@ requires = [
 [project]
 requires-python = ">=3.8"
 
-name        = "armory-testbed"
-description = "Adversarial Robustness Test Bed"
-readme      = "README.md"
-dynamic     = [ "version" ]
-license     = "MIT"
+name          = "armory-testbed"
+description   = "Adversarial Robustness Test Bed"
+readme        = "README.md"
+dynamic       = [ "version" ]
+license       = "MIT"
+license-files = { paths = ["LICENSE"] }
 authors = [
   { name = "Two Six Technologies", email = "armory@twosixtech.com" },
 ]
