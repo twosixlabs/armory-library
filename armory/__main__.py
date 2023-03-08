@@ -137,22 +137,22 @@ def _debug(parser):
     )
 
 
-def _interactive(parser):
-    parser.add_argument(
-        "-i",
-        "--interactive",
-        action="store_true",
-        help="Whether to allow interactive access to container",
-    )
+# def _interactive(parser):
+#     parser.add_argument(
+#         "-i",
+#         "--interactive",
+#         action="store_true",
+#         help="Whether to allow interactive access to container",
+#     )
 
 
-def _jupyter(parser):
-    parser.add_argument(
-        "-j",
-        "--jupyter",
-        action="store_true",
-        help="Whether to set up Jupyter notebook from container",
-    )
+# def _jupyter(parser):
+#     parser.add_argument(
+#         "-j",
+#         "--jupyter",
+#         action="store_true",
+#         help="Whether to set up Jupyter notebook from container",
+#     )
 
 
 # def _port(parser):
@@ -301,8 +301,8 @@ def run(command_args, prog, description) -> int:
         help="json config file. Use '-' to accept standard input or pipe.",
     )
     _debug(parser)
-    _interactive(parser)
-    _jupyter(parser)
+    # _interactive(parser)
+    # _jupyter(parser)
     # _port(parser)
     _use_gpu(parser)
     _no_gpu(parser)
@@ -397,8 +397,8 @@ def run(command_args, prog, description) -> int:
 
     rig = Evaluator(config, no_docker=args.no_docker, root=args.root)
     exit_code = rig.run(
-        interactive=args.interactive,
-        jupyter=args.jupyter,
+        interactive=False,
+        jupyter=False,
         host_port=None,
         check_run=args.check,
         num_eval_batches=args.num_eval_batches,
@@ -661,8 +661,8 @@ def launch(command_args, prog, description):
     parser = argparse.ArgumentParser(prog=prog, description=description)
     _docker_image(parser)
     _debug(parser)
-    _interactive(parser)
-    _jupyter(parser)
+    # _interactive(parser)
+    # _jupyter(parser)
     # _port(parser)
     _use_gpu(parser)
     _no_gpu(parser)
@@ -679,12 +679,10 @@ def launch(command_args, prog, description):
     rig = Evaluator(config, root=args.root)
 
     # this is the expected meaning of `launch()` that is, start an interactive session even if `--interactive` was not specified
-    if not args.interactive and not args.jupyter:
-        args.interactive = True
 
     exit_code = rig.run(
-        interactive=args.interactive,
-        jupyter=args.jupyter,
+        interactive=False,
+        jupyter=False,
         host_port=None,
         command="true # No-op",
     )
