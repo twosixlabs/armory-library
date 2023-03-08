@@ -39,13 +39,6 @@ from armory.utils.configuration import load_config, load_config_stdin
 from armory.utils.version import to_docker_tag
 
 
-# class PortNumber(argparse.Action):
-#     def __call__(self, parser, namespace, values, option_string=None):
-#         if not 0 < values < 2**16:
-#             raise argparse.ArgumentError(self, "port numbers must be in (0, 65535]")
-#         setattr(namespace, self.dest, values)
-
-
 def sorted_unique_nonnegative_numbers(values, warning_string):
     if not isinstance(values, str):
         raise ValueError(f"{values} invalid.\n Must be a string input.")
@@ -86,22 +79,6 @@ class Command(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
-class DockerImage(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        images = armory.docker.images.IMAGE_MAP
-        if values in images.values():
-            setattr(namespace, self.dest, values)
-        elif values.lower() in images.keys():
-            setattr(namespace, self.dest, images[values])
-        else:
-            logger.log.info(
-                f"WARNING: {values} not in "
-                f"{list(images.keys()) + list(images.values())}. "
-                "Attempting to load custom Docker image."
-            )
-            setattr(namespace, self.dest, values)
-
-
 OLD_SCENARIOS = [
     "https://github.com/twosixlabs/armory-example/blob/master/scenario_download_configs/scenarios-set1.json"
 ]
@@ -121,8 +98,6 @@ class DownloadConfig(argparse.Action):
 
 
 # Helper functions for parsers
-
-
 def _debug(parser):
     parser.add_argument(
         "-d",
@@ -135,39 +110,6 @@ def _debug(parser):
         action="append",
         help="set log level per-module (ex. art:debug) can be used mulitple times",
     )
-
-
-# def _interactive(parser):
-#     parser.add_argument(
-#         "-i",
-#         "--interactive",
-#         action="store_true",
-#         help="Whether to allow interactive access to container",
-#     )
-
-
-# def _jupyter(parser):
-#     parser.add_argument(
-#         "-j",
-#         "--jupyter",
-#         action="store_true",
-#         help="Whether to set up Jupyter notebook from container",
-#     )
-
-
-# def _port(parser):
-#     parser.add_argument(
-#         "-p",
-#         "--port",
-#         type=int,
-#         action=PortNumber,
-#         metavar="",
-#         default=None,
-#         help=(
-#             "Port number {0, ..., 65535} to expose from docker container. If --jupyter "
-#             "flag is set then this port will be used for the jupyter server."
-#         ),
-#     )
 
 
 def _no_gpu(parser):
@@ -191,35 +133,6 @@ def _gpus(parser):
         "--gpus",
         type=str,
         help="Which specific GPU(s) to use, such as '3', '1,5', or 'all'",
-    )
-
-
-def _docker_image(parser):
-    parser.add_argument(
-        "docker_image",
-        metavar="<docker image>",
-        type=str,
-        help="docker image framework: 'armory', or 'pytorch-deepspeech'",
-        action=DockerImage,
-    )
-
-
-def _docker_image_optional(parser):
-    parser.add_argument(
-        "--docker-image",
-        default=armory.docker.images.ARMORY_IMAGE_NAME,
-        metavar="<docker image>",
-        type=str,
-        help="docker image framework: 'armory', or 'pytorch-deepspeech'",
-        action=DockerImage,
-    )
-
-
-def _skip_docker_images(parser):
-    parser.add_argument(
-        "--skip-docker-images",
-        action="store_true",
-        help="Whether to skip downloading docker images",
     )
 
 
@@ -260,8 +173,6 @@ def _classes(parser):
 
 
 # Config
-
-
 def _set_gpus(config, use_gpu, no_gpu, gpus):
     """
     Set gpu values from parser in config
@@ -290,8 +201,6 @@ def _set_outputs(config, output_dir, output_filename):
 
 
 # Commands
-
-
 def run(command_args, prog, description) -> int:
     parser = argparse.ArgumentParser(prog=prog, description=description)
     parser.add_argument(
@@ -301,9 +210,6 @@ def run(command_args, prog, description) -> int:
         help="json config file. Use '-' to accept standard input or pipe.",
     )
     _debug(parser)
-    # _interactive(parser)
-    # _jupyter(parser)
-    # _port(parser)
     _use_gpu(parser)
     _no_gpu(parser)
     _gpus(parser)
@@ -661,9 +567,6 @@ def launch(command_args, prog, description):
     parser = argparse.ArgumentParser(prog=prog, description=description)
     _docker_image(parser)
     _debug(parser)
-    # _interactive(parser)
-    # _jupyter(parser)
-    # _port(parser)
     _use_gpu(parser)
     _no_gpu(parser)
     _gpus(parser)
@@ -679,7 +582,6 @@ def launch(command_args, prog, description):
     rig = Evaluator(config, root=args.root)
 
     # this is the expected meaning of `launch()` that is, start an interactive session even if `--interactive` was not specified
-
     exit_code = rig.run(
         interactive=False,
         jupyter=False,
