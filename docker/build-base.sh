@@ -3,8 +3,8 @@ set -e
 
 usage() { echo "usage: $0 [--dry-run] [--push]" 1>&2; exit 1; }
 
-dryrun=
-push=
+dryrun="${ARMORY_DRYRUN:-}"
+push="${ARMORY_PUSH:-}"
 
 while [ "${1:-}" != "" ]; do
     case "$1" in
@@ -20,7 +20,7 @@ while [ "${1:-}" != "" ]; do
 done
 
 echo "Building the base image locally"
-$dryrun docker build --force-rm --file ./docker/Dockerfile-base -t twosixarmory/base:latest --progress=auto .
+$dryrun docker build --force-rm --file ./docker/Dockerfile-armory -t twosixarmory/armory:latest --progress=auto .
 
 if [[ -z "$push" ]]; then
     echo ""
@@ -40,5 +40,5 @@ echo ""
 
 # the second push should result in no new upload, it just tag the new image as
 # latest
-$dryrun docker push twosixarmory/base:$tag
-$dryrun docker push twosixarmory/base:latest
+$dryrun docker push twosixarmory/armory:$tag
+$dryrun docker push twosixarmory/armory:latest
