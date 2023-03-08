@@ -39,6 +39,12 @@ from armory.utils.configuration import load_config, load_config_stdin
 from armory.utils.version import to_docker_tag
 
 
+OLD_SCENARIOS = [
+    "https://github.com/twosixlabs/armory-example/blob/master/scenario_download_configs/scenarios-set1.json"
+]
+DEFAULT_SCENARIO = "https://github.com/twosixlabs/armory-example/blob/master/scenario_download_configs/scenarios-set2.json"
+
+
 def sorted_unique_nonnegative_numbers(values, warning_string):
     if not isinstance(values, str):
         raise ValueError(f"{values} invalid.\n Must be a string input.")
@@ -71,18 +77,10 @@ class Classes(argparse.Action):
 
 class Command(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        if values not in COMMANDS:
-            raise argparse.ArgumentError(
-                self,
-                f"{values} invalid.\n" f"<command> must be one of {list(COMMANDS)}",
-            )
-        setattr(namespace, self.dest, values)
-
-
-OLD_SCENARIOS = [
-    "https://github.com/twosixlabs/armory-example/blob/master/scenario_download_configs/scenarios-set1.json"
-]
-DEFAULT_SCENARIO = "https://github.com/twosixlabs/armory-example/blob/master/scenario_download_configs/scenarios-set2.json"
+        try:
+            setattr(namespace, self.dest, values)
+        except Exception as e:
+            raise argparse.ArgumentError(self, f"Invalid command: {e}")
 
 
 class DownloadConfig(argparse.Action):
@@ -133,14 +131,6 @@ def _gpus(parser):
         "--gpus",
         type=str,
         help="Which specific GPU(s) to use, such as '3', '1,5', or 'all'",
-    )
-
-
-def _no_docker(parser):
-    parser.add_argument(
-        "--no-docker",
-        action="store_true",
-        help="Whether to use Docker or the local host environment",
     )
 
 
@@ -213,7 +203,6 @@ def run(command_args, prog, description) -> int:
     _use_gpu(parser)
     _no_gpu(parser)
     _gpus(parser)
-    _no_docker(parser)
     _root(parser)
     _index(parser)
     _classes(parser)
@@ -301,7 +290,7 @@ def run(command_args, prog, description) -> int:
     if args.classes:
         config["dataset"]["class_ids"] = args.classes
 
-    rig = Evaluator(config, no_docker=args.no_docker, root=args.root)
+    rig = Evaluator(config, no_docker=True, root=False)
     exit_code = rig.run(
         interactive=False,
         jupyter=False,
@@ -316,29 +305,11 @@ def run(command_args, prog, description) -> int:
     return exit_code
 
 
-def _pull_docker_images(docker_client=None):
-    if docker_client is None:
-        docker_client = docker.from_env(version="auto")
-    for image in armory.docker.images.IMAGE_MAP.values():
-        try:
-            docker_client.images.get(image)
-        except docker.errors.ImageNotFound:
-            try:
-                logger.log.info(f"Image {image} was not found. Downloading...")
-                repository, tag = ":".split(image)
-                armory.docker.images.pull_verbose(docker_client, repository, tag=tag)
-            except docker.errors.NotFound:
-                logger.log.exception(
-                    f"Docker image {image} does not exist for this version. "
-                    f"Please run 'python docker/build.py {image}' before running armory"
-                )
-                raise ValueError(f"Docker image {image} not built")
-
-
 def download(command_args, prog, description):
     """
     Script to download all datasets and model weights for offline usage.
     """
+    return  # TODO: Remove this line to enable download command -CW
     parser = argparse.ArgumentParser(prog=prog, description=description)
     _debug(parser)
     _docker_image_optional(parser)
@@ -359,42 +330,19 @@ def download(command_args, prog, description):
         help="scenario for which to download data, 'list' for available scenarios, or blank to download all scenarios",
         nargs="?",
     )
-    _no_docker(parser)
+    from armory.data import datasets, model_weights
+
+    paths.set_mode("host")
 
     args = parser.parse_args(command_args)
-    armory.logs.update_filters(args.log_level, args.debug)
 
-    if args.no_docker:
-        logger.log.info("Downloading requested datasets and model weights in host mode...")
-        paths.set_mode("host")
-        from armory.data import datasets, model_weights
+    logger.update_filters(args.log_level, args.debug)
+    logger.log.info("Downloading requested datasets and model weights in host mode...")
 
-        datasets.download_all(args.download_config, args.scenario)
-        model_weights.download_all(args.download_config, args.scenario)
-        return
+    datasets.download_all(args.download_config, args.scenario)
+    model_weights.download_all(args.download_config, args.scenario)
 
-    if args.skip_docker_images:
-        logger.log.info("Skipping docker image downloads...")
-    else:
-        logger.log.info("Downloading all docker images...")
-        _pull_docker_images()
-
-    logger.log.info("Downloading requested datasets and model weights...")
-    config = {"sysconfig": {"docker_image": args.docker_image}}
-
-    rig = Evaluator(config)
-    cmd = "; ".join(
-        [
-            "from armory.data import datasets",
-            "from armory.data import model_weights",
-            "from armory.logs import log, update_filters",
-            f"update_filters({args.log_level}, {args.debug})",
-            f'datasets.download_all("{args.download_config}", "{args.scenario}")',
-            f'model_weights.download_all("{args.download_config}", "{args.scenario}")',
-        ]
-    )
-    exit_code = rig.run(command=f"python -c '{cmd}'")
-    sys.exit(exit_code)
+    return 1
 
 
 def _get_path(name, default_path, absolute_required=True):
@@ -440,7 +388,7 @@ def configure(command_args, prog, description):
     )
 
     args = parser.parse_args(command_args)
-    armory.logs.update_filters(args.log_level, args.debug)
+    logger.update_filters(args.log_level, args.debug)
 
     default_host_paths = paths.HostDefaultPaths()
 
@@ -563,102 +511,22 @@ def configure(command_args, prog, description):
     print("Configure complete")
 
 
-def launch(command_args, prog, description):
-    parser = argparse.ArgumentParser(prog=prog, description=description)
-    _docker_image(parser)
-    _debug(parser)
-    _use_gpu(parser)
-    _no_gpu(parser)
-    _gpus(parser)
-    _root(parser)
-
-    args = parser.parse_args(command_args)
-    armory.logs.update_filters(args.log_level, args.debug)
-
-    config = {"sysconfig": {"docker_image": args.docker_image}}
-    _set_gpus(config, args.use_gpu, args.no_gpu, args.gpus)
-    (config, args) = arguments.merge_config_and_args(config, args)
-
-    rig = Evaluator(config, root=args.root)
-
-    # this is the expected meaning of `launch()` that is, start an interactive session even if `--interactive` was not specified
-    exit_code = rig.run(
-        interactive=False,
-        jupyter=False,
-        host_port=None,
-        command="true # No-op",
-    )
-    sys.exit(exit_code)
-
-
-def exec(command_args, prog, description):
-    delimiter = "--"
-    usage = f"armory exec <docker image> [-d] [--use-gpu] {delimiter} <exec command>"
-    parser = argparse.ArgumentParser(prog=prog, description=description, usage=usage)
-    _docker_image(parser)
-    _debug(parser)
-    _use_gpu(parser)
-    _gpus(parser)
-    _no_gpu(parser)
-    _root(parser)
-
-    try:
-        index = command_args.index(delimiter)
-    except ValueError:
-        print(f"ERROR: delimiter '{delimiter}' is required.")
-        parser.print_help()
-        sys.exit(1)
-    exec_args = command_args[index + 1 :]
-    armory_args = command_args[:index]
-    if exec_args:
-        command = " ".join(exec_args)
-    else:
-        print("WARNING: no exec command provided. Using no-op.")
-        command = "true # No-op"
-
-    args = parser.parse_args(armory_args)
-    armory.logs.update_filters(args.log_level, args.debug)
-
-    config = {"sysconfig": {"docker_image": args.docker_image}}
-    # Config
-    _set_gpus(config, args.use_gpu, args.no_gpu, args.gpus)
-    (config, args) = arguments.merge_config_and_args(config, args)
-
-    rig = Evaluator(config, root=args.root)
-    exit_code = rig.run(command=command)
-    sys.exit(exit_code)
-
-
-# command, (function, description)
-PROGRAM = "armory"
-COMMANDS = {
-    "run": (run, "run armory from config file"),
-    "download": (
-        download,
-        "download datasets and model weights used for a given evaluation scenario",
-    ),
-    "configure": (configure, "set up armory and dataset paths"),
-    "launch": (launch, "launch a given docker container in armory"),
-    "exec": (exec, "run a single exec command in the container"),
-}
-
-
-def usage():
+def usage(program: str, commands: dict):
     lines = [
-        f"{PROGRAM} <command>",
+        f"{program} <command>",
         "",
         "ARMORY Adversarial Robustness Evaluation Test Bed",
         "https://github.com/twosixlabs/armory",
         "",
         "Commands:",
     ]
-    for name, (func, description) in COMMANDS.items():
+    for name, (func, description) in commands.items():
         lines.append(f"    {name} - {description}")
     lines.extend(
         [
             "    -v, --version - get current armory version",
             "",
-            f"Run '{PROGRAM} <command> --help' for more information on a command.",
+            f"Run '{program} <command> --help' for more information on a command.",
             " ",
         ]
     )
@@ -668,8 +536,26 @@ def usage():
 def main() -> int:
     # TODO the run method now returns a status code instead of sys.exit directly
     # the rest of the COMMANDS should conform
+
+    # command, (function, description)
+    program = "armory"
+    commands = {
+        "run": (
+            run,
+            "run armory from config file"
+        ),
+        "download": (
+            download,
+            "download datasets and model weights used for a given evaluation scenario",
+        ),
+        "configure": (
+            configure,
+            "set up armory and dataset paths"
+        ),
+    }
+
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
-        print(usage())
+        print(usage(program, commands))
         sys.exit(1)
     elif sys.argv[1] in ("-v", "--version", "version"):
         print(f"{armory.__version__}")
@@ -678,7 +564,7 @@ def main() -> int:
         print(to_docker_tag(armory.__version__))
         sys.exit(0)
 
-    parser = argparse.ArgumentParser(prog="armory", usage=usage())
+    parser = argparse.ArgumentParser(prog=program, usage=usage(program, commands))
     parser.add_argument(
         "command",
         metavar="<command>",
@@ -688,8 +574,8 @@ def main() -> int:
     )
     args = parser.parse_args(sys.argv[1:2])
 
-    func, description = COMMANDS[args.command]
-    prog = f"{PROGRAM} {args.command}"
+    func, description = commands[args.command]
+    prog = f"{program} {args.command}"
     return func(sys.argv[2:], prog, description)
 
 
