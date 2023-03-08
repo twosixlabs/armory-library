@@ -7,8 +7,8 @@ import requests
 import armory
 from armory.logs import is_progress, log
 from armory.utils import version
-import docker
-import docker.errors
+# import docker
+# import docker.errors
 
 log.trace(f"armory.__version__: {armory.__version__}")
 
