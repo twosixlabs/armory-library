@@ -18,13 +18,13 @@ class ArmoryInstance(object):
     def __init__(
         self,
         image_name,
-        runtime: str = "runc",
+        runtime: str = None,
         envs: dict = None,
         ports: dict = None,
         command: str = "tail -f /dev/null",
         user: str = "",
     ):
-        self.docker_client = docker.from_env(version="auto")
+        # self.docker_client = docker.from_env(version="auto")
 
         host_paths = paths.HostPaths()
         docker_paths = paths.DockerPaths()
@@ -116,10 +116,12 @@ class ManagementInstance(object):
     This object will manage ArmoryInstance objects.
     """
 
-    def __init__(self, image_name: str, runtime="runc"):
+    def __init__(self, image_name: str = None, runtime="runc"):
         self.instances = {}
-        self.runtime = runtime
-        self.name = images.ensure_image_present(image_name)
+        # self.runtime = runtime
+        # self.name = images.ensure_image_present(image_name)
+        self.runtime = None
+        self.name = None
 
     def start_armory_instance(
         self,
