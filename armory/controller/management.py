@@ -1,13 +1,9 @@
-"""
-Docker orchestration managers for ARMORY.
-"""
-
+import os
+import subprocess
 
 import armory
 from armory import paths
-from armory.docker import images
 from armory.logs import log
-import docker
 
 
 class ArmoryInstance(object):
@@ -29,37 +25,37 @@ class ArmoryInstance(object):
         host_paths = paths.HostPaths()
         docker_paths = paths.DockerPaths()
 
-        mounts = [
-            docker.types.Mount(
-                source=getattr(host_paths, dir),
-                target=getattr(docker_paths, dir),
-                type="bind",
-                read_only=False,
-            )
-            for dir in "cwd dataset_dir local_git_dir output_dir saved_model_dir tmp_dir".split()
-        ]
+        # mounts = [
+        #     docker.types.Mount(
+        #         source=getattr(host_paths, dir),
+        #         target=getattr(docker_paths, dir),
+        #         type="bind",
+        #         read_only=False,
+        #     )
+        #     for dir in "cwd dataset_dir local_git_dir output_dir saved_model_dir tmp_dir".split()
+        # ]
 
-        container_args = {
-            "runtime": runtime,
-            "remove": True,
-            "detach": True,
-            "mounts": mounts,
-            "shm_size": "16G",
-        }
+        # container_args = {
+        #     "runtime": runtime,
+        #     "remove": True,
+        #     "detach": True,
+        #     "mounts": mounts,
+        #     "shm_size": "16G",
+        # }
 
-        if ports is not None:
-            container_args["ports"] = ports
-        if command is not None:
-            container_args["command"] = command
-        if user:
-            container_args["user"] = user
-        if envs:
-            container_args["environment"] = envs
-        self.docker_container = self.docker_client.containers.run(
-            image_name, **container_args
-        )
+        # if ports is not None:
+        #     container_args["ports"] = ports
+        # if command is not None:
+        #     container_args["command"] = command
+        # if user:
+        #     container_args["user"] = user
+        # if envs:
+        #     container_args["environment"] = envs
+        # self.docker_container = self.docker_client.containers.run(
+        #     image_name, **container_args
+        # )
 
-        log.info(f"ARMORY Instance {self.docker_container.short_id} created.")
+        # log.info(f"ARMORY Instance {self.docker_container.short_id} created.")
 
     def exec_cmd(self, cmd: str, user="", expect_sentinel=True) -> int:
         # We would like to check the return code to see if the command ran cleanly,
@@ -111,34 +107,33 @@ class ArmoryInstance(object):
             self.docker_container.stop()
 
 
-class ManagementInstance(object):
-    """
-    This object will manage ArmoryInstance objects.
-    """
+class HostArmoryInstance:
+    def __init__(self, envs: dict = None):
+        self.env = os.environ
+        for k, v in envs.items():
+            self.env[k] = v
 
-    def __init__(self, image_name: str = None, runtime="runc"):
-        self.instances = {}
-        # self.runtime = runtime
-        # self.name = images.ensure_image_present(image_name)
-        self.runtime = None
-        self.name = None
+    def exec_cmd(self, cmd: str, user=""):
+        if user:
+            raise ValueError("HostArmoryInstance does not support the user input")
+        completion = subprocess.run(cmd, env=self.env, shell=True)
+        if completion.returncode:
+            log.error(f"command {cmd} did not finish cleanly")
+        else:
+            log.success("command exited cleanly")
+        return completion.returncode
 
+
+class HostManagementInstance:
     def start_armory_instance(
-        self,
-        envs: dict = None,
-        ports: dict = None,
-        user: str = "",
-    ) -> ArmoryInstance:
-        temp_inst = ArmoryInstance(
-            self.name,
-            runtime=self.runtime,
-            envs=envs,
-            ports=ports,
-            user=user,
-        )
-        self.instances[temp_inst.docker_container.short_id] = temp_inst
-        return temp_inst
+        self, envs: dict = None, ports: dict = None, container_subdir: str = None
+    ):
+        if ports:
+            raise ValueError(f"Arguments ports {ports} not expected!")
 
-    def stop_armory_instance(self, instance: ArmoryInstance) -> None:
-        log.info(f"Stopping instance: {instance.docker_container.short_id}")
-        del self.instances[instance.docker_container.short_id]
+        self.instance = HostArmoryInstance(envs=envs)
+
+        return self.instance
+
+    def stop_armory_instance(self, instance):
+        pass
