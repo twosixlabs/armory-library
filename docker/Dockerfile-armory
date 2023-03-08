@@ -1,11 +1,84 @@
-ARG base_image_tag
+##########################################################################################
+#
+#                           ARMORY Baseline Docker Image
+#
+# This File contains the baseline image for Armory docker images.  All framework
+# based images should inhereit from this image using:
+#       FROM twosixlabs/armory-baseline AS armory-baseline
+#
+##########################################################################################
 
+FROM nvidia/cuda:11.6.2-cudnn8-runtime-ubuntu20.04
 
-FROM twosixarmory/base:${base_image_tag} AS armory-local
+# Temporary fix for broken nvidia package checksum
+# RUN rm -f /etc/apt/sources.list.d/nvidia-ml.list
 
-# pip Configuration - https://pip.pypa.io/en/stable/user_guide/#config-file
-ARG PIP_DISABLE_PIP_VERSION_CHECK=1
-ARG PIP_NO_CACHE_DIR=1
+# Basic Apt-get Bits
+RUN apt-get -y -qq update && \
+    DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y \
+    wget \
+    vim \
+    build-essential \
+    git \
+    curl \
+    libgl1-mesa-glx \
+#    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+# libgl1-mesa-glx is needed for cv2 (opencv-python)
+
+# Install Conda
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+    /bin/bash ~/miniconda.sh -b -p /opt/conda && \
+    rm ~/miniconda.sh && \
+    /opt/conda/bin/conda clean -tipsy && \
+    ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh
+#    ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
+#    echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
+#    echo "conda activate base" >> ~/.bashrc && \
+#    echo 'alias ll="ls -al"' >> ~/.bashrc
+
+ENV PATH=/opt/conda/bin:$PATH
+
+# TensorFlow requirement
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/conda/lib/
+
+# NOTE: using mamba because conda fails when trying to solve for environment
+RUN conda install -c conda-forge -n base mamba \
+    && conda clean --all
+
+WORKDIR /armory-repo/
+COPY environment.yml /armory-repo/
+
+RUN mamba env update -f environment.yml -n base --prune \
+    && mamba clean --all
+
+#RUN /opt/conda/bin/conda env update -f environment.yml --prune \
+#    && /opt/conda/bin/conda clean --all
+# NOTE: with conda version 5, will need to set channel priority to flexible (as strict will become default)
+
+# NOTE: Armory requirements and ART requirements are installed here to make patch updates fast and small
+RUN echo "Installing TensorFlow and ART/Armory requirements via pip"
+RUN /opt/conda/bin/pip install --no-cache-dir \
+    tensorflow-datasets==4.6 \
+    tensorflow==2.10 \
+    tensorboardx \
+    boto3 \
+    opencv-python \
+    ffmpeg-python \
+    pytest \
+    loguru \
+    docker \
+    jsonschema \
+    requests \
+    pydub \
+    transformers \
+    six \
+    setuptools \
+    tqdm
+# transformers is used for the Entailment metric only
+# pydub required for ART mp3 defense
+
 
 # NOTE: This COPY command is filtered using the `.dockerignore` file
 #       in the root of the repo.
@@ -13,10 +86,19 @@ COPY ./ /armory-repo
 
 WORKDIR /armory-repo
 
+
+# pip Configuration - https://pip.pypa.io/en/stable/user_guide/#config-file
+ARG PIP_DISABLE_PIP_VERSION_CHECK=1
+ARG PIP_NO_CACHE_DIR=1
+
+## Deepspeech Requirements
+RUN pip install git+https://github.com/romesco/hydra-lightning/\#subdirectory=hydra-configs-pytorch-lightning
+
+
 RUN echo "Updating pip" && \
     pip install --upgrade pip && \
     echo "Building Armory from local source" && \
-    pip install --no-compile --editable '.[all]' && \
+    pip install --no-compile --editable '.[developer]' && \
     echo "Configuring Armory..." && \
     armory configure --use-default && \
     echo "Cleaning up..." && \
@@ -30,4 +112,27 @@ RUN pip install \
     # Requires cython for install, so will fail if run in the same pip install as cython
     pip install cython-bbox
 
+
 WORKDIR /workspace
+
+
+# ------------------------------------------------------------------
+# DEVELOPER NOTES:
+# ------------------------------------------------------------------
+# TODO: determine if this environment setup is needed
+#  $ ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/local/cuda/lib64"
+
+# NOTE:
+#  - pytorch-lightning >= 1.5.0 will break Deep Speech 2
+#  - torchmetrics >= 0.8.0 will break pytorch-lightning 1.4
+#  - hydra-lightning installs omegaconf
+#  - google-cloud-storage needed for checkpoint.py import
+#  - only sox python bindings are installed; underlying sox binaries not needed
+
+# NOTE: Listed dependencies of PyTorch Deep Speech 2, but do not appear
+#       to be used for inference (only for training), they are not installed:
+#         - torchelastic
+#         - wget
+#         - flask
+#         - fairscale
+# ------------------------------------------------------------------
