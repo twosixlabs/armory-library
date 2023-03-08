@@ -15,7 +15,6 @@ import armory
 from armory import environment, paths
 from armory.configuration import load_global_config
 from armory.controller.management import ArmoryInstance, HostManagementInstance
-
 from armory.logs import added_filters, is_debug, log
 from armory.utils.printing import bold, red
 
@@ -55,7 +54,6 @@ class Evaluator(object):
         # image_name = self.config["sysconfig"].get("docker_image")
         # self.no_docker = not image_name or no_docker
 
-
         kwargs = dict(image_name=None)
         self.no_docker = True
         self.root = False
@@ -76,7 +74,6 @@ class Evaluator(object):
         #     self.manager = HostManagementInstance()
         # else:
         #     self.manager = ManagementInstance(**kwargs)
-
 
     def _gather_env_variables(self):
         """
