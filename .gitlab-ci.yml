@@ -15,6 +15,7 @@ stages:
   - Static Analysis
   - Unit Tests
   - Build
+  # - Deploy  # TODO: Add deploy stage for Advana target; e.g. package, container, etc. -CW
 
 
 code_linting:
