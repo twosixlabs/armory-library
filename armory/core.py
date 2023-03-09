@@ -12,6 +12,9 @@ from armory.configuration import load_global_config
 from armory.logs import added_filters, is_debug, log
 from armory.utils.printing import bold, red
 
+## WIP
+from armory.scenarios.main import main as scenario_main
+## /WIP
 
 class ArmoryInstance:
     def __init__(self, envs: dict = None):
@@ -112,8 +115,10 @@ class Evaluator:
             # TODO: Remove subprocess, base64, utilize scenario function definitions -CW
             # EXAMPLE:
             #   >>>  results = armory.scenarios.main(kwargs**)
-            cmd = f"{sys.executable} -m armory.scenarios.main {base64_config}{options} --base64"\
-            exit_code = self.manager.exec_cmd(cmd)
+            # cmd = f"{sys.executable} -m armory.scenarios.main {base64_config}{options} --base64"\
+            # exit_code = self.manager.exec_cmd(cmd)
+
+            scenario_main(self.config)
 
         except KeyboardInterrupt:
             log.warning("Keyboard interrupt caught")
