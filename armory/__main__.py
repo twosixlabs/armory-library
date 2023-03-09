@@ -291,9 +291,6 @@ def run(command_args, prog, description) -> int:
 
     rig = Evaluator(config, no_docker=True, root=False)
     exit_code = rig.run(
-        interactive=False,
-        jupyter=False,
-        host_port=None,
         check_run=args.check,
         num_eval_batches=args.num_eval_batches,
         skip_benign=args.skip_benign,
