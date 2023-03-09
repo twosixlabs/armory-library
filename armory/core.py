@@ -13,13 +13,13 @@ from armory.logs import added_filters, is_debug, log
 from armory.utils.printing import bold, red
 
 
+# TODO: Refactor -CW
 class ArmoryInstance:
     def __init__(self, envs: dict = None):
         self.env = os.environ
         for k, v in envs.items():
-            self.env[k] = v
+            self.env[str(k)] = str(v)
 
-    # TODO: Refactor -CW
     def exec_cmd(self, cmd: str):
         completion = subprocess.run(cmd, env=self.env, shell=True)
         if completion.returncode:
@@ -57,6 +57,7 @@ class Evaluator(object):
         output_dir = self.config["sysconfig"].get("output_dir", None)
         eval_id = f"{output_dir}_{date_time}" if output_dir else date_time
 
+        self.manager = ArmoryInstance
         self.config["eval_id"] = eval_id
         self.output_dir = os.path.join(self.host_paths.output_dir, eval_id)
         self.tmp_dir = os.path.join(self.host_paths.tmp_dir, eval_id)
@@ -72,16 +73,51 @@ class Evaluator(object):
             "ARMORY_INCLUDE_SUBMISSION_BUCKETS": os.getenv(
                 "ARMORY_INCLUDE_SUBMISSION_BUCKETS", default=""
             ),
-            "VERIFY_SSL": self.armory_global_config["verify_ssl"],
+            "VERIFY_SSL": self.armory_global_config["verify_ssl"] or False,
             "NVIDIA_VISIBLE_DEVICES": self.config["sysconfig"].get("gpus", None),
             "PYTHONHASHSEED": self.config["sysconfig"].get("set_pythonhashseed", "0"),
-            "HOME": "/tmp",
+            # "HOME": "/tmp",
             "TORCH_HOME": paths.HostPaths().pytorch_dir,
             environment.ARMORY_VERSION: armory.__version__,
         }
 
-        # self._gather_env_variables()
-        self.manager = ArmoryInstance
+    def run(
+        self,
+        command=None,
+        check_run=False,
+        num_eval_batches=None,
+        skip_benign=None,
+        skip_attack=None,
+        skip_misclassified=None,
+        validate_config=None,
+    ) -> int:
+        exit_code = 0
+        runner = self.manager(envs=self.extra_env_vars)
+        try:
+            log.info(bold(red("Running evaluation script")))
+
+            bytes_config = json.dumps(self.config).encode("utf-8")
+            base64_bytes = base64.b64encode(bytes_config)
+            base64_config = base64_bytes.decode("utf-8")
+
+            options = self._build_options(
+                check_run=check_run,
+                num_eval_batches=num_eval_batches,
+                skip_benign=skip_benign,
+                skip_attack=skip_attack,
+                skip_misclassified=skip_misclassified,
+                validate_config=validate_config,
+            )
+
+            cmd = f"{sys.executable} -m armory.scenarios.main {base64_config}{options} --base64"
+            exit_code = runner.exec_cmd(cmd)
+
+        except KeyboardInterrupt:
+            log.warning("Keyboard interrupt caught")
+        finally:
+            log.info("cleaning up...")
+        self._cleanup()
+        return exit_code
 
     def _cleanup(self):
         log.info(f"deleting tmp_dir {self.tmp_dir}")
@@ -104,66 +140,6 @@ class Evaluator(object):
                 json = ""
             output_path = os.path.join(self.output_dir, json)
             log.info(f"results output written to:\n{output_path}")
-
-    def run(
-        self,
-        command=None,
-        check_run=False,
-        num_eval_batches=None,
-        skip_benign=None,
-        skip_attack=None,
-        skip_misclassified=None,
-        validate_config=None,
-    ) -> int:
-        exit_code = 0
-        runner = self.manager(envs=self.extra_env_vars)
-        try:
-            exit_code = self._run_config(
-                runner,
-                check_run=check_run,
-                num_eval_batches=num_eval_batches,
-                skip_benign=skip_benign,
-                skip_attack=skip_attack,
-                skip_misclassified=skip_misclassified,
-                validate_config=validate_config,
-            )
-        except KeyboardInterrupt:
-            log.warning("Keyboard interrupt caught")
-        finally:
-            log.info("cleaning up...")
-        self._cleanup()
-        return exit_code
-
-    def _b64_encode_config(self):
-        bytes_config = json.dumps(self.config).encode("utf-8")
-        base64_bytes = base64.b64encode(bytes_config)
-        return base64_bytes.decode("utf-8")
-
-    def _run_config(
-        self,
-        runner: ArmoryInstance,
-        check_run=False,
-        num_eval_batches=None,
-        skip_benign=None,
-        skip_attack=None,
-        skip_misclassified=None,
-        validate_config=None,
-    ) -> int:
-        log.info(bold(red("Running evaluation script")))
-
-        b64_config = self._b64_encode_config()
-        options = self._build_options(
-            check_run=check_run,
-            num_eval_batches=num_eval_batches,
-            skip_benign=skip_benign,
-            skip_attack=skip_attack,
-            skip_misclassified=skip_misclassified,
-            validate_config=validate_config,
-        )
-        cmd = (
-            f"{sys.executable} -m armory.scenarios.main {b64_config}{options} --base64"
-        )
-        return runner.exec_cmd(cmd)
 
     def _build_options(
         self,
