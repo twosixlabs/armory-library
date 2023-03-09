@@ -14,7 +14,7 @@ import requests
 import armory
 from armory import environment, paths
 from armory.configuration import load_global_config
-from armory.core import ArmoryInstance, HostManagementInstance
+from armory.core import HostArmoryInstance, ArmoryInstance
 from armory.logs import added_filters, is_debug, log
 from armory.utils.printing import bold, red
 
@@ -56,7 +56,8 @@ class Evaluator(object):
         self.extra_env_vars = dict()
         self._gather_env_variables()
 
-        self.manager = HostManagementInstance()
+        self.manager = HostArmoryInstance
+        # self.manager = HostManagementInstance()
 
 
     def _gather_env_variables(self):
@@ -140,9 +141,7 @@ class Evaluator(object):
             #     raise ValueError(
             #         "jupyter, interactive, or bash commands only supported when running Docker containers."
             #     )
-            runner = self.manager.start_armory_instance(
-                envs=self.extra_env_vars,
-            )
+            runner = self.manager(envs=self.extra_env_vars)
             try:
                 exit_code = self._run_config(
                     runner,
@@ -175,11 +174,12 @@ class Evaluator(object):
             ports = None
 
         try:
-            runner = self.manager.start_armory_instance(
-                envs=self.extra_env_vars,
-                ports=ports,
-                user=self.get_id(),
-            )
+            runner = self.manager(envs=self.extra_env_vars)
+            # runner = self.manager.start_armory_instance(
+            #     envs=self.extra_env_vars,
+            #     ports=ports,
+            #     user=self.get_id(),
+            # )
             try:
                 # if jupyter:
                 #     self._run_jupyter(
@@ -217,7 +217,7 @@ class Evaluator(object):
                 log.warning("keyboard interrupt caught")
             finally:
                 log.trace("Shutting down container {self.manager.instances.keys()}")
-                self.manager.stop_armory_instance(runner)
+                # self.manager.stop_armory_instance(runner)
         except requests.exceptions.RequestException as e:
             log.exception("Starting instance failed.")
             if str(e).endswith(
