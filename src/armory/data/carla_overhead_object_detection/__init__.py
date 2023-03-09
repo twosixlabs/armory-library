@@ -97,20 +97,20 @@ class Evaluator:
     ) -> int:
         exit_code = 0
         try:
-            log.info(bold(red("Running evaluation script")))
+            log.info(bold(red("Running Evaluation")))
 
-            bytes_config = json.dumps(self.config).encode("utf-8")
-            base64_bytes = base64.b64encode(bytes_config)
-            base64_config = base64_bytes.decode("utf-8")
+            # bytes_config = json.dumps(self.config).encode("utf-8")
+            # base64_bytes = base64.b64encode(bytes_config)
+            # base64_config = base64_bytes.decode("utf-8")
 
-            options = self._options_builder(
-                check_run=check_run,
-                num_eval_batches=num_eval_batches,
-                skip_benign=skip_benign,
-                skip_attack=skip_attack,
-                skip_misclassified=skip_misclassified,
-                validate_config=validate_config,
-            )
+            # options = self._options_builder(
+            #     check_run=check_run,
+            #     num_eval_batches=num_eval_batches,
+            #     skip_benign=skip_benign,
+            #     skip_attack=skip_attack,
+            #     skip_misclassified=skip_misclassified,
+            #     validate_config=validate_config,
+            # )
 
             # TODO: Remove subprocess, base64, utilize scenario function definitions -CW
             # EXAMPLE:
@@ -127,35 +127,35 @@ class Evaluator:
         self._cleanup()
         return exit_code
 
-    # TODO: Remove subprocess, utilize scenario function definitions -CW
-    def _options_builder(
-        self,
-        check_run,
-        num_eval_batches,
-        skip_benign,
-        skip_attack,
-        skip_misclassified,
-        validate_config,
-    ):
-        options = "--no-docker"
+    # # TODO: Remove subprocess, utilize scenario function definitions -CW
+    # def _options_builder(
+    #     self,
+    #     check_run,
+    #     num_eval_batches,
+    #     skip_benign,
+    #     skip_attack,
+    #     skip_misclassified,
+    #     validate_config,
+    # ):
+    #     options = "--no-docker"
 
-        if check_run:
-            options += " --check"
-        if is_debug():
-            options += " --debug"
-        if num_eval_batches:
-            options += f" --num-eval-batches {num_eval_batches}"
-        if skip_benign:
-            options += " --skip-benign"
-        if skip_attack:
-            options += " --skip-attack"
-        if skip_misclassified:
-            options += " --skip-misclassified"
-        if validate_config:
-            options += " --validate-config"
-        for module, level in added_filters.items():
-            options += f" --log-level {module}:{level}"
-        return options
+    #     if check_run:
+    #         options += " --check"
+    #     if is_debug():
+    #         options += " --debug"
+    #     if num_eval_batches:
+    #         options += f" --num-eval-batches {num_eval_batches}"
+    #     if skip_benign:
+    #         options += " --skip-benign"
+    #     if skip_attack:
+    #         options += " --skip-attack"
+    #     if skip_misclassified:
+    #         options += " --skip-misclassified"
+    #     if validate_config:
+    #         options += " --validate-config"
+    #     for module, level in added_filters.items():
+    #         options += f" --log-level {module}:{level}"
+    #     return options
 
     def _cleanup(self):
         log.info(f"deleting tmp_dir {self.tmp_dir}")
