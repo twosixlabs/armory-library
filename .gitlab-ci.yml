@@ -6,6 +6,7 @@ before_script:
 
 stages:
   - Static Analysis
+  - Build and Test
 
 static_analysis:
   stage: Static Analysis
