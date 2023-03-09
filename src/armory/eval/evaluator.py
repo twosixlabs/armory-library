@@ -14,7 +14,7 @@ import requests
 import armory
 from armory import environment, paths
 from armory.configuration import load_global_config
-from armory.controller import ArmoryInstance, HostManagementInstance
+from armory.core import ArmoryInstance, HostManagementInstance
 from armory.logs import added_filters, is_debug, log
 from armory.utils.printing import bold, red
 
@@ -47,13 +47,6 @@ class Evaluator(object):
         self.output_dir = os.path.join(self.host_paths.output_dir, eval_id)
         self.tmp_dir = os.path.join(self.host_paths.tmp_dir, eval_id)
 
-        # if self.config["sysconfig"].get("use_gpu", None):
-        #     kwargs = dict(runtime="nvidia")
-        # else:
-        #     kwargs = dict(runtime="runc")
-        # image_name = self.config["sysconfig"].get("docker_image")
-        # self.no_docker = not image_name or no_docker
-
         kwargs = dict(image_name=None)
         self.no_docker = True
         self.root = False
@@ -65,15 +58,6 @@ class Evaluator(object):
 
         self.manager = HostManagementInstance()
 
-        # if self.no_docker:
-        #     if self.root:
-        #         raise ValueError("running with --root is incompatible with --no-docker")
-        #     if kwargs["image_name"] is not None:
-        #         log.warning("Running in --no-docker mode. Setting 'image_name' to None")
-        #     kwargs["image_name"] = None
-        #     self.manager = HostManagementInstance()
-        # else:
-        #     self.manager = ManagementInstance(**kwargs)
 
     def _gather_env_variables(self):
         """
