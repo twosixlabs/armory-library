@@ -54,4 +54,4 @@ build:
 #########################################
 ## DEVELOPER NOTES
 #########################################
-# o TODO: Collect artifacts
+# o TODO: Collect artifacts - https://docs.gitlab.com/ee/ci/yaml/#artifacts
