@@ -9,7 +9,6 @@ Try:
 This runs an arbitrary config file. Results are output to the `outputs/` directory.
 """
 
-
 #########################################
 # TODO: Remove this temp hack -CW
 try:
