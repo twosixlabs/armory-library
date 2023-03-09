@@ -79,13 +79,14 @@ def _get_config(config_json, from_file=False) -> Config:
     resultant dict.
     """
     if from_file:
-        config = load_config(config_json)
-    else:
-        config_base64_bytes = config_json.encode("utf-8")
-        config_b64_bytes = base64.b64decode(config_base64_bytes)
-        config_string = config_b64_bytes.decode("utf-8")
-        config = json.loads(config_string)
-    return config
+        config_json = load_config(config_json)
+    # TODO: Refactor this logic -CW
+    # else:
+    #     config_base64_bytes = config_json.encode("utf-8")
+    #     config_b64_bytes = base64.b64decode(config_base64_bytes)
+    #     config_string = config_b64_bytes.decode("utf-8")
+    #     config = json.loads(config_string)
+    return config_json
 
 
 def run_validation(config_json, from_file=False) -> None:
@@ -103,12 +104,12 @@ def run_validation(config_json, from_file=False) -> None:
 
 def get(
     config_json,
-    from_file=True,
-    check_run=False,
-    num_eval_batches=None,
-    skip_benign=None,
-    skip_attack=None,
-    skip_misclassified=None,
+    from_file=True,  # TODO: Remove this argument -CW
+    check_run=False,  # TODO: Remove this argument -CW
+    num_eval_batches=None,  # TODO: Remove this argument -CW
+    skip_benign=None,  # TODO: Remove this argument -CW
+    skip_attack=None,  # TODO: Remove this argument -CW
+    skip_misclassified=None,  # TODO: Remove this argument -CW
 ):
     """
     Init environment variables and initialize scenario class with config;
@@ -149,9 +150,13 @@ def main(scenario_config: dict):
     """
     Main entry point for running a scenario
     """
-    print(scenario_config)
-    # scenario = get(scenario_config)
-    # scenario.evaluate()
+    # update_filters(args.log_level, args.debug)
+    scenario = get(
+        scenario_config,
+        from_file=False,
+        check_run=scenario_config["sysconfig"]["check"],
+    )
+    scenario.evaluate()
 
 
 if __name__ == "__main__":
@@ -219,14 +224,14 @@ if __name__ == "__main__":
     update_filters(args.log_level, args.debug)
     log.trace(f"main.py called update_filters({args.log_level} debug: {args.debug})")
     calling_version = os.getenv(environment.ARMORY_VERSION, "UNKNOWN")
-    if calling_version != armory.__version__:
-        log.warning(
-            f"armory calling version {calling_version} != "
-            f"armory imported version {armory.__version__}"
-        )
+    # if calling_version != armory.__version__:
+    #     log.warning(
+    #         f"armory calling version {calling_version} != "
+    #         f"armory imported version {armory.__version__}"
+    #     )
 
-    if args.no_docker:
-        paths.set_mode("host")
+    # if args.no_docker:
+    paths.set_mode("host")
 
     if args.check and args.num_eval_batches:
         log.warning("--num_eval_batches will be overridden since --check was passed")
