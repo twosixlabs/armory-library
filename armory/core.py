@@ -252,10 +252,10 @@ class Evaluator(object):
 
     def run(
         self,
-        interactive=False,
-        jupyter=False,
-        host_port=None,
-        command=None,
+        interactive=False, # TODO: Remove -CW
+        jupyter=False,     # TODO: Remove -CW
+        host_port=None,    # TODO: Remove -CW
+        command=None,      # TODO: Remove -CW
         check_run=False,
         num_eval_batches=None,
         skip_benign=None,
@@ -264,105 +264,21 @@ class Evaluator(object):
         validate_config=None,
     ) -> int:
         exit_code = 0
-        if self.no_docker:
-            # if jupyter or interactive or command:
-            #     raise ValueError(
-            #         "jupyter, interactive, or bash commands only supported when running Docker containers."
-            #     )
-            runner = self.manager(envs=self.extra_env_vars)
-            try:
-                exit_code = self._run_config(
-                    runner,
-                    check_run=check_run,
-                    num_eval_batches=num_eval_batches,
-                    skip_benign=skip_benign,
-                    skip_attack=skip_attack,
-                    skip_misclassified=skip_misclassified,
-                    validate_config=validate_config,
-                )
-            except KeyboardInterrupt:
-                log.warning("Keyboard interrupt caught")
-            finally:
-                log.info("cleaning up...")
-            self._cleanup()
-            return exit_code
-
-        # if check_run and (jupyter or interactive or command):
-        #     raise ValueError(
-        #         "check_run incompatible with interactive, jupyter, or command"
-        #     )
-
-        # Handle docker and jupyter ports
-        # if jupyter or host_port:
-        #     if host_port:
-        #         ports = {host_port: host_port}
-        #     else:
-        #         ports = {8888: 8888}
-        # else:
-        ports = None
-
+        runner = self.manager(envs=self.extra_env_vars)
         try:
-            runner = self.manager(envs=self.extra_env_vars)
-            # runner = self.manager.start_armory_instance(
-            #     envs=self.extra_env_vars,
-            #     ports=ports,
-            #     user=self.get_id(),
-            # )
-            try:
-                # if jupyter:
-                #     self._run_jupyter(
-                #         runner,
-                #         ports,
-                #         check_run=check_run,
-                #         num_eval_batches=num_eval_batches,
-                #         skip_benign=skip_benign,
-                #         skip_attack=skip_attack,
-                #         skip_misclassified=skip_misclassified,
-                #     )
-                # elif interactive:
-                #     self._run_interactive_bash(
-                #         runner,
-                #         check_run=check_run,
-                #         num_eval_batches=num_eval_batches,
-                #         skip_benign=skip_benign,
-                #         skip_attack=skip_attack,
-                #         skip_misclassified=skip_misclassified,
-                #         validate_config=validate_config,
-                #     )
-                # elif command:
-                #     exit_code = self._run_command(runner, command)
-                # else:
-                exit_code = self._run_config(
-                    runner,
-                    check_run=check_run,
-                    num_eval_batches=num_eval_batches,
-                    skip_benign=skip_benign,
-                    skip_attack=skip_attack,
-                    skip_misclassified=skip_misclassified,
-                    validate_config=validate_config,
-                )
-            except KeyboardInterrupt:
-                log.warning("keyboard interrupt caught")
-            # finally:
-            #     log.trace("Shutting down container {self.manager.instances.keys()}")
-            #     self.manager.stop_armory_instance(runner)
-        except requests.exceptions.RequestException as e:
-            log.exception("Starting instance failed.")
-            # if str(e).endswith(
-            #     f'Bind for 0.0.0.0:{host_port} failed: port is already allocated")'
-            # ):
-            #     log.error(
-            #         f"Port {host_port} already in use. Try a different one with '--port <port>'"
-            #     )
-            # elif (
-            #     str(e)
-            #     == '400 Client Error: Bad Request ("Unknown runtime specified nvidia")'
-            # ):
-            #     log.error(
-            #         'NVIDIA runtime failed. Either install nvidia-docker or set config "use_gpu" to false'
-            #     )
-            # else:
-            #     log.error("Is Docker Daemon running?")
+            exit_code = self._run_config(
+                runner,
+                check_run=check_run,
+                num_eval_batches=num_eval_batches,
+                skip_benign=skip_benign,
+                skip_attack=skip_attack,
+                skip_misclassified=skip_misclassified,
+                validate_config=validate_config,
+            )
+        except KeyboardInterrupt:
+            log.warning("Keyboard interrupt caught")
+        finally:
+            log.info("cleaning up...")
         self._cleanup()
         return exit_code
 
