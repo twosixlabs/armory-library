@@ -14,8 +14,8 @@ stages:
 
 static_analysis:
   stage: Static Analysis
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  only:
+    - merge_requests
   script:
     - bash tools/pre-commit.sh
     - mkdir -p /tmp/artifacts
@@ -23,8 +23,8 @@ static_analysis:
 
 build_and_test:
   stage: Build and Test
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  only:
+    - merge_requests
   script:
     - python -m build --sdist --wheel --outdir dist/ .
     - pip3 install --no-compile --editable '.[developer]'
@@ -32,3 +32,10 @@ build_and_test:
     # - pytest -c pyproject.toml -s ./tests/unit/test_configuration.py
     # - PYTEST_PARAMS="--exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -m "not docker_required and unit" ./tests/
     # - PYTEST_PARAMS=" --exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -s ./tests/end_to_end/test_no_docker.py
+
+
+#########################################
+## DEVELOPER NOTES
+#########################################
+# o TODO: Collect artifacts
+# o TODO: Break out lint, scan, test, build, deploy into separate jobs
