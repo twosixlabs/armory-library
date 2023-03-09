@@ -1,7 +1,11 @@
 image: "ubuntu:latest"
 
 before_script:
+  - apt-get update -qy
+  - apt-get install -y python3 python3-pip
   - python --version
+  - python3 -m pip install --upgrade pip
+  - python3 -m pip install --upgrade build
   - pip install .[developer]
 
 stages:
@@ -22,8 +26,6 @@ build_and_test:
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
   script:
-    - python3 -m pip install --upgrade pip
-    - python3 -m pip install --upgrade build
     - python -m build --sdist --wheel --outdir dist/ .
     - pip3 install --no-compile --editable '.[developer]'
     - armory configure --use-defaults
