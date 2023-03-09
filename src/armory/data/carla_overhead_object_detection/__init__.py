@@ -1,9 +1,9 @@
-import os
-import subprocess
 import base64
 import datetime
 import json
+import os
 import shutil
+import subprocess
 import sys
 import time
 
@@ -36,6 +36,7 @@ class Evaluator(object):
     """
     Evaluators control launching of ARMORY evaluations.
     """
+
     def __init__(
         self,
         config: dict,
@@ -191,7 +192,9 @@ class Evaluator(object):
             skip_misclassified=skip_misclassified,
             validate_config=validate_config,
         )
-        cmd = f"{sys.executable} -m armory.scenarios.main {b64_config}{options} --base64"
+        cmd = (
+            f"{sys.executable} -m armory.scenarios.main {b64_config}{options} --base64"
+        )
         return runner.exec_cmd(cmd)
 
     def _build_options(
