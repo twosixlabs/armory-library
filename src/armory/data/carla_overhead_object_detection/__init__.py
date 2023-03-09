@@ -5,9 +5,6 @@ import os
 import shutil
 import subprocess
 import sys
-import time
-
-import requests
 
 import armory
 from armory import environment, paths
@@ -63,57 +60,28 @@ class Evaluator(object):
         self.config["eval_id"] = eval_id
         self.output_dir = os.path.join(self.host_paths.output_dir, eval_id)
         self.tmp_dir = os.path.join(self.host_paths.tmp_dir, eval_id)
-
-        kwargs = dict(image_name=None)
         self.no_docker = True
         self.root = False
 
         # Retrieve environment variables that should be used in evaluation
         log.info("Retrieving Environment Variables")
-        self.extra_env_vars = dict()
-        self._gather_env_variables()
+        self.extra_env_vars = {
+            "ARMORY_GITHUB_TOKEN": os.getenv("ARMORY_GITHUB_TOKEN", default=""),
+            "ARMORY_PRIVATE_S3_ID": os.getenv("ARMORY_PRIVATE_S3_ID", default=""),
+            "ARMORY_PRIVATE_S3_KEY": os.getenv("ARMORY_PRIVATE_S3_KEY", default=""),
+            "ARMORY_INCLUDE_SUBMISSION_BUCKETS": os.getenv(
+                "ARMORY_INCLUDE_SUBMISSION_BUCKETS", default=""
+            ),
+            "VERIFY_SSL": self.armory_global_config["verify_ssl"],
+            "NVIDIA_VISIBLE_DEVICES": self.config["sysconfig"].get("gpus", None),
+            "PYTHONHASHSEED": self.config["sysconfig"].get("set_pythonhashseed", "0"),
+            "HOME": "/tmp",
+            "TORCH_HOME": paths.HostPaths().pytorch_dir,
+            environment.ARMORY_VERSION: armory.__version__,
+        }
 
+        # self._gather_env_variables()
         self.manager = ArmoryInstance
-
-    def _gather_env_variables(self):
-        """
-        Update the extra env variable dictionary to pass into container or run on host
-        """
-        self.extra_env_vars["ARMORY_GITHUB_TOKEN"] = os.getenv(
-            "ARMORY_GITHUB_TOKEN", default=""
-        )
-        self.extra_env_vars["ARMORY_PRIVATE_S3_ID"] = os.getenv(
-            "ARMORY_PRIVATE_S3_ID", default=""
-        )
-        self.extra_env_vars["ARMORY_PRIVATE_S3_KEY"] = os.getenv(
-            "ARMORY_PRIVATE_S3_KEY", default=""
-        )
-        self.extra_env_vars["ARMORY_INCLUDE_SUBMISSION_BUCKETS"] = os.getenv(
-            "ARMORY_INCLUDE_SUBMISSION_BUCKETS", default=""
-        )
-
-        if not self.armory_global_config["verify_ssl"]:
-            self.extra_env_vars["VERIFY_SSL"] = "false"
-
-        if self.config["sysconfig"].get("use_gpu", None):
-            gpus = self.config["sysconfig"].get("gpus")
-            if gpus is not None:
-                self.extra_env_vars["NVIDIA_VISIBLE_DEVICES"] = gpus
-        if self.config["sysconfig"].get("set_pythonhashseed"):
-            self.extra_env_vars["PYTHONHASHSEED"] = "0"
-
-        if not self.no_docker:
-            self.extra_env_vars["HOME"] = "/tmp"
-
-        # Because we may want to allow specification of ARMORY_TORCH_HOME
-        # this constant path is placed here among the other imports
-        if self.no_docker:
-            torch_home = paths.HostPaths().pytorch_dir
-        else:
-            torch_home = paths.DockerPaths().pytorch_dir
-        self.extra_env_vars["TORCH_HOME"] = torch_home
-
-        self.extra_env_vars[environment.ARMORY_VERSION] = armory.__version__
 
     def _cleanup(self):
         log.info(f"deleting tmp_dir {self.tmp_dir}")

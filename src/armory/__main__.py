@@ -308,8 +308,8 @@ def download(command_args, prog, description):
     return  # TODO: Remove this line to enable download command -CW
     parser = argparse.ArgumentParser(prog=prog, description=description)
     _debug(parser)
-    _docker_image_optional(parser)
-    _skip_docker_images(parser)
+    # _docker_image_optional(parser)
+    # _skip_docker_images(parser)
     parser.add_argument(
         metavar="<download data config file>",
         dest="download_config",
