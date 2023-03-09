@@ -19,6 +19,7 @@ class ArmoryInstance:
         for k, v in envs.items():
             self.env[str(k)] = str(v)
 
+    # TODO: Remove subprocess, utilize scenario function definitions -CW
     def exec_cmd(self, cmd: str):
         completion = subprocess.run(cmd, env=self.env, shell=True)
         if completion.returncode:
@@ -108,7 +109,10 @@ class Evaluator:
                 validate_config=validate_config,
             )
 
-            cmd = f"{sys.executable} -m armory.scenarios.main {base64_config}{options} --base64"
+            # TODO: Remove subprocess, base64, utilize scenario function definitions -CW
+            # EXAMPLE:
+            #   >>>  results = armory.scenarios.main(kwargs**)
+            cmd = f"{sys.executable} -m armory.scenarios.main {base64_config}{options} --base64"\
             exit_code = self.manager.exec_cmd(cmd)
 
         except KeyboardInterrupt:
@@ -118,6 +122,7 @@ class Evaluator:
         self._cleanup()
         return exit_code
 
+    # TODO: Remove subprocess, utilize scenario function definitions -CW
     def _options_builder(
         self,
         check_run,
