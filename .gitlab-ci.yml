@@ -7,8 +7,10 @@ before_script:
 stages:
   - Static Analysis
 
-flake8:
+static_analysis:
   stage: Static Analysis
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
   script:
     - python -m black . --check
     - python -m isort . --check-only
