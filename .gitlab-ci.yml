@@ -3,10 +3,10 @@ image: "ubuntu:latest"
 before_script:
   - apt-get update -qy
   - apt-get install -y python3 python3-pip
-  - python --version
+  - python3 --version
   - python3 -m pip install --upgrade pip
   - python3 -m pip install --upgrade build
-  - pip install .[developer]
+  - pip3 install .[developer]
 
 stages:
   - Static Analysis
@@ -26,7 +26,7 @@ build_and_test:
   only:
     - merge_requests
   script:
-    - python -m build --sdist --wheel --outdir dist/ .
+    - python3 -m build --sdist --wheel --outdir dist/ .
     - pip3 install --no-compile --editable '.[developer]'
     - armory configure --use-defaults
     # - pytest -c pyproject.toml -s ./tests/unit/test_configuration.py
