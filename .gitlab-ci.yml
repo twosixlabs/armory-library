@@ -36,7 +36,6 @@ unit_test:
   only:
     - merge_requests
   script:
-    - pip3 install --no-compile --editable '.[engine]'
     - python3 -m build --sdist --wheel --outdir dist/ .
     # - pytest -c pyproject.toml -s ./tests/unit/test_configuration.py
     # - PYTEST_PARAMS="--exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -m "not docker_required and unit" ./tests/
@@ -47,7 +46,6 @@ build:
   only:
     - merge_requests
   script:
-    - pip3 install --no-compile --editable '.[engine]'
     - python3 -m build --sdist --wheel --outdir dist/ .
 
 
