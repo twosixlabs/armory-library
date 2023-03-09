@@ -17,7 +17,6 @@ stages:
   - Build
   # - Deploy  # TODO: Add deploy stage for Advana target; e.g. package, container, etc. -CW
 
-
 code_linting:
   stage: Code Linting
   only:
@@ -25,14 +24,12 @@ code_linting:
   script:
     - bash tools/pre-commit.sh
 
-
 static_analysis:
   stage: Static Analysis
   only:
     - merge_requests
   script:
     - bandit -v -f txt -r ./armory -c "pyproject.toml" --output /tmp/artifacts/bandit_scan.txt || $( exit 0 ); echo $?
-
 
 unit_test:
   stage: Unit Tests
@@ -43,7 +40,6 @@ unit_test:
     # - pytest -c pyproject.toml -s ./tests/unit/test_configuration.py
     # - PYTEST_PARAMS="--exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -m "not docker_required and unit" ./tests/
     # - PYTEST_PARAMS=" --exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -s ./tests/end_to_end/test_no_docker.py
-
 
 build:
   stage: Build
