@@ -102,9 +102,10 @@ class ArmoryInstance(object):
             return 1
 
     def __del__(self):
-        # Needed if there is an error in __init__
-        if hasattr(self, "docker_container"):
-            self.docker_container.stop()
+        ...
+        # # Needed if there is an error in __init__
+        # if hasattr(self, "docker_container"):
+        #     self.docker_container.stop()
 
 
 class HostArmoryInstance:
@@ -122,18 +123,3 @@ class HostArmoryInstance:
         else:
             log.success("command exited cleanly")
         return completion.returncode
-
-
-class HostManagementInstance:
-    def start_armory_instance(
-        self, envs: dict = None, ports: dict = None, container_subdir: str = None
-    ):
-        if ports:
-            raise ValueError(f"Arguments ports {ports} not expected!")
-
-        self.instance = HostArmoryInstance(envs=envs)
-
-        return self.instance
-
-    def stop_armory_instance(self, instance):
-        pass
