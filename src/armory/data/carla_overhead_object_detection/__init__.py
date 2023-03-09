@@ -56,9 +56,6 @@ class Evaluator:
         output_dir = self.config["sysconfig"].get("output_dir", None)
         eval_id = f"{output_dir}_{date_time}" if output_dir else date_time
 
-        self.manager = ArmoryInstance
-        self.no_docker = True
-        self.root = False
         self.config["eval_id"] = eval_id
         self.output_dir = os.path.join(self.host_paths.output_dir, eval_id)
         self.tmp_dir = os.path.join(self.host_paths.tmp_dir, eval_id)
@@ -80,6 +77,10 @@ class Evaluator:
             # "HOME": "/tmp",
         }
 
+        self.manager = ArmoryInstance(envs=self.extra_env_vars)
+        self.no_docker = True
+        self.root = False
+
     def run(
         self,
         command=None,
@@ -91,7 +92,6 @@ class Evaluator:
         validate_config=None,
     ) -> int:
         exit_code = 0
-        runner = self.manager(envs=self.extra_env_vars)
         try:
             log.info(bold(red("Running evaluation script")))
 
@@ -109,7 +109,7 @@ class Evaluator:
             )
 
             cmd = f"{sys.executable} -m armory.scenarios.main {base64_config}{options} --base64"
-            exit_code = runner.exec_cmd(cmd)
+            exit_code = self.manager.exec_cmd(cmd)
 
         except KeyboardInterrupt:
             log.warning("Keyboard interrupt caught")
