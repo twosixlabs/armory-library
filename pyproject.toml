@@ -41,7 +41,31 @@ dependencies = [
     "jsonschema",      # config validation
     "PyYAML",          # config parsing
     "toml",            # config parsing
+]
 
+[project.urls]
+Source        = "https://github.com/twosixlabs/armory"
+Documentation = "https://armory.readthedocs.io/en/latest/"
+
+[project.scripts]
+armory = "armory.__main__:main"
+
+
+# please see docs/getting_started.md#the-armory-flavors for how these
+# optional dependencies work
+[project.optional-dependencies]
+developer =[
+    "hatch", # build tool
+    "wheel", # build tool
+    "mkdocs",
+    "black[jupyter]==22.*",
+    "isort",
+    "flake8",
+    "bandit[toml]", # code scanning
+    "hydra-core",   # configuration
+]
+
+engine = [
     # engine
     "adversarial-robustness-toolbox == 1.13.0",
     "Pillow",              # Data dependencies
@@ -89,29 +113,6 @@ dependencies = [
     # datasets-builder
     "apache-beam >= 2.22.0",
 ]
-
-[project.urls]
-Source        = "https://github.com/twosixlabs/armory"
-Documentation = "https://armory.readthedocs.io/en/latest/"
-
-[project.scripts]
-armory = "armory.__main__:main"
-
-
-# please see docs/getting_started.md#the-armory-flavors for how these
-# optional dependencies work
-[project.optional-dependencies]
-developer =[
-    "hatch", # build tool
-    "wheel", # build tool
-    "mkdocs",
-    "black[jupyter]==22.*",
-    "isort",
-    "flake8",
-    "bandit[toml]", # code scanning
-    "hydra-core",   # configuration
-]
-
 
 [tool.hatch.build]
 ignore-vcs   = false
