@@ -19,7 +19,7 @@ try:
 
     if torch.device.type == "cpu":
         print("WARNING: Running on CPU")
-except e as Exception:
+except Exception as e:
     print("WARNING: torch not installed")
 #########################################
 
