@@ -12,6 +12,20 @@ static_analysis:
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
   script:
-    - python -m black . --check
-    - python -m isort . --check-only
-    - python -m flake8 --config=.flake8 --exit-zero
+    - bash tools/pre-commit.sh
+    - mkdir -p /tmp/artifacts
+    - bandit -v -f txt -r ./armory -c "pyproject.toml" --output /tmp/artifacts/bandit_scan.txt || $( exit 0 ); echo $?
+
+build_and_test:
+  stage: Build and Test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  script:
+    - python3 -m pip install --upgrade pip
+    - python3 -m pip install --upgrade build
+    - python -m build --sdist --wheel --outdir dist/ .
+    - pip3 install --no-compile --editable '.[developer]'
+    - armory configure --use-defaults
+    # - pytest -c pyproject.toml -s ./tests/unit/test_configuration.py
+    # - PYTEST_PARAMS="--exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -m "not docker_required and unit" ./tests/
+    # - PYTEST_PARAMS=" --exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -s ./tests/end_to_end/test_no_docker.py
