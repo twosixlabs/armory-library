@@ -25,6 +25,7 @@ dependencies = [
     "jsonschema",      # config validation
     "PyYAML",          # config parsing
     "toml",            # config parsing
+]
 
 [project.urls]
 Homepage = "https://github.com/twosixlabs/armory"
