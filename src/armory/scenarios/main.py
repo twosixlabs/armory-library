@@ -145,6 +145,15 @@ def run_config(*args, **kwargs):
     scenario.evaluate()
 
 
+def main(scenario_config: dict):
+    """
+    Main entry point for running a scenario
+    """
+    print(scenario_config)
+    # scenario = get(scenario_config)
+    # scenario.evaluate()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="scenario", description="run armory scenario")
     parser.add_argument(
