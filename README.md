@@ -43,7 +43,7 @@ If installing from the git repo in editable mode, ensure that your pip version i
 
 # Usage
 
-There are three ways to interact with Armory's container system.
+To interact with Armory's container system do the following:
 
 ## armory run
 * `armory run <path/to/config.json>`
@@ -61,29 +61,6 @@ case for this would be to debug using pdb. Similar to non-interactive mode, resu
 from the evaluation can be found in the output directory. To later close the
 interactive container simply run CTRL+C from the terminal where this command was ran.
 
-## armory launch
-* `armory launch <armory|pytorch-deepspeech>`
-This will launch a framework specific container, with appropriate mounted volumes, for
-the user to attach to for debugging purposes. A command to attach to the container will
-be returned from this call, and it can be ran in a separate terminal. To later close
-the interactive container simply run CTRL+C from the terminal where this command was
-ran.
-
-* `armory launch <armory|pytorch-deepspeech> --jupyter`.
-Similar to the interactive launch, this will spin up a container for a specific
-framework, but will instead return the web address of a jupyter lab server where
-debugging can be performed. To close the jupyter server simply run CTRL+C from the
-terminal where this command was ran.
-
-## armory exec
-* `armory exec <armory|pytorch-deepspeech> -- <cmd>`
-This will run a specific command within a framework specific container. A notable use
-case for this would be to run test cases using pytest. After completion of the command
-the container will be removed.
-
-Note: Since Armory launches Docker containers, the python package must be run on
-system host (i.e. not inside of a docker container).
-
 ### Example usage:
 ```bash
 pip install armory-testbed
@@ -93,14 +70,6 @@ git clone https://github.com/twosixlabs/armory-example.git
 cd armory-example
 armory run official_scenario_configs/cifar10_baseline.json
 ```
-
-### What is available in the container:
-All containers have a pre-installed armory package so that baseline models,
-datasets, and scenarios can be used.
-
-Additionally, volumes (such as your current working directory) will be mounted from
-your system host so that you can modify code to be run, and retrieve outputs.
-For more information on these mounts, please see our [Docker documentation](//github.com/twosixlabs/armory/raw/master/docs/docker.md#docker-volume-mounts)
 
 # Scenarios
 Armory provides several baseline threat-model scenarios for various data modalities.
