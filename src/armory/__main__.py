@@ -9,21 +9,6 @@ Try:
 This runs an arbitrary config file. Results are output to the `outputs/` directory.
 """
 
-#########################################
-# TODO: Remove this temp hack -CW
-try:
-    import torch
-
-    torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    torch.set_default_tensor_type(torch.cuda.FloatTensor)
-
-    if torch.device.type == "cpu":
-        print("WARNING: Running on CPU")
-except Exception as e:
-    print("WARNING: torch not installed")
-#########################################
-
-
 import argparse
 import json
 import os
