@@ -1,35 +1,20 @@
-import base64
 import datetime
-import json
 import os
 import shutil
-import subprocess
-import sys
 
 import armory
 from armory import environment, paths
 from armory.configuration import load_global_config
-from armory.logs import added_filters, is_debug, log
+from armory.logs import log
+from armory.scenarios.main import main as scenario_main
 from armory.utils.printing import bold, red
 
-## WIP
-from armory.scenarios.main import main as scenario_main
-## /WIP
 
 class ArmoryInstance:
     def __init__(self, envs: dict = None):
         self.env = os.environ.copy()
         for k, v in envs.items():
             self.env[str(k)] = str(v)
-
-    # TODO: Remove subprocess, utilize scenario function definitions -CW
-    def exec_cmd(self, cmd: str):
-        completion = subprocess.run(cmd, env=self.env, shell=True)
-        if completion.returncode:
-            log.error(f"command {cmd} did not finish cleanly")
-        else:
-            log.success("command exited cleanly")
-        return completion.returncode
 
 
 class Evaluator:
@@ -98,64 +83,13 @@ class Evaluator:
         exit_code = 0
         try:
             log.info(bold(red("Running Evaluation")))
-
-            # bytes_config = json.dumps(self.config).encode("utf-8")
-            # base64_bytes = base64.b64encode(bytes_config)
-            # base64_config = base64_bytes.decode("utf-8")
-
-            # options = self._options_builder(
-            #     check_run=check_run,
-            #     num_eval_batches=num_eval_batches,
-            #     skip_benign=skip_benign,
-            #     skip_attack=skip_attack,
-            #     skip_misclassified=skip_misclassified,
-            #     validate_config=validate_config,
-            # )
-
-            # TODO: Remove subprocess, base64, utilize scenario function definitions -CW
-            # EXAMPLE:
-            #   >>>  results = armory.scenarios.main(kwargs**)
-            # cmd = f"{sys.executable} -m armory.scenarios.main {base64_config}{options} --base64"\
-            # exit_code = self.manager.exec_cmd(cmd)
-
             scenario_main(self.config)
-
         except KeyboardInterrupt:
             log.warning("Keyboard interrupt caught")
         finally:
             log.info("cleaning up...")
         self._cleanup()
         return exit_code
-
-    # # TODO: Remove subprocess, utilize scenario function definitions -CW
-    # def _options_builder(
-    #     self,
-    #     check_run,
-    #     num_eval_batches,
-    #     skip_benign,
-    #     skip_attack,
-    #     skip_misclassified,
-    #     validate_config,
-    # ):
-    #     options = "--no-docker"
-
-    #     if check_run:
-    #         options += " --check"
-    #     if is_debug():
-    #         options += " --debug"
-    #     if num_eval_batches:
-    #         options += f" --num-eval-batches {num_eval_batches}"
-    #     if skip_benign:
-    #         options += " --skip-benign"
-    #     if skip_attack:
-    #         options += " --skip-attack"
-    #     if skip_misclassified:
-    #         options += " --skip-misclassified"
-    #     if validate_config:
-    #         options += " --validate-config"
-    #     for module, level in added_filters.items():
-    #         options += f" --log-level {module}:{level}"
-    #     return options
 
     def _cleanup(self):
         log.info(f"deleting tmp_dir {self.tmp_dir}")
@@ -164,7 +98,6 @@ class Evaluator:
         except OSError as e:
             if not isinstance(e, FileNotFoundError):
                 log.exception(f"Error removing tmp_dir {self.tmp_dir}")
-
         try:
             os.rmdir(self.output_dir)
             log.warning(f"removed output_dir {self.output_dir} because it was empty")
