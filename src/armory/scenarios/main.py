@@ -19,6 +19,8 @@ import json
 import os
 import time
 
+from importlib import import_module
+
 import pytest
 
 import armory
@@ -26,6 +28,81 @@ from armory import Config, environment, paths, validation
 from armory.logs import log, make_logfiles, update_filters
 from armory.utils import config_loading, external_repo
 from armory.utils.configuration import load_config
+
+
+
+
+
+def _get_config(config_json, from_file=False) -> Config:
+    """
+    Reads a config specification from json, dedcodes it, and returns the
+    resultant dict.
+    """
+    if from_file:
+        config_json = load_config(config_json)
+    else:
+        config_base64_bytes = config_json.encode("utf-8")
+        config_b64_bytes = base64.b64decode(config_base64_bytes)
+        config_string = config_b64_bytes.decode("utf-8")
+        config = json.loads(config_string)
+    return config_json
+
+
+def run_validation(config_json, from_file=False) -> None:
+    """
+    Test a configuration spec for jsonschema correctness. Fault on error.
+    """
+    config = _get_config(config_json, from_file=from_file)
+    _scenario_setup(config)
+    model_config = json.dumps(config.get("model"))
+    test_path_context = importlib.resources.path(validation, "test_config")
+    with test_path_context as test_path:
+        return_val = pytest.main(["-x", str(test_path), "--model-config", model_config])
+    assert return_val == pytest.ExitCode.OK, "Model configuration validation failed"
+
+
+def get(
+    config_json,
+    from_file=True,
+    check_run=False,
+    num_eval_batches=None,
+    skip_benign=None,
+    skip_attack=None,
+    skip_misclassified=None,
+):
+    """
+    Init environment variables and initialize scenario class with config;
+    returns a constructed Scenario subclass based on the config specification.
+    """
+    config = _get_config(config_json, from_file=from_file)
+    scenario_config = config.get("scenario")
+    if scenario_config is None:
+        raise KeyError('"scenario" missing from evaluation config')
+    _scenario_setup(config)
+
+    ScenarioClass = config_loading.load_fn(scenario_config)
+    kwargs = scenario_config.get("kwargs", {})
+    kwargs.update(
+        dict(
+            check_run=check_run,
+            num_eval_batches=num_eval_batches,
+            skip_benign=skip_benign,
+            skip_attack=skip_attack,
+            skip_misclassified=skip_misclassified,
+        )
+    )
+    scenario_config["kwargs"] = kwargs
+    scenario = ScenarioClass(config, **kwargs)
+    return scenario
+
+
+def run_config(*args, **kwargs):
+    """
+    Convenience wrapper around 'load'
+    """
+    scenario = get(*args, **kwargs)
+    log.trace(f"scenario loaded {scenario}")
+    scenario.evaluate()
 
 
 def _scenario_setup(config: Config) -> None:
@@ -73,182 +150,46 @@ def _scenario_setup(config: Config) -> None:
         external_repo.add_local_repo(local_path)
 
 
-def _get_config(config_json, from_file=False) -> Config:
+def main(scenario_config: dict):
     """
-    Reads a config specification from json, dedcodes it, and returns the
-    resultant dict.
-    """
-    if from_file:
-        config_json = load_config(config_json)
-    # TODO: Refactor this logic -CW
-    # else:
-    #     config_base64_bytes = config_json.encode("utf-8")
-    #     config_b64_bytes = base64.b64decode(config_base64_bytes)
-    #     config_string = config_b64_bytes.decode("utf-8")
-    #     config = json.loads(config_string)
-    return config_json
+    Programmatic entrypoint for running scenarios
 
-
-def run_validation(config_json, from_file=False) -> None:
+    TODO
+    ----------
+      - Utilize @dataclass for scenario_config
+      - Refactor method signature to be more explicit
+      - Turn main into a Scenario class
     """
-    Test a configuration spec for jsonschema correctness. Fault on error.
-    """
-    config = _get_config(config_json, from_file=from_file)
-    _scenario_setup(config)
-    model_config = json.dumps(config.get("model"))
-    test_path_context = importlib.resources.path(validation, "test_config")
-    with test_path_context as test_path:
-        return_val = pytest.main(["-x", str(test_path), "--model-config", model_config])
-    assert return_val == pytest.ExitCode.OK, "Model configuration validation failed"
+    paths.set_mode("host")
+    _scenario_setup(scenario_config)
 
+    # TODO: Refactor the dynamic import mechanism. -CW
+    _scenario_config = scenario_config.get("scenario")
+    ScenarioClass = getattr(import_module(_scenario_config["module"]), _scenario_config["name"])
 
-def get(
-    config_json,
-    from_file=True,  # TODO: Remove this argument -CW
-    check_run=False,  # TODO: Remove this argument -CW
-    num_eval_batches=None,  # TODO: Remove this argument -CW
-    skip_benign=None,  # TODO: Remove this argument -CW
-    skip_attack=None,  # TODO: Remove this argument -CW
-    skip_misclassified=None,  # TODO: Remove this argument -CW
-):
-    """
-    Init environment variables and initialize scenario class with config;
-    returns a constructed Scenario subclass based on the config specification.
-    """
-    config = _get_config(config_json, from_file=from_file)
-    scenario_config = config.get("scenario")
-    if scenario_config is None:
-        raise KeyError('"scenario" missing from evaluation config')
-    _scenario_setup(config)
+    # TODO: Add `num_eval_batches` to scenario_config -CW
+    # if args.check and args.num_eval_batches:
+    #     log.warning("--num_eval_batches will be overridden since --check was passed")
+    #     args.num_eval_batches = None
 
-    ScenarioClass = config_loading.load_fn(scenario_config)
+    # if args.validate_config:
+    #     run_validation(args.config, args.from_file)
+
     kwargs = scenario_config.get("kwargs", {})
     kwargs.update(
         dict(
-            check_run=check_run,
-            num_eval_batches=num_eval_batches,
-            skip_benign=skip_benign,
-            skip_attack=skip_attack,
-            skip_misclassified=skip_misclassified,
+            check_run=scenario_config["sysconfig"]["check"],
+            num_eval_batches=0,
+            skip_benign=False,
+            skip_attack=False,
+            skip_misclassified=False,
         )
     )
     scenario_config["kwargs"] = kwargs
-    scenario = ScenarioClass(config, **kwargs)
-    return scenario
+    scenario = ScenarioClass(scenario_config, **kwargs)
 
-
-def run_config(*args, **kwargs):
-    """
-    Convenience wrapper around 'load'
-    """
-    scenario = get(*args, **kwargs)
-    log.trace(f"scenario loaded {scenario}")
-    scenario.evaluate()
-
-
-def main(scenario_config: dict):
-    """
-    Main entry point for running a scenario
-    """
-    # update_filters(args.log_level, args.debug)
-    scenario = get(
-        scenario_config,
-        from_file=False,
-        check_run=scenario_config["sysconfig"]["check"],
-    )
     scenario.evaluate()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(prog="scenario", description="run armory scenario")
-    parser.add_argument(
-        "config",
-        metavar="<config json>",
-        type=str,
-        help="scenario config JSON",
-    )
-
-    parser.add_argument(
-        "-d",
-        "--debug",
-        action="store_true",
-        help="synonym for --log-level=armory:debug",
-    )
-    parser.add_argument(
-        "--log-level",
-        action="append",
-        help="set log level per-module (ex. art:debug) can be used mulitple times",
-    )
-    parser.add_argument(
-        "--no-docker",
-        action="store_true",
-        help="Whether to use Docker or a local environment with armory run",
-    )
-    parser.add_argument(
-        "--base64",
-        dest="from_file",
-        action="store_false",
-        help="If the config argument is a base64 serialized JSON instead of a filepath",
-    )
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="Whether to quickly check to see if scenario code runs",
-    )
-    parser.add_argument(
-        "--num-eval-batches",
-        type=int,
-        help="Number of batches to use for evaluation of benign and adversarial examples",
-    )
-    parser.add_argument(
-        "--skip-benign",
-        action="store_true",
-        help="Skip benign inference and metric calculations",
-    )
-    parser.add_argument(
-        "--skip-attack",
-        action="store_true",
-        help="Skip attack generation and metric calculations",
-    )
-    parser.add_argument(
-        "--validate-config",
-        action="store_true",
-        help="Validate model configuration against several checks",
-    )
-    parser.add_argument(
-        "--skip-misclassified",
-        action="store_true",
-        help="Skip attack of inputs that are already misclassified",
-    )
-    args = parser.parse_args()
-    update_filters(args.log_level, args.debug)
-    log.trace(f"main.py called update_filters({args.log_level} debug: {args.debug})")
-    calling_version = os.getenv(environment.ARMORY_VERSION, "UNKNOWN")
-    # if calling_version != armory.__version__:
-    #     log.warning(
-    #         f"armory calling version {calling_version} != "
-    #         f"armory imported version {armory.__version__}"
-    #     )
-
-    # if args.no_docker:
-    paths.set_mode("host")
-
-    if args.check and args.num_eval_batches:
-        log.warning("--num_eval_batches will be overridden since --check was passed")
-        args.num_eval_batches = None
-
-    if args.validate_config:
-        run_validation(args.config, args.from_file)
-    else:
-        run_config(
-            args.config,
-            from_file=args.from_file,
-            check_run=args.check,
-            num_eval_batches=args.num_eval_batches,
-            skip_benign=args.skip_benign,
-            skip_attack=args.skip_attack,
-            skip_misclassified=args.skip_misclassified,
-        )
-    print(
-        armory.END_SENTINEL
-    )  # indicates to host that the scenario finished w/out error
+    log.error(f"Calling `armory.scenarios.main` has been deperciated.")
