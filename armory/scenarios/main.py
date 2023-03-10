@@ -14,12 +14,11 @@ The particular scenario and configs will be picked up in the "scenario" field:
 
 import argparse
 import base64
+from importlib import import_module
 import importlib.resources
 import json
 import os
 import time
-
-from importlib import import_module
 
 import pytest
 
@@ -28,9 +27,6 @@ from armory import Config, environment, paths, validation
 from armory.logs import log, make_logfiles, update_filters
 from armory.utils import config_loading, external_repo
 from armory.utils.configuration import load_config
-
-
-
 
 
 def _get_config(config_json, from_file=False) -> Config:
@@ -165,7 +161,9 @@ def main(scenario_config: dict):
 
     # TODO: Refactor the dynamic import mechanism. -CW
     _scenario_config = scenario_config.get("scenario")
-    ScenarioClass = getattr(import_module(_scenario_config["module"]), _scenario_config["name"])
+    ScenarioClass = getattr(
+        import_module(_scenario_config["module"]), _scenario_config["name"]
+    )
 
     # TODO: Add `num_eval_batches` to scenario_config -CW
     # if args.check and args.num_eval_batches:
