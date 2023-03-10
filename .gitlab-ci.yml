@@ -52,4 +52,6 @@ build:
 #########################################
 ## DEVELOPER NOTES
 #########################################
-# o TODO: Collect artifacts - https://docs.gitlab.com/ee/ci/yaml/#artifacts
+# o TODO: Cache pip packages - https://docs.gitlab.com/ee/ci/yaml/#cache     -CW
+# o TODO: Collect artifacts  - https://docs.gitlab.com/ee/ci/yaml/#artifacts -CW
+# o TODO: Add deploy stage for Advana target; e.g. package, container, etc.  -CW
