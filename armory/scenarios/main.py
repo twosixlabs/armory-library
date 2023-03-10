@@ -12,7 +12,6 @@ The particular scenario and configs will be picked up in the "scenario" field:
     This is used to instantiate the subclass.
 """
 
-import argparse
 import base64
 from importlib import import_module
 import importlib.resources
@@ -22,9 +21,8 @@ import time
 
 import pytest
 
-import armory
-from armory import Config, environment, paths, validation
-from armory.logs import log, make_logfiles, update_filters
+from armory import Config, paths, validation
+from armory.logs import log, make_logfiles
 from armory.utils import config_loading, external_repo
 from armory.utils.configuration import load_config
 
@@ -40,7 +38,7 @@ def _get_config(config_json, from_file=False) -> Config:
         config_base64_bytes = config_json.encode("utf-8")
         config_b64_bytes = base64.b64decode(config_base64_bytes)
         config_string = config_b64_bytes.decode("utf-8")
-        config = json.loads(config_string)
+        config_json = json.loads(config_string)
     return config_json
 
 
@@ -190,4 +188,4 @@ def main(scenario_config: dict):
 
 
 if __name__ == "__main__":
-    log.error(f"Calling `armory.scenarios.main` has been deperciated.")
+    log.error("Calling `armory.scenarios.main` has been deperciated.")
