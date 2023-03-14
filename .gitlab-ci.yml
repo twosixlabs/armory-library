@@ -32,7 +32,6 @@ cache: &global_cache
 
 code-linting:
   stage: "📡 Code Linting"
-  extends: setup
   only:
     - merge_requests
   cache:
