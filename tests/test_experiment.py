@@ -3,7 +3,7 @@ import charmory.experiment as experiment
 
 
 def test_initializers():
-    attack = experiment.Attack("white", "art.FGSM", {"eps": 0.3}, use_label=True)
+    attack = experiment.Attack("art.FGSM", {"eps": 0.3}, "white", use_label=True)
     assert attack.knowledge == "white"
     assert attack.function == "art.FGSM"
     assert attack.kwargs["eps"] == 0.3
