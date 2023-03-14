@@ -57,7 +57,7 @@ code-linting:
   only:
     - merge_requests
   script:
-    - bash tools/pre-commit.sh
+    - ARMORY_CI_TEST=1 ./tools/pre-commit.sh
 
 static_analysis:
   stage: "🚧 Static Analysis"
