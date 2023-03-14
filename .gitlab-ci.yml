@@ -70,9 +70,9 @@ static_analysis:
     when: always
     expire_in: 1 days
     paths:
-      - /tmp/artifacts/bandit_scan.txt
+      - .cache/bandit_scan.txt
   script:
-    - python3 -m bandit -v -f txt -r ./src -c "pyproject.toml" --output /tmp/artifacts/bandit_scan.txt || $( exit 0 ); echo $?
+    - python3 -m bandit -v -f txt -r ./src -c "pyproject.toml" --output /.cache/bandit_scan.txt || $( exit 0 ); echo $?
 
 unit-test:
   stage: "🧪 Unit Tests"
