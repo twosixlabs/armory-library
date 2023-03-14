@@ -39,6 +39,10 @@ armory = "armory.__main__:main"
 # please see docs/getting_started.md#the-armory-flavors for how these
 # optional dependencies work
 [project.optional-dependencies]
+tracking = [
+    "mlflow",
+]
+
 developer =[
     "hatch", # build tool
     "wheel", # build tool
