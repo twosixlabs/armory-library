@@ -3,6 +3,7 @@ import charmory.experiment as experiment
 
 
 def test_initializers():
+    """Instantiate all the classes and check that they don't fault."""
     attack = experiment.Attack("art.FGSM", {"eps": 0.3}, "white", use_label=True)
     assert attack.knowledge == "white"
     assert attack.function == "art.FGSM"
@@ -49,7 +50,7 @@ def test_initializers():
 
     with pytest.raises(TypeError):
         bad = experiment.Experiment()  # type: ignore
-        assert bad.metadata.name == "null experiment"
+        assert bad._metadata.name == "null experiment"
 
     exp = experiment.Experiment(
         metadata,
@@ -61,11 +62,14 @@ def test_initializers():
         metric,
         sysconfig,
     )
-    assert exp.metadata.name == "null experiment"
+    assert exp._metadata.name == "null experiment"
 
 
 def test_mnist_experiment():
-    metadata = experiment.MetaData("mnist experiment", "test", "msw@example.com")
+    """Instantiate a full experiment as in mnist_baseline.json"""
+    metadata = experiment.MetaData(
+        "mnist experiment", "derived from mnist_baseline.json", "msw@example.com"
+    )
     exp = experiment.Experiment(
         metadata,
         model=experiment.Model(
@@ -109,4 +113,53 @@ def test_mnist_experiment():
         sysconfig=experiment.SysConfig(gpus=["all", "2"], use_gpu=True),
     )
 
-    print(exp)
+    from dataclasses import asdict
+
+    assert asdict(exp) == {
+        "_metadata": {
+            "name": "mnist experiment",
+            "description": "derived from mnist_baseline.json",
+            "author": "msw@example.com",
+        },
+        "model": {
+            "function": "armory.baseline_models.keras.mnist.get_art_model",
+            "model_kwargs": {},
+            "wrapper_kwargs": {},
+            "weights_file": None,
+            "fit": True,
+            "fit_kwargs": {"nb_epochs": 20},
+        },
+        "scenario": {
+            "function": "armory.scenarios.image_classification.ImageClassificationTask",
+            "kwargs": {},
+        },
+        "dataset": {
+            "function": "armory.data.datasets.mnist",
+            "framework": "numpy",
+            "batch_size": 128,
+        },
+        "attack": {
+            "function": "art.attacks.evasion.FastGradientMethod",
+            "kwargs": {
+                "batch_size": 1,
+                "eps": 0.2,
+                "eps_step": 0.1,
+                "minimal": False,
+                "num_random_init": 0,
+                "targeted": False,
+            },
+            "knowledge": "white",
+            "use_label": True,
+            "type": None,
+        },
+        "defense": None,
+        "metric": {
+            "profiler_type": "basic",
+            "supported_metrics": ["accuracy"],
+            "perturbation": ["linf"],
+            "task": ["categorical_accuracy"],
+            "means": True,
+            "record_metric_per_sample": False,
+        },
+        "sysconfig": {"gpus": ["all", "2"], "use_gpu": True},
+    }
