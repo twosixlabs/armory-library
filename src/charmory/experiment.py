@@ -30,6 +30,8 @@ class Dataset:
 
 @dataclass
 class Defense:
+    function: MethodName
+    kwargs: StrDict
     type: Literal[
         "Preprocessor",
         "Postprocessor",
@@ -37,18 +39,16 @@ class Defense:
         "Transformer",
         "PoisonFilteringDefense",
     ]
-    function: MethodName
-    kwargs: StrDict
 
 
 @dataclass
 class Metric:
     profiler_type: Literal["basic", "deterministic"]
-    record_metric_per_sample: bool
     supported_metrics: list[str]
     perturbation: list[str]
-    means: bool
     task: list[str]
+    means: bool
+    record_metric_per_sample: bool
 
 
 @dataclass
