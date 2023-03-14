@@ -12,6 +12,7 @@ variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
 cache: &global_cache
+  policy: pull-push
   untracked: true
   paths:
     - .pip
@@ -59,7 +60,7 @@ static_analysis:
 
 unit-test:
   stage: "🧪 Unit Tests"
-  allow_failure: true
+  allow_failure: true # Just until we get the tests working fully.
   only:
     - merge_requests
   cache:
