@@ -14,6 +14,7 @@ variables:
     --suppress-no-test-exit-code
 
 cache: &global_cache
+  key: shared-job-key
   policy: pull-push
   untracked: true
   paths:
