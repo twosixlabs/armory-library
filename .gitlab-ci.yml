@@ -32,6 +32,7 @@ before_script:
   # Needed by versioning and linting scripts
   - apt-get install -qqy --no-install-recommends --no-install-suggests git
   # Base requirements
+  - git fetch --unshallow
   - apt-get install -qqy --no-install-recommends --no-install-suggests python3 python3-dev python3-pip python3-venv
   - '[[ -d "${PYTHON_VENV_DIR}" ]] && source "${PYTHON_VENV_DIR}/bin/activate"'
 
