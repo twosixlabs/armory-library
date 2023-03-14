@@ -5,16 +5,15 @@
 from dataclasses import dataclass
 from typing import Literal, Any, Optional
 
-from armory.logs import log
 
 MethodName = str  # reference to a python method e.g. "armory.attacks.weakest"
 StrDict = dict[str, Any]  # dictionary of string keys and any values
-URL = str
 
 
 @dataclass
 class Attack:
     knowledge: Literal["white", "black"]
+    # TODO: make function first arg
     function: MethodName
     kwargs: StrDict
     use_label: bool = False
