@@ -36,10 +36,10 @@ unit_test:
   only:
     - merge_requests
   script:
-    - $( exit 0 ); echo $?
-    # - pytest -c pyproject.toml -s ./tests/unit/test_configuration.py
-    # - PYTEST_PARAMS="--exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -m "not docker_required and unit" ./tests/
-    # - PYTEST_PARAMS=" --exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -s ./tests/end_to_end/test_no_docker.py
+    #- $( exit 0 ); echo $?
+    - PYTEST_PARAMS="--exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -s ./tests/unit/test_configuration.py
+    - PYTEST_PARAMS="--exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -m "not docker_required and unit" ./tests/
+    - PYTEST_PARAMS=" --exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -s ./tests/end_to_end/test_no_docker.py
 
 build:
   stage: Build
