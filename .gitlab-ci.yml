@@ -32,7 +32,7 @@ before_script:
   - apt-get install -qqy --no-install-recommends --no-install-suggests git
   # Base requirements
   - apt-get install -qqy --no-install-recommends --no-install-suggests python3 python3-dev python3-pip python3-venv
-  - pip3 install --upgrade virtualenv
+  # - pip3 install --upgrade virtualenv
 
 setup:
   stage: "👽 Setup"
@@ -81,7 +81,7 @@ build:
   only:
     - merge_requests
   script:
-    - python3 -m build --sdist --wheel --outdir dist/ .
+    - hatch build -t wheel
 
 
 #########################################
