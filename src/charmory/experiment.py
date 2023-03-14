@@ -3,8 +3,7 @@
 # TODO: review the Optionals with @woodall
 
 from dataclasses import dataclass
-from typing import Literal, Any, Optional
-
+from typing import Any, Literal, Optional
 
 MethodName = str  # reference to a python method e.g. "armory.attacks.weakest"
 StrDict = dict[str, Any]  # dictionary of string keys and any values
