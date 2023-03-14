@@ -12,10 +12,9 @@ StrDict = dict[str, Any]  # dictionary of string keys and any values
 
 @dataclass
 class Attack:
-    knowledge: Literal["white", "black"]
-    # TODO: make function first arg
     function: MethodName
     kwargs: StrDict
+    knowledge: Literal["white", "black"]
     use_label: bool = False
     type: Optional[str] = None
 
@@ -53,9 +52,9 @@ class Metric:
 @dataclass
 class Model:
     function: MethodName
-    weights_file: Optional[list[str]]
-    wrapper_kwargs: StrDict
     model_kwargs: StrDict
+    wrapper_kwargs: StrDict
+    weights_file: Optional[list[str]]
     fit: bool
     fit_kwargs: StrDict
 
@@ -82,7 +81,7 @@ class MetaData:
 
 @dataclass
 class Experiment:
-    metadata: MetaData
+    _metadata: MetaData
     model: Model
     scenario: Scenario
     dataset: Dataset
@@ -90,7 +89,3 @@ class Experiment:
     defense: Optional[Defense] = None
     metric: Optional[Metric] = None
     sysconfig: Optional[SysConfig] = None
-
-    # def save(self, filename):
-    #     with open(filename, "w") as f:
-    #         f.write(self.json())

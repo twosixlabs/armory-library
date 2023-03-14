@@ -85,10 +85,8 @@ def test_mnist_experiment():
             "armory.scenarios.image_classification.ImageClassificationTask", kwargs={}
         ),
         attack=experiment.Attack(
-            "white",
-            function="art.attacks.evasion.FastGradientMethod",
-            use_label=True,
-            kwargs={
+            "art.attacks.evasion.FastGradientMethod",
+            {
                 "batch_size": 1,
                 "eps": 0.2,
                 "eps_step": 0.1,
@@ -96,6 +94,8 @@ def test_mnist_experiment():
                 "num_random_init": 0,
                 "targeted": False,
             },
+            knowledge="white",
+            use_label=True,
         ),
         defense=None,
         metric=experiment.Metric(
