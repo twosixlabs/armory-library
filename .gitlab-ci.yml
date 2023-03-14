@@ -19,7 +19,8 @@ cache: &global_cache
   policy: pull-push
   untracked: true
   paths:
-    - $PIP_CACHE_DIR
+    - .cache/pip
+    - venv/
 
 before_script:
   - mkdir -p /tmp/artifacts
