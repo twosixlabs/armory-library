@@ -2,7 +2,7 @@
 
 # TODO: review the Optionals with @woodall
 
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import Literal, Any, Optional
 
 
@@ -89,3 +89,6 @@ class Experiment:
     defense: Optional[Defense] = None
     metric: Optional[Metric] = None
     sysconfig: Optional[SysConfig] = None
+
+    def asdict(self) -> dict:
+        return asdict(self)

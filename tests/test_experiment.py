@@ -110,12 +110,10 @@ def test_mnist_experiment():
             means=True,
             record_metric_per_sample=False,
         ),
-        sysconfig=experiment.SysConfig(gpus=["all", "2"], use_gpu=True),
+        sysconfig=experiment.SysConfig(gpus=["all"], use_gpu=True),
     )
 
-    from dataclasses import asdict
-
-    assert asdict(exp) == {
+    assert exp.asdict() == {
         "_metadata": {
             "name": "mnist experiment",
             "description": "derived from mnist_baseline.json",
@@ -161,5 +159,7 @@ def test_mnist_experiment():
             "means": True,
             "record_metric_per_sample": False,
         },
-        "sysconfig": {"gpus": ["all", "2"], "use_gpu": True},
+        "sysconfig": {"gpus": ["all"], "use_gpu": True},
     }
+
+    return str(exp)
