@@ -10,6 +10,7 @@ stages:
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  # PYTHON_VENV_DIR: "$CI_PROJECT_DIR/venv"
   PYTEST_PARAMS: >-
     --exitfirst
     --suppress-no-test-exit-code
@@ -19,8 +20,8 @@ cache: &global_cache
   policy: pull-push
   untracked: true
   paths:
-    - .cache/pip
-    - venv/
+    - $PIP_CACHE_DIR
+    # - $PYTHON_VENV_DIR
 
 before_script:
   - mkdir -p /tmp/artifacts
@@ -39,8 +40,8 @@ setup:
   only:
     - merge_requests
   script:
-    - python3 -m venv --copies venv
-    - source venv/bin/activate
+    # - python3 -m venv --copies venv
+    # - source venv/bin/activate
     - python3 -m pip install --upgrade pip build
     - pip3 install --no-compile --editable '.[all]'
     - armory configure --use-defaults
@@ -77,8 +78,6 @@ unit-test:
 
 build:
   stage: "🔨 Build"
-  cache:
-    <<: *global_cache
   only:
     - merge_requests
   script:
