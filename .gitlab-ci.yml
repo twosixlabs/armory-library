@@ -72,7 +72,7 @@ static_analysis:
     paths:
       - .cache/bandit_scan.txt
   script:
-    - python3 -m bandit -v -f txt -r ./src -c "pyproject.toml" --output /.cache/bandit_scan.txt || $( exit 0 ); echo $?
+    - python3 -m bandit -v -f txt -r ./src -c "pyproject.toml" --output .cache/bandit_scan.txt || $( exit 0 ); echo $?
 
 unit-test:
   stage: "🧪 Unit Tests"
