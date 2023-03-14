@@ -44,9 +44,9 @@ setup:
     pip3 install --upgrade virtualenv
     if [[ ! -d "${PYTHON_VENV_DIR}" ]]; then
       python3 -m venv --copies "${PYTHON_VENV_DIR}"
-      python3 -m pip install --upgrade pip build
     fi
     source "${PYTHON_VENV_DIR}/bin/activate"
+    python3 -m pip install --upgrade pip build
     pip3 install --no-compile --editable '.[all]'
     armory configure --use-defaults
 
