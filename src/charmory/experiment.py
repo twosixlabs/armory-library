@@ -95,18 +95,3 @@ class Experiment:
     # def save(self, filename):
     #     with open(filename, "w") as f:
     #         f.write(self.json())
-
-
-def test_experiment(object):
-    """Execution Class to `run` armory experiments"""
-
-    def __init__(self, experiment_, environment_):
-        log.info(f"Constructing Experiment using : \n{experiment_}")
-        self.exp_pars = experiment_
-        self.env_pars = environment_
-        log.info(f"Importing Scenario Module: {self.exp_pars.scenario.module_name}")
-        self.scenario_module = import_module(self.exp_pars.scenario.module_name)
-        log.info(f"Loading Scenario Function: {self.exp_pars.scenario.function_name}")
-        self.scenario_fn = getattr(
-            self.scenario_module, self.exp_pars.scenario.function_name
-        )
