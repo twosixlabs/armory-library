@@ -39,16 +39,20 @@ setup:
   when: on_success
   only:
     - merge_requests
-  script:
-    - pip3 install --upgrade virtualenv
-    - "[[ ! -d .cache/venv ]] && python3 -m venv --copies .cache/venv"
-    - source .cache/venv/bin/activate
-    - python3 -m pip install --upgrade pip build
-    - pip3 install --no-compile --editable '.[all]'
-    - armory configure --use-defaults
+  script: |
+    pip3 install --upgrade virtualenv
+    if [[ ! -d "${PYTHON_VENV_DIR}" ]]; then
+      python3 -m venv --copies "${PYTHON_VENV_DIR}"
+      python3 -m pip install --upgrade pip build
+      pip3 install --no-compile --editable '.[all]'
+      armory configure --use-defaults
+    fi
+    source "${PYTHON_VENV_DIR}/bin/activate"
 
 code-linting:
   stage: "📡 Code Linting"
+  dependencies:
+    - setup
   only:
     - merge_requests
   script:
@@ -56,6 +60,9 @@ code-linting:
 
 static_analysis:
   stage: "🚧 Static Analysis"
+  dependencies:
+    - setup
+    - code-linting
   only:
     - merge_requests
   artifacts:
@@ -68,6 +75,9 @@ static_analysis:
 
 unit-test:
   stage: "🧪 Unit Tests"
+  dependencies:
+    - setup
+    - code-linting
   allow_failure: true # Just until we get the tests working fully.
   only:
     - merge_requests
