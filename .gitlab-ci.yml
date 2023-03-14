@@ -33,12 +33,12 @@ setup:
   when: on_success
   only:
     - merge_requests
-  artifacts:
-    paths:
-      - .cache/
-      - venv/
-    exclude:
-      - venv/**/__pycache__/*
+  # artifacts:
+  #   paths:
+  #     - .cache/
+  #     - venv/
+  #   exclude:
+  #     - venv/**/__pycache__/*
   script:
     - python3 -m venv --copies venv
     - source venv/bin/activate
