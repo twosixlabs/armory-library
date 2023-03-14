@@ -64,7 +64,7 @@ static_analysis:
     paths:
       - /tmp/artifacts/bandit_scan.txt
   script:
-    - bandit -v -f txt -r ./armory -c "pyproject.toml" --output /tmp/artifacts/bandit_scan.txt || $( exit 0 ); echo $?
+    - bandit -v -f txt -r ./src -c "pyproject.toml" --output /tmp/artifacts/bandit_scan.txt || $( exit 0 ); echo $?
 
 unit-test:
   stage: "🧪 Unit Tests"
@@ -72,9 +72,9 @@ unit-test:
   only:
     - merge_requests
   script:
-    - pytest -c pyproject.toml -s ./tests/unit/test_configuration.py
-    - pytest -c pyproject.toml -m "not docker_required and unit" ./tests/
-    - pytest -c pyproject.toml -s ./tests/end_to_end/test_no_docker.py
+    - pytest -c pyproject.toml -s ./tests.orig/unit/test_configuration.py
+    - pytest -c pyproject.toml -m "not docker_required and unit" ./tests.orig/
+    - pytest -c pyproject.toml -s ./tests.orig/end_to_end/test_no_docker.py
     - $( exit 0 ); echo $?
 
 build:
