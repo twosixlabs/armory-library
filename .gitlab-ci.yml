@@ -1,7 +1,6 @@
 image: "ubuntu:latest"
 
 stages:
-  - "👽 Setup"
   - "📡 Code Linting"
   - "🚧 Static Analysis"
   - "🧪 Unit Tests"
@@ -18,20 +17,14 @@ cache: &global_cache
   policy: pull-push
   untracked: true
   paths:
-    - .pip
+    - $PIP_CACHE_DIR
 
-setup:
-  stage: "👽 Setup"
-  only:
-    - merge_requests
-  cache:
-    key: "pip"
-    paths:
-      - $PIP_CACHE_DIR
-  script:
+.setup-gitlab:
+  before_script:
+    - mkdir -p $PIP_CACHE_DIR
+    - mkdir -p /tmp/artifacts
     - apt-get update -qy
     - apt-get install -y git python3 python3-pip
-    - mkdir -p /tmp/artifacts
     - python3 --version
     - python3 -m pip install --upgrade pip build
     - pip3 install --no-compile --editable '.[all]'
