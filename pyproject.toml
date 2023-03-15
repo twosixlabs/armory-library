@@ -112,7 +112,7 @@ all = [
     "armory-testbed[math]",
     "armory-testbed[pytorch]",
     # "armory-testbed[deepspeech]",
-    # "armory-testbed[tensorflow]",
+    "armory-testbed[tensorflow]",
     # "armory-testbed[datasets]",
     # "armory-testbed[datasets-builder]",
 ]
@@ -125,7 +125,6 @@ requires = [
   "hatch-vcs",
 ]
 
-
 [tool.hatch.build]
 ignore-vcs   = false
 reproducible = true
@@ -137,6 +136,16 @@ include = [
   "README.md"
 ]
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
+
+[tool.hatch.version]
+source = "vcs"
+path   = "src/armory/__about__.py"
+
+[tool.hatch.version.raw-options]
+version_scheme = "post-release"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "src/armory/__about__.py"
@@ -147,16 +156,6 @@ template = """
 __version__ = {version!r}
 version_tuple = {version_tuple!r}
 """
-
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[tool.hatch.version]
-source = "vcs"
-path   = "src/armory/__about__.py"
-
-[tool.hatch.version.raw-options]
-version_scheme = "post-release"
 
 
 # Tools
@@ -180,14 +179,14 @@ testpaths  = [ "tests" ]
 log_cli = true
 filterwarnings = [ ]
 markers = [
-  "slow",                       # This test is slow
-  "online",                     # This test needs open internet access
-  "keras",                      # This test requires tf1.compat support for keras
-  "tf1",                        # This test requires tf1 support (tf2.compat.v1 adapter)
-  "docker_required",            # This Test Requires Docker to run
-  "end_to_end",                 # Full End to End Test (typically slow)
-  "unit",                       # These are Unit Tests (fast and lightweight)
-  "pytorch_deepspeech",         # This test requires pytorch-deepspeech docker container (or equivalent dependencies) to run
+  "slow",                # This test is slow
+  "online",              # This test needs open internet access
+  "keras",               # This test requires tf1.compat support for keras
+  "tf1",                 # This test requires tf1 support (tf2.compat.v1 adapter)
+  "docker_required",     # This Test Requires Docker to run
+  "end_to_end",          # Full End to End Test (typically slow)
+  "unit",                # These are Unit Tests (fast and lightweight)
+  "pytorch_deepspeech",  # This test requires pytorch-deepspeech docker container (or equivalent dependencies) to run
 ]
 # TODO: Add these to the pytest options. From armory/validation/test_config
 # addopts = -p no:cacheprovider
