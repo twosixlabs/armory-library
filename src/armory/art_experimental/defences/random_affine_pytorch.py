@@ -85,7 +85,6 @@ class EoTRandomAffinePyTorch(EoTPyTorch):
         return torch.clamp(x, min=self.clip_values[0], max=self.clip_values[1]), y
 
     def _check_params(self) -> None:
-
         # pylint: disable=R0916
         if not isinstance(self.degree, (int, float)):
             raise ValueError("The argument `degree` has to be a float.")

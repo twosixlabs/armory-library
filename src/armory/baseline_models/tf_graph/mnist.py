@@ -49,7 +49,7 @@ def get_art_model(model_kwargs, wrapper_kwargs, weights_path=None):
         loss=loss,
         learning=training_ph,
         sess=sess,
-        **wrapper_kwargs
+        **wrapper_kwargs,
     )
 
     return wrapped_model
