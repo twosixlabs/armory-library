@@ -8,7 +8,7 @@ import warnings  # armory.logs initialization depends on this module, use warnin
 from armory import configuration
 
 
-class HostDefaultPaths:
+class ArmoryDefaultPaths:
     def __init__(self):
         self.cwd = os.getcwd()
         self.user_dir = os.path.expanduser("~")
@@ -23,7 +23,7 @@ class HostDefaultPaths:
         self.external_repo_dir = os.path.join(self.tmp_dir, "external")
 
 
-class HostPaths(HostDefaultPaths):
+class HostPaths(ArmoryDefaultPaths):
     def __init__(self):
         super().__init__()
         if os.path.isfile(self.armory_config):
@@ -51,6 +51,6 @@ class HostPaths(HostDefaultPaths):
         os.makedirs(self.output_dir, exist_ok=True)
 
 
-class DockerPaths(HostDefaultPaths):
+class DockerPaths(ArmoryDefaultPaths):
     def __init__(self):
         super().__init__()

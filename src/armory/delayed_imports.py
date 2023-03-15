@@ -1,8 +1,10 @@
 """
 Time-consuming imports
 """
+import os
 
 from armory.logs import log
+from armory.paths import HostPaths
 
 log.info(
     "Importing and configuring torch, tensorflow, and art, if available. "
@@ -38,6 +40,7 @@ except ImportError:
 # path if art can be imported in the current environment
 try:
     from art import config
+
     config.set_data_path(os.path.join(HostPaths().saved_model_dir, "art"))
 except ImportError:
     pass
