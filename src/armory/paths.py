@@ -7,62 +7,8 @@ import warnings  # armory.logs initialization depends on this module, use warnin
 
 from armory import configuration
 
-NO_DOCKER = False
 
-
-def set_mode(mode, set_art_path=True):
-    """
-    Set path mode to "docker" or "host"
-    """
-    MODES = ("docker", "host")
-    global NO_DOCKER
-    if mode == "docker":
-        NO_DOCKER = False
-    elif mode == "host":
-        NO_DOCKER = True
-    else:
-        raise ValueError(f"mode {mode} is not in {MODES}")
-
-    if set_art_path:
-        set_art_data_path()
-
-
-def set_art_data_path():
-    """
-    Sets the art data path if art can be imported in the current environment
-    """
-    try:
-        from art import config
-
-        config.set_data_path(os.path.join(runtime_paths().saved_model_dir, "art"))
-    except ImportError:
-        pass
-
-
-def runtime_paths():
-    """
-    Delegates armory evaluation paths to be either Host or Docker paths.
-    """
-    if NO_DOCKER:
-        return HostPaths()
-    else:
-        return DockerPaths()
-
-
-class DockerPaths:
-    def __init__(self):
-        self.cwd = "/workspace"
-        armory_dir = "/armory"
-        self.dataset_dir = armory_dir + "/datasets"
-        self.local_git_dir = armory_dir + "/git"
-        self.saved_model_dir = armory_dir + "/saved_models"
-        self.pytorch_dir = self.saved_model_dir + "/pytorch"
-        self.tmp_dir = armory_dir + "/tmp"
-        self.output_dir = armory_dir + "/outputs"
-        self.external_repo_dir = self.tmp_dir + "/external"
-
-
-class HostDefaultPaths:
+class ArmoryDefaultPaths:
     def __init__(self):
         self.cwd = os.getcwd()
         self.user_dir = os.path.expanduser("~")
@@ -77,7 +23,7 @@ class HostDefaultPaths:
         self.external_repo_dir = os.path.join(self.tmp_dir, "external")
 
 
-class HostPaths(HostDefaultPaths):
+class HostPaths(ArmoryDefaultPaths):
     def __init__(self):
         super().__init__()
         if os.path.isfile(self.armory_config):
@@ -103,3 +49,8 @@ class HostPaths(HostDefaultPaths):
         os.makedirs(self.pytorch_dir, exist_ok=True)
         os.makedirs(self.tmp_dir, exist_ok=True)
         os.makedirs(self.output_dir, exist_ok=True)
+
+
+class DockerPaths(ArmoryDefaultPaths):
+    def __init__(self):
+        super().__init__()

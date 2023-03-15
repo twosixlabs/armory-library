@@ -10,6 +10,10 @@
 
 FROM nvidia/cuda:11.6.2-cudnn8-runtime-ubuntu20.04
 
+# pip Configuration - https://pip.pypa.io/en/stable/user_guide/#config-file
+ARG PIP_DISABLE_PIP_VERSION_CHECK=1
+ARG PIP_NO_CACHE_DIR=1
+
 # Temporary fix for broken nvidia package checksum
 # RUN rm -f /etc/apt/sources.list.d/nvidia-ml.list
 
@@ -47,8 +51,14 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/conda/lib/
 RUN conda install -c conda-forge -n base mamba \
     && conda clean --all
 
-WORKDIR /armory-repo/
+
+WORKDIR /armory-repo
+
 COPY environment.yml /armory-repo/
+# NOTE: This COPY command is filtered using the `.dockerignore` file
+#       in the root of the repo.
+COPY ./ /armory-repo
+
 
 RUN mamba env update -f environment.yml -n base --prune \
     && mamba clean --all
@@ -79,4 +89,48 @@ RUN /opt/conda/bin/pip install --no-cache-dir \
 # transformers is used for the Entailment metric only
 # pydub required for ART mp3 defense
 
+
+## Deepspeech Requirements
+RUN pip install git+https://github.com/romesco/hydra-lightning/\#subdirectory=hydra-configs-pytorch-lightning
+
+RUN echo "Updating pip" && \
+    pip install --upgrade pip && \
+    echo "Building Armory from local source" && \
+    pip install --no-compile --editable '.[developer]' && \
+    echo "Configuring Armory..." && \
+    armory configure --use-default && \
+    echo "Cleaning up..." && \
+    rm -rf /armory-repo/.git
+
+RUN pip install \
+        git+https://github.com/ifzhang/ByteTrack.git \
+        thop \
+        lap \
+        Cython && \
+    # Requires cython for install, so will fail if run in the same pip install as cython
+    pip install cython-bbox
+
+
 WORKDIR /workspace
+
+
+# ------------------------------------------------------------------
+# DEVELOPER NOTES:
+# ------------------------------------------------------------------
+# TODO: determine if this environment setup is needed
+#  $ ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/local/cuda/lib64"
+
+# NOTE:
+#  - pytorch-lightning >= 1.5.0 will break Deep Speech 2
+#  - torchmetrics >= 0.8.0 will break pytorch-lightning 1.4
+#  - hydra-lightning installs omegaconf
+#  - google-cloud-storage needed for checkpoint.py import
+#  - only sox python bindings are installed; underlying sox binaries not needed
+
+# NOTE: Listed dependencies of PyTorch Deep Speech 2, but do not appear
+#       to be used for inference (only for training), they are not installed:
+#         - torchelastic
+#         - wget
+#         - flask
+#         - fairscale
+# ------------------------------------------------------------------
