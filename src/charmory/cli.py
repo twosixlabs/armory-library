@@ -313,8 +313,6 @@ def download(command_args, prog, description):
     )
     from armory.data import datasets, model_weights
 
-    paths.set_mode("host")
-
     args = parser.parse_args(command_args)
 
     logger.update_filters(args.log_level, args.debug)
@@ -371,7 +369,7 @@ def configure(command_args, prog, description):
     args = parser.parse_args(command_args)
     logger.update_filters(args.log_level, args.debug)
 
-    default_host_paths = paths.HostDefaultPaths()
+    default_host_paths = paths.ArmoryDefaultPaths()
 
     config = None
 
