@@ -131,11 +131,11 @@ ignore-vcs   = false
 reproducible = true
 directory    = "dist"
 sources      = [ "src" ]
-# include = [
-#   "src/",
-#   "tests/",
-#   "pyproject.toml",
-# ]
+include = [
+  "src/",
+  "tests/",
+  "pyproject.toml",
+]
 # exclude = [
 # ]
 
