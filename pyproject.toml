@@ -46,7 +46,7 @@ developer =[
     "hatch", # build tool
     "wheel", # build tool
     "mkdocs",
-    "black[jupyter]==22.*",
+    "black",
     "isort",
     "flake8",
     "bandit[toml]", # code scanning
@@ -76,14 +76,12 @@ math = [
 ]
 
 pytorch = [
-    "armory-testbed[engine,datasets,math]",
     "torch",
     "torchaudio",
     "torchvision",
 ]
 
 deepspeech = [
-    "armory-testbed[pytorch,engine,datasets,math]",
     "python-levenshtein",
     "torchmetrics < 0.8.0",
     "sox",
@@ -94,30 +92,31 @@ deepspeech = [
 ]
 
 tensorflow = [
-    "armory-testbed[engine,datasets,math]",
     "tf-models-official",
     "tensorflow >= 2.10.0",
 ]
 
 datasets = [
-    "armory-testbed[tensorflow]",
     "tensorflow-datasets >= 4.6.0",
     "protobuf",
 ]
 
 datasets-builder = [
-    "armory-testbed[datasets,engine]",
     "apache-beam >= 2.22.0",
 ]
 
 all = [
+    "armory-testbed[tracking]",
     "armory-testbed[developer]",
     "armory-testbed[engine]",
     "armory-testbed[math]",
-    "armory-testbed[datasets]",
     "armory-testbed[pytorch]",
+    "armory-testbed[deepspeech]",
     "armory-testbed[tensorflow]",
+    "armory-testbed[datasets]",
+    "armory-testbed[datasets-builder]",
 ]
+
 
 [build-system]
 build-backend = "hatchling.build"
@@ -131,12 +130,12 @@ requires = [
 ignore-vcs   = false
 reproducible = true
 directory    = "dist"
-sources     = [ "src" ]
-include = [
-  "src/",
-  "tests/",
-  "pyproject.toml",
-]
+sources      = [ "src" ]
+# include = [
+#   "src/",
+#   "tests/",
+#   "pyproject.toml",
+# ]
 # exclude = [
 # ]
 
