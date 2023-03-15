@@ -132,12 +132,10 @@ reproducible = true
 directory    = "dist"
 sources      = [ "src" ]
 include = [
-  "src/",
-  "tests/",
+  "LICENSE",
   "pyproject.toml",
+  "README.md"
 ]
-# exclude = [
-# ]
 
 
 [tool.hatch.build.hooks.vcs]
