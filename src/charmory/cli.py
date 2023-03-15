@@ -12,17 +12,16 @@ This runs an arbitrary config file. Results are output to the `outputs/` directo
 import argparse
 import json
 import os
+import pathlib
 import re
 import sys
 
 from jsonschema import ValidationError
 
 import armory
-from armory import arguments, paths
 from armory.configuration import load_global_config, save_config
 import armory.logs as logger
 from armory.paths import HostPaths
-from armory.utils.configuration import load_config, load_config_stdin
 from charmory.core import Evaluator
 
 OLD_SCENARIOS = [
@@ -70,6 +69,38 @@ try:
     config.set_data_path(os.path.join(HostPaths().saved_model_dir, "art"))
 except ImportError:
     pass
+
+
+# Moved from `arguments.py`.
+# NOTE: All argument processing will be handled by a single module. -CW
+def merge_config_and_args(config, args):
+    """
+    Override members of config if specified as args. The config dict is mutated.
+    Members in config are percolated into args to act as if they were specified.
+    Members of args that are not in config are put there so that the output
+    accurately records what was run. Returns a modified config and a newly
+    created args.
+    The precedence becomes defaults < config block < command args.
+    """
+
+    # find truthy sysconfig specifications
+    sysconf = config["sysconfig"]
+    new_spec = {name: sysconf[name] for name in sysconf if sysconf[name]}
+
+    # find truthy args specifications, overwriting config if present
+    cmd = vars(args)
+    new_args = {name: cmd[name] for name in cmd if cmd[name]}
+    new_spec.update(new_args)
+
+    # sysconfig gets updated with all truthy members of the prioritized union
+    sysconf.update(new_spec)
+
+    # new_args now gets the original namespace and all truthy members of the prioritized
+    # union
+    cmd.update(new_spec)
+    new_args = argparse.Namespace(**cmd)
+
+    return config, new_args
 
 
 def sorted_unique_nonnegative_numbers(values, warning_string):
@@ -285,9 +316,9 @@ def run(command_args, prog, description) -> int:
                 )
                 return 1
             logger.log.info("Reading config from stdin...")
-            config = load_config_stdin()
+            config = json.loads(sys.stdin.read())
         else:
-            config = load_config(args.filepath)
+            config = json.loads(pathlib.Path(args.filepath))
     except ValidationError as e:
         logger.log.error(
             f"Could not validate config: {e.message} @ {'.'.join(e.absolute_path)}"
@@ -304,7 +335,7 @@ def run(command_args, prog, description) -> int:
     _set_gpus(config, args.use_gpu, args.no_gpu, args.gpus)
     _set_outputs(config, args.output_dir, args.output_filename)
     logger.log.debug(f"unifying sysconfig {config['sysconfig']} and args {args}")
-    (config, args) = arguments.merge_config_and_args(config, args)
+    (config, args) = merge_config_and_args(config, args)
 
     if args.num_eval_batches and args.index:
         raise ValueError("Cannot have --num-eval-batches and --index")
@@ -410,7 +441,7 @@ def configure(command_args, prog, description):
     args = parser.parse_args(command_args)
     logger.update_filters(args.log_level, args.debug)
 
-    default_host_paths = paths.ArmoryDefaultPaths()
+    default_host_paths = armory.paths.ArmoryDefaultPaths()
 
     config = None
 
