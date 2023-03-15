@@ -18,10 +18,8 @@ classifiers = [
 
 dependencies = [
     "setuptools_scm",
-    "docker",
     "jsonschema",
     "loguru",
-    "pytest",
     "PyYAML",
     "requests",
     "toml",
@@ -40,6 +38,7 @@ armory = "armory.__main__:main"
 # optional dependencies work
 [project.optional-dependencies]
 developer =[
+    "pytest",
     "hatch", # build tool
     "wheel", # build tool
     "mkdocs",
@@ -108,17 +107,10 @@ datasets-builder = [
     "apache-beam >= 2.22.0",
 ]
 
-jupyter = [
-    "jupyterlab",
-    "jupyterlab_widgets",
-    "ipywidgets",
-]
-
 all = [
     "armory-testbed[developer]",
     "armory-testbed[engine]",
     "armory-testbed[math]",
-    "armory-testbed[jupyter]",
     "armory-testbed[datasets]",
     "armory-testbed[pytorch]",
     "armory-testbed[tensorflow]",
