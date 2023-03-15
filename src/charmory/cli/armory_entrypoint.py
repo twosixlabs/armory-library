@@ -47,8 +47,7 @@ except ImportError:
 try:
     import tensorflow as tf
 
-    gpus = tf.config.list_physical_devices("GPU")
-    if gpus:
+    if gpus := tf.config.list_physical_devices("GPU"):
         # Currently, memory growth needs to be the same across GPUs
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
@@ -318,7 +317,7 @@ def run(command_args, prog, description) -> int:
             logger.log.info("Reading config from stdin...")
             config = json.loads(sys.stdin.read())
         else:
-            config = json.loads(pathlib.Path(args.filepath))
+            config = json.loads(pathlib.Path(args.filepath).read_text())
     except ValidationError as e:
         logger.log.error(
             f"Could not validate config: {e.message} @ {'.'.join(e.absolute_path)}"
