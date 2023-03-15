@@ -20,10 +20,10 @@ from jsonschema import ValidationError
 import armory
 from armory import arguments, paths
 from armory.configuration import load_global_config, save_config
-from charmory.core import Evaluator
 import armory.logs as logger
 from armory.utils.configuration import load_config, load_config_stdin
 from armory.utils.version import to_docker_tag
+from charmory.core import Evaluator
 
 OLD_SCENARIOS = [
     "https://github.com/twosixlabs/armory-example/blob/master/scenario_download_configs/scenarios-set1.json"
