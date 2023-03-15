@@ -34,13 +34,10 @@ except RuntimeError:
 except ImportError:
     pass
 
-# Handle ART configuration
-
-from armory import paths
-
+# Handle ART configuration by setting the art data
+# path if art can be imported in the current environment
 try:
-    paths.set_art_data_path()
-except OSError:
-    # If running in --no-docker mode, catch write error based on default DockerPaths
-    # the later call to paths.set_mode("host") will set this properly
+    from art import config
+    config.set_data_path(os.path.join(HostPaths().saved_model_dir, "art"))
+except ImportError:
     pass
