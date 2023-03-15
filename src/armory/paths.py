@@ -34,19 +34,9 @@ def set_art_data_path():
     try:
         from art import config
 
-        config.set_data_path(os.path.join(runtime_paths().saved_model_dir, "art"))
+        config.set_data_path(os.path.join(HostPaths().saved_model_dir, "art"))
     except ImportError:
         pass
-
-
-def runtime_paths():
-    """
-    Delegates armory evaluation paths to be either Host or Docker paths.
-    """
-    if NO_DOCKER:
-        return HostPaths()
-    else:
-        return DockerPaths()
 
 
 class HostDefaultPaths:
