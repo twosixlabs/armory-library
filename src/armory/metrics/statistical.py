@@ -129,7 +129,6 @@ def make_contingency_tables(
 
     contingency_tables = {}
     for class_id in np.unique(y):
-
         items_flagged_A = flagged_A[y == class_id]
         items_flagged_B = flagged_B[y == class_id]
 

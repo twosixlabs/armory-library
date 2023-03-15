@@ -126,7 +126,6 @@ class DapricotDev(tfds.core.GeneratorBasedBuilder):
         # For each camera, go through each image.
         # For each image, gets its annotations and yield relevant data
         for scene in scenes:
-
             annotation_path_camera_1 = os.path.join(
                 path, "annotations/labels_scene_{}_camera_1.json".format(scene)
             )
@@ -159,7 +158,6 @@ class DapricotDev(tfds.core.GeneratorBasedBuilder):
             for image_camera_1, image_camera_2, image_camera_3 in zip(
                 images_camera_1, images_camera_2, images_camera_3
             ):
-
                 # verify consistency
                 fname1 = image_camera_1[
                     "file_name"

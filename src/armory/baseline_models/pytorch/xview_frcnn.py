@@ -59,7 +59,7 @@ def get_art_model(
             "loss_rpn_box_reg",
         ),
         device_type=DEVICE,
-        **wrapper_kwargs
+        **wrapper_kwargs,
     )
 
     return art_model

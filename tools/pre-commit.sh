@@ -13,7 +13,7 @@ PROJECT_ROOT=`git rev-parse --show-toplevel`
 # using the `ARMORY_CI_TEST` environmental variable.
 # Example:
 #   $ ARMORY_CI_TEST=1 ./tools/pre-commit.sh
-ARMORY_CI_TEST="${ARMORY_COMMIT_HOOK_CI:-0}"
+ARMORY_CI_TEST="${ARMORY_CI_TEST:-0}"
 
 TRACKED_FILES="git --no-pager diff --diff-filter=d --name-only HEAD"
 if [ "${ARMORY_CI_TEST}" -ne 0 ]; then
@@ -51,9 +51,9 @@ pushd $PROJECT_ROOT > /dev/null || exit 1
         ############
         # Black
         echo "⚫ Executing 'black' formatter..."
-        python -m black --check ${TARGET_FILES} > /dev/null 2>&1
+        python3 -m black --check ${TARGET_FILES} > /dev/null 2>&1
         if [ $? -ne 0 ]; then
-            python -m black $TARGET_FILES
+            python3 -m black $TARGET_FILES
             echo "⚫ some files were formatted."
             CHECK_EXIT_STATUS 1
         fi
@@ -61,13 +61,13 @@ pushd $PROJECT_ROOT > /dev/null || exit 1
         ############
         # Flake8
         echo "🎱 Executing 'flake8' formatter..."
-        python -m flake8 --config=.flake8 ${TARGET_FILES}
+        python3 -m flake8 --config=.flake8 ${TARGET_FILES}
         CHECK_EXIT_STATUS $?
 
         ############
         # isort
         echo "⏬ Executing 'isort' import sorter..."
-        isort $TARGET_FILES
+        python3 -m isort $TARGET_FILES
         CHECK_EXIT_STATUS $?
     fi
 
@@ -87,10 +87,10 @@ pushd $PROJECT_ROOT > /dev/null || exit 1
                 continue
             fi
 
-            python -m json.tool --sort-keys --indent=4 ${TARGET_FILE} 2>&1 | diff - ${TARGET_FILE} > /dev/null 2>&1
+            python3 -m json.tool --sort-keys --indent=4 ${TARGET_FILE} 2>&1 | diff - ${TARGET_FILE} > /dev/null 2>&1
 
             if [ $? -ne 0 ] ; then
-                JSON_PATCH="`python -m json.tool --sort-keys --indent=4 ${TARGET_FILE}`"
+                JSON_PATCH="`python3 -m json.tool --sort-keys --indent=4 ${TARGET_FILE}`"
                 if [[ ! -z "${JSON_PATCH// }" ]]; then
                     echo "${JSON_PATCH}" > ${TARGET_FILE}    # The double quotes are important here!
                     echo "📄 $(tput bold)modified ${TARGET_FILE}$(tput sgr0)"

@@ -10,7 +10,6 @@ pytestmark = [pytest.mark.online]
 
 
 def test_valid_model_weight(tmp_path):
-
     dir = tmp_path / "saved_model_dir"  # tmp_path is pytest Pathlib fixture
     dir.mkdir()
     print("Saving Model to Tmp Directory: {}".format(dir))
@@ -59,7 +58,6 @@ def test_valid_external_github_repo(name, repo, tmp_path):
         repo_list = repo
 
     for rp in repo_list:
-
         repo_name = rp.split("@")[0].split("/")[-1]
         basedir = dir / repo_name
         print(basedir)
