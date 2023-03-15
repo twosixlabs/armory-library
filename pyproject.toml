@@ -37,10 +37,6 @@ armory = "charmory.cli:main"
 # please see docs/getting_started.md#the-armory-flavors for how these
 # optional dependencies work
 [project.optional-dependencies]
-tracking = [
-    "mlflow",
-]
-
 developer =[
     "pytest",
     "hatch", # build tool
@@ -50,6 +46,10 @@ developer =[
     "isort",
     "flake8",
     "bandit[toml]", # code scanning
+]
+
+tracking = [
+    "mlflow",
 ]
 
 engine = [
@@ -106,15 +106,15 @@ datasets-builder = [
 ]
 
 all = [
-    "armory-testbed[tracking]",
     "armory-testbed[developer]",
+    "armory-testbed[tracking]",
     "armory-testbed[engine]",
     "armory-testbed[math]",
     "armory-testbed[pytorch]",
-    "armory-testbed[deepspeech]",
-    "armory-testbed[tensorflow]",
-    "armory-testbed[datasets]",
-    "armory-testbed[datasets-builder]",
+    # "armory-testbed[deepspeech]",
+    # "armory-testbed[tensorflow]",
+    # "armory-testbed[datasets]",
+    # "armory-testbed[datasets-builder]",
 ]
 
 
