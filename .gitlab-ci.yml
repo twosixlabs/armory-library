@@ -85,7 +85,8 @@ unit-test:
     - pytest -c pyproject.toml -s ./tests.orig/unit/test_configuration.py
     - pytest -c pyproject.toml -m "not docker_required and unit" ./tests.orig/
     - pytest -c pyproject.toml -s ./tests.orig/end_to_end/test_no_docker.py
-    - $( exit 0 ); echo $?
+    - armory run scenario_configs/cifar10_baseline.json --check
+    - charmory
 
 build:
   stage: "🔨 Build"

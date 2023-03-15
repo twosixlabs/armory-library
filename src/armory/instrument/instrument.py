@@ -261,7 +261,7 @@ class Hub:
         self.default_writers = []
         self.closed = False
         self.export_subdir = "saved_samples"
-        self._set_output_dir(armory.paths.runtime_paths().output_dir)
+        self._set_output_dir(armory.paths.HostPaths().output_dir)
 
     def _set_output_dir(self, name):
         self.output_dir = name

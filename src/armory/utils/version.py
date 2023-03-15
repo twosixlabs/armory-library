@@ -12,27 +12,14 @@ which is a bit ungainly.
 """
 
 import functools
-import os
+from importlib import metadata
 from pathlib import Path
-import re
-import site
 
 import setuptools_scm
-
-try:
-    from importlib import metadata
-except ImportError:
-    # Python <= 3.7
-    import importlib_metadata as metadata  # noqa
 
 from armory.logs import log
 
 PYPI_PACKAGE_NAME = "armory-testbed"
-
-
-def to_docker_tag(version_str: str) -> str:
-    """Convert version string to docker tag"""
-    return version_str.replace("+", ".")
 
 
 def get_metadata_version(package: str = PYPI_PACKAGE_NAME) -> str:
@@ -63,59 +50,8 @@ def get_build_hook_version() -> str:
         raise ModuleNotFoundError("Unable to extract armory version from __about__.py")
 
 
-def developer_mode_version(
-    package_name: str, pretend_version: str = "", update_metadata: bool = False
-) -> str:
-    """Return the version in developer mode
-
-    Args:
-        param1 (int): The first parameter.
-        package_name (str): The name of the package.
-        pretend_version (str): The version to pretend to be.
-        update_metadata (bool): Whether to update the metadata.
-
-    Example:
-        $ ARMORY_DEV_MODE=1 ARMORY_PRETEND_VERSION="1.2.3" armory --version
-    """
-    old_version = get_metadata_version(package_name)
-    version_str = pretend_version or get_tag_version()
-
-    if pretend_version:
-        log.info(f"Spoofing version {pretend_version} for {package_name}")
-
-    if update_metadata:
-        version_regex = r"(?P<prefix>^Version: )(?P<version>.*)$"
-        package_meta = None
-        for f in metadata.files(package_name):
-            if str(f).endswith("METADATA"):
-                package_meta = f
-                break
-        if not package_meta:
-            log.warning(f"Unable to find package metadata for {package_name}")
-            return version_str
-        for path in site.getsitepackages():
-            metadata_path = Path(path / package_meta)
-            if metadata_path.is_file():
-                break
-        metadata_update = re.sub(
-            version_regex,
-            f"\g<prefix>{version_str}",  # noqa
-            metadata_path.read_text(),
-            flags=re.M,
-        )
-        metadata_path.write_text(metadata_update)
-        log.info(f"Version updated from {old_version} to {version_str}")
-
-    return version_str
-
-
 @functools.lru_cache(maxsize=1, typed=False)
 def get_version(package_name=PYPI_PACKAGE_NAME) -> str:
-    if os.getenv("ARMORY_DEV_MODE"):
-        pretend_version = os.getenv("ARMORY_PRETEND_VERSION")
-        update_metadata = os.getenv("ARMORY_UPDATE_METADATA")
-        return developer_mode_version(package_name, pretend_version, update_metadata)
-
     errors = []
     try:
         version = get_tag_version()
@@ -136,7 +72,7 @@ def get_version(package_name=PYPI_PACKAGE_NAME) -> str:
         errors.append(error_str)
 
     try:
-        version = get_metadata_version(package_name)
+        version = get_metadata_version()
         log.debug(f"version {version} found via package metadata")
         return version
     except metadata.PackageNotFoundError as e:

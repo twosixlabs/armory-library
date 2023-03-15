@@ -12,8 +12,8 @@ The particular scenario and configs will be picked up in the "scenario" field:
     This is used to instantiate the subclass.
 """
 
-import argparse
 import base64
+from importlib import import_module
 import importlib.resources
 import json
 import os
@@ -21,56 +21,10 @@ import time
 
 import pytest
 
-import armory
-from armory import Config, environment, paths, validation
-from armory.logs import log, make_logfiles, update_filters
+from armory import Config, paths, validation
+from armory.logs import log, make_logfiles
 from armory.utils import config_loading, external_repo
 from armory.utils.configuration import load_config
-
-
-def _scenario_setup(config: Config) -> None:
-    """
-    Creates scenario specific tmp and output directiories.
-
-    Also pulls external repositories ahead of running the scenario in case the scenario
-    itself is found in the external repository.
-    """
-
-    runtime_paths = paths.runtime_paths()
-    if "eval_id" not in config:
-        timestamp = time.time()
-        log.error(f"eval_id not in config. Inserting current timestamp {timestamp}")
-        config["eval_id"] = str(timestamp)
-
-    scenario_output_dir = os.path.join(runtime_paths.output_dir, config["eval_id"])
-    scenario_tmp_dir = os.path.join(runtime_paths.tmp_dir, config["eval_id"])
-    os.makedirs(scenario_output_dir, exist_ok=True)
-    os.makedirs(scenario_tmp_dir, exist_ok=True)
-
-    log.info(f"armory outputs and logs will be written to {scenario_output_dir}")
-    make_logfiles(scenario_output_dir)
-
-    # Download any external repositories and add them to the sys path for use
-    if config["sysconfig"].get("external_github_repo", None):
-        external_repo_dir = os.path.join(scenario_tmp_dir, "external")
-        external_repo.download_and_extract_repos(
-            config["sysconfig"]["external_github_repo"],
-            external_repo_dir=external_repo_dir,
-        )
-    pythonpaths = config["sysconfig"].get("external_github_repo_pythonpath")
-    if isinstance(pythonpaths, str):
-        pythonpaths = [pythonpaths]
-    elif pythonpaths is None:
-        pythonpaths = []
-    for pythonpath in pythonpaths:
-        external_repo.add_pythonpath(pythonpath, external_repo_dir=external_repo_dir)
-    local_paths = config["sysconfig"].get("local_repo_path")
-    if isinstance(local_paths, str):
-        local_paths = [local_paths]
-    elif local_paths is None:
-        local_paths = []
-    for local_path in local_paths:
-        external_repo.add_local_repo(local_path)
 
 
 def _get_config(config_json, from_file=False) -> Config:
@@ -79,13 +33,13 @@ def _get_config(config_json, from_file=False) -> Config:
     resultant dict.
     """
     if from_file:
-        config = load_config(config_json)
+        config_json = load_config(config_json)
     else:
         config_base64_bytes = config_json.encode("utf-8")
         config_b64_bytes = base64.b64decode(config_base64_bytes)
         config_string = config_b64_bytes.decode("utf-8")
-        config = json.loads(config_string)
-    return config
+        config_json = json.loads(config_string)
+    return config_json
 
 
 def run_validation(config_json, from_file=False) -> None:
@@ -145,96 +99,92 @@ def run_config(*args, **kwargs):
     scenario.evaluate()
 
 
+def _scenario_setup(config: Config) -> None:
+    """
+    Creates scenario specific tmp and output directiories.
+
+    Also pulls external repositories ahead of running the scenario in case the scenario
+    itself is found in the external repository.
+    """
+
+    runtime_paths = paths.HostPaths()
+    if "eval_id" not in config:
+        timestamp = time.time()
+        log.error(f"eval_id not in config. Inserting current timestamp {timestamp}")
+        config["eval_id"] = str(timestamp)
+
+    scenario_output_dir = os.path.join(runtime_paths.output_dir, config["eval_id"])
+    scenario_tmp_dir = os.path.join(runtime_paths.tmp_dir, config["eval_id"])
+    os.makedirs(scenario_output_dir, exist_ok=True)
+    os.makedirs(scenario_tmp_dir, exist_ok=True)
+
+    log.info(f"armory outputs and logs will be written to {scenario_output_dir}")
+    make_logfiles(scenario_output_dir)
+
+    # Download any external repositories and add them to the sys path for use
+    if config["sysconfig"].get("external_github_repo", None):
+        external_repo_dir = os.path.join(scenario_tmp_dir, "external")
+        external_repo.download_and_extract_repos(
+            config["sysconfig"]["external_github_repo"],
+            external_repo_dir=external_repo_dir,
+        )
+    pythonpaths = config["sysconfig"].get("external_github_repo_pythonpath")
+    if isinstance(pythonpaths, str):
+        pythonpaths = [pythonpaths]
+    elif pythonpaths is None:
+        pythonpaths = []
+    for pythonpath in pythonpaths:
+        external_repo.add_pythonpath(pythonpath, external_repo_dir=external_repo_dir)
+    local_paths = config["sysconfig"].get("local_repo_path")
+    if isinstance(local_paths, str):
+        local_paths = [local_paths]
+    elif local_paths is None:
+        local_paths = []
+    for local_path in local_paths:
+        external_repo.add_local_repo(local_path)
+
+
+def main(scenario_config: dict):
+    """
+    Programmatic entrypoint for running scenarios
+
+    TODO
+    ----------
+      - Utilize @dataclass for scenario_config
+      - Refactor method signature to be more explicit
+      - Turn main into a Scenario class
+    """
+    _scenario_setup(scenario_config)
+
+    # TODO: Refactor the dynamic import mechanism. -CW
+    _scenario_config = scenario_config.get("scenario")
+    ScenarioClass = getattr(
+        import_module(_scenario_config["module"]), _scenario_config["name"]
+    )
+
+    # TODO: Add `num_eval_batches` to scenario_config -CW
+    # if args.check and args.num_eval_batches:
+    #     log.warning("--num_eval_batches will be overridden since --check was passed")
+    #     args.num_eval_batches = None
+
+    # if args.validate_config:
+    #     run_validation(args.config, args.from_file)
+
+    kwargs = scenario_config.get("kwargs", {})
+    kwargs.update(
+        dict(
+            check_run=scenario_config["sysconfig"]["check"],
+            num_eval_batches=0,
+            skip_benign=False,
+            skip_attack=False,
+            skip_misclassified=False,
+        )
+    )
+    scenario_config["kwargs"] = kwargs
+    scenario = ScenarioClass(scenario_config, **kwargs)
+
+    scenario.evaluate()
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(prog="scenario", description="run armory scenario")
-    parser.add_argument(
-        "config",
-        metavar="<config json>",
-        type=str,
-        help="scenario config JSON",
-    )
-
-    parser.add_argument(
-        "-d",
-        "--debug",
-        action="store_true",
-        help="synonym for --log-level=armory:debug",
-    )
-    parser.add_argument(
-        "--log-level",
-        action="append",
-        help="set log level per-module (ex. art:debug) can be used mulitple times",
-    )
-    parser.add_argument(
-        "--no-docker",
-        action="store_true",
-        help="Whether to use Docker or a local environment with armory run",
-    )
-    parser.add_argument(
-        "--base64",
-        dest="from_file",
-        action="store_false",
-        help="If the config argument is a base64 serialized JSON instead of a filepath",
-    )
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="Whether to quickly check to see if scenario code runs",
-    )
-    parser.add_argument(
-        "--num-eval-batches",
-        type=int,
-        help="Number of batches to use for evaluation of benign and adversarial examples",
-    )
-    parser.add_argument(
-        "--skip-benign",
-        action="store_true",
-        help="Skip benign inference and metric calculations",
-    )
-    parser.add_argument(
-        "--skip-attack",
-        action="store_true",
-        help="Skip attack generation and metric calculations",
-    )
-    parser.add_argument(
-        "--validate-config",
-        action="store_true",
-        help="Validate model configuration against several checks",
-    )
-    parser.add_argument(
-        "--skip-misclassified",
-        action="store_true",
-        help="Skip attack of inputs that are already misclassified",
-    )
-    args = parser.parse_args()
-    update_filters(args.log_level, args.debug)
-    log.trace(f"main.py called update_filters({args.log_level} debug: {args.debug})")
-    calling_version = os.getenv(environment.ARMORY_VERSION, "UNKNOWN")
-    if calling_version != armory.__version__:
-        log.warning(
-            f"armory calling version {calling_version} != "
-            f"armory imported version {armory.__version__}"
-        )
-
-    if args.no_docker:
-        paths.set_mode("host")
-
-    if args.check and args.num_eval_batches:
-        log.warning("--num_eval_batches will be overridden since --check was passed")
-        args.num_eval_batches = None
-
-    if args.validate_config:
-        run_validation(args.config, args.from_file)
-    else:
-        run_config(
-            args.config,
-            from_file=args.from_file,
-            check_run=args.check,
-            num_eval_batches=args.num_eval_batches,
-            skip_benign=args.skip_benign,
-            skip_attack=args.skip_attack,
-            skip_misclassified=args.skip_misclassified,
-        )
-    print(
-        armory.END_SENTINEL
-    )  # indicates to host that the scenario finished w/out error
+    log.error("Calling `armory.scenarios.main` has been deperciated.")
