@@ -43,11 +43,11 @@ setup:
     if [[ ! -d "${PYTHON_VENV_DIR}" ]]; then
       pip3 install --upgrade virtualenv
       python3 -m venv --copies "${PYTHON_VENV_DIR}"
-      source "${PYTHON_VENV_DIR}/bin/activate"
-      python3 -m pip install --upgrade pip build
-      pip3 install --no-compile --editable '.[all]'
-      armory configure --use-defaults
     fi
+    source "${PYTHON_VENV_DIR}/bin/activate"
+    python3 -m pip install --upgrade pip build
+    pip3 install --no-compile --editable '.[all]'
+    armory configure --use-defaults
 
 code-linting:
   stage: "📡 Code Linting"
