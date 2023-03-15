@@ -66,7 +66,6 @@ class OuterModel(torch.nn.Module):
 def get_art_model(
     model_kwargs: dict, wrapper_kwargs: dict, weights_path: Optional[str] = None
 ) -> PyTorchClassifier:
-
     model = OuterModel(weights_path=weights_path, **model_kwargs)
 
     lr = wrapper_kwargs.pop("learning_rate", 0.1)
@@ -88,7 +87,6 @@ def get_art_model(
 def get_art_model_sgd(
     model_kwargs: dict, wrapper_kwargs: dict, weights_path: Optional[str] = None
 ) -> PyTorchClassifier:
-
     """Returns the same model as get_art_model, but with the SGD optimizer.
     Some poisoning attacks were found to be brittle with regard to optimizer.
     """

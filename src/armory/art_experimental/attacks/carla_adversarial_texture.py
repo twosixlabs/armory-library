@@ -95,7 +95,6 @@ class AdversarialPhysicalTexture(AdversarialTexturePyTorch):
             padded_patch = padded_patch.float()
 
         else:
-
             startpoints = [
                 [0, 0],
                 [frame_width, 0],
@@ -117,7 +116,6 @@ class AdversarialPhysicalTexture(AdversarialTexturePyTorch):
             image_mask_list = []
 
             for i_frame in range(nb_frames):
-
                 image_mask_i = torchvision.transforms.functional.perspective(
                     img=image_mask,
                     startpoints=startpoints,

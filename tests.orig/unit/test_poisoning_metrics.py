@@ -16,7 +16,6 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.slow
 def test_explanatory_model():
-
     config_keys = [
         "cifar10_explanatory_model",
         "gtsrb_explanatory_model",
@@ -39,7 +38,6 @@ def test_explanatory_model():
     for config_key, data_size, activation_shape in zip(
         config_keys, data_sizes, activation_shapes
     ):
-
         config = poisoning.EXPLANATORY_MODEL_CONFIGS[config_key]
         config = copy.copy(config)
 
@@ -69,7 +67,6 @@ def test_explanatory_model():
 
 
 def test_preprocess():
-
     x = np.random.rand(10, 32, 32, 3).astype(np.float32)
     x_ = poisoning.ExplanatoryModel._preprocess_image(x, resize_image=True)
     assert x_.shape == (10, 224, 224, 3)

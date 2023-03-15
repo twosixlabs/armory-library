@@ -42,7 +42,6 @@ class OuterModel(torch.nn.Module):
 def get_art_model(
     model_kwargs: dict, wrapper_kwargs: dict, weights_path: Optional[str] = None
 ) -> PyTorchClassifier:
-
     model = OuterModel(weights_path=weights_path, **model_kwargs)
 
     wrapped_model = PyTorchClassifier(

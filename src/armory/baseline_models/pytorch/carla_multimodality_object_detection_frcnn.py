@@ -106,7 +106,6 @@ class MultimodalNaive(torch.nn.Module):
 def get_art_model_mm(
     model_kwargs: dict, wrapper_kwargs: dict, weights_path: Optional[str] = None
 ) -> PyTorchFasterRCNN:
-
     num_classes = model_kwargs.pop("num_classes", 3)
 
     backbone = MultimodalNaive(**model_kwargs)

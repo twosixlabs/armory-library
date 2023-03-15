@@ -114,7 +114,6 @@ def poison_loader_audio(**kwargs):
     backdoor_kwargs = kwargs.pop("backdoor_kwargs")
 
     if "backdoor_path" in backdoor_kwargs:
-
         trigger = CacheAudioTrigger(**backdoor_kwargs)
 
         def poison_func(x):
@@ -124,7 +123,6 @@ def poison_loader_audio(**kwargs):
         #    return insert_audio_trigger(x, **backdoor_kwargs)
 
     elif "frequency" in backdoor_kwargs:
-
         trigger = CacheToneTrigger(**backdoor_kwargs)
 
         def poison_func(x):
