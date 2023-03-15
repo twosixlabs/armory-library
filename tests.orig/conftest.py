@@ -1,12 +1,12 @@
 import logging
 import os
 
+import docker
 from docker.errors import ImageNotFound
 import pytest
 import requests
 
 from armory import __version__, paths
-import docker
 
 logger = logging.getLogger(__name__)
 
