@@ -1210,7 +1210,6 @@ def speech_commands(
     pad_data: bool = False,
     **kwargs,
 ) -> ArmoryDataGenerator:
-
     """
     An audio dataset of spoken commands
     https://www.tensorflow.org/datasets/catalog/speech_commands

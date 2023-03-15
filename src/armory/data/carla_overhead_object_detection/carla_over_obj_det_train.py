@@ -112,7 +112,6 @@ class CarlaOverObjDetTrain(tfds.core.GeneratorBasedBuilder):
         images = sorted(images, key=lambda x: x["file_name"].lower())
 
         for image in images:
-
             # remove unimportant keys/values
             image.pop("license", None)
             image.pop("flickr_url", None)

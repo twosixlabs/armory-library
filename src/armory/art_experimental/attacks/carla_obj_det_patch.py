@@ -366,7 +366,6 @@ class CARLADapricotPatch(RobustDPatch):
             patch_gradients_old = np.zeros_like(self._patch)
 
             for e_step in range(self.sample_size):
-
                 for i_batch in range(num_batches):
                     i_batch_start = i_batch * self.batch_size
                     i_batch_end = min((i_batch + 1) * self.batch_size, x.shape[0])
@@ -508,7 +507,6 @@ class CARLADapricotPatch(RobustDPatch):
         # Apply patch:
         x_patch = []
         for xi, gs_coords in zip(x_copy, self.gs_coords):
-
             if xi.shape[-1] == 3:
                 rgb_img = (xi * 255.0).astype("float32")
             else:
@@ -644,7 +642,6 @@ class CARLADapricotPatch(RobustDPatch):
         attacked_images = []
 
         for i in range(num_imgs):
-
             if x.shape[-1] == 3:
                 rgb_img = (x[i] * 255.0).astype("float32")
             else:
@@ -718,7 +715,6 @@ class CARLADapricotPatch(RobustDPatch):
             if (
                 self.patch_shape[-1] == 6
             ):  # initialize depth patch with average depth value of green screen
-
                 # check if depth image is log-depth, which is the case for Eval 5 Carla OD dataset
                 if (
                     x.shape[-1] == 6

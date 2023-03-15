@@ -4,13 +4,13 @@ from mlflow import log_metric, log_param
 
 from armory.logs import log
 from charmory.experiment import (
+    Attack,
+    Dataset,
     Experiment,
     MetaData,
+    Metric,
     Model,
     Scenario,
-    Dataset,
-    Attack,
-    Metric,
     SysConfig,
 )
 

@@ -473,7 +473,6 @@ def configure(command_args, prog, description):
     print(resolved)
     save = None
     while save is None:
-
         if os.path.isfile(default_host_paths.armory_config):
             print("WARNING: this will overwrite existing configuration.")
             print("    Press Ctrl-C to abort.")

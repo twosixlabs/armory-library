@@ -500,7 +500,7 @@ def _check_object_detection_input(y_list, y_pred_list):
     REQUIRED_LABEL_KEYS = ["labels", "boxes"]
     REQUIRED_PRED_KEYS = REQUIRED_LABEL_KEYS + ["scores"]
 
-    for (y, y_pred) in zip(y_list, y_pred_list):
+    for y, y_pred in zip(y_list, y_pred_list):
         if not all(key in y for key in REQUIRED_LABEL_KEYS):
             raise ValueError(
                 f"y must contain the following keys: {REQUIRED_LABEL_KEYS}. The following keys were found: {y.keys()}"
@@ -715,7 +715,6 @@ def object_detection_AP_per_class(
 
     # Compute AP for each class
     for class_id in set_of_class_ids:
-
         # Build lists that contain all the predicted/ground-truth boxes with a
         # label of class_id
         class_predicted_boxes = []
@@ -1882,7 +1881,6 @@ class HOTA_metrics:
     def calculate_hota_metrics_per_class_per_video(
         self, gt_data, tracker_data, tracked_class, video_name
     ):
-
         # Calculate per-video HOTA metrics
         data = self.preprocess(gt_data, tracker_data, tracked_class)
         self.hota_metrics_per_class_per_videos[tracked_class][
