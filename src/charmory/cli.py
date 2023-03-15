@@ -19,9 +19,9 @@ from jsonschema import ValidationError
 
 import armory
 from armory import arguments, paths
-from armory.paths import HostPaths
 from armory.configuration import load_global_config, save_config
 import armory.logs as logger
+from armory.paths import HostPaths
 from armory.utils.configuration import load_config, load_config_stdin
 from charmory.core import Evaluator
 
@@ -53,7 +53,9 @@ try:
         # Currently, memory growth needs to be the same across GPUs
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
-        logger.log.info("Setting tf.config.experimental.set_memory_growth to True on all GPUs")
+        logger.log.info(
+            "Setting tf.config.experimental.set_memory_growth to True on all GPUs"
+        )
 except RuntimeError:
     logger.log.exception("Import armory before initializing GPU tensors")
     raise
