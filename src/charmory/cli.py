@@ -31,7 +31,7 @@ OLD_SCENARIOS = [
 DEFAULT_SCENARIO = "https://github.com/twosixlabs/armory-example/blob/master/scenario_download_configs/scenarios-set2.json"
 
 # Delayed imports and dependency configuration
-loggerlog.info(
+logger.log.info(
     "Importing and configuring torch, tensorflow, and art, if available. "
     "This may take some time."
 )
