@@ -123,7 +123,7 @@ class Scenario:
                 log.warning("Ignoring user_init kwargs because name is False")
 
     def _set_output_dir(self, eval_id) -> None:
-        runtime_paths = paths.runtime_paths()
+        runtime_paths = paths.HostPaths()
         self.scenario_output_dir = os.path.join(runtime_paths.output_dir, eval_id)
         self.hub._set_output_dir(self.scenario_output_dir)
         self._set_export_dir(self.export_subdir)
@@ -486,7 +486,6 @@ class Scenario:
         log.info(
             "Saving evaluation results to path "
             f"{self.scenario_output_dir}/{filename} "
-            "inside container."
         )
         output_path = os.path.join(self.scenario_output_dir, filename)
         with open(output_path, "w") as f:
