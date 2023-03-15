@@ -64,17 +64,19 @@ engine = [
     "tensorboardx",
 ]
 
+math = [
+    "numpy",
+    "pandas",
+    "scipy >= 1.4.1",
+    "scikit-learn < 1.1.0",   # ART requires scikit-learn >=0.22.2,<1.1.0
+    "matplotlib",
+]
+
 pytorch = [
     "armory-testbed[engine,datasets,math]",
     "torch",
     "torchaudio",
     "torchvision",
-]
-
-tensorflow = [
-    "armory-testbed[engine,datasets,math]",
-    "tf-models-official",
-    "tensorflow >= 2.10.0",
 ]
 
 deepspeech = [
@@ -88,12 +90,10 @@ deepspeech = [
     "pytorch-lightning < 1.5.0",
 ]
 
-math = [
-    "numpy",
-    "pandas",
-    "scipy >= 1.4.1",
-    "scikit-learn < 1.1.0",   # ART requires scikit-learn >=0.22.2,<1.1.0
-    "matplotlib",
+tensorflow = [
+    "armory-testbed[engine,datasets,math]",
+    "tf-models-official",
+    "tensorflow >= 2.10.0",
 ]
 
 datasets = [
