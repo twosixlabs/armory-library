@@ -93,17 +93,8 @@ build:
   dependencies:
     - setup
     - code-linting
-    - unit-test
-  allow_failure: true # Just until we get the tests working fully.
+    # - unit-test
   only:
     - merge_requests
   script:
     - hatch build -t wheel
-    - $( exit 0 ); echo $?
-
-
-#########################################
-## DEVELOPER NOTES
-#########################################
-# o TODO: Collect artifacts  - https://docs.gitlab.com/ee/ci/yaml/#artifacts -CW
-# o TODO: Add deploy stage for Advana target; e.g. package, container, etc.  -CW
