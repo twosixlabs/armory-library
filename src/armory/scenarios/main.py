@@ -107,7 +107,7 @@ def _scenario_setup(config: Config) -> None:
     itself is found in the external repository.
     """
 
-    runtime_paths = paths.runtime_paths()
+    runtime_paths = paths.HostPaths()
     if "eval_id" not in config:
         timestamp = time.time()
         log.error(f"eval_id not in config. Inserting current timestamp {timestamp}")
@@ -154,7 +154,6 @@ def main(scenario_config: dict):
       - Refactor method signature to be more explicit
       - Turn main into a Scenario class
     """
-    paths.set_mode("host")
     _scenario_setup(scenario_config)
 
     # TODO: Refactor the dynamic import mechanism. -CW
