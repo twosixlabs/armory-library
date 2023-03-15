@@ -7,22 +7,6 @@ import warnings  # armory.logs initialization depends on this module, use warnin
 
 from armory import configuration
 
-NO_DOCKER = False
-
-
-def set_mode(mode, set_art_path=True):
-    """
-    Set path mode to "docker" or "host"
-    """
-    MODES = ("docker", "host")
-    global NO_DOCKER
-    if mode == "docker":
-        NO_DOCKER = False
-    elif mode == "host":
-        NO_DOCKER = True
-    else:
-        raise ValueError(f"mode {mode} is not in {MODES}")
-
 
 class HostDefaultPaths:
     def __init__(self):
