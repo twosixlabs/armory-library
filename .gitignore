@@ -1,6 +1,6 @@
 # -------------- Project ------------------
-*/__about__.py
-
+src/armory/__about__.py
+mlruns/
 
 # ------------- Template ------------------
 # Ignore dataset, tmp, and output directories
