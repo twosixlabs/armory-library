@@ -49,19 +49,6 @@ def runtime_paths():
         return DockerPaths()
 
 
-# class DockerPaths:
-#     def __init__(self):
-#         self.cwd = "/workspace"
-#         armory_dir = "/armory"
-#         self.dataset_dir = armory_dir + "/datasets"
-#         self.local_git_dir = armory_dir + "/git"
-#         self.saved_model_dir = armory_dir + "/saved_models"
-#         self.pytorch_dir = self.saved_model_dir + "/pytorch"
-#         self.tmp_dir = armory_dir + "/tmp"
-#         self.output_dir = armory_dir + "/outputs"
-#         self.external_repo_dir = self.tmp_dir + "/external"
-
-
 class HostDefaultPaths:
     def __init__(self):
         self.cwd = os.getcwd()
