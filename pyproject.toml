@@ -31,7 +31,7 @@ BugTracker = "https://github.com/twosixlabs/armory/issues"
 Documentation = "https://armory.readthedocs.io/en/latest/"
 
 [project.scripts]
-armory = "armory.__main__:main"
+armory = "charmory.__main__:main"
 
 
 # please see docs/getting_started.md#the-armory-flavors for how these
