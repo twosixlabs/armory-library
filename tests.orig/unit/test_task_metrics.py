@@ -384,7 +384,6 @@ def calculate_iou(s1, s2):
 
 
 def test_tide_metrics():
-
     x1 = y1 = 10
 
     s1 = generate_square(x1, y1)
@@ -596,7 +595,6 @@ def test_tide_metrics():
 
 
 def test_tide_metrics_no_overlap():
-
     x1 = 10
     y1 = 35
 

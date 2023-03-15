@@ -70,7 +70,6 @@ class SleeperAgentScenario(Poison):
         self.target_class = adhoc_config["target_class"]
 
         if self.use_poison:
-
             #  Create and train proxy model for gradient matching attack.
             proxy_config = copy.deepcopy(self.config["model"])
             proxy_model, _ = config_loading.load_model(proxy_config)

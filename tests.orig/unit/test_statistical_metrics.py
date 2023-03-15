@@ -12,7 +12,6 @@ pytestmark = pytest.mark.unit
 
 
 def test_chi2_p_value():
-
     table1 = np.array([[2, 3], [4, 6]])
     table2 = np.array([[5, 1], [1, 5]])
     assert statistical.chi2_p_value(table1)[0] == pytest.approx(1)
@@ -20,7 +19,6 @@ def test_chi2_p_value():
 
 
 def test_fisher_p_value():
-
     table1 = np.array([[2, 3], [4, 6]])
     table2 = np.array([[5, 1], [1, 5]])
     assert statistical.fisher_p_value(table1)[0] == pytest.approx(0.7062937)
@@ -131,7 +129,6 @@ def test_class_bias():
 
 
 def test_majority_mask():
-
     activations = np.array(
         [
             [1, 1],
@@ -151,7 +148,6 @@ def test_majority_mask():
 
 
 def test_class_majority_mask():
-
     activations = np.array(
         [
             [1, 1],

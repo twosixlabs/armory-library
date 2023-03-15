@@ -1,11 +1,14 @@
+# flake8: noqa
 # psuedocode from the tiga days showing the intent of the Experiment class
 
-from armory.logs import log
-import os
-import yaml
-import json
-from armory.utils import parse_overrides
 from importlib import import_module
+import json
+import os
+
+import yaml
+
+from armory.logs import log
+from armory.utils import parse_overrides
 
 
 class Attack:

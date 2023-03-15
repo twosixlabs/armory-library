@@ -354,7 +354,6 @@ class CARLAMOTDapricotPatch(RobustDPatch):
             patch_gradients_old = np.zeros_like(self._patch)
 
             for e_step in range(self.sample_size):
-
                 for i_batch in range(num_batches):
                     i_batch_start = i_batch * self.batch_size
                     i_batch_end = min((i_batch + 1) * self.batch_size, x.shape[0])
@@ -463,7 +462,6 @@ class CARLAMOTDapricotPatch(RobustDPatch):
         for xi, gs_coords, patch_mask in zip(
             x_copy, self.patch_coords_batch, self.patch_masks_batch
         ):
-
             rgb_img = (xi * 255.0).astype("float32")
 
             # apply patch using DAPRICOT transform to RGB channels only

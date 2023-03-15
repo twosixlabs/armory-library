@@ -14,7 +14,6 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def get_art_model(
     model_kwargs: dict, wrapper_kwargs: dict, weights_path: Optional[str] = None
 ) -> PyTorchFasterRCNN:
-
     if weights_path:
         assert not model_kwargs.get("pretrained", False), (
             "model trained on CARLA data should not use COCO-pretrained weights, set "

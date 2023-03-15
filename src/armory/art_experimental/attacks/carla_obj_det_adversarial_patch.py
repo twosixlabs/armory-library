@@ -19,7 +19,6 @@ from armory.logs import log
 
 class CARLAAdversarialPatchPyTorch(AdversarialPatchPyTorch):
     def __init__(self, estimator, **kwargs):
-
         # Maximum depth perturbation from a flat patch
         self.depth_delta_meters = kwargs.pop("depth_delta_meters", 0.03)
         self.learning_rate_depth = kwargs.pop("learning_rate_depth", 0.0001)
@@ -235,7 +234,6 @@ class CARLAAdversarialPatchPyTorch(AdversarialPatchPyTorch):
         padded_patch_list = []
 
         for i_sample in range(nb_samples):
-
             image_mask_i = image_mask[i_sample]
 
             height = padded_patch.shape[self.i_h + 1]
@@ -391,7 +389,6 @@ class CARLAAdversarialPatchPyTorch(AdversarialPatchPyTorch):
             if (
                 self.patch_shape[0] == 6
             ):  # initialize depth patch with average depth value of green screen.
-
                 # check if depth image is log-depth
                 if (
                     x.shape[-1] == 6

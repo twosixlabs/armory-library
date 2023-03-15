@@ -85,7 +85,6 @@ class TestModel:
         return test_ground_truth
 
     def test_model(self, model_config):
-
         # verify model loads without error
         model_config = json.loads(model_config)
         model = self._get_model(model_config)
