@@ -262,7 +262,6 @@ class WitchesBrewScenario(Poison):
         ) = self._validate_attack_args(adhoc_config, y_test)
 
         if self.use_poison:
-
             attack_config["kwargs"]["percent_poison"] = adhoc_config[
                 "fraction_poisoned"
             ]
@@ -297,7 +296,6 @@ class WitchesBrewScenario(Poison):
                 or not os.path.exists(data_filepath)
                 or attack_config["kwargs"].get("overwrite_presaved_data")
             ):
-
                 if proxy_weights is None:
                     log.info("Fitting proxy model for attack . . .")
                     proxy_model.fit(

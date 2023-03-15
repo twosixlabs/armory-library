@@ -1,57 +1,99 @@
 image: "ubuntu:latest"
 
+stages:
+  - "👽 Setup"
+  - "📡 Code Linting"
+  - "🚧 Static Analysis"
+  - "🧪 Unit Tests"
+  - "🔨 Build"
+  # - "🚀 Deploy"  # TODO: Add deploy stage for Advana target; e.g. package, container, etc. -CW
+
+variables:
+  ARMORY_CI_TEST: 1
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PYTHON_VENV_DIR: "$CI_PROJECT_DIR/.cache/venv"
+  PYTEST_PARAMS: >-
+    --exitfirst
+    --suppress-no-test-exit-code
+
+cache: &global_cache
+  key: shared-job-key
+  policy: pull-push
+  untracked: true
+  paths:
+    - $PIP_CACHE_DIR
+    - $PYTHON_VENV_DIR
+
 before_script:
   - apt-get update -qy
-  - apt-get install -y git python3 python3-pip
-  - mkdir -p /tmp/artifacts
-  - python3 --version
-  - python3 -m pip install --upgrade pip
-  - python3 -m pip install --upgrade build
-  - pip3 install --no-compile --editable '.[developer]'
-  - armory configure --use-defaults
+  # Needed by pycocotools
+  - apt-get install -qqy --no-install-recommends --no-install-suggests build-essential
+  # Needed by versioning and linting scripts
+  - apt-get install -qqy --no-install-recommends --no-install-suggests git
+  # Base requirements
+  - apt-get install -qqy --no-install-recommends --no-install-suggests python3 python3-dev python3-pip python3-venv
+  - '[[ -d "${PYTHON_VENV_DIR}" ]] && source "${PYTHON_VENV_DIR}/bin/activate"'
 
-stages:
-  - Code Linting
-  - Static Analysis
-  - Unit Tests
-  - Build
-  # - Deploy  # TODO: Add deploy stage for Advana target; e.g. package, container, etc. -CW
+setup:
+  stage: "👽 Setup"
+  when: on_success
+  only:
+    - merge_requests
+  script: |
+    if [[ ! -d "${PYTHON_VENV_DIR}" ]]; then
+      pip3 install --upgrade virtualenv
+      python3 -m venv --copies "${PYTHON_VENV_DIR}"
+    fi
+    source "${PYTHON_VENV_DIR}/bin/activate"
+    python3 -m pip install --upgrade pip build
+    pip3 install --no-compile --editable '.[all]'
+    armory configure --use-defaults
 
-code_linting:
-  stage: Code Linting
+code-linting:
+  stage: "📡 Code Linting"
+  dependencies:
+    - setup
   only:
     - merge_requests
   script:
-    - bash tools/pre-commit.sh
+    - ARMORY_CI_TEST=1 ./tools/pre-commit.sh
 
 static_analysis:
-  stage: Static Analysis
+  stage: "🚧 Static Analysis"
+  dependencies:
+    - setup
+    - code-linting
   only:
     - merge_requests
+  artifacts:
+    when: always
+    expire_in: 1 days
+    paths:
+      - .cache/bandit_scan.txt
   script:
-    - bandit -v -f txt -r ./armory -c "pyproject.toml" --output /tmp/artifacts/bandit_scan.txt || $( exit 0 ); echo $?
+    - python3 -m bandit -v -f txt -r ./src -c "pyproject.toml" --output .cache/bandit_scan.txt || $( exit 0 ); echo $?
 
-unit_test:
-  stage: Unit Tests
+unit-test:
+  stage: "🧪 Unit Tests"
+  dependencies:
+    - setup
+    - code-linting
+  allow_failure: true # Just until we get the tests working fully.
   only:
     - merge_requests
   script:
+    - pytest -c pyproject.toml -s ./tests.orig/unit/test_configuration.py
+    - pytest -c pyproject.toml -m "not docker_required and unit" ./tests.orig/
+    - pytest -c pyproject.toml -s ./tests.orig/end_to_end/test_no_docker.py
     - $( exit 0 ); echo $?
-    # - pytest -c pyproject.toml -s ./tests/unit/test_configuration.py
-    # - PYTEST_PARAMS="--exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -m "not docker_required and unit" ./tests/
-    # - PYTEST_PARAMS=" --exitfirst --suppress-no-test-exit-code"; pytest -c pyproject.toml -s ./tests/end_to_end/test_no_docker.py
 
 build:
-  stage: Build
+  stage: "🔨 Build"
+  dependencies:
+    - setup
+    - code-linting
+    # - unit-test
   only:
     - merge_requests
   script:
-    - python3 -m build --sdist --wheel --outdir dist/ .
-
-
-#########################################
-## DEVELOPER NOTES
-#########################################
-# o TODO: Cache pip packages - https://docs.gitlab.com/ee/ci/yaml/#cache     -CW
-# o TODO: Collect artifacts  - https://docs.gitlab.com/ee/ci/yaml/#artifacts -CW
-# o TODO: Add deploy stage for Advana target; e.g. package, container, etc.  -CW
+    - hatch build -t wheel
