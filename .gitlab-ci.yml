@@ -25,7 +25,6 @@ cache: &global_cache
     - $PYTHON_VENV_DIR
 
 before_script:
-  - mkdir -p /tmp/artifacts
   - apt-get update -qy
   # Needed by pycocotools
   - apt-get install -qqy --no-install-recommends --no-install-suggests build-essential
