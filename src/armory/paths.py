@@ -23,21 +23,6 @@ def set_mode(mode, set_art_path=True):
     else:
         raise ValueError(f"mode {mode} is not in {MODES}")
 
-    if set_art_path:
-        set_art_data_path()
-
-
-def set_art_data_path():
-    """
-    Sets the art data path if art can be imported in the current environment
-    """
-    try:
-        from art import config
-
-        config.set_data_path(os.path.join(HostPaths().saved_model_dir, "art"))
-    except ImportError:
-        pass
-
 
 class HostDefaultPaths:
     def __init__(self):
