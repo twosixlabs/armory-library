@@ -50,7 +50,6 @@ developer =[
     "isort",
     "flake8",
     "bandit[toml]", # code scanning
-    "hydra-core",   # configuration
 ]
 
 engine = [
