@@ -19,16 +19,55 @@ from jsonschema import ValidationError
 
 import armory
 from armory import arguments, paths
+from armory.paths import HostPaths
 from armory.configuration import load_global_config, save_config
 import armory.logs as logger
 from armory.utils.configuration import load_config, load_config_stdin
-from armory.utils.version import to_docker_tag
 from charmory.core import Evaluator
 
 OLD_SCENARIOS = [
     "https://github.com/twosixlabs/armory-example/blob/master/scenario_download_configs/scenarios-set1.json"
 ]
 DEFAULT_SCENARIO = "https://github.com/twosixlabs/armory-example/blob/master/scenario_download_configs/scenarios-set2.json"
+
+# Delayed imports and dependency configuration
+loggerlog.info(
+    "Importing and configuring torch, tensorflow, and art, if available. "
+    "This may take some time."
+)
+
+# Handle PyTorch / TensorFlow interplay
+# import torch before tensorflow to ensure torch.utils.data.DataLoader can utilize
+#     all CPU resources when num_workers > 1
+try:
+    import torch  # noqa: F401
+except ImportError:
+    pass
+
+# From: https://www.tensorflow.org/guide/gpu#limiting_gpu_memory_growth
+try:
+    import tensorflow as tf
+
+    gpus = tf.config.list_physical_devices("GPU")
+    if gpus:
+        # Currently, memory growth needs to be the same across GPUs
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        logger.log.info("Setting tf.config.experimental.set_memory_growth to True on all GPUs")
+except RuntimeError:
+    logger.log.exception("Import armory before initializing GPU tensors")
+    raise
+except ImportError:
+    pass
+
+# Handle ART configuration by setting the art data
+# path if art can be imported in the current environment
+try:
+    from art import config
+
+    config.set_data_path(os.path.join(HostPaths().saved_model_dir, "art"))
+except ImportError:
+    pass
 
 
 def sorted_unique_nonnegative_numbers(values, warning_string):
@@ -531,9 +570,6 @@ def main() -> int:
         sys.exit(1)
     elif sys.argv[1] in ("-v", "--version", "version"):
         print(f"{armory.__version__}")
-        sys.exit(0)
-    elif sys.argv[1] == "--show-docker-version-tag":
-        print(to_docker_tag(armory.__version__))
         sys.exit(0)
 
     parser = argparse.ArgumentParser(prog=program, usage=usage(program, commands))
