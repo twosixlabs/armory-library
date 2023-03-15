@@ -128,7 +128,6 @@ class CarlaOverObjDetDev(tfds.core.GeneratorBasedBuilder):
         images_rgb = sorted(images_rgb, key=lambda x: x["file_name"].lower())
 
         for idx, image_rgb in enumerate(images_rgb):
-
             # Discard irrelevant fields
             image_rgb.pop("date_captured")
             image_rgb.pop("license")

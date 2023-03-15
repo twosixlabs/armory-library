@@ -4,11 +4,9 @@ import numpy as np
 
 class CustomAttack(ProjectedGradientDescent):
     def generate(self, x, y):
-
         x_adv = []
         for x_sample, y_sample in zip(x, y):
             for target in range(10):
-
                 # Do not target correct class
                 if target == y_sample:
                     continue
