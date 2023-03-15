@@ -14,7 +14,6 @@ from armory.logs import log
 
 class CARLAMOTAdversarialPatchPyTorch(AdversarialPatchPyTorch):
     def __init__(self, estimator, coco_format=False, **kwargs):
-
         self.batch_frame_size = kwargs.pop(
             "batch_frame_size", 1
         )  # number of frames to attack per iteration
@@ -158,7 +157,6 @@ class CARLAMOTAdversarialPatchPyTorch(AdversarialPatchPyTorch):
         padded_patch_list = []
 
         for i_sample in range(nb_samples):
-
             image_mask_i = image_mask[i_sample]
 
             height = padded_patch.shape[self.i_h + 1]

@@ -1,3 +1,4 @@
+# flake8: noqa
 # psuedocode from the tiga days showing the intent of the Experiment class
 
 from importlib import import_module

@@ -76,7 +76,7 @@ def get_art_model_wrapper(model, model_kwargs, wrapper_kwargs, weights_path=None
         input_shape=(3, 48, 48),
         clip_values=(0.0, 1.0),
         nb_classes=nclasses,
-        **wrapper_kwargs
+        **wrapper_kwargs,
     )
     return wrapped_model
 
