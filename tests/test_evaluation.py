@@ -1,26 +1,26 @@
 import pytest
 
-import charmory.experiment as experiment
+import charmory.evaluation as evaluation
 
 
 def test_initializers():
     """Instantiate all the classes and check that they don't fault."""
-    attack = experiment.Attack("art.FGSM", {"eps": 0.3}, "white", use_label=True)
+    attack = evaluation.Attack("art.FGSM", {"eps": 0.3}, "white", use_label=True)
     assert attack.knowledge == "white"
     assert attack.function == "art.FGSM"
     assert attack.kwargs["eps"] == 0.3
     assert attack.use_label is True
 
-    dataset = experiment.Dataset("armory.load_mnist", "tf", 128)
+    dataset = evaluation.Dataset("armory.load_mnist", "tf", 128)
     assert dataset.framework == "tf"
 
     with pytest.raises(TypeError):
-        defense = experiment.Defense("Preprocessor", "armory.some_defense")  # type: ignore
+        defense = evaluation.Defense("Preprocessor", "armory.some_defense")  # type: ignore
 
-    defense = experiment.Defense("armory.some_defense", kwargs={}, type="Preprocessor")
+    defense = evaluation.Defense("armory.some_defense", kwargs={}, type="Preprocessor")
     assert defense.type == "Preprocessor"
 
-    metric = experiment.Metric(
+    metric = evaluation.Metric(
         "basic",
         supported_metrics=["accuracy"],
         perturbation=["clean"],
@@ -30,7 +30,7 @@ def test_initializers():
     )
     assert metric.profiler_type == "basic"
 
-    model = experiment.Model(
+    model = evaluation.Model(
         "msw.a.model",
         weights_file=None,
         wrapper_kwargs={},
@@ -40,20 +40,20 @@ def test_initializers():
     )
     assert model.function == "msw.a.model"
 
-    scenario = experiment.Scenario("armory.scenarios.image_classification", {})
+    scenario = evaluation.Scenario("armory.scenarios.image_classification", {})
     assert scenario.function == "armory.scenarios.image_classification"
 
-    sysconfig = experiment.SysConfig(gpus=["0", "2"], use_gpu=True)
+    sysconfig = evaluation.SysConfig(gpus=["0", "2"], use_gpu=True)
     assert "2" in sysconfig.gpus
 
-    metadata = experiment.MetaData("null experiment", "test", "msw <msw@example.com>")
+    metadata = evaluation.MetaData("null experiment", "test", "msw <msw@example.com>")
     assert metadata.name == "null experiment"
 
     with pytest.raises(TypeError):
-        bad = experiment.Experiment()  # type: ignore
+        bad = evaluation.Evaluation()  # type: ignore
         assert bad._metadata.name == "null experiment"
 
-    exp = experiment.Experiment(
+    exp = evaluation.Evaluation(
         metadata,
         model,
         scenario,
@@ -68,12 +68,12 @@ def test_initializers():
 
 def test_mnist_experiment():
     """Instantiate a full experiment as in mnist_baseline.json"""
-    metadata = experiment.MetaData(
+    metadata = evaluation.MetaData(
         "mnist experiment", "derived from mnist_baseline.json", "msw@example.com"
     )
-    exp = experiment.Experiment(
+    exp = evaluation.Evaluation(
         metadata,
-        model=experiment.Model(
+        model=evaluation.Model(
             "armory.baseline_models.keras.mnist.get_art_model",
             weights_file=None,
             wrapper_kwargs={},
@@ -81,15 +81,15 @@ def test_mnist_experiment():
             fit=True,
             fit_kwargs={"nb_epochs": 20},
         ),
-        dataset=experiment.Dataset(
+        dataset=evaluation.Dataset(
             "armory.data.datasets.mnist",
             framework="numpy",
             batch_size=128,
         ),
-        scenario=experiment.Scenario(
+        scenario=evaluation.Scenario(
             "armory.scenarios.image_classification.ImageClassificationTask", kwargs={}
         ),
-        attack=experiment.Attack(
+        attack=evaluation.Attack(
             "art.attacks.evasion.FastGradientMethod",
             {
                 "batch_size": 1,
@@ -103,7 +103,7 @@ def test_mnist_experiment():
             use_label=True,
         ),
         defense=None,
-        metric=experiment.Metric(
+        metric=evaluation.Metric(
             profiler_type="basic",
             task=["categorical_accuracy"],
             supported_metrics=["accuracy"],
@@ -111,7 +111,7 @@ def test_mnist_experiment():
             means=True,
             record_metric_per_sample=False,
         ),
-        sysconfig=experiment.SysConfig(gpus=["all"], use_gpu=True),
+        sysconfig=evaluation.SysConfig(gpus=["all"], use_gpu=True),
     )
 
     assert exp.asdict() == {
@@ -162,5 +162,3 @@ def test_mnist_experiment():
         },
         "sysconfig": {"gpus": ["all"], "use_gpu": True},
     }
-
-    return str(exp)

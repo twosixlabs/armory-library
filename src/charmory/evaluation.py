@@ -79,7 +79,7 @@ class MetaData:
 
 
 @dataclass
-class Experiment:
+class Evaluation:
     _metadata: MetaData
     model: Model
     scenario: Scenario
