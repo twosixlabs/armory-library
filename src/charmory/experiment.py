@@ -91,3 +91,15 @@ class Experiment:
 
     def asdict(self) -> dict:
         return asdict(self)
+
+    def flatten(self):
+        """return all parameters as (dot.path, value) pairs for externalization"""
+
+        def flatten_dict(root, path):
+            for key, value in root.items():
+                if isinstance(value, dict):
+                    yield from flatten_dict(value, path + [key])
+                else:
+                    yield ".".join(path + [key]), value
+
+        return [x for x in flatten_dict(self.asdict(), [])]

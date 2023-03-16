@@ -1,8 +1,8 @@
 """A mock-up demo to show how Armory and MLflow interact."""
 
-from mlflow import log_metric, log_param
+import mlflow
 
-from armory.logs import log
+from loguru import logger as log
 from charmory.experiment import (
     Attack,
     Dataset,
@@ -15,26 +15,70 @@ from charmory.experiment import (
 )
 
 
+def show_mlflow_experiement(experiment_id):
+    experiment = mlflow.get_experiment(experiment_id)
+    print(f"Experiment: {experiment.name}")
+    print(f"tags: {experiment.tags}")
+    print(f"Author: {experiment.tags['author']}")
+    print(f"Experiment ID: {experiment.experiment_id}")
+    print(f"Artifact Location: {experiment.artifact_location}")
+    print(f"Lifecycle Stage: {experiment.lifecycle_stage}")
+    print(f"Creation Time: {experiment.creation_time}")
+
+
 class Evaluator:
     def __init__(self, experiment: Experiment):
         self.experiment = experiment
 
+        metadata = experiment._metadata
+        mlexp = mlflow.get_experiment_by_name(metadata.name)
+        if mlexp:
+            self.experiment_id = mlexp.experiment_id
+            log.info(f"Experiment {metadata.name} already exists {self.experiment_id}")
+        else:
+            self.experiment_id = mlflow.create_experiment(
+                metadata.name,
+            )
+            log.info(
+                f"Creating experiment {self.experiment._metadata.name} as {self.experiment_id}"
+            )
+
     def run(self):
-        log.info(f"Running experiment {self.experiment._metadata.name}")
-        result = {}
-        result["benign"] = id(self.experiment.model)
-        if self.experiment.attack:
-            result["attack"] = id(self.experiment.attack)
+        """fake an evaluation to demonstrate mlflow tracking."""
+        metadata = self.experiment._metadata
+        log.info("Starting mlflow run:")
+        show_mlflow_experiement(self.experiment_id)
+        self.active_run = mlflow.start_run(
+            experiment_id=self.experiment_id,
+            description=metadata.description,
+            tags={
+                "author": self.experiment._metadata.author,
+            },
+        )
+
+        # fake variable epsilon and results
+        import random
+
+        epsilon = random.random()
+        result = {"benign": epsilon, "adversarial": 1 - epsilon}
+        self.experiment.attack.kwargs["eps"] = epsilon
+
+        for key, value in self.experiment.flatten():
+            if key.startswith("_metadata."):
+                continue
+            mlflow.log_param(key, value)
+
+        for k, v in result.items():
+            mlflow.log_metric(k, v)
+
+        mlflow.end_run()
         return result
-
-
-log.info("Starting demo")
 
 
 def mnist_experiment() -> Experiment:
     return Experiment(
         _metadata=MetaData(
-            name="mnist experiment",
+            name="mnist_baseline",
             description="derived from mnist_baseline.json",
             author="msw@example.com",
         ),
@@ -82,16 +126,12 @@ def mnist_experiment() -> Experiment:
 
 def main():
     experiment = mnist_experiment()
+
     evaluator = Evaluator(experiment)
-    exp_dict = experiment.asdict()
-    for block in exp_dict:
-        log_param(block, exp_dict[block])
-    log.success("mnist experiment tracked")
+    log.info("mnist experiment tracked")
 
     results = evaluator.run()
-    for item in results:
-        log_metric(item, results[item])
-    log.success("mnist experiment results tracked")
+    log.info(f"mnist experiment results tracked {results}")
 
 
 if __name__ == "__main__":
