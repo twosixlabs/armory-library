@@ -19,7 +19,6 @@ def show_mlflow_experiement(experiment_id):
     experiment = mlflow.get_experiment(experiment_id)
     print(f"Experiment: {experiment.name}")
     print(f"tags: {experiment.tags}")
-    print(f"Author: {experiment.tags['author']}")
     print(f"Experiment ID: {experiment.experiment_id}")
     print(f"Artifact Location: {experiment.artifact_location}")
     print(f"Lifecycle Stage: {experiment.lifecycle_stage}")
