@@ -31,8 +31,8 @@ BugTracker = "https://github.com/twosixlabs/armory/issues"
 Documentation = "https://armory.readthedocs.io/en/latest/"
 
 [project.scripts]
-armory = "charmory.cli.armory_entrypoint:main"
-charmory = "charmory.cli.charmory_entrypoint:main"
+armory = "charmory.examples.cli:main"
+charmory = "charmory.examples.cli:main"
 
 
 # please see docs/getting_started.md#the-armory-flavors for how these
@@ -54,7 +54,7 @@ tracking = [
 ]
 
 engine = [
-    "adversarial-robustness-toolbox == 1.13.0",
+    "adversarial-robustness-toolbox",
     "Pillow",              # Data dependencies
     "boto3",               # Needed for armory.data.utils
     "botocore" ,           # Needed for armory.data.utils
@@ -69,10 +69,10 @@ engine = [
 ]
 
 math = [
+    "scikit-learn == 1.2.0",  # ART requires scikit-learn >= 0.22.2, < 1.2.0
+    "scipy == 1.7.2",         # ART requires scipy >= 1.4.1, < 1.10.1
     "numpy",
     "pandas",
-    "scipy >= 1.4.1",
-    "scikit-learn < 1.1.0",   # ART requires scikit-learn >=0.22.2,<1.1.0
     "matplotlib",
 ]
 

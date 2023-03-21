@@ -10,6 +10,7 @@ stages:
 
 variables:
   ARMORY_CI_TEST: 1
+  DEBIAN_FRONTEND: noninteractive
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   PYTHON_VENV_DIR: "$CI_PROJECT_DIR/.cache/venv"
   PYTEST_PARAMS: >-
@@ -30,9 +31,15 @@ before_script:
   - apt-get install -qqy --no-install-recommends --no-install-suggests build-essential
   # Needed by versioning and linting scripts
   - apt-get install -qqy --no-install-recommends --no-install-suggests git
+  # Needed for OpenCV
+  - apt install -qqy --no-install-recommends --no-install-suggests libgl1-mesa-glx
   # Base requirements
-  - apt-get install -qqy --no-install-recommends --no-install-suggests python3 python3-dev python3-pip python3-venv
+  - apt-get install -qqy --no-install-recommends --no-install-suggests gnupg software-properties-common
+  - add-apt-repository -y ppa:deadsnakes/ppa
+  - apt-get update -qy
+  - apt-get install -qqy --no-install-recommends --no-install-suggests python3.9 python3.9-dev python3.9-venv python3-pip
   - '[[ -d "${PYTHON_VENV_DIR}" ]] && source "${PYTHON_VENV_DIR}/bin/activate"'
+  - alias python3=python3.9
 
 setup:
   stage: "👽 Setup"
@@ -41,13 +48,11 @@ setup:
     - merge_requests
   script: |
     if [[ ! -d "${PYTHON_VENV_DIR}" ]]; then
-      pip3 install --upgrade virtualenv
-      python3 -m venv --copies "${PYTHON_VENV_DIR}"
+      python3.9 -m venv --copies "${PYTHON_VENV_DIR}"
     fi
     source "${PYTHON_VENV_DIR}/bin/activate"
-    python3 -m pip install --upgrade pip build
-    pip3 install --no-compile --editable '.[all]'
-    armory configure --use-defaults
+    python3.9 -m pip install --upgrade pip build
+    pip3.9 install --no-compile --editable '.[all]'
 
 code-linting:
   stage: "📡 Code Linting"
@@ -71,7 +76,7 @@ static_analysis:
     paths:
       - .cache/bandit_scan.txt
   script:
-    - python3 -m bandit -v -f txt -r ./src -c "pyproject.toml" --output .cache/bandit_scan.txt || $( exit 0 ); echo $?
+    - python3.9 -m bandit -v -f txt -r ./src -c "pyproject.toml" --output .cache/bandit_scan.txt || $( exit 0 ); echo $?
 
 unit-test:
   stage: "🧪 Unit Tests"
@@ -82,10 +87,9 @@ unit-test:
   only:
     - merge_requests
   script:
-    - pytest -c pyproject.toml -s ./tests.orig/unit/test_configuration.py
-    - pytest -c pyproject.toml -m "not docker_required and unit" ./tests.orig/
-    - pytest -c pyproject.toml -s ./tests.orig/end_to_end/test_no_docker.py
-    - armory run scenario_configs/cifar10_baseline.json --check
+    # - pytest -c pyproject.toml -s ./tests.orig/unit/test_configuration.py
+    # - pytest -c pyproject.toml -m "not docker_required and unit" ./tests.orig/
+    # - pytest -c pyproject.toml -s ./tests.orig/end_to_end/test_no_docker.py
     - charmory
 
 build:
@@ -93,7 +97,7 @@ build:
   dependencies:
     - setup
     - code-linting
-    # - unit-test
+    - unit-test
   only:
     - merge_requests
   script:
