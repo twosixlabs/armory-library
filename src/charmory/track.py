@@ -34,12 +34,7 @@ class Evaluator:
         )
 
         # fake variable epsilon and results
-        import random
-
-        epsilon = random.random()
-        result = {"benign": epsilon, "adversarial": 1 - epsilon}
-        assert self.eval.attack
-        self.eval.attack.kwargs["eps"] = epsilon
+        result = self.fake_result()
 
         for key, value in self.eval.flatten():
             if key.startswith("_metadata."):
@@ -50,6 +45,15 @@ class Evaluator:
             mlflow.log_metric(k, v)
 
         mlflow.end_run()
+        return result
+
+    def fake_result(self):
+        import random
+
+        epsilon = random.random()
+        result = {"benign": epsilon, "adversarial": 1 - epsilon}
+        assert self.eval.attack
+        self.eval.attack.kwargs["eps"] = epsilon
         return result
 
     def show(self):
