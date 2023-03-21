@@ -8,7 +8,7 @@ from armory import metrics
 from armory.instrument import Meter
 from armory.instrument.export import So2SatExporter
 from armory.logs import log
-from armory.scenarios.scenario import Scenario
+from charmory.scenario import Scenario
 
 
 class So2SatClassification(Scenario):

@@ -16,9 +16,9 @@ from armory.instrument import GlobalMeter, LogWriter, Meter, ResultsWriter
 from armory.instrument.export import ImageClassificationExporter
 from armory.logs import log
 from armory.metrics.poisoning import ExplanatoryModel
-from armory.scenarios.scenario import Scenario
 from armory.scenarios.utils import to_categorical
 from armory.utils import config_loading
+from charmory.scenario import Scenario
 
 
 class DatasetPoisoner:

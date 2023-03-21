@@ -35,9 +35,13 @@ from armory.data.utils import maybe_download_weights_from_s3
 from armory.utils import labels
 
 
+def load_fn(sub_config):
+    module, method = sub_config["function"].split(":")
+    return getattr(import_module(module), method)
+
+
 def load(sub_config):
-    module = import_module(sub_config["module"])
-    fn = getattr(module, sub_config["name"])
+    fn = load_fn(sub_config)
     args = sub_config.get("args", [])
     kwargs = sub_config.get("kwargs", {})
     if "clip_values" in kwargs:
@@ -45,12 +49,8 @@ def load(sub_config):
     return fn(*args, **kwargs)
 
 
-def load_fn(sub_config):
-    module = import_module(sub_config["module"])
-    return getattr(module, sub_config["name"])
-
-
 # TODO THIS is a TERRIBLE Pattern....can we refactor?
+# TODO: No promises, but I'll work on it. -CW 03162023
 def load_dataset(dataset_config, *args, num_batches=None, check_run=False, **kwargs):
     """
     Loads a dataset from configuration file
@@ -60,12 +60,11 @@ def load_dataset(dataset_config, *args, num_batches=None, check_run=False, **kwa
     dataset_config = copy.deepcopy(
         dataset_config
     )  # Avoid modifying original dictionary
-    module = dataset_config.pop("module")
-    dataset_fn_name = dataset_config.pop("name")
+
+    module, method = dataset_config.pop("function").split(":")
     batch_size = dataset_config.pop("batch_size", 1)
     framework = dataset_config.pop("framework", "numpy")
-    dataset_module = import_module(module)
-    dataset_fn = getattr(dataset_module, dataset_fn_name)
+    dataset_fn = getattr(import_module(module), method)
 
     # Add remaining dataset_config items to kwargs
     for remaining_kwarg in dataset_config:
@@ -90,8 +89,9 @@ def load_model(model_config):
     preprocessing_fn can be a tuple of functions or None values
         If so, it applies to training and inference separately
     """
-    model_module = import_module(model_config["module"])
-    model_fn = getattr(model_module, model_config["name"])
+    module, method = model_config["function"].split(":")
+    model_module = import_module(module)
+    model_fn = getattr(model_module, method)
     weights_file = model_config.get("weights_file", None)
     if isinstance(weights_file, str):
         weights_path = maybe_download_weights_from_s3(
@@ -154,8 +154,7 @@ def load_attack(attack_config, classifier):
                 f"are as follows: {SUPPORTED_TYPES}."
             )
 
-    attack_module = import_module(attack_config["module"])
-    attack_fn = getattr(attack_module, attack_config["name"])
+    attack_fn = load_fn(attack_config)
     attack = attack_fn(classifier, **attack_config["kwargs"])
 
     if attack_config.get("type") == "sweep":
@@ -180,8 +179,7 @@ def load_attack(attack_config, classifier):
 def load_adversarial_dataset(config, num_batches=None, check_run=False, **kwargs):
     if config.get("type") != "preloaded":
         raise ValueError(f"attack type must be 'preloaded', not {config.get('type')}")
-    dataset_module = import_module(config["module"])
-    dataset_fn = getattr(dataset_module, config["name"])
+    dataset_fn = load_fn(config)
     dataset_kwargs = config["kwargs"]
     dataset_kwargs.update(kwargs)
     if "description" in dataset_kwargs:
@@ -212,8 +210,7 @@ def load_defense_wrapper(defense_config, classifier):
             f"Wrapped defenses must be of type Trainer, found {defense_type}"
         )
 
-    defense_module = import_module(defense_config["module"])
-    defense_fn = getattr(defense_module, defense_config["name"])
+    defense_fn = load_fn(defense_config)
     kwargs = copy.deepcopy(defense_config["kwargs"])
     if "augmentations" in kwargs and kwargs["augmentations"] is not None:
         # create Preprocess object and add it to kwargs
