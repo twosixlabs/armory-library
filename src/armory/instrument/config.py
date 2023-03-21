@@ -31,6 +31,8 @@ class MetricsLogger:
         include_targeted=True,
         record_metric_per_sample=False,
         max_record_size=2**20,
+        *args,
+        **kwargs,
     ):
         """
         task - single metric or list of metrics

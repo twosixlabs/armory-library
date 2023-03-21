@@ -7,7 +7,7 @@ import numpy as np
 
 from armory.instrument.export import AudioExporter
 from armory.logs import log
-from armory.scenarios.scenario import Scenario
+from charmory.scenario import Scenario
 
 
 def load_audio_channel(delay, attenuation, pytorch=True):
