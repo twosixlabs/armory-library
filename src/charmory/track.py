@@ -1,11 +1,10 @@
 """A mock-up demo to show how Armory and MLflow interact."""
 
 
-import mlflow
 from loguru import logger as log
+import mlflow
 
-import charmory.canned
-from charmory.evaluation import Evaluation
+# import charmory.canned
 
 
 def show_mlflow_experiement(experiment_id):
@@ -16,24 +15,6 @@ def show_mlflow_experiement(experiment_id):
     print(f"Artifact Location: {experiment.artifact_location}")
     print(f"Lifecycle Stage: {experiment.lifecycle_stage}")
     print(f"Creation Time: {experiment.creation_time}")
-
-
-class Evaluator:
-    def __init__(self, evaluation: Evaluation):
-        self.evaluation = evaluation
-
-        metadata = evaluation._metadata
-        mlexp = mlflow.get_experiment_by_name(metadata.name)
-        if mlexp:
-            self.experiment_id = mlexp.experiment_id
-            log.info(f"Experiment {metadata.name} already exists {self.experiment_id}")
-        else:
-            self.experiment_id = mlflow.create_experiment(
-                metadata.name,
-            )
-            log.info(
-                f"Creating experiment {self.evaluation._metadata.name} as {self.experiment_id}"
-            )
 
     def run(self):
         """fake an evaluation to demonstrate mlflow tracking."""
@@ -68,13 +49,14 @@ class Evaluator:
 
 
 def main():
-    mnist = charmory.canned.mnist_baseline()
+    # mnist = charmory.canned.mnist_baseline()
 
-    evaluator = Evaluator(mnist)
-    log.info("mnist experiment tracked")
+    # evaluator = Engine(mnist)
+    # log.info("mnist experiment tracked")
 
-    results = evaluator.run()
-    log.info(f"mnist experiment results tracked {results}")
+    # results = evaluator.run()
+    # log.info(f"mnist experiment results tracked {results}")
+    ...
 
 
 if __name__ == "__main__":

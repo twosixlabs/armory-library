@@ -3,8 +3,7 @@ Primary class for scenario
 """
 
 import copy
-import importlib
-import os
+import json
 import sys
 import time
 from typing import Optional
@@ -12,12 +11,12 @@ from typing import Optional
 from tqdm import tqdm
 
 import armory
-from armory import Config, metrics, paths
+from armory import metrics
 from armory.instrument import MetricsLogger, del_globals, get_hub, get_probe
 from armory.instrument.export import ExportMeter, PredictionMeter
 from armory.logs import log
 from armory.metrics import compute
-from armory.utils import config_loading, json_utils
+from armory.utils import config_loading
 
 
 class Scenario:
@@ -29,13 +28,15 @@ class Scenario:
 
     def __init__(
         self,
-        config: Config,
+        config: dict,
         num_eval_batches: Optional[int] = None,
         skip_benign: Optional[bool] = False,
         skip_attack: Optional[bool] = False,
         skip_misclassified: Optional[bool] = False,
         check_run: bool = False,
     ):
+        # TODO: Temporary hack to allow for scenario config to be passed as a dict. -CW
+        config = config.asdict()
         self.probe = get_probe("scenario")
         self.hub = get_hub()
         self.check_run = bool(check_run)
@@ -78,12 +79,14 @@ class Scenario:
             log.info("Skipping attack generation...")
         self.time_stamp = time.time()
         self.export_subdir = "saved_samples"
-        self._set_output_dir(self.config.get("eval_id"))
-        if os.path.exists(f"{self.scenario_output_dir}/{self.export_subdir}"):
-            log.warning(
-                f"Export output directory {self.scenario_output_dir}/{self.export_subdir} already exists, will create new directory"
-            )
-            self._set_export_dir(f"{self.export_subdir}_{self.time_stamp}")
+        # self._set_output_dir(self.config.get("eval_id"))
+        self.export_dir = "private"
+        self.export_subdir = self.export_dir
+        # if os.path.exists(f"{self.scenario_output_dir}/{self.export_subdir}"):
+        #     log.warning(
+        #         f"Export output directory {self.scenario_output_dir}/{self.export_subdir} already exists, will create new directory"
+        #     )
+        #     self._set_export_dir(f"{self.export_subdir}_{self.time_stamp}")
         self.results = None
 
     def user_init(self) -> None:
@@ -91,70 +94,75 @@ class Scenario:
         Import the user-specified initialization module
             and (optionally) call the specified function name with kwargs
         """
-        user_init = self.config.get("user_init")
-        if user_init is not None:
-            module = user_init.get("module")
-            log.info(f"Importing user_init module {module}")
-            if not isinstance(module, str):
-                raise ValueError("config: 'user_init' field 'module' must be a str")
-            try:
-                mod = importlib.import_module(module)
-            except ModuleNotFoundError as err:
-                raise ValueError(
-                    f"config: 'user_init' field 'module' '{module}' cannot be imported."
-                    " If using docker, does it need to be added to"
-                    " config['sysconfig']['external_github_repo']?"
-                ) from err
-            name = user_init.get("name")
-            kwargs = user_init.get("kwargs") or {}
-            if name:
-                if kwargs:
-                    kwargs_str = f"**{kwargs}"
-                else:
-                    kwargs_str = ""
-                log.info(f"Calling user_init function {module}.{name}({kwargs_str})")
-                target = getattr(mod, name, None)
-                if target is None:
-                    raise ValueError(f"user_init name {name} cannot be found")
-                if not callable(target):
-                    raise ValueError(f"{module}.{name} is not callable")
-                target(**kwargs)
-            elif kwargs:
-                log.warning("Ignoring user_init kwargs because name is False")
+        ...
+        # user_init = self.config.get("user_init")
+        # if user_init is not None:
+        #     module = user_init.get("module")
+        #     log.info(f"Importing user_init module {module}")
+        #     if not isinstance(module, str):
+        #         raise ValueError("config: 'user_init' field 'module' must be a str")
+        #     try:
+        #         mod = importlib.import_module(module)
+        #     except ModuleNotFoundError as err:
+        #         raise ValueError(
+        #             f"config: 'user_init' field 'module' '{module}' cannot be imported."
+        #             " If using docker, does it need to be added to"
+        #             " config['sysconfig']['external_github_repo']?"
+        #         ) from err
+        #     name = user_init.get("name")
+        #     kwargs = user_init.get("kwargs") or {}
+        #     if name:
+        #         if kwargs:
+        #             kwargs_str = f"**{kwargs}"
+        #         else:
+        #             kwargs_str = ""
+        #         log.info(f"Calling user_init function {module}.{name}({kwargs_str})")
+        #         target = getattr(mod, name, None)
+        #         if target is None:
+        #             raise ValueError(f"user_init name {name} cannot be found")
+        #         if not callable(target):
+        #             raise ValueError(f"{module}.{name} is not callable")
+        #         target(**kwargs)
+        #     elif kwargs:
+        #         log.warning("Ignoring user_init kwargs because name is False")
 
     def _set_output_dir(self, eval_id) -> None:
-        runtime_paths = paths.HostPaths()
-        self.scenario_output_dir = os.path.join(runtime_paths.output_dir, eval_id)
-        self.hub._set_output_dir(self.scenario_output_dir)
-        self._set_export_dir(self.export_subdir)
+        ...
+        # runtime_paths = paths.HostPaths()
+        # self.scenario_output_dir = os.path.join(runtime_paths.output_dir, "eval_id")
+        # self.hub._set_output_dir(self.scenario_output_dir)
+        # self._set_export_dir(self.export_subdir)
 
     def _set_export_dir(self, output_subdir) -> None:
-        self.export_dir = f"{self.scenario_output_dir}/{output_subdir}"
-        self.export_subdir = output_subdir
-        self.hub._set_export_dir(output_subdir)
+        ...
+        # self.export_dir = f"{self.scenario_output_dir}/{output_subdir}"
+        # self.export_subdir = output_subdir
+        # self.hub._set_export_dir(output_subdir)
 
     def _check_config_and_cli_args(
         self, config, num_eval_batches, skip_benign, skip_attack, skip_misclassified
     ):
-        if skip_misclassified:
-            if skip_attack or skip_benign:
-                raise ValueError(
-                    "Cannot pass skip_misclassified if skip_benign or skip_attack is also passed"
-                )
-            if "categorical_accuracy" not in config["metric"].get("task"):
-                raise ValueError(
-                    "Cannot pass skip_misclassified if 'categorical_accuracy' metric isn't enabled"
-                )
-            if config["dataset"].get("batch_size") != 1:
-                raise ValueError(
-                    "To enable skip_misclassified, 'batch_size' must be set to 1"
-                )
-            if config["attack"].get("kwargs", {}).get("targeted"):
-                raise ValueError("skip_misclassified only works for untargeted attacks")
+        ...
+        # if skip_misclassified:
+        #     if skip_attack or skip_benign:
+        #         raise ValueError(
+        #             "Cannot pass skip_misclassified if skip_benign or skip_attack is also passed"
+        #         )
+        #     if "categorical_accuracy" not in config["metric"].get("task"):
+        #         raise ValueError(
+        #             "Cannot pass skip_misclassified if 'categorical_accuracy' metric isn't enabled"
+        #         )
+        #     if config["dataset"].get("batch_size") != 1:
+        #         raise ValueError(
+        #             "To enable skip_misclassified, 'batch_size' must be set to 1"
+        #         )
+        #     if config["attack"].get("kwargs", {}).get("targeted"):
+        #         raise ValueError("skip_misclassified only works for untargeted attacks")
 
     def load_model(self, defended=True):
         model_config = self.config["model"]
-        model_name = f"{model_config['module']}.{model_config['name']}"
+        module, method = model_config["function"].split(":")
+        model_name = f"{module}.{method}"
         model, _ = config_loading.load_model(model_config)
 
         if defended:
@@ -182,7 +190,7 @@ class Scenario:
 
     def load_train_dataset(self, train_split_default="train"):
         dataset_config = self.config["dataset"]
-        log.info(f"Loading train dataset {dataset_config['name']}...")
+        log.info("Loading train dataset...")
         self.train_dataset = config_loading.load_dataset(
             dataset_config,
             epochs=self.fit_kwargs["nb_epochs"],
@@ -251,7 +259,7 @@ class Scenario:
         dataset_config = self.config["dataset"]
         eval_split = dataset_config.get("eval_split", eval_split_default)
         # Evaluate the ART model on benign test examples
-        log.info(f"Loading test dataset {dataset_config['name']}...")
+        log.info("Loading test dataset...")
         self.test_dataset = config_loading.load_dataset(
             dataset_config,
             epochs=1,
@@ -317,11 +325,12 @@ class Scenario:
         )
 
     def load(self):
-        self.user_init()
+        # self.user_init()
         self.load_model()
         if self.use_fit:
             self.load_train_dataset()
-            self.fit()
+            # TODO: Fix errors in fit_generator
+            # self.fit()
         self.load_attack()
         self.load_dataset()
         self.load_metrics()
@@ -452,7 +461,7 @@ class Scenario:
         if self.results is None:
             log.warning(f"{self._evaluate} did not set self.results to a dict")
 
-        self.save()
+        return self.save()
 
     def prepare_results(self) -> dict:
         """
@@ -476,22 +485,25 @@ class Scenario:
         """
         Write results JSON file to Armory scenario output directory
         """
-        output = self.prepare_results()
+        results = self.prepare_results()
 
-        override_name = output["config"]["sysconfig"].get("output_filename", None)
-        scenario_name = (
-            override_name if override_name else output["config"]["scenario"]["name"]
-        )
-        filename = f"{scenario_name}_{output['timestamp']}.json"
-        log.info(
-            "Saving evaluation results to path "
-            f"{self.scenario_output_dir}/{filename} "
-        )
-        output_path = os.path.join(self.scenario_output_dir, filename)
-        with open(output_path, "w") as f:
-            json_utils.dump(output, f)
-        if os.path.getsize(output_path) > 2**27:
-            log.warning(
-                "Results json file exceeds 128 MB! "
-                "Recommend checking what is being recorded!"
-            )
+        print(json.dumps(results, indent=4))
+        return results
+
+        # override_name = output["config"]["sysconfig"].get("output_filename", None)
+        # scenario_name = (
+        #     override_name if override_name else output["config"]["scenario"]["name"]
+        # )
+        # filename = f"{scenario_name}_{output['timestamp']}.json"
+        # log.info(
+        #     "Saving evaluation results to path "
+        #     f"{self.scenario_output_dir}/{filename} "
+        # )
+        # output_path = os.path.join(self.scenario_output_dir, filename)
+        # with open(output_path, "w") as f:
+        #     json_utils.dump(output, f)
+        # if os.path.getsize(output_path) > 2**27:
+        #     log.warning(
+        #         "Results json file exceeds 128 MB! "
+        #         "Recommend checking what is being recorded!"
+        #     )
