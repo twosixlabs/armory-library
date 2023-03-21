@@ -1,31 +1,35 @@
 """A mock-up demo to show how Armory and MLflow interact."""
 
+from charmory.evaluation import Evaluation
+from charmory.blocks import mnist
 
 from loguru import logger as log
 import mlflow
 
-# import charmory.canned
 
+class Evaluator:
+    def __init__(self, eval: Evaluation):
+        self.eval = eval
 
-def show_mlflow_experiement(experiment_id):
-    experiment = mlflow.get_experiment(experiment_id)
-    print(f"Experiment: {experiment.name}")
-    print(f"tags: {experiment.tags}")
-    print(f"Experiment ID: {experiment.experiment_id}")
-    print(f"Artifact Location: {experiment.artifact_location}")
-    print(f"Lifecycle Stage: {experiment.lifecycle_stage}")
-    print(f"Creation Time: {experiment.creation_time}")
+        metadata = eval._metadata
+        mlexp = mlflow.get_experiment_by_name(metadata.name)
+        if mlexp:
+            self.experiment_id = mlexp.experiment_id
+            log.info(f"Experiment {metadata.name} already exists {self.experiment_id}")
+        else:
+            self.experiment_id = mlflow.create_experiment(metadata.name)
+            log.info(f"Creating experiment {metadata.name} as {self.experiment_id}")
 
     def run(self):
         """fake an evaluation to demonstrate mlflow tracking."""
-        metadata = self.evaluation._metadata
+        metadata = self.eval._metadata
         log.info("Starting mlflow run:")
-        show_mlflow_experiement(self.experiment_id)
+        self.show()
         self.active_run = mlflow.start_run(
             experiment_id=self.experiment_id,
             description=metadata.description,
             tags={
-                "author": self.evaluation._metadata.author,
+                "author": self.eval._metadata.author,
             },
         )
 
@@ -34,9 +38,10 @@ def show_mlflow_experiement(experiment_id):
 
         epsilon = random.random()
         result = {"benign": epsilon, "adversarial": 1 - epsilon}
-        self.evaluation.attack.kwargs["eps"] = epsilon
+        assert self.eval.attack
+        self.eval.attack.kwargs["eps"] = epsilon
 
-        for key, value in self.evaluation.flatten():
+        for key, value in self.eval.flatten():
             if key.startswith("_metadata."):
                 continue
             mlflow.log_param(key, value)
@@ -47,17 +52,19 @@ def show_mlflow_experiement(experiment_id):
         mlflow.end_run()
         return result
 
-
-def main():
-    # mnist = charmory.canned.mnist_baseline()
-
-    # evaluator = Engine(mnist)
-    # log.info("mnist experiment tracked")
-
-    # results = evaluator.run()
-    # log.info(f"mnist experiment results tracked {results}")
-    ...
+    def show(self):
+        experiment = mlflow.get_experiment(experiment_id=self.experiment_id)
+        table = {
+            "name": experiment.name,
+            "tags": experiment.tags,
+            "experiment_id": experiment.experiment_id,
+            "artifact_location": experiment.artifact_location,
+            "lifecycle_stage": experiment.lifecycle_stage,
+            "creation_time": experiment.creation_time,
+        }
+        for label, value in table.items():
+            log.info(f"{label}: {value}")
 
 
 if __name__ == "__main__":
-    main()
+    Evaluator(mnist.baseline).run()
