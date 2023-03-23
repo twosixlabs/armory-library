@@ -1,10 +1,10 @@
 """A mock-up demo to show how Armory and MLflow interact."""
 
-from charmory.evaluation import Evaluation
-from charmory.blocks import mnist
-
 from loguru import logger as log
 import mlflow
+
+from charmory.blocks import mnist
+from charmory.evaluation import Evaluation
 
 
 class Evaluator:
