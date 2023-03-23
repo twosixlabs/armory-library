@@ -47,35 +47,32 @@ def test_initializers():
     sysconfig = evaluation.SysConfig(gpus=["0", "2"], use_gpu=True)
     assert "2" in sysconfig.gpus
 
-    metadata = evaluation.MetaData("null experiment", "test", "msw <msw@example.com>")
-    assert metadata.name == "null experiment"
-
     with pytest.raises(TypeError):
         bad = evaluation.Evaluation()  # type: ignore
-        assert bad._metadata.name == "null experiment"
+        assert bad.name == "null experiment"
 
     exp = evaluation.Evaluation(
-        metadata,
-        model,
-        scenario,
-        dataset,
-        attack,
-        defense,
-        metric,
-        sysconfig,
+        name="null experiment",
+        description="test",
+        author="msw <msw@example.com>",
+        dataset=dataset,
+        model=model,
+        scenario=scenario,
+        attack=attack,
+        defense=defense,
+        metric=metric,
+        sysconfig=sysconfig,
     )
-    assert exp._metadata.name == "null experiment"
+    assert exp.name == "null experiment"
 
 
 def test_mnist_experiment():
     exp = mnist.baseline
 
     assert exp.asdict() == {
-        "_metadata": {
-            "name": "mnist_baseline",
-            "description": "derived from mnist_baseline.json",
-            "author": "msw@example.com",
-        },
+        "name": "mnist_baseline",
+        "description": "derived from mnist_baseline.json",
+        "author": "msw@example.com",
         "model": {
             "function": "armory.baseline_models.keras.mnist:get_art_model",
             "model_kwargs": {},
