@@ -1,5 +1,19 @@
 ---
 site_name: Armory
+site_url: https://gitlab.jatic.net/jatic/twosix/armory/
+site_author: Two Six Technologies
+
+docs_dir: docs/
+site_dir: public/
+
+repo_url: https://gitlab.jatic.net/jatic/twosix/armory/
+edit_uri: blob/master/documentation/
+
+theme:
+    name: readthedocs
+    locale: en
+    highlightjs: true
+
 nav:
   - Home: index.md
   - Getting Started: getting_started.md
@@ -29,4 +43,4 @@ nav:
       - Contributing: contributing.md
       - Style: style.md
       - Testing: developers/testing.md
-theme: readthedocs
+

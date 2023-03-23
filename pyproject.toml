@@ -31,8 +31,8 @@ BugTracker = "https://github.com/twosixlabs/armory/issues"
 Documentation = "https://armory.readthedocs.io/en/latest/"
 
 [project.scripts]
-armory = "charmory.examples.cli:main"
-charmory = "charmory.examples.cli:main"
+armory = "charmory.example:main"
+charmory = "charmory.example:main"
 
 
 # please see docs/getting_started.md#the-armory-flavors for how these
@@ -40,13 +40,18 @@ charmory = "charmory.examples.cli:main"
 [project.optional-dependencies]
 developer =[
     "pytest",
-    "hatch", # build tool
-    "wheel", # build tool
-    "mkdocs",
+    "hatch",  # build tool
+    "wheel",  # build tool
     "black",
     "isort",
     "flake8",
     "bandit[toml]", # code scanning
+]
+
+documentation = [
+    "mkdocs",
+    "mkdocstrings",
+    # "sphinx",
 ]
 
 tracking = [
@@ -54,7 +59,7 @@ tracking = [
 ]
 
 engine = [
-    "adversarial-robustness-toolbox",
+    "adversarial-robustness-toolbox == 1.14.0",
     "Pillow",              # Data dependencies
     "boto3",               # Needed for armory.data.utils
     "botocore" ,           # Needed for armory.data.utils
@@ -69,8 +74,8 @@ engine = [
 ]
 
 math = [
-    "scikit-learn == 1.2.0",  # ART requires scikit-learn >= 0.22.2, < 1.2.0
-    "scipy == 1.7.2",         # ART requires scipy >= 1.4.1, < 1.10.1
+    "scikit-learn < 1.2.0",  # ART requires scikit-learn >= 0.22.2, < 1.2.0
+    "scipy",                 # ART requires scipy >= 1.4.1, < 1.10.1
     "numpy",
     "pandas",
     "matplotlib",
@@ -82,6 +87,11 @@ pytorch = [
     "torchvision",
 ]
 
+tensorflow = [
+    "tf-models-official",
+    "tensorflow >= 2.10.0",
+]
+
 deepspeech = [
     "python-levenshtein",
     "torchmetrics < 0.8.0",
@@ -90,11 +100,6 @@ deepspeech = [
     "google-cloud-storage",
     "transformers",
     "pytorch-lightning < 1.5.0",
-]
-
-tensorflow = [
-    "tf-models-official",
-    "tensorflow >= 2.10.0",
 ]
 
 datasets = [
@@ -108,12 +113,13 @@ datasets-builder = [
 
 all = [
     "armory-testbed[developer]",
+    "armory-testbed[documentation]",
     "armory-testbed[tracking]",
     "armory-testbed[engine]",
     "armory-testbed[math]",
     "armory-testbed[pytorch]",
-    # "armory-testbed[deepspeech]",
     "armory-testbed[tensorflow]",
+    # "armory-testbed[deepspeech]",
     # "armory-testbed[datasets]",
     # "armory-testbed[datasets-builder]",
 ]

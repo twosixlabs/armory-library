@@ -61,7 +61,7 @@ pushd $PROJECT_ROOT > /dev/null || exit 1
         ############
         # Flake8
         echo "🎱 Executing 'flake8' formatter..."
-        python3 -m flake8 --config=.flake8 ${TARGET_FILES}
+        python3 -m flake8 --config=./tools/flake8.cfg ${TARGET_FILES}
         CHECK_EXIT_STATUS $?
 
         ############
