@@ -1,10 +1,9 @@
-"""Evaluation components for  CIFAR10 baseline."""
+"""Evaluation components for CIFAR10 baseline."""
 
 from charmory.evaluation import (
     Attack,
     Dataset,
     Evaluation,
-    MetaData,
     Metric,
     Model,
     Scenario,
@@ -41,12 +40,6 @@ attack = Attack(
 )
 
 
-metadata = MetaData(
-    name="cifar_baseline",
-    description="Baseline cifar10 image classification",
-    author="msw@example.com",
-)
-
 scenario = Scenario(
     function="armory.scenarios.image_classification:ImageClassificationTask",
     kwargs={},
@@ -65,7 +58,9 @@ sysconfig = SysConfig(gpus=["all"], use_gpu=True)
 
 
 baseline = Evaluation(
-    _metadata=metadata,
+    name="cifar_baseline",
+    description="Baseline cifar10 image classification",
+    author="msw@example.com",
     dataset=dataset,
     model=model,
     attack=attack,
