@@ -1,7 +1,7 @@
 import pytest
 
-import charmory.evaluation as evaluation
 from charmory.blocks import mnist
+import charmory.evaluation as evaluation
 
 
 def test_initializers():
