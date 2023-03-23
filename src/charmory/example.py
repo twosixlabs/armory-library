@@ -14,7 +14,7 @@ def main():
 
     baseline = cifar10.baseline
 
-    log.info(bold(f"Starting Demo for {red(baseline._metadata.name)}"))
+    log.info(bold(f"Starting Demo for {red(baseline.name)}"))
 
     result = Engine(baseline).run()
     # result["benign"] = id(baseline)

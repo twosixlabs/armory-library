@@ -72,15 +72,10 @@ class SysConfig:
 
 
 @dataclass
-class MetaData:
+class Evaluation:
     name: str
     description: str
     author: Optional[str]
-
-
-@dataclass
-class Evaluation:
-    _metadata: MetaData
     model: Model
     scenario: Scenario
     dataset: Dataset

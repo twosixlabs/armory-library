@@ -11,25 +11,23 @@ class Evaluator:
     def __init__(self, eval: Evaluation):
         self.eval = eval
 
-        metadata = eval._metadata
-        mlexp = mlflow.get_experiment_by_name(metadata.name)
+        mlexp = mlflow.get_experiment_by_name(eval.name)
         if mlexp:
             self.experiment_id = mlexp.experiment_id
-            log.info(f"Experiment {metadata.name} already exists {self.experiment_id}")
+            log.info(f"Experiment {eval.name} already exists {self.experiment_id}")
         else:
-            self.experiment_id = mlflow.create_experiment(metadata.name)
-            log.info(f"Creating experiment {metadata.name} as {self.experiment_id}")
+            self.experiment_id = mlflow.create_experiment(eval.name)
+            log.info(f"Creating experiment {eval.name} as {self.experiment_id}")
 
     def run(self):
         """fake an evaluation to demonstrate mlflow tracking."""
-        metadata = self.eval._metadata
         log.info("Starting mlflow run:")
         self.show()
         self.active_run = mlflow.start_run(
             experiment_id=self.experiment_id,
-            description=metadata.description,
+            description=self.eval.description,
             tags={
-                "author": self.eval._metadata.author,
+                "author": self.eval.author,
             },
         )
 
@@ -37,8 +35,6 @@ class Evaluator:
         result = self.fake_result()
 
         for key, value in self.eval.flatten():
-            if key.startswith("_metadata."):
-                continue
             mlflow.log_param(key, value)
 
         for k, v in result.items():
