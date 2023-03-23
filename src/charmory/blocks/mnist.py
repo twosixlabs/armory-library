@@ -4,7 +4,6 @@ from charmory.evaluation import (
     Attack,
     Dataset,
     Evaluation,
-    MetaData,
     Metric,
     Model,
     Scenario,
@@ -47,12 +46,6 @@ attack = Attack(
 )
 
 
-metadata = MetaData(
-    name="mnist_baseline",
-    description="derived from mnist_baseline.json",
-    author="msw@example.com",
-)
-
 scenario = Scenario(
     function="armory.scenarios.image_classification:ImageClassificationTask",
     kwargs={},
@@ -71,7 +64,9 @@ sysconfig = SysConfig(gpus=["all"], use_gpu=True)
 
 
 baseline = Evaluation(
-    _metadata=metadata,
+    name="mnist_baseline",
+    description="derived from mnist_baseline.json",
+    author="msw@example.com",
     dataset=dataset,
     model=model,
     attack=attack,
