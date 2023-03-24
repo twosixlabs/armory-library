@@ -55,27 +55,3 @@ class TestAttack:
     def test_create_attack_with_invalid_fields(self):
         with pytest.raises(TypeError):
             Attack(function=10)  # type: ignore
-
-    # Tests that an attack can be executed on a target model using an instance of attack with valid fields. tags: [happy path]
-    def test_execute_attack_on_target_model(self):
-        attack = Attack(
-            function="armory.attacks.fgsm", kwargs={"eps": 0.3}, knowledge="white"
-        )
-        # TODO: Implement this test
-        pass
-
-    # Tests that an attack can be executed on a target model using an instance of attack with valid fields and the 'use_label' field set to true. tags: [happy path]
-    def test_execute_attack_on_target_model_with_use_label(self):
-        attack = Attack(
-            function="armory.attacks.fgsm",
-            kwargs={"eps": 0.3},
-            knowledge="white",
-            use_label=True,
-        )
-        # TODO: Implement this test
-        pass
-
-    # Tests that an attack can be executed on a target model using an instance of attack with valid fields and the 'type' field set to a valid value. tags: [happy path]
-    def test_execute_attack_on_target_model_with_valid_type(self):
-        # TODO: Implement this test
-        pass
