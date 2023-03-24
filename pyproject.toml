@@ -51,6 +51,8 @@ developer =[
 documentation = [
     "mkdocs",
     "mkdocstrings",
+    "mkdocs-exclude",
+    "mkdocs-material",
     # "sphinx",
 ]
 

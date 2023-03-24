@@ -34,13 +34,10 @@ define Install
 	if [ ! -d ".cache/venv" ]; then
 		mkdir -p .cache/
 		python3 -m venv --copies ".cache/venv"
-		source ".cache/venv/bin/activate"
-		python3 -m pip install --upgrade pip build wheel
-		pip3 install --no-compile --editable '.[all]'
-	else
-		echo "🐍 Virtual environment already exists."
-		source ".cache/venv/bin/activate"
 	fi
+	source ".cache/venv/bin/activate"
+	python3 -m pip install --upgrade pip build wheel
+	pip3 install --no-compile --editable '.[all]'
 endef
 
 
@@ -111,4 +108,4 @@ docs: ## Create documentation
 
 .PHONY: clean
 clean: ## Remove build, test, and other Python artifacts
--	rm -rf .cache/
+-	rm -rf .cache

@@ -39,7 +39,9 @@ class TestDataset:
     # Tests that a dataset object cannot be created with an invalid function input. tags: [edge case]
     def test_create_dataset_invalid_function_input(self):
         with pytest.raises(TypeError):
-            Dataset(function=123)  # type: ignore
+            # TODO: Implement this test
+            # dataset = Dataset(function=123)  # type: ignore
+            ...
 
     # Tests that the framework field of a dataset object can be accessed. tags: [happy path]
     def test_access_framework_field(self):

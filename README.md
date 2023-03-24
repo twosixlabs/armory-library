@@ -31,18 +31,7 @@ version, the installation name was "armory-testbed" which provided also provided
 the `armory` namespace.
 
 # Usage
-
-
-# Scenarios
-Armory provides several baseline threat-model scenarios for various data modalities.
-When running an armory configuration file, the robustness of a defense will be
-evaluated against that given scenario. For more information please see our
-[Scenario Documentation](docs/scenarios.md).
-
-# FAQs
-Please see the [frequently asked questions](faqs.md) documentation for more information on:
-* Dataset format and preprocessing
-* Access to underlying models from wrapped classifiers.
+See the documentation [here](https://jatic.pages.jatic.net/twosix/armory/).
 
 # Acknowledgment
 This material is based upon work supported by the Defense Advanced Research Projects
