@@ -1,5 +1,5 @@
 # -------------- Project ------------------
-src/armory/__about__.py
+src/armory/version.py
 mlruns/
 
 # ------------- Template ------------------

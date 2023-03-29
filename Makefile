@@ -78,8 +78,8 @@ scan: ## run bandit security scan
 
 
 .PHONY: test
-test: ## run application tests
--	charmory
+test: ## Run application tests
+-	armory
 # pytest -c pyproject.toml -s ./tests.orig/unit/test_configuration.py
 # pytest -c pyproject.toml -m "not docker_required and unit" ./tests.orig/
 # pytest -c pyproject.toml -s ./tests.orig/end_to_end/test_no_docker.py
