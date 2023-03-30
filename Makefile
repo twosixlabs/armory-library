@@ -31,11 +31,11 @@ all: install lint scan build docs
 ######################
 define Install
 	echo "🐍 Setting up virtual environment..."
-	if [ ! -d ".cache/venv" ]; then
+	if [ ! -d "./venv" ]; then
 		mkdir -p .cache/
-		python3 -m venv --copies ".cache/venv"
+		python3 -m venv --copies "./venv"
 	fi
-	source ".cache/venv/bin/activate"
+	source "./venv/bin/activate"
 	python3 -m pip install --upgrade pip build wheel
 	pip3 install --no-compile --editable '.[all]'
 endef
@@ -67,13 +67,13 @@ install:	## Setup a Virtual Environment
 
 
 .PHONY: lint
-lint: ## run style checks
+lint: ## Run style checks
 -	ARMORY_CI_TEST=1 ./tools/pre-commit.sh
 
 
 .PHONY: scan
-scan: ## run bandit security scan
--	python3 -m bandit -v -f txt -r ./src -c "pyproject.toml" --output .cache/bandit_scan.txt || exit 0
+scan: ## Run bandit security scan
+-	python3 -m bandit -v -f txt -r ./src -c "pyproject.toml" --output bandit_scan.txt || exit 0
 -	$(call TypeCheck)
 
 
@@ -86,13 +86,18 @@ test: ## Run application tests
 
 
 .PHONY: type
-type: ## type check the code
+type: ## Type check the code
 -	$(call TypeCheck)
 
 
 .PHONY: update
 update: ## git pull branch
 -	git pull origin `git config --get remote.origin.url`
+
+
+.PHONY: pip-update
+pip-update: ## Update pip packages
+-	pip install --upgrade $(pip freeze | awk -F'[=]' '{print $1}')
 
 
 .PHONY: build
