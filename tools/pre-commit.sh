@@ -7,6 +7,7 @@ EXIT_STATUS=0
 EXIT_EARLY=0
 MAX_FILE_SIZE=32 # Max JSON file size in Megabytes.
 PROJECT_ROOT=`git rev-parse --show-toplevel`
+PROJECT_SOURCE="${PROJECT_ROOT}/src"
 
 # Determine command to use in order to collect
 # tracked files. Toggle between `dif` and `lstree`
@@ -59,17 +60,19 @@ pushd $PROJECT_ROOT > /dev/null || exit 1
         fi
 
         ############
-        # Flake8
-        echo "🎱 Executing 'flake8' formatter..."
-        python3 -m flake8 --config=./tools/flake8.cfg ${TARGET_FILES}
-        CHECK_EXIT_STATUS $?
-
-        ############
         # isort
         echo "⏬ Executing 'isort' import sorter..."
         python3 -m isort $TARGET_FILES
         CHECK_EXIT_STATUS $?
     fi
+
+    ############
+    # Flake8
+    # NOTE: Run analysis against the entire source directory. This is best
+    #       pratice per the flake8 maintainer: https://stackoverflow.com/a/71829036
+    echo "🎱 Executing 'flake8' formatter..."
+    python3 -m flake8 --config=./tools/flake8.cfg ${PROJECT_SOURCE}
+    CHECK_EXIT_STATUS $?
 
 
     ############
@@ -87,7 +90,8 @@ pushd $PROJECT_ROOT > /dev/null || exit 1
                 continue
             fi
 
-            python3 -m json.tool --sort-keys --indent=4 ${TARGET_FILE} 2>&1 | diff - ${TARGET_FILE} > /dev/null 2>&1
+            # Removed `--indent=4` until python3.9 is the minimum support version.
+            python3 -m json.tool --sort-keys ${TARGET_FILE} 2>&1 | diff - ${TARGET_FILE} > /dev/null 2>&1
 
             if [ $? -ne 0 ] ; then
                 JSON_PATCH="`python3 -m json.tool --sort-keys --indent=4 ${TARGET_FILE}`"
