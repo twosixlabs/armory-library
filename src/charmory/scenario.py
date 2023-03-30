@@ -3,10 +3,9 @@ Primary class for scenario
 """
 
 import copy
-import json
+from dataclasses import is_dataclass
 import sys
 import time
-from typing import Optional
 
 from tqdm import tqdm
 
@@ -17,6 +16,7 @@ from armory.instrument.export import ExportMeter, PredictionMeter
 from armory.logs import log
 from armory.metrics import compute
 from armory.utils import config_loading
+import armory.version
 
 
 class Scenario:
@@ -28,136 +28,80 @@ class Scenario:
 
     def __init__(
         self,
-        config: dict,
-        num_eval_batches: Optional[int] = None,
-        skip_benign: Optional[bool] = False,
-        skip_attack: Optional[bool] = False,
-        skip_misclassified: Optional[bool] = False,
+        config,
         check_run: bool = False,
     ):
-        # TODO: Temporary hack to allow for scenario config to be passed as a dict. -CW
-        config = config.asdict()
-        self.probe = get_probe("scenario")
-        self.hub = get_hub()
-        self.check_run = bool(check_run)
-        if num_eval_batches is not None and num_eval_batches < 0:
-            raise ValueError("num_eval_batches cannot be negative")
-        if self.check_run:
-            if num_eval_batches:
-                raise ValueError("check_run and num_eval_batches are incompatible")
-            # Modify dataset entries
-            if config["model"]["fit"]:
-                config["model"]["fit_kwargs"]["nb_epochs"] = 1
-            if config.get("attack", {}).get("type") == "preloaded":
-                config["attack"]["check_run"] = True
+        # TODO: use native object access instead of asdict
+        self.config = config.asdict() if is_dataclass(config) else copy.deepcopy(config)
+        self.check_run = check_run
 
-            for attack_kwarg in [
-                "max_iter",
-                "max_iter_1",
-                "max_iter_2",
-                "max_epochs",
-                "max_trials",
-                "model_retraining_epoch",
-            ]:
-                if config.get("attack", {}).get("kwargs", {}).get(attack_kwarg):
-                    config["attack"]["kwargs"][attack_kwarg] = 1
+        self.num_eval_batches = None
+        self.skip_benign = False
+        self.skip_attack = False
+        self.skip_misclassified = False
 
-            # For poisoning scenario
-            if config.get("adhoc") and config.get("adhoc").get("train_epochs"):
-                config["adhoc"]["train_epochs"] = 1
-        self._check_config_and_cli_args(
-            config, num_eval_batches, skip_benign, skip_attack, skip_misclassified
-        )
-        self.config = config
-        self.num_eval_batches = num_eval_batches
-        self.skip_benign = bool(skip_benign)
-        self.skip_attack = bool(skip_attack)
-        self.skip_misclassified = bool(skip_misclassified)
-        if skip_benign:
-            log.info("Skipping benign classification...")
-        if skip_attack:
-            log.info("Skipping attack generation...")
         self.time_stamp = time.time()
-        self.export_subdir = "saved_samples"
-        # self._set_output_dir(self.config.get("eval_id"))
-        self.export_dir = "private"
-        self.export_subdir = self.export_dir
-        # if os.path.exists(f"{self.scenario_output_dir}/{self.export_subdir}"):
-        #     log.warning(
-        #         f"Export output directory {self.scenario_output_dir}/{self.export_subdir} already exists, will create new directory"
-        #     )
-        #     self._set_export_dir(f"{self.export_subdir}_{self.time_stamp}")
+        self.export_dir = "/tmp"
+        self.export_subdir = "armory"
         self.results = None
 
-    def user_init(self) -> None:
+        self.probe = get_probe("scenario")
+        self.hub = get_hub()
+
+        self.load_model()
+
+        if bool(self.config["model"]["fit"]):
+            self.load_train_dataset()
+            self.fit()
+        self.load_attack()
+        self.load_dataset()
+        self.load_metrics()
+        self.load_export_meters()
+
+    def evaluate(self):
         """
-        Import the user-specified initialization module
-            and (optionally) call the specified function name with kwargs
+        Evaluate a config for robustness against attack and save results JSON
         """
-        ...
-        # user_init = self.config.get("user_init")
-        # if user_init is not None:
-        #     module = user_init.get("module")
-        #     log.info(f"Importing user_init module {module}")
-        #     if not isinstance(module, str):
-        #         raise ValueError("config: 'user_init' field 'module' must be a str")
-        #     try:
-        #         mod = importlib.import_module(module)
-        #     except ModuleNotFoundError as err:
-        #         raise ValueError(
-        #             f"config: 'user_init' field 'module' '{module}' cannot be imported."
-        #             " If using docker, does it need to be added to"
-        #             " config['sysconfig']['external_github_repo']?"
-        #         ) from err
-        #     name = user_init.get("name")
-        #     kwargs = user_init.get("kwargs") or {}
-        #     if name:
-        #         if kwargs:
-        #             kwargs_str = f"**{kwargs}"
-        #         else:
-        #             kwargs_str = ""
-        #         log.info(f"Calling user_init function {module}.{name}({kwargs_str})")
-        #         target = getattr(mod, name, None)
-        #         if target is None:
-        #             raise ValueError(f"user_init name {name} cannot be found")
-        #         if not callable(target):
-        #             raise ValueError(f"{module}.{name} is not callable")
-        #         target(**kwargs)
-        #     elif kwargs:
-        #         log.warning("Ignoring user_init kwargs because name is False")
+        try:
+            self.run_inference()
+            self.finalize_results()
+            log.debug("Clearing global instrumentation variables")
+            del_globals()
+        except Exception as e:
+            if str(e) == "assignment destination is read-only":
+                log.exception(
+                    "Encountered error during scenario evaluation. Be sure "
+                    + "that the classifier's predict() isn't directly modifying the "
+                    + "input variable itself, as this can cause unexpected behavior in ART."
+                )
+            else:
+                log.exception("Encountered error during scenario evaluation.")
+            log.exception(str(e))
+            sys.exit(1)
 
-    def _set_output_dir(self, eval_id) -> None:
-        ...
-        # runtime_paths = paths.HostPaths()
-        # self.scenario_output_dir = os.path.join(runtime_paths.output_dir, "eval_id")
-        # self.hub._set_output_dir(self.scenario_output_dir)
-        # self._set_export_dir(self.export_subdir)
+        if self.results is None:
+            log.warning("self.results is not a dict")
 
-    def _set_export_dir(self, output_subdir) -> None:
-        ...
-        # self.export_dir = f"{self.scenario_output_dir}/{output_subdir}"
-        # self.export_subdir = output_subdir
-        # self.hub._set_export_dir(output_subdir)
+        if not hasattr(self, "results"):
+            raise AttributeError(
+                "Results have not been finalized. Please call "
+                "finalize_results() before saving output."
+            )
 
-    def _check_config_and_cli_args(
-        self, config, num_eval_batches, skip_benign, skip_attack, skip_misclassified
-    ):
-        ...
-        # if skip_misclassified:
-        #     if skip_attack or skip_benign:
-        #         raise ValueError(
-        #             "Cannot pass skip_misclassified if skip_benign or skip_attack is also passed"
-        #         )
-        #     if "categorical_accuracy" not in config["metric"].get("task"):
-        #         raise ValueError(
-        #             "Cannot pass skip_misclassified if 'categorical_accuracy' metric isn't enabled"
-        #         )
-        #     if config["dataset"].get("batch_size") != 1:
-        #         raise ValueError(
-        #             "To enable skip_misclassified, 'batch_size' must be set to 1"
-        #         )
-        #     if config["attack"].get("kwargs", {}).get("targeted"):
-        #         raise ValueError("skip_misclassified only works for untargeted attacks")
+        output = {
+            "armory_version": armory.version.__version__,
+            "config": self.config,
+            "results": self.results,
+            "timestamp": int(self.time_stamp),
+        }
+        return output
+
+    def run_inference(self):
+        log.info("Running inference on benign and adversarial examples")
+        for _ in tqdm(range(len(self.test_dataset)), desc="Evaluation"):
+            self.next()
+            self.evaluate_current()
+        self.hub.set_context(stage="finished")
 
     def load_model(self, defended=True):
         model_config = self.config["model"]
@@ -324,26 +268,6 @@ class Scenario:
             f"_load_sample_exporter() method is not implemented for scenario {self.__class__}"
         )
 
-    def load(self):
-        # self.user_init()
-        self.load_model()
-        if self.use_fit:
-            self.load_train_dataset()
-            # TODO: Fix errors in fit_generator
-            # self.fit()
-        self.load_attack()
-        self.load_dataset()
-        self.load_metrics()
-        self.load_export_meters()
-        return self
-
-    def evaluate_all(self):
-        log.info("Running inference on benign and adversarial examples")
-        for _ in tqdm(range(len(self.test_dataset)), desc="Evaluation"):
-            self.next()
-            self.evaluate_current()
-        self.hub.set_context(stage="finished")
-
     def next(self):
         self.hub.set_context(stage="next")
         x, y = next(self.test_dataset)
@@ -430,80 +354,3 @@ class Scenario:
         self.results = {}
         self.results.update(self.metric_results)
         self.results["compute"] = self.compute_results
-
-    def _evaluate(self) -> dict:
-        """
-        Evaluate the config and set the results dict self.results
-        """
-        self.load()
-        self.evaluate_all()
-        self.finalize_results()
-        log.debug("Clearing global instrumentation variables")
-        del_globals()
-
-    def evaluate(self):
-        """
-        Evaluate a config for robustness against attack and save results JSON
-        """
-        try:
-            self._evaluate()
-        except Exception as e:
-            if str(e) == "assignment destination is read-only":
-                log.exception(
-                    "Encountered error during scenario evaluation. Be sure "
-                    + "that the classifier's predict() isn't directly modifying the "
-                    + "input variable itself, as this can cause unexpected behavior in ART."
-                )
-            else:
-                log.exception("Encountered error during scenario evaluation.")
-            sys.exit(1)
-
-        if self.results is None:
-            log.warning(f"{self._evaluate} did not set self.results to a dict")
-
-        return self.save()
-
-    def prepare_results(self) -> dict:
-        """
-        Return the JSON results blob to be used in save() method
-        """
-        if not hasattr(self, "results"):
-            raise AttributeError(
-                "Results have not been finalized. Please call "
-                "finalize_results() before saving output."
-            )
-
-        output = {
-            "armory_version": armory.__version__,
-            "config": self.config,
-            "results": self.results,
-            "timestamp": int(self.time_stamp),
-        }
-        return output
-
-    def save(self):
-        """
-        Write results JSON file to Armory scenario output directory
-        """
-        results = self.prepare_results()
-
-        print(json.dumps(results, indent=4))
-        return results
-
-        # override_name = output["config"]["sysconfig"].get("output_filename", None)
-        # scenario_name = (
-        #     override_name if override_name else output["config"]["scenario"]["name"]
-        # )
-        # filename = f"{scenario_name}_{output['timestamp']}.json"
-        # log.info(
-        #     "Saving evaluation results to path "
-        #     f"{self.scenario_output_dir}/{filename} "
-        # )
-        # output_path = os.path.join(self.scenario_output_dir, filename)
-        # with open(output_path, "w") as f:
-        #     json_utils.dump(output, f)
-        # if os.path.getsize(output_path) > 2**27:
-        #     log.warning(
-        #         "Results json file exceeds 128 MB! "
-        #         "Recommend checking what is being recorded!"
-        #     )
