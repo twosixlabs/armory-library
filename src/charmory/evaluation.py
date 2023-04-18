@@ -3,10 +3,10 @@
 # TODO: review the Optionals with @woodall
 
 from dataclasses import asdict, dataclass
-from typing import Any, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 MethodName = str  # reference to a python method e.g. "armory.attacks.weakest"
-StrDict = dict[str, Any]  # dictionary of string keys and any values
+StrDict = Dict[str, Any]  # dictionary of string keys and any values
 
 
 @dataclass
@@ -41,9 +41,9 @@ class Defense:
 @dataclass
 class Metric:
     profiler_type: Literal["basic", "deterministic"]
-    supported_metrics: list[str]
-    perturbation: list[str]
-    task: list[str]
+    supported_metrics: List[str]
+    perturbation: List[str]
+    task: List[str]
     means: bool
     record_metric_per_sample: bool
 
@@ -53,7 +53,7 @@ class Model:
     function: MethodName
     model_kwargs: StrDict
     wrapper_kwargs: StrDict
-    weights_file: Optional[list[str]]
+    weights_file: Optional[List[str]]
     fit: bool
     fit_kwargs: StrDict
 
@@ -67,7 +67,7 @@ class Scenario:
 @dataclass
 class SysConfig:
     # TODO: should get ArmoryControls (e.g. num_eval_batches, num_epochs, etc.)
-    gpus: list[str]
+    gpus: List[str]
     use_gpu: bool = False
 
 

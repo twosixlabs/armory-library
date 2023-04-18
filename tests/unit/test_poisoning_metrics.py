@@ -11,7 +11,7 @@ import pytest
 from armory.data.utils import maybe_download_weights_from_s3
 from armory.metrics import poisoning
 
-pytestmark = pytest.mark.unit
+# pytestmark = pytest.mark.unit
 
 
 @pytest.mark.slow
