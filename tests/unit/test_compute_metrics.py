@@ -6,7 +6,7 @@ import pytest
 
 from armory.metrics import compute
 
-pytestmark = pytest.mark.unit
+# pytestmark = pytest.mark.unit
 
 
 def test_null():

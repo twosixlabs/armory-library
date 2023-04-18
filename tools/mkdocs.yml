@@ -3,8 +3,9 @@ site_name: Armory
 site_url: https://gitlab.jatic.net/jatic/twosix/armory/
 site_author: Two Six Technologies
 
-docs_dir: docs/
-site_dir: public/
+# Both `docs` and `site` directories are one level up
+docs_dir: ../docs/
+site_dir: ../public/
 
 repo_url: https://gitlab.jatic.net/jatic/twosix/armory/
 edit_uri: blob/master/documentation/

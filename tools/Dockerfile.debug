@@ -1,0 +1,84 @@
+##########################################################################################
+#
+#                           ARMORY Baseline Docker Image
+#
+# This File contains the baseline image for Armory docker images.  All framework
+# based images should inhereit from this image using:
+#       FROM twosixlabs/armory-baseline AS armory-baseline
+#
+#
+#            ~~! Please remove/modify the following lines as updates are made to the image. !~~
+# Notes:
+#   [1] https://github.com/tensorflow/tensorflow/blob/master/tensorflow/tools/dockerfiles/dockerfiles/gpu.Dockerfile
+#   [2] https://bcourses.berkeley.edu/courses/1478831/pages/glibcxx-missing
+#   [3] https://docs.ycrc.yale.edu/clusters-at-yale/guides/conda/#mamba-the-conda-alternative
+#
+##########################################################################################
+
+FROM python:3.8-slim-bullseye
+
+ARG UID=1000                  \
+    GID=$UID                  \
+    USER="armory"             \
+    PASSWORD="armory"         \
+    DEBIAN_FRONTEND="noninteractive"
+#    set pip's cache directory using this environment variable, and use
+#    ARG instead of ENV to ensure its only set when the image is built
+#    PIP_CACHE_DIR="/tmp/pip-cache"    \
+
+ENV ARMORY_CONTAINER="1"              \
+    PYTHONDONTWRITEBYTECODE="1"       \
+    TZ="UTC"                          \
+    LC_ALL="C.UTF-8"                  \
+    LANG="C.UTF-8"
+
+USER root
+
+SHELL ["/bin/bash", "-c"]
+
+# Replace shell with bash so we can source files
+# RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+
+
+COPY ./ /app
+
+WORKDIR /app
+
+RUN echo "⏳ Host provisioning started..." && \
+    echo "⏳ Updating packages..."         && \
+    apt-get update -qqy                    && \
+    apt-get install -qqy                      \
+      --no-install-recommends                 \
+      --no-install-suggests                   \
+        git                                   \
+        libgl1-mesa-glx                       \
+        gnupg                                 \
+        build-essential                       \
+        rsync                                 \
+        make                                  \
+        software-properties-common         && \
+    echo "⏳ Installing library..."         && \
+    make docker-install                    && \
+    echo "⏳ Host provisioning complete."
+
+
+# Create a non-root user
+# RUN groupadd -g $GID $USER && \
+#     useradd -m -u $UID -g $GID -s /bin/bash $USER && \
+#     echo "$USER:$PASSWORD" | chpasswd && \
+#     usermod -aG sudo $USER && \
+#     echo "$USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+
+# USER armory
+# ENV HOME /app
+
+WORKDIR /app
+
+VOLUME ["/app", "/src", "/workspace"]
+
+# EXPOSE 8888
+
+STOPSIGNAL SIGQUIT
+
+CMD ["/bin/bash"]
