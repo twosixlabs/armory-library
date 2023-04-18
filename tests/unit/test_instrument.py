@@ -9,7 +9,7 @@ import pytest
 from armory import metrics
 from armory.instrument import instrument
 
-pytestmark = pytest.mark.unit
+# pytestmark = pytest.mark.unit
 
 
 def test_del_globals():

@@ -9,7 +9,7 @@ import pytest
 
 from armory.metrics import task
 
-pytestmark = pytest.mark.unit
+# pytestmark = pytest.mark.unit
 
 
 @pytest.mark.docker_required

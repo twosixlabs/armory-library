@@ -1,7 +1,6 @@
-image: "ubuntu:latest"
+image: "python:3.8-slim-bullseye"
 
 stages:
-  - "👽 Setup"
   - "📡 Code Linting"
   - "🚧 Static Analysis"
   - "🧪 Unit Tests"
@@ -10,10 +9,12 @@ stages:
   # - "🚀 Deploy"  # TODO: Add deploy stage for Advana target; e.g. package, container, etc. -CW
 
 variables:
-  ARMORY_CI_TEST: 1
+  LC_ALL: "C.UTF-8"
+  LANG: "C.UTF-8"
   DEBIAN_FRONTEND: noninteractive
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip"
   PYTHON_VENV_DIR: "$CI_PROJECT_DIR/venv"
+  ARMORY_CI_TEST: 1
   PYTEST_PARAMS: >-
     --exitfirst
     --suppress-no-test-exit-code
@@ -23,68 +24,50 @@ cache: &global_cache
   policy: pull-push
   untracked: true
   paths:
-    - $PYTHON_VENV_DIR
     - $PIP_CACHE_DIR
 
 
 before_script:
-  - apt-get update -qy
-  # Needed by pycocotools
-  - apt-get install -qqy --no-install-recommends --no-install-suggests build-essential
-  # Needed by versioning and linting scripts
-  - apt-get install -qqy --no-install-recommends --no-install-suggests git
-  # Needed for OpenCV
-  - apt install -qqy --no-install-recommends --no-install-suggests libgl1-mesa-glx
-  # Base requirements
-  - apt-get install -qqy --no-install-recommends --no-install-suggests gnupg software-properties-common
-  - add-apt-repository -y ppa:deadsnakes/ppa
-  - apt-get update -qy
-  - apt-get install -qqy --no-install-recommends --no-install-suggests python3.9 python3.9-dev python3.9-venv python3-pip
-  - ln -sf /usr/bin/python3.9 /usr/bin/python3
-  - ln -sf /usr/bin/pip3.9 /usr/bin/pip3
-  - '[[ -d "${PYTHON_VENV_DIR}" ]] && source "${PYTHON_VENV_DIR}/bin/activate"'
-
-
-setup:
-  stage: "👽 Setup"
-  when: on_success
-  only:
-    - merge_requests
-  script:
-    - make install
+  - apt-get update -qqy
+  - apt-get install -qqy --no-install-recommends --no-install-suggests git libgl1-mesa-glx gnupg build-essential rsync make software-properties-common
+  - python -m pip install --upgrade pip build wheel
 
 
 code-linting:
   stage: "📡 Code Linting"
-  dependencies:
-    - setup
   only:
     - merge_requests
   script:
+    - pip install isort black flake8
     - make lint
 
 
 static_analysis:
   stage: "🚧 Static Analysis"
+  artifacts:
+    paths:
+      - bandit_scan.txt
+    expire_in: 6 hours
+    when: on_success
   allow_failure: true
   dependencies:
-    - setup
     - code-linting
   only:
     - merge_requests
   script:
+    - pip install bandit mypy
     - make scan
 
 
 unit-test:
   stage: "🧪 Unit Tests"
-  allow_failure: true # Just until we get the tests working fully.
   dependencies:
-    - setup
     - code-linting
   only:
+    - jatic
     - merge_requests
   script:
+    - make install
     - make test
 
 
@@ -94,13 +77,13 @@ pages:
     paths:
       - public
   dependencies:
-    - setup
     - code-linting
     - unit-test
   only:
     - jatic
     - merge_requests
   script:
+    - pip install mkdocs mkdocstrings mkdocs-exclude mkdocs-material
     - make docs
 
 
@@ -110,11 +93,13 @@ build:
     paths:
       - dist/*.whl
   dependencies:
-    - setup
     - code-linting
     - unit-test
   only:
     - jatic
     - merge_requests
   script:
+    - make install
     - make build
+    # TODO: Add build for Advana target; e.g. package, container, etc. -CW
+    # - make docker

@@ -24,7 +24,7 @@ from armory.instrument.export import (
 )
 
 # Mark all tests in this file as `unit`
-pytestmark = pytest.mark.unit
+# pytestmark = pytest.mark.unit
 
 
 # Image Classification test input
