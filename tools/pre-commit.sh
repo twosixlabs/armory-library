@@ -52,9 +52,9 @@ pushd $PROJECT_ROOT > /dev/null || exit 1
         ############
         # Black
         echo "⚫ Executing 'black' formatter..."
-        python3 -m black --check ${TARGET_FILES} > /dev/null 2>&1
+        python -m black --check ${TARGET_FILES} > /dev/null 2>&1
         if [ $? -ne 0 ]; then
-            python3 -m black $TARGET_FILES
+            python -m black $TARGET_FILES
             echo "⚫ some files were formatted."
             CHECK_EXIT_STATUS 1
         fi
@@ -62,7 +62,7 @@ pushd $PROJECT_ROOT > /dev/null || exit 1
         ############
         # isort
         echo "⏬ Executing 'isort' import sorter..."
-        python3 -m isort $TARGET_FILES
+        python -m isort $TARGET_FILES
         CHECK_EXIT_STATUS $?
     fi
 
@@ -71,7 +71,7 @@ pushd $PROJECT_ROOT > /dev/null || exit 1
     # NOTE: Run analysis against the entire source directory. This is best
     #       pratice per the flake8 maintainer: https://stackoverflow.com/a/71829036
     echo "🎱 Executing 'flake8' formatter..."
-    python3 -m flake8 --config=./tools/flake8.cfg ${PROJECT_SOURCE}
+    python -m flake8 --config=./tools/flake8.cfg ${PROJECT_SOURCE}
     CHECK_EXIT_STATUS $?
 
 
@@ -90,11 +90,11 @@ pushd $PROJECT_ROOT > /dev/null || exit 1
                 continue
             fi
 
-            # Removed `--indent=4` until python3.9 is the minimum support version.
-            python3 -m json.tool --sort-keys ${TARGET_FILE} 2>&1 | diff - ${TARGET_FILE} > /dev/null 2>&1
+            # Removed `--indent=4` until python.9 is the minimum support version.
+            python -m json.tool --sort-keys ${TARGET_FILE} 2>&1 | diff - ${TARGET_FILE} > /dev/null 2>&1
 
             if [ $? -ne 0 ] ; then
-                JSON_PATCH="`python3 -m json.tool --sort-keys --indent=4 ${TARGET_FILE}`"
+                JSON_PATCH="`python -m json.tool --sort-keys ${TARGET_FILE}`"
                 if [[ ! -z "${JSON_PATCH// }" ]]; then
                     echo "${JSON_PATCH}" > ${TARGET_FILE}    # The double quotes are important here!
                     echo "📄 $(tput bold)modified ${TARGET_FILE}$(tput sgr0)"
@@ -105,7 +105,7 @@ pushd $PROJECT_ROOT > /dev/null || exit 1
             fi
         done
     fi
-popd > /dev/null
+popd
 
 
 if [ "${EXIT_STATUS}" -ne 0 ]; then

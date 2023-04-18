@@ -82,7 +82,6 @@ documentation = [
     "mkdocstrings",
     "mkdocs-exclude",
     "mkdocs-material",
-    # "sphinx",
 ]
 
 tracking = [
@@ -100,7 +99,9 @@ extras = [
     "pytorch-lightning < 1.5.0",
 
     # datasets
-    "tensorflow-datasets >= 4.6.0",
+    # Handle issue with tensorflow-datasets 4.9.0 not installing correctly
+    # on MacOS, fixed in 4.9.1 - https://github.com/tensorflow/datasets/issues/4852
+    "tensorflow-datasets >= 4.6.0, != 4.9.0",
     "protobuf",
 
     # datasets-builder
@@ -189,16 +190,6 @@ markers = [
 #     ignore::UserWarning:tensorflow*
 #     ignore::UserWarning:torch*
 #     ignore::Warning:art*
-
-
-# ------------ pre-commit hooks ------------
-[tool.vulture]
-paths             = ["src"]
-ignore_decorators = ["#~vulture.ignore~#"]
-min_confidence    = 80
-make_whitelist    = true
-sort_by_size      = true
-verbose           = true
 
 [tool.isort]
 profile = "black"

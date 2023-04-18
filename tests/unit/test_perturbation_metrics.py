@@ -9,7 +9,7 @@ import pytest
 
 from armory.metrics import perturbation
 
-pytestmark = pytest.mark.unit
+# pytestmark = pytest.mark.unit
 
 
 def test_lp_norms():

@@ -9,7 +9,7 @@ from armory.data import datasets
 #  figure out if this is what we want or if we need more
 
 # Mark all tests in this file as `unit`
-pytestmark = pytest.mark.unit
+# pytestmark = pytest.mark.unit
 
 
 def test_numpy_data_generator():

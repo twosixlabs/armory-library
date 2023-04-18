@@ -40,8 +40,7 @@ class TestDataset:
     def test_create_dataset_invalid_function_input(self):
         with pytest.raises(TypeError):
             # TODO: Implement this test
-            # dataset = Dataset(function=123)  # type: ignore
-            ...
+            dataset = Dataset(function=123)  # type: ignore
 
     # Tests that the framework field of a dataset object can be accessed. tags: [happy path]
     def test_access_framework_field(self):
