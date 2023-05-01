@@ -40,6 +40,11 @@ conclusions or recommendations expressed in this material are those of the autho
 and do not necessarily reflect the views of the Defense Advanced Research Projects
 Agency (DARPA).
 
+# Points of Contact
+POC: Matthew Donizetti [@Matt Donizetti](https://cdaote.slack.com/team/U04BZE51BPB)
+DPOC: Matt Wartell [@Matt Wartell](https://gitlab.jatic.net/matt.wartell)
+
+
 <!-- TODO: repoint to JATIC CI or drop the badges -->
 
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
