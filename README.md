@@ -41,8 +41,8 @@ and do not necessarily reflect the views of the Defense Advanced Research Projec
 Agency (DARPA).
 
 # Points of Contact
-POC: Matthew Donizetti [@Matt Donizetti](https://cdaote.slack.com/team/U04BZE51BPB)
-DPOC: Matt Wartell [@Matt Wartell](https://gitlab.jatic.net/matt.wartell)
+POC: Matt Wartell @matt.wartell
+DPOC: Christopher Woodall @christopher.woodall
 
 
 <!-- TODO: repoint to JATIC CI or drop the badges -->
