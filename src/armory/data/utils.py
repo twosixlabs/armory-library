@@ -40,7 +40,7 @@ def maybe_download_weights_from_s3(
     :param auto_expand_tars:
     :return:
     """
-    saved_model_dir = paths.runtime_paths().saved_model_dir
+    saved_model_dir = paths.HostPaths().saved_model_dir
     filepath = os.path.join(saved_model_dir, weights_file)
 
     if os.path.isfile(filepath):
