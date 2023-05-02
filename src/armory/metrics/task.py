@@ -136,7 +136,7 @@ class Entailment:
 
         if cache_dir is None:
             cache_dir = os.path.join(
-                paths.runtime_paths().saved_model_dir, "huggingface"
+                paths.HostPaths().saved_model_dir, "huggingface"
             )
 
         with ExternalPipInstalledImport(

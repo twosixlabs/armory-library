@@ -36,7 +36,7 @@ def get_art_model(model_kwargs, wrapper_kwargs, weights_path=None):
     if weights_path:
         # Load Model using preferred save/restore method
         tar = tarfile.open(weights_path)
-        tar.extractall(path=paths.runtime_paths().saved_model_dir)
+        tar.extractall(path=paths.HostPaths().saved_model_dir)
         tar.close()
         # Restore variables...
 

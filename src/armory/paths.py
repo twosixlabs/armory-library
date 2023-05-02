@@ -51,8 +51,3 @@ class HostPaths(ArmoryDefaultPaths):
         os.makedirs(self.pytorch_dir, exist_ok=True)
         os.makedirs(self.tmp_dir, exist_ok=True)
         os.makedirs(self.output_dir, exist_ok=True)
-
-
-class DockerPaths(ArmoryDefaultPaths):
-    def __init__(self):
-        super().__init__()
