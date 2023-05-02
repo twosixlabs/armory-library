@@ -40,6 +40,11 @@ conclusions or recommendations expressed in this material are those of the autho
 and do not necessarily reflect the views of the Defense Advanced Research Projects
 Agency (DARPA).
 
+# Points of Contact
+POC: Matt Wartell @matt.wartell
+DPOC: Christopher Woodall @christopher.woodall
+
+
 <!-- TODO: repoint to JATIC CI or drop the badges -->
 
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
