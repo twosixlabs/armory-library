@@ -3,7 +3,7 @@ Primary class for scenario
 """
 
 import copy
-from dataclasses import is_dataclass
+import dataclasses
 import sys
 import time
 
@@ -31,10 +31,11 @@ class Scenario:
         config,
         check_run: bool = False,
     ):
-        # TODO: use native object access instead of asdict
-        self.config = config.asdict() if is_dataclass(config) else copy.deepcopy(config)
-        self.check_run = check_run
+        self.config = self.load_config(config, check_run=check_run)
+        self.model = None
+        self.dataset = {"test": None, "train": None}
 
+        self.i = -1
         self.num_eval_batches = None
         self.skip_benign = False
         self.skip_attack = False
@@ -45,18 +46,86 @@ class Scenario:
         self.export_subdir = "armory"
         self.results = None
 
+        # Load the model
+        self._loaded_model = self.load_model()
+        self.model = self._loaded_model["model"]
+        self.model_name = self._loaded_model["model_name"]
+        self.use_fit = self._loaded_model["use_fit"]
+        self.fit_kwargs = self._loaded_model["fit_kwargs"]
+        self.predict_kwargs = self._loaded_model["predict_kwargs"]
+        self.defense_type = self._loaded_model["defense_type"]
+
+        # Load the dataset(s)
+        self.dataset = self.load_dataset_config()
+        if bool(self.config["model"]["fit"]):
+            self.train_dataset = self.dataset["train"]
+            self.fit()
+        self.test_dataset = self.dataset["test"]
+
+        # Load the attack
+        self.load_attack()
+
+        # Load the defense
+        # TODO: Better interface for defense. -CW
+
+        # Load Metrics
         self.probe = get_probe("scenario")
         self.hub = get_hub()
-
-        self.load_model()
-
-        if bool(self.config["model"]["fit"]):
-            self.load_train_dataset()
-            self.fit()
-        self.load_attack()
-        self.load_dataset()
         self.load_metrics()
+
+        # Load Export Meters
         self.load_export_meters()
+
+    def load_config(self, config, check_run: bool = False) -> dict:
+        # TODO: Remove this attribute. Do all processing needed here.
+        self.check_run = check_run
+
+        _config = {
+            "attack": None,
+            "author": None,
+            "dataset": None,
+            "defense": None,
+            "description": None,
+            "eval_id": None,
+            "flatten": None,
+            "metric": None,
+            "model": None,
+            "name": None,
+            "scenario": None,
+            "sysconfig": None,
+        }
+
+        for key in _config.keys():
+            value = getattr(config, key, None)
+
+            # if type(value) == charmory.evaluation.Dataset:
+            if dataclasses.is_dataclass(value):
+                _config[key] = dataclasses.asdict(value)
+            # elif isinstance(value, (dict, list)):
+            #     _config[key] = copy.deepcopy(value)
+            else:
+                _config[key] = value
+
+        return _config
+
+    def load_dataset_config(self):
+        _dataset = {"test": None, "train": None}
+
+        config = self.config
+        config_dataset = config["dataset"]
+        use_fit = config["model"]["fit"]
+
+        if hasattr(config_dataset, "test"):
+            # Dataset is a custom Armory generator
+            _dataset["test"] = config_dataset["test"]
+            if hasattr(config_dataset, "train"):
+                _dataset["train"] = config_dataset["train"]
+        else:
+            _dataset["test"] = self.load_dataset(config_dataset)
+            if bool(use_fit):
+                _dataset["train"] = self.load_train_dataset()
+
+        return _dataset
 
     def evaluate(self):
         """
@@ -125,17 +194,19 @@ class Scenario:
             log.info("Not loading any defenses for model")
             defense_type = None
 
-        self.model = model
-        self.model_name = model_name
-        self.use_fit = bool(model_config["fit"])
-        self.fit_kwargs = model_config.get("fit_kwargs", {})
-        self.predict_kwargs = model_config.get("predict_kwargs", {})
-        self.defense_type = defense_type
+        return {
+            "model": model,
+            "model_name": model_name,
+            "defense_type": defense_type,
+            "use_fit": bool(model_config["fit"]),
+            "fit_kwargs": model_config.get("fit_kwargs", {}),
+            "predict_kwargs": model_config.get("predict_kwargs", {}),
+        }
 
     def load_train_dataset(self, train_split_default="train"):
         dataset_config = self.config["dataset"]
         log.info("Loading train dataset...")
-        self.train_dataset = config_loading.load_dataset(
+        return config_loading.load_dataset(
             dataset_config,
             epochs=self.fit_kwargs["nb_epochs"],
             split=dataset_config.get("train_split", train_split_default),
@@ -199,12 +270,14 @@ class Scenario:
         self.use_label = use_label
         self.generate_kwargs = generate_kwargs
 
-    def load_dataset(self, eval_split_default="test"):
-        dataset_config = self.config["dataset"]
+    def load_dataset(self, dataset_config=None, eval_split_default="test"):
+        dataset_config = (
+            self.config["dataset"] if dataset_config is None else dataset_config
+        )
         eval_split = dataset_config.get("eval_split", eval_split_default)
         # Evaluate the ART model on benign test examples
         log.info("Loading test dataset...")
-        self.test_dataset = config_loading.load_dataset(
+        return config_loading.load_dataset(
             dataset_config,
             epochs=1,
             split=eval_split,
@@ -212,7 +285,6 @@ class Scenario:
             check_run=self.check_run,
             shuffle_files=False,
         )
-        self.i = -1
 
     def load_metrics(self):
         if not hasattr(self, "targeted"):
