@@ -30,7 +30,7 @@ def main():
 
     ds_name = sys.argv[1]
 
-    dataset_dir = paths.runtime_paths().dataset_dir
+    dataset_dir = paths.HostPaths().dataset_dir
     log.info("Preparing dataset (may take some time)...")
     ds = tfds.load(ds_name, data_dir=dataset_dir)
     assert len(ds) > 0
