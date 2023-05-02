@@ -41,7 +41,7 @@ and do not necessarily reflect the views of the Defense Advanced Research Projec
 Agency (DARPA).
 
 # Points of Contact
-POC: Matt Wartell @matt.wartell
+POC: Matt Wartell @matt.wartell  
 DPOC: Christopher Woodall @christopher.woodall
 
 
