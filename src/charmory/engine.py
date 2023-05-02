@@ -12,7 +12,15 @@ class Engine:
         ScenarioClass = getattr(import_module(scenario_module), scenario_method)
 
         self.evaluation = evaluation
+        self.model = self.evaluation.model
+        self.dataset = self.evaluation.dataset
+        self.attack = self.evaluation.attack
         self.scenario = ScenarioClass(self.evaluation)
 
     def run(self):
-        return self.scenario.evaluate()
+        results = self.scenario.evaluate()
+
+        self.dataset = self.scenario.dataset
+        self.model = self.scenario._loaded_model
+
+        return results
