@@ -277,7 +277,7 @@ class WitchesBrewScenario(Poison):
                 else None
             )
 
-            attack_dir = os.path.join(paths.runtime_paths().saved_model_dir, "attacks")
+            attack_dir = os.path.join(paths.HostPaths().saved_model_dir, "attacks")
             os.makedirs(attack_dir, exist_ok=True)
             if data_filepath is not None:
                 data_filepath = os.path.join(attack_dir, data_filepath)
