@@ -11,6 +11,10 @@ import jsonschema
 DEFAULT_SCHEMA = os.path.join(os.path.dirname(__file__), "config_schema.json")
 
 
+def get_verify_ssl():
+    return os.getenv("VERIFY_SSL") == "true" or os.getenv("VERIFY_SSL") is None
+
+
 def _load_schema(filepath: str = DEFAULT_SCHEMA) -> dict:
     with open(filepath, "r") as schema_file:
         schema = json.load(schema_file)
@@ -46,3 +50,10 @@ def load_config_stdin() -> dict:
     config = json.loads(string)
 
     return validate_config(config)
+
+
+def save_config(config: dict, output_dir: str) -> None:
+    validate_config(config)
+    os.makedirs(output_dir, exist_ok=True)
+    with open(os.path.join(output_dir, "config.json"), "w") as f:
+        f.write(json.dumps(config, sort_keys=True, indent=4) + "\n")
