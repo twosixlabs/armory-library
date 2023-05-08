@@ -19,9 +19,9 @@ import requests
 from tqdm import tqdm
 
 from armory import paths
-from armory.configuration import get_verify_ssl
 from armory.data.progress_percentage import ProgressPercentage, ProgressPercentageUpload
 from armory.logs import is_progress, log
+from armory.utils.configuration import get_verify_ssl
 
 CHECKSUMS_DIRS = []
 
