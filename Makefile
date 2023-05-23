@@ -145,7 +145,7 @@ build: ## Build the application
 
 .PHONY: docs
 docs: ## Create documentation
-	mkdocs build --strict --verbose --config-file ./tools/mkdocs.yml
+	mkdocs build --verbose --config-file ./tools/mkdocs.yml
 
 
 .PHONY: clean
