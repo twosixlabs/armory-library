@@ -10,6 +10,9 @@ Our evaluations are created so that attacks and defenses may be
 interchanged. To do this we standardize all attacks and defenses as subclasses of
 their respective implementations in IBM's [adversarial-robustness-toolbox](https://github.com/IBM/adversarial-robustness-toolbox)
 
+## Developers
+Check out our [developer documentation](developers/README.md) for information on how to contribute to ARMORY.
+
 ## Dataset licensing
 See [dataset_licensing.md](dataset_licensing.md) for details related to the licensing of datasets.
 
