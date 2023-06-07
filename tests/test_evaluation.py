@@ -2,13 +2,21 @@ import pytest
 
 from charmory.blocks import mnist
 import charmory.evaluation as evaluation
+import art
+import msw.a
+import armory.baseline_models.keras.mnist
+import armory
+import armory.scenarios
+import armory.data.datasets
+import art.attacks.evasion
+
 
 
 def test_initializers():
     """Instantiate all the classes and check that they don't fault."""
     attack = evaluation.Attack("art.FGSM", {"eps": 0.3}, "white", use_label=True)
     assert attack.knowledge == "white"
-    assert attack.function == "art.FGSM"
+    assert attack.function == art.FGSM
     assert attack.kwargs["eps"] == 0.3
     assert attack.use_label is True
 
@@ -16,9 +24,9 @@ def test_initializers():
     assert dataset.framework == "tf"
 
     with pytest.raises(TypeError):
-        defense = evaluation.Defense("Preprocessor", "armory.some_defense")  # type: ignore
+        defense = evaluation.Defense("Preprocessor", armory.some_defense)  # type: ignore
 
-    defense = evaluation.Defense("armory.some_defense", kwargs={}, type="Preprocessor")
+    defense = evaluation.Defense(armory.some_defense, kwargs={}, type="Preprocessor")
     assert defense.type == "Preprocessor"
 
     metric = evaluation.Metric(
@@ -32,17 +40,17 @@ def test_initializers():
     assert metric.profiler_type == "basic"
 
     model = evaluation.Model(
-        "msw.a.model",
+        msw.a.model,
         weights_file=None,
         wrapper_kwargs={},
         model_kwargs={},
         fit=True,
         fit_kwargs={},
     )
-    assert model.function == "msw.a.model"
+    assert model.function == msw.a.model
 
-    scenario = evaluation.Scenario("armory.scenarios.image_classification", {})
-    assert scenario.function == "armory.scenarios.image_classification"
+    scenario = evaluation.Scenario(armory.scenarios.image_classification, {})
+    assert scenario.function == armory.scenarios.image_classification
 
     sysconfig = evaluation.SysConfig(gpus=["0", "2"], use_gpu=True)
     assert "2" in sysconfig.gpus
@@ -74,7 +82,7 @@ def test_mnist_experiment():
         "description": "derived from mnist_baseline.json",
         "author": "msw@example.com",
         "model": {
-            "function": "armory.baseline_models.keras.mnist:get_art_model",
+            "function": armory.baseline_models.keras.mnist.get_art_model,
             "model_kwargs": {},
             "wrapper_kwargs": {},
             "weights_file": None,
@@ -82,16 +90,16 @@ def test_mnist_experiment():
             "fit_kwargs": {"nb_epochs": 20},
         },
         "scenario": {
-            "function": "armory.scenarios.image_classification:ImageClassificationTask",
+            "function": armory.scenarios.image_classification.ImageClassificationTask,
             "kwargs": {},
         },
         "dataset": {
-            "function": "armory.data.datasets:mnist",
+            "function": armory.data.datasets.mnist,
             "framework": "numpy",
             "batch_size": 128,
         },
         "attack": {
-            "function": "art.attacks.evasion:FastGradientMethod",
+            "function": art.attacks.evasion.FastGradientMethod,
             "kwargs": {
                 "batch_size": 1,
                 "eps": 0.2,

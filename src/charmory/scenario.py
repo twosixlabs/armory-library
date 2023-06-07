@@ -17,7 +17,7 @@ from armory.logs import log
 from armory.metrics import compute
 from armory.utils import config_loading
 import armory.version
-
+from charmory.evaluation import Evaluation
 
 class Scenario:
     """
@@ -25,16 +25,16 @@ class Scenario:
     This is the base class of specific tasks like ImageClassificationTask and
     provides significant common processing.
     """
-
+    #change name and type of config to evaluation
     def __init__(
         self,
-        config,
+        evaluation: Evaluation,
         check_run: bool = False,
     ):
-        self.config = self.load_config(config, check_run=check_run)
+        #self.config = self.load_config(config, check_run=check_run)
         self.model = None
         self.dataset = {"test": None, "train": None}
-
+        self.evaluation = evaluation
         self.i = -1
         self.num_eval_batches = None
         self.skip_benign = False
@@ -49,7 +49,8 @@ class Scenario:
         # Load the model
         self._loaded_model = self.load_model()
         self.model = self._loaded_model["model"]
-        self.model_name = self._loaded_model["model_name"]
+        #self.model_name = f"{self.config['model']['function'].__module__}.{self.config['model']['function'].__name__}"
+        self.model_name = self.evaluation.model.function
         self.use_fit = self._loaded_model["use_fit"]
         self.fit_kwargs = self._loaded_model["fit_kwargs"]
         self.predict_kwargs = self._loaded_model["predict_kwargs"]
@@ -174,8 +175,6 @@ class Scenario:
 
     def load_model(self, defended=True):
         model_config = self.config["model"]
-        module, method = model_config["function"].split(":")
-        model_name = f"{module}.{method}"
         model, _ = config_loading.load_model(model_config)
 
         if defended:
@@ -196,7 +195,6 @@ class Scenario:
 
         return {
             "model": model,
-            "model_name": model_name,
             "defense_type": defense_type,
             "use_fit": bool(model_config["fit"]),
             "fit_kwargs": model_config.get("fit_kwargs", {}),

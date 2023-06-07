@@ -3,9 +3,9 @@
 # TODO: review the Optionals with @woodall
 
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Callable
 
-MethodName = str  # reference to a python method e.g. "armory.attacks.weakest"
+MethodName = Callable[..., any]  # reference to a python method e.g. "armory.attacks.weakest"
 StrDict = Dict[str, Any]  # dictionary of string keys and any values
 
 
