@@ -36,8 +36,10 @@ from armory.utils import labels
 
 
 def load_fn(sub_config):
-    module, method = sub_config["function"].split(":")
-    return getattr(import_module(module), method)
+    #module = sub_config["function"].__module__
+    #method = sub_config["function"].__name__
+    #return getattr(import_module(module), method)
+    return sub_config["function"]
 
 
 def load(sub_config):
@@ -61,10 +63,9 @@ def load_dataset(dataset_config, *args, num_batches=None, check_run=False, **kwa
         dataset_config
     )  # Avoid modifying original dictionary
 
-    module, method = dataset_config.pop("function").split(":")
     batch_size = dataset_config.pop("batch_size", 1)
     framework = dataset_config.pop("framework", "numpy")
-    dataset_fn = getattr(import_module(module), method)
+    dataset_fn = dataset_config.pop("function")
 
     # Add remaining dataset_config items to kwargs
     for remaining_kwarg in dataset_config:
@@ -89,9 +90,8 @@ def load_model(model_config):
     preprocessing_fn can be a tuple of functions or None values
         If so, it applies to training and inference separately
     """
-    module, method = model_config["function"].split(":")
-    model_module = import_module(module)
-    model_fn = getattr(model_module, method)
+    model_module = import_module(model_config["function"].__module__)
+    model_fn = model_config["function"]
     weights_file = model_config.get("weights_file", None)
     if isinstance(weights_file, str):
         weights_path = maybe_download_weights_from_s3(
