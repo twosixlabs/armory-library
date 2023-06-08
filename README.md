@@ -33,6 +33,11 @@ the `armory` namespace.
 # Usage
 See the documentation [here](https://jatic.pages.jatic.net/twosix/armory/).
 
+# Examples
+## Patch Attack
+![Benign Image](docs/assets/patch_attack_example_benign.png)
+![Adversarial Image](docs/assets/patch_attack_example_adversarial.png)
+
 # Acknowledgment
 This material is based upon work supported by the Defense Advanced Research Projects
 Agency (DARPA) under Contract No. HR001120C0114. Any opinions, findings and
@@ -41,7 +46,7 @@ and do not necessarily reflect the views of the Defense Advanced Research Projec
 Agency (DARPA).
 
 # Points of Contact
-POC: Matt Wartell @matt.wartell  
+POC: Matt Wartell @matt.wartell
 DPOC: Christopher Woodall @christopher.woodall
 
 
