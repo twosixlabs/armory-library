@@ -133,4 +133,4 @@ def profiler_class(name=None):
 
 
 def profiler_from_config(config):
-    return profiler_class(config.get("profiler_type"))()
+    return profiler_class(config.profiler_type)()

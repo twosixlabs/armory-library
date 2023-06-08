@@ -39,13 +39,23 @@ def load_fn(sub_config):
     #module = sub_config["function"].__module__
     #method = sub_config["function"].__name__
     #return getattr(import_module(module), method)
-    return sub_config["function"]
+    return sub_config.function
 
 
 def load(sub_config):
     fn = load_fn(sub_config)
-    args = sub_config.get("args", [])
-    kwargs = sub_config.get("kwargs", {})
+    args = []
+    try:
+        args = sub_config.args
+    except:
+        pass
+
+    kwargs = {}
+    try:
+        kwargs = sub_config.kwargs
+    except:
+        pass
+
     if "clip_values" in kwargs:
         kwargs["clip_values"] = tuple(kwargs["clip_values"])
     return fn(*args, **kwargs)
@@ -62,16 +72,28 @@ def load_dataset(dataset_config, *args, num_batches=None, check_run=False, **kwa
     dataset_config = copy.deepcopy(
         dataset_config
     )  # Avoid modifying original dictionary
-
-    batch_size = dataset_config.pop("batch_size", 1)
-    framework = dataset_config.pop("framework", "numpy")
-    dataset_fn = dataset_config.pop("function")
+    
+    batch_size = 1
+    try:
+        batch_size = dataset_config.batch_size
+        dataset_config.batch_size = None
+    except:
+        pass
+    framework = "numpy"
+    try:
+        framework = dataset_config.framework
+        dataset_config.framework = None
+    except:
+        pass
+    dataset_fn = dataset_config.function
+    dataset_config.function = None
 
     # Add remaining dataset_config items to kwargs
-    for remaining_kwarg in dataset_config:
-        if remaining_kwarg in ["eval_split", "train_split"]:
-            continue
-        kwargs[remaining_kwarg] = dataset_config[remaining_kwarg]
+    for remaining_kwarg in vars(dataset_config).keys():
+        if vars(dataset_config)[remaining_kwarg]!=None:
+            if remaining_kwarg in ["eval_split", "train_split"]:
+                continue
+            kwargs[remaining_kwarg] = vars(dataset_config)[remaining_kwarg]
 
     dataset = dataset_fn(batch_size=batch_size, framework=framework, *args, **kwargs)
     if not isinstance(dataset, ArmoryDataGenerator):
@@ -90,9 +112,14 @@ def load_model(model_config):
     preprocessing_fn can be a tuple of functions or None values
         If so, it applies to training and inference separately
     """
-    model_module = import_module(model_config["function"].__module__)
-    model_fn = model_config["function"]
-    weights_file = model_config.get("weights_file", None)
+    model_module = import_module(model_config.function.__module__)
+    model_fn = model_config.function
+    #weights_file = model_config.get("weights_file", None)
+    weights_file = None
+    try:
+        weights_file = model_config.weights_file
+    except:
+        pass
     if isinstance(weights_file, str):
         weights_path = maybe_download_weights_from_s3(
             weights_file, auto_expand_tars=True
@@ -110,11 +137,11 @@ def load_model(model_config):
         weights_path = None
 
     model = model_fn(
-        model_config["model_kwargs"], model_config["wrapper_kwargs"], weights_path
+        model_config.model_kwargs, model_config.wrapper_kwargs, weights_path
     )
     if not isinstance(model, Classifier):
         raise TypeError(f"{model} is not an instance of {Classifier}")
-    if not weights_file and not model_config["fit"]:
+    if not weights_file and not model_config.fit:
         log.warning(
             "No weights file was provided and the model is not configured to train. "
             "Are you loading model weights from an online repository?"
@@ -140,29 +167,30 @@ def load_model(model_config):
 
 def load_attack(attack_config, classifier):
     SUPPORTED_TYPES = ["preloaded", "patch", "sweep", None]
-    if attack_config.get("type") == "patch":
-        original_kwargs = attack_config.pop("kwargs")
+    if attack_config.type == "patch":
+        original_kwargs = attack_config.kwargs
+        attack_config.kwargs = None
         kwargs = original_kwargs.copy()
         apply_patch_args = kwargs.pop("apply_patch_args", [])
         apply_patch_kwargs = kwargs.pop("apply_patch_kwargs", {})
-        attack_config["kwargs"] = kwargs
+        attack_config.kwargs = kwargs
     else:
-        if attack_config.get("type") not in SUPPORTED_TYPES:
+        if attack_config.type not in SUPPORTED_TYPES:
             log.warning(
-                f"attack_config['type'] of {attack_config.get('type')} was not "
+                f"attack_config['type'] of {attack_config.type} was not "
                 f"recognized and isn't being used. Supported attack types "
                 f"are as follows: {SUPPORTED_TYPES}."
             )
 
     attack_fn = load_fn(attack_config)
-    attack = attack_fn(classifier, **attack_config["kwargs"])
+    attack = attack_fn(classifier, **attack_config.kwargs)
 
-    if attack_config.get("type") == "sweep":
+    if attack_config.type == "sweep":
         attack = SweepAttack(
             classifier,
             attack_fn,
-            attack_config.get("sweep_params"),
-            **attack_config.get("kwargs"),
+            attack_config.sweep_params,
+            **attack_config.kwargs,
         )
 
     if not isinstance(attack, Attack):
@@ -170,20 +198,20 @@ def load_attack(attack_config, classifier):
             f"attack {attack} is not an instance of {Attack}."
             " Ensure that it implements ART `generate` API."
         )
-    if attack_config.get("type") == "patch":
-        attack_config["kwargs"] = original_kwargs
+    if attack_config.type == "patch":
+        attack_config.kwargs = original_kwargs
         return patch.AttackWrapper(attack, apply_patch_args, apply_patch_kwargs)
     return attack
 
 
 def load_adversarial_dataset(config, num_batches=None, check_run=False, **kwargs):
-    if config.get("type") != "preloaded":
-        raise ValueError(f"attack type must be 'preloaded', not {config.get('type')}")
+    if config.type != "preloaded":
+        raise ValueError(f"attack type must be 'preloaded', not {config.type}")
     dataset_fn = load_fn(config)
-    dataset_kwargs = config["kwargs"]
+    dataset_kwargs = config.kwargs
     dataset_kwargs.update(kwargs)
     if "description" in dataset_kwargs:
-        dataset_kwargs.pop("description")
+        dataset_kwargs.description = None
     dataset = dataset_fn(**dataset_kwargs)
     if not isinstance(dataset, ArmoryDataGenerator):
         raise ValueError(f"{dataset} is not an instance of {ArmoryDataGenerator}")
@@ -202,7 +230,7 @@ def _check_defense_api(defense, defense_baseclass):
 
 
 def load_defense_wrapper(defense_config, classifier):
-    defense_type = defense_config["type"]
+    defense_type = defense_config.type
     if defense_type == "Transformer":
         raise NotImplementedError("Transformer API not yet implemented into scenarios")
     elif defense_type != "Trainer":
@@ -211,7 +239,7 @@ def load_defense_wrapper(defense_config, classifier):
         )
 
     defense_fn = load_fn(defense_config)
-    kwargs = copy.deepcopy(defense_config["kwargs"])
+    kwargs = copy.deepcopy(defense_config.kwargs)
     if "augmentations" in kwargs and kwargs["augmentations"] is not None:
         # create Preprocess object and add it to kwargs
         aug_config = kwargs.pop("augmentations")
