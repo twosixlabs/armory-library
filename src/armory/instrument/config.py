@@ -179,7 +179,7 @@ class MetricsLogger:
             include_benign=include_benign,
             include_adversarial=include_adversarial,
             include_targeted=include_targeted,
-            **{k: v for k, v in config.items() if k != "profiler_type"},
+            **{key:vars(config)[key] for key in vars(config) if key != "profiler_type"},
         )
 
     def _sink(self, results_dict):
