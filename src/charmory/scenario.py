@@ -49,7 +49,6 @@ class Scenario:
         # Load the model
         self._loaded_model = self.load_model()
         self.model = self._loaded_model["model"]
-        #self.model_name = f"{self.config['model']['function'].__module__}.{self.config['model']['function'].__name__}"
         self.model_name = f"{self.evaluation.model.function.__module__}.{self.evaluation.model.function.__name__}"
         self.use_fit = self._loaded_model["use_fit"]
         self.fit_kwargs = self._loaded_model["fit_kwargs"]
@@ -163,12 +162,12 @@ class Scenario:
             defense_type = None
         try:
             fit_kwargs_val = model_config.fit_kwargs
-        except:
+        except AttributeError:
             fit_kwargs_val = {}
         
         try:
             predict_kwargs_val = model_config.predict_kwargs
-        except:
+        except AttributeError:
             predict_kwargs_val = {}
 
         return {
@@ -182,10 +181,9 @@ class Scenario:
     def load_train_dataset(self, train_split_default="train"):
         dataset_config = self.evaluation.dataset
         log.info("Loading train dataset...")
-
         try:
             split_val = dataset_config.train_split
-        except:
+        except AttributeError:
             split_val = train_split_default
         return config_loading.load_dataset(
             dataset_config,
@@ -210,8 +208,8 @@ class Scenario:
             raise ValueError("Cannot use skip_misclassified with preloaded dataset")
 
         try:
-            kwargs_val = attack.config.kwargs
-        except:
+            kwargs_val = attack_config.kwargs
+        except AttributeError:
             kwargs_val = {}
         if "summary_writer" in kwargs_val:
             summary_writer_kwarg = attack_config.kwargs.get("summary_writer")
@@ -235,14 +233,14 @@ class Scenario:
             )
             try:
                 targeted = attack_config.targeted
-            except:
+            except AttributeError:
                 targeted = False
         else:
             attack = config_loading.load_attack(attack_config, self.model)
             self.attack = attack
             try:
                 targeted_val = attack_config.kwargs
-            except:
+            except AttributeError:
                 targeted_val = {}
             targeted = targeted_val.get("targeted", False)
             if targeted:
@@ -256,7 +254,7 @@ class Scenario:
         
         try:
             generate_kwargs = copy.deepcopy(attack_config.generate_kwargs)
-        except:
+        except AttributeError:
             generate_kwargs = {}
 
         self.attack_type = attack_type
@@ -272,7 +270,7 @@ class Scenario:
         )
         try:
             eval_split = dataset_config.eval_split
-        except:
+        except AttributeError:
             eval_split = eval_split_default
         # Evaluate the ART model on benign test examples
         log.info("Loading test dataset...")
@@ -305,7 +303,7 @@ class Scenario:
         #Removed warning logged regarding deprecated field from Armory 0.15.0
         try:
             num_export_batches = self.evaluation.scenario.export_batches
-        except:
+        except AttributeError:
             num_export_batches = 0
         
         if num_export_batches is True:
