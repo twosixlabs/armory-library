@@ -1,9 +1,9 @@
 """Evaluation components for CIFAR10 baseline."""
-import armory.data.datasets
-import armory.baseline_models.pytorch.cifar
 import art.attacks.evasion
-import armory.scenarios.image_classification
 
+import armory.baseline_models.pytorch.cifar
+import armory.data.datasets
+import armory.scenarios.image_classification
 from charmory.evaluation import (
     Attack,
     Dataset,

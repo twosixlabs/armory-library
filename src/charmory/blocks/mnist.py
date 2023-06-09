@@ -1,7 +1,8 @@
 """Evaluation components for MNIST baseline."""
-import armory.data.datasets
-import armory.baseline_models.keras.mnist
 import art.attacks.evasion
+
+import armory.baseline_models.keras.mnist
+import armory.data.datasets
 import armory.scenarios.image_classification
 from charmory.evaluation import (
     Attack,

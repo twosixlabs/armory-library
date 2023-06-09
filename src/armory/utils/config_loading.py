@@ -36,9 +36,9 @@ from armory.utils import labels
 
 
 def load_fn(sub_config):
-    #module = sub_config["function"].__module__
-    #method = sub_config["function"].__name__
-    #return getattr(import_module(module), method)
+    # module = sub_config["function"].__module__
+    # method = sub_config["function"].__name__
+    # return getattr(import_module(module), method)
     return sub_config.function
 
 
@@ -70,7 +70,7 @@ def load_dataset(dataset_config, *args, num_batches=None, check_run=False, **kwa
     dataset_config = copy.deepcopy(
         dataset_config
     )  # Avoid modifying original dictionary
-    
+
     try:
         batch_size = dataset_config.batch_size
         dataset_config.batch_size = None
@@ -86,7 +86,7 @@ def load_dataset(dataset_config, *args, num_batches=None, check_run=False, **kwa
 
     # Add remaining dataset_config items to kwargs
     for remaining_kwarg in vars(dataset_config).keys():
-        if vars(dataset_config)[remaining_kwarg]!=None:
+        if vars(dataset_config)[remaining_kwarg] is not None:
             if remaining_kwarg in ["eval_split", "train_split"]:
                 continue
             kwargs[remaining_kwarg] = vars(dataset_config)[remaining_kwarg]
@@ -110,7 +110,7 @@ def load_model(model_config):
     """
     model_module = import_module(model_config.function.__module__)
     model_fn = model_config.function
-    #weights_file = model_config.get("weights_file", None)
+    # weights_file = model_config.get("weights_file", None)
     try:
         weights_file = model_config.weights_file
     except AttributeError:

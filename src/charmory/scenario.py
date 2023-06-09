@@ -3,7 +3,6 @@ Primary class for scenario
 """
 
 import copy
-import dataclasses
 import sys
 import time
 
@@ -19,13 +18,15 @@ from armory.utils import config_loading
 import armory.version
 from charmory.evaluation import Evaluation
 
+
 class Scenario:
     """
     Contains the configuration and helper classes needed to execute an Amory evaluation.
     This is the base class of specific tasks like ImageClassificationTask and
     provides significant common processing.
     """
-    #change name and type of config to evaluation
+
+    # change name and type of config to evaluation
     def __init__(
         self,
         evaluation: Evaluation,
@@ -75,7 +76,6 @@ class Scenario:
 
         # Load Export Meters
         self.load_export_meters()
-
 
     def load_dataset_config(self):
         _dataset = {"test": None, "train": None}
@@ -164,7 +164,7 @@ class Scenario:
             fit_kwargs_val = model_config.fit_kwargs
         except AttributeError:
             fit_kwargs_val = {}
-        
+
         try:
             predict_kwargs_val = model_config.predict_kwargs
         except AttributeError:
@@ -221,9 +221,7 @@ class Scenario:
                 "summary_writer"
             ] = f"{self.scenario_output_dir}/tfevents_{self.time_stamp}"
         if attack_type == "preloaded":
-            preloaded_split = kwargs_val.get(
-                "split", "adversarial"
-            )
+            preloaded_split = kwargs_val.get("split", "adversarial")
             self.test_dataset = config_loading.load_adversarial_dataset(
                 attack_config,
                 epochs=1,
@@ -251,7 +249,7 @@ class Scenario:
         use_label = bool(attack_config.use_label)
         if targeted and use_label:
             raise ValueError("Targeted attacks cannot have 'use_label'")
-        
+
         try:
             generate_kwargs = copy.deepcopy(attack_config.generate_kwargs)
         except AttributeError:
@@ -300,12 +298,12 @@ class Scenario:
         self.metrics_logger = metrics_logger
 
     def load_export_meters(self):
-        #Removed warning logged regarding deprecated field from Armory 0.15.0
+        # Removed warning logged regarding deprecated field from Armory 0.15.0
         try:
             num_export_batches = self.evaluation.scenario.export_batches
         except AttributeError:
             num_export_batches = 0
-        
+
         if num_export_batches is True:
             num_export_batches = len(self.test_dataset)
         self.num_export_batches = int(num_export_batches)
