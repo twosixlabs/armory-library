@@ -312,23 +312,11 @@ class Scenario:
         self.metrics_logger = metrics_logger
 
     def load_export_meters(self):
-
-        #Use try except else finally block to resolve this issue below
-        try:
-            export_samples_val = self.evaluation.scenario.export_samples
-        except:
-            pass
-        else:
-            log.warning(
-                "The export_samples field was deprecated in Armory 0.15.0. Please use export_batches instead."
-            )
-
-        #num_export_batches = self.config["scenario"].get("export_batches", 0)
-        num_export_batches = 0
+        #Removed warning logged regarding deprecated field from Armory 0.15.0
         try:
             num_export_batches = self.evaluation.scenario.export_batches
         except:
-            pass
+            num_export_batches = 0
         
         if num_export_batches is True:
             num_export_batches = len(self.test_dataset)
