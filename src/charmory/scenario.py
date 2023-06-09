@@ -161,17 +161,15 @@ class Scenario:
         else:
             log.info("Not loading any defenses for model")
             defense_type = None
-        fit_kwargs_val = {}
         try:
             fit_kwargs_val = model_config.fit_kwargs
         except:
-            pass
+            fit_kwargs_val = {}
         
-        predict_kwargs_val = {}
         try:
             predict_kwargs_val = model_config.predict_kwargs
         except:
-            pass
+            predict_kwargs_val = {}
 
         return {
             "model": model,
@@ -185,11 +183,10 @@ class Scenario:
         dataset_config = self.evaluation.dataset
         log.info("Loading train dataset...")
 
-        split_val = train_split_default
         try:
             split_val = dataset_config.train_split
         except:
-            pass
+            split_val = train_split_default
         return config_loading.load_dataset(
             dataset_config,
             epochs=self.fit_kwargs["nb_epochs"],
@@ -212,11 +209,10 @@ class Scenario:
         if attack_type == "preloaded" and self.skip_misclassified:
             raise ValueError("Cannot use skip_misclassified with preloaded dataset")
 
-        kwargs_val = {}
         try:
             kwargs_val = attack.config.kwargs
         except:
-            pass
+            kwargs_val = {}
         if "summary_writer" in kwargs_val:
             summary_writer_kwarg = attack_config.kwargs.get("summary_writer")
             if isinstance(summary_writer_kwarg, str):
@@ -237,19 +233,17 @@ class Scenario:
                 num_batches=self.num_eval_batches,
                 shuffle_files=False,
             )
-            targeted = False
             try:
                 targeted = attack_config.targeted
             except:
-                pass
+                targeted = False
         else:
             attack = config_loading.load_attack(attack_config, self.model)
             self.attack = attack
-            targeted_val = {}
             try:
                 targeted_val = attack_config.kwargs
             except:
-                pass
+                targeted_val = {}
             targeted = targeted_val.get("targeted", False)
             if targeted:
                 label_targeter = config_loading.load_label_targeter(
@@ -260,11 +254,10 @@ class Scenario:
         if targeted and use_label:
             raise ValueError("Targeted attacks cannot have 'use_label'")
         
-        generate_kwargs = {}
         try:
             generate_kwargs = copy.deepcopy(attack_config.generate_kwargs)
         except:
-            pass
+            generate_kwargs = {}
 
         self.attack_type = attack_type
         self.targeted = targeted
@@ -277,13 +270,10 @@ class Scenario:
         dataset_config = (
             self.evaluation.dataset if dataset_config is None else dataset_config
         )
-        #eval_split = dataset_config.get("eval_split", eval_split_default)
-
-        eval_split = eval_split_default
         try:
             eval_split = dataset_config.eval_split
         except:
-            pass
+            eval_split = eval_split_default
         # Evaluate the ART model on benign test examples
         log.info("Loading test dataset...")
         return config_loading.load_dataset(
