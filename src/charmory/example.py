@@ -2,9 +2,14 @@
 Example programmatic entrypoint for scenario execution
 """
 import json
-import sys
 from pprint import pprint
+import sys
 
+import art.attacks.evasion
+
+import armory.baseline_models.pytorch.cifar
+import armory.data.datasets
+import armory.scenarios.image_classification
 import armory.version
 from charmory.blocks import cifar10, mnist  # noqa: F401
 from charmory.engine import Engine
@@ -17,10 +22,6 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
-import armory.data.datasets
-import armory.baseline_models.pytorch.cifar
-import art.attacks.evasion
-import armory.scenarios.image_classification
 
 
 def main(argv: list = sys.argv[1:]):
@@ -96,8 +97,8 @@ def main(argv: list = sys.argv[1:]):
     results = cifar_engine.run()
 
     print("=" * 64)
-    #print(json.dumps(baseline.asdict(), indent=4, sort_keys=True))
-    #Have altered the json formatted printing in favor for a pprint as the new Evaluation objects contain nonseriabalizable fields which create issues
+    # print(json.dumps(baseline.asdict(), indent=4, sort_keys=True))
+    # Have altered the json formatted printing in favor for a pprint as the new Evaluation objects contain nonseriabalizable fields which create issues
     pprint(baseline)
     print("-" * 64)
     print(

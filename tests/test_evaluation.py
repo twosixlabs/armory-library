@@ -1,15 +1,14 @@
+import art
+import art.attacks.evasion
+import msw.a
 import pytest
 
+import armory
+import armory.baseline_models.keras.mnist
+import armory.data.datasets
+import armory.scenarios
 from charmory.blocks import mnist
 import charmory.evaluation as evaluation
-import art
-import msw.a
-import armory.baseline_models.keras.mnist
-import armory
-import armory.scenarios
-import armory.data.datasets
-import art.attacks.evasion
-
 
 
 def test_initializers():
