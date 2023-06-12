@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
 from typing import Any, Callable, Dict, List, Literal, Optional
 
 MethodName = Callable[
-    ..., any
+    ..., Any
 ]  # reference to a python method e.g. "armory.attacks.weakest"
 StrDict = Dict[str, Any]  # dictionary of string keys and any values
 
