@@ -58,7 +58,7 @@ class Scenario:
 
         # Load the dataset(s)
         self.dataset = self.load_dataset_config()
-        if bool(self.evaluation.model.fit):
+        if self.evaluation.model.fit:
             self.train_dataset = self.dataset["train"]
             self.fit()
         self.test_dataset = self.dataset["test"]
@@ -80,18 +80,18 @@ class Scenario:
     def load_dataset_config(self):
         _dataset = {"test": None, "train": None}
 
-        config = self.evaluation
-        config_dataset = config.dataset
-        use_fit = config.model.fit
+        eval = self.evaluation
+        eval_dataset = eval.dataset
+        use_fit = eval.model.fit
 
-        if hasattr(config_dataset, "test"):
+        if hasattr(eval_dataset, "test"):
             # Dataset is a custom Armory generator
-            _dataset["test"] = config_dataset["test"]
-            if hasattr(config_dataset, "train"):
-                _dataset["train"] = config_dataset["train"]
+            _dataset["test"] = eval_dataset["test"]
+            if hasattr(eval_dataset, "train"):
+                _dataset["train"] = eval_dataset["train"]
         else:
-            _dataset["test"] = self.load_dataset(config_dataset)
-            if bool(use_fit):
+            _dataset["test"] = self.load_dataset(eval_dataset)
+            if use_fit:
                 _dataset["train"] = self.load_train_dataset()
 
         return _dataset
@@ -128,7 +128,7 @@ class Scenario:
 
         output = {
             "armory_version": armory.version.__version__,
-            "config": self.evaluation,
+            "evaluation": self.evaluation,
             "results": self.results,
             "timestamp": int(self.time_stamp),
         }
@@ -160,15 +160,16 @@ class Scenario:
         else:
             log.info("Not loading any defenses for model")
             defense_type = None
-        try:
-            fit_kwargs_val = model_config.fit_kwargs
-        except AttributeError:
-            fit_kwargs_val = {}
 
-        try:
-            predict_kwargs_val = model_config.predict_kwargs
-        except AttributeError:
-            predict_kwargs_val = {}
+        fit_kwargs_val = (
+            model_config.fit_kwargs if hasattr(model_config, "fit_kwargs") else {}
+        )
+
+        predict_kwargs_val = (
+            model_config.predict_kwargs
+            if hasattr(model_config, "predict_kwargs")
+            else {}
+        )
 
         return {
             "model": model,
@@ -181,10 +182,13 @@ class Scenario:
     def load_train_dataset(self, train_split_default="train"):
         dataset_config = self.evaluation.dataset
         log.info("Loading train dataset...")
-        try:
-            split_val = dataset_config.train_split
-        except AttributeError:
-            split_val = train_split_default
+
+        split_val = (
+            dataset_config.train_split
+            if hasattr(dataset_config, "train_split")
+            else train_split_default
+        )
+
         return config_loading.load_dataset(
             dataset_config,
             epochs=self.fit_kwargs["nb_epochs"],
@@ -207,10 +211,8 @@ class Scenario:
         if attack_type == "preloaded" and self.skip_misclassified:
             raise ValueError("Cannot use skip_misclassified with preloaded dataset")
 
-        try:
-            kwargs_val = attack_config.kwargs
-        except AttributeError:
-            kwargs_val = {}
+        kwargs_val = attack_config.kwargs if hasattr(attack_config, "kwargs") else {}
+
         if "summary_writer" in kwargs_val:
             summary_writer_kwarg = attack_config.kwargs.get("summary_writer")
             if isinstance(summary_writer_kwarg, str):
@@ -229,17 +231,19 @@ class Scenario:
                 num_batches=self.num_eval_batches,
                 shuffle_files=False,
             )
-            try:
-                targeted = attack_config.targeted
-            except AttributeError:
-                targeted = False
+
+            targeted = (
+                attack_config.targeted if hasattr(attack_config, "targeted") else False
+            )
+
         else:
             attack = config_loading.load_attack(attack_config, self.model)
             self.attack = attack
-            try:
-                targeted_val = attack_config.kwargs
-            except AttributeError:
-                targeted_val = {}
+
+            targeted_val = (
+                attack_config.kwargs if hasattr(attack_config, "kwargs") else {}
+            )
+
             targeted = targeted_val.get("targeted", False)
             if targeted:
                 label_targeter = config_loading.load_label_targeter(
@@ -250,10 +254,11 @@ class Scenario:
         if targeted and use_label:
             raise ValueError("Targeted attacks cannot have 'use_label'")
 
-        try:
-            generate_kwargs = copy.deepcopy(attack_config.generate_kwargs)
-        except AttributeError:
-            generate_kwargs = {}
+        generate_kwargs = (
+            copy.deepcopy(attack_config.generate_kwargs)
+            if hasattr(attack_config, "generate_kwargs")
+            else {}
+        )
 
         self.attack_type = attack_type
         self.targeted = targeted
@@ -266,10 +271,12 @@ class Scenario:
         dataset_config = (
             self.evaluation.dataset if dataset_config is None else dataset_config
         )
-        try:
-            eval_split = dataset_config.eval_split
-        except AttributeError:
-            eval_split = eval_split_default
+        eval_split = (
+            dataset_config.eval_split
+            if hasattr(dataset_config, "eval_split")
+            else eval_split_default
+        )
+
         # Evaluate the ART model on benign test examples
         log.info("Loading test dataset...")
         return config_loading.load_dataset(
@@ -299,10 +306,11 @@ class Scenario:
 
     def load_export_meters(self):
         # Removed warning logged regarding deprecated field from Armory 0.15.0
-        try:
-            num_export_batches = self.evaluation.scenario.export_batches
-        except AttributeError:
-            num_export_batches = 0
+        num_export_batches = (
+            self.evaluation.scenario.export_batches
+            if hasattr(self.evaluation.scenario, "export_batches")
+            else 0
+        )
 
         if num_export_batches is True:
             num_export_batches = len(self.test_dataset)

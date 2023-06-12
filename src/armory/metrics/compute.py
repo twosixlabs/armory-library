@@ -116,11 +116,11 @@ _PROFILERS = {
     "deterministic": DeterministicProfiler,
 }
 
-
+"""
 def profiler_class(name=None):
-    """
+    '''
     Return profiler class by name
-    """
+    '''
     if isinstance(name, str):
         name = name.lower()
     elif not name:
@@ -130,7 +130,17 @@ def profiler_class(name=None):
         return _PROFILERS[name]
     except KeyError:
         raise KeyError(f"Profiler {name} is not in {tuple(_PROFILERS)}.")
+        """
 
 
-def profiler_from_config(config):
-    return profiler_class(config.profiler_type)()
+def profiler_from_config(metric):
+    profiler_type = metric.profiler_type
+    if isinstance(profiler_type, str):
+        profiler_type = profiler_type.lower()
+    elif not profiler_type:
+        profiler_type = None
+
+    try:
+        return _PROFILERS[profiler_type]()
+    except KeyError:
+        raise KeyError(f"Profiler {profiler_type} is not in {tuple(_PROFILERS)}.")
