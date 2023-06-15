@@ -17,7 +17,7 @@ SRC_DIR     := $(PROJECT_DIR)/src
 BUILD_DIR   := $(PROJECT_DIR)/dist
 
 default: $(.DEFAULT_GOAL)
-all: install build
+all: install test build
 
 
 ######################
@@ -38,6 +38,14 @@ define CreateVirtualEnv
 endef
 
 
+define ExecuteTests
+	echo "🤞 Executing tests... Good luck! 🌈"
+
+	echo "🤞 Mock end-to-end test..."
+	charmory
+endef
+
+
 ######################
 # Commands
 ######################
@@ -51,6 +59,11 @@ help: ## List commands <default>
 .PHONY: install
 install: ## Setup a Virtual Python Environment
 	$(call CreateVirtualEnv)
+
+
+.PHONY: test
+test: ## Run application tests
+	$(call ExecuteTests)
 
 
 .PHONY: build

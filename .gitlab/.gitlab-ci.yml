@@ -71,6 +71,19 @@ unit-test:
     - make test
 
 
+examples-test:
+  stage: "🧪 Unit Tests"
+  dependencies:
+    - code-linting
+  only:
+    - jatic
+    - merge_requests
+  script:
+    - cd examples
+    - make install
+    - make test
+
+
 pages:
   stage: "📖 Generate Docs"
   artifacts:
