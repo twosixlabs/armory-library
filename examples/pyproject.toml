@@ -32,6 +32,10 @@ developer =[
     "flake8",
 ]
 
+all = [
+    "armory-examples[developer]",
+]
+
 [build-system]
 build-backend = "hatchling.build"
 requires = [
