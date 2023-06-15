@@ -128,7 +128,9 @@ ignore-vcs   = false
 reproducible = true
 directory    = "dist"
 sources      = [ "src" ]
+exclude      = [ "examples" ]
 include = [
+  "src/",
   "LICENSE",
   "pyproject.toml",
   "README.md"
