@@ -107,6 +107,7 @@ build:
       - dist/*.whl
   dependencies:
     - code-linting
+    - examples-test
     - unit-test
   only:
     - jatic
