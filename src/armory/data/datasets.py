@@ -8,10 +8,11 @@ data is found at '<dataset_dir>/cifar10'
 The 'downloads' subdirectory under <dataset_dir> is reserved for caching.
 """
 
+from abc import abstractmethod
 import json
 import os
 import re
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Protocol, Tuple, Union, runtime_checkable
 
 from PIL import Image, ImageOps
 from art.data_generators import DataGenerator
@@ -47,7 +48,16 @@ CACHED_CHECKSUMS_DIR = os.path.join(os.path.dirname(__file__), "cached_s3_checks
 add_checksums_dir(CACHED_CHECKSUMS_DIR)
 
 
-class ArmoryDataGenerator(DataGenerator):
+@runtime_checkable
+class AbstractArmoryDataGenerator(Protocol):
+    """Protocol for all data generators to be used with Armory"""
+
+    @abstractmethod
+    def __next__(self) -> Tuple[np.ndarray, Union[np.ndarray, List]]:
+        raise NotImplementedError
+
+
+class ArmoryDataGenerator(DataGenerator, AbstractArmoryDataGenerator):
     """
     Returns batches of numpy data.
 
