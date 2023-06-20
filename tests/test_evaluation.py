@@ -1,6 +1,7 @@
 import art
 import art.attacks.evasion
-import msw.a
+
+# import msw.a
 import pytest
 
 import armory
@@ -13,19 +14,27 @@ import charmory.evaluation as evaluation
 
 def test_initializers():
     """Instantiate all the classes and check that they don't fault."""
-    attack = evaluation.Attack("art.FGSM", {"eps": 0.3}, "white", use_label=True)
+
+    # Changed the function param from art.FGSM to art.attacks.__path__ as the earlier version was not a valid function and the purpose of this unit test is independent
+    # of the function itself and is simply trying to see whether the classes fault upon instantiation -RN
+    attack = evaluation.Attack(
+        art.attacks.__path__, {"eps": 0.3}, "white", use_label=True
+    )
     assert attack.knowledge == "white"
-    assert attack.function == art.FGSM
+    assert attack.function == art.attacks.__path__
     assert attack.kwargs["eps"] == 0.3
     assert attack.use_label is True
 
-    dataset = evaluation.Dataset("armory.load_mnist", "tf", 128)
+    # Changed the function given in the dataset instantiation from armory.load_mnist (which doesnt exist) to armory.data.datasets.mnist and given that all the classes
+    # are simply being instantiated to verify that they dont fault upon instantation this should be fine - RN
+    dataset = evaluation.Dataset(armory.data.datasets.mnist, "tf", 128)
     assert dataset.framework == "tf"
 
     with pytest.raises(TypeError):
-        defense = evaluation.Defense("Preprocessor", armory.some_defense)  # type: ignore
+        # I changed the function given in the defense object instantiation from armory.some_defense (which doesnt exist) to armory.__path__ which does exist - RN
+        defense = evaluation.Defense("Preprocessor", armory.__path__)  # type: ignore
 
-    defense = evaluation.Defense(armory.some_defense, kwargs={}, type="Preprocessor")
+    defense = evaluation.Defense(armory.__path__, kwargs={}, type="Preprocessor")
     assert defense.type == "Preprocessor"
 
     metric = evaluation.Metric(
@@ -39,17 +48,21 @@ def test_initializers():
     assert metric.profiler_type == "basic"
 
     model = evaluation.Model(
-        msw.a.model,
+        armory.baseline_models.__path__,
         weights_file=None,
         wrapper_kwargs={},
         model_kwargs={},
         fit=True,
         fit_kwargs={},
     )
-    assert model.function == msw.a.model
+    # Changed the model.function param from msw.a.model (which doesnt exist) to armory.baseline_models.__path__ as the whole purpose of the function is to test
+    # whether instantiating the objects works at all.
+    assert model.function == armory.baseline_models.__path__
 
-    scenario = evaluation.Scenario(armory.scenarios.image_classification, {})
-    assert scenario.function == armory.scenarios.image_classification
+    scenario = evaluation.Scenario(armory.scenarios.__path__, {})
+    # Changed the scenario.function param from armory.scenarios.image_classification (which doesnt exist) to armory.scenario.__path__ as the whole purpose of the function
+    # is to test whether instantiating the objects works at all
+    assert scenario.function == armory.scenarios.__path__
 
     sysconfig = evaluation.SysConfig(gpus=["0", "2"], use_gpu=True)
     assert "2" in sysconfig.gpus
@@ -122,3 +135,7 @@ def test_mnist_experiment():
         },
         "sysconfig": {"gpus": ["all"], "use_gpu": True},
     }
+
+
+test_initializers()
+test_mnist_experiment()

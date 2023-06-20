@@ -75,6 +75,7 @@ class Poison(Scenario):
     As the original Armory poisoning scenario, it is the scenario from which other poisoning scenarios inherit.
     """
 
+    # TODO: there is no config anymore, this needs to be reworked - RN
     def __init__(
         self,
         config: dict,
