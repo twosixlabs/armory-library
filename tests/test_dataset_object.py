@@ -24,7 +24,7 @@ class TestDataset:
     # Tests that a dataset object can be created with valid function, framework, and batch_size inputs. tags: [happy path]
     def test_create_dataset_valid_inputs(self):
         dataset = Dataset(
-            function="armory.data.datasets.cifar10", framework="tf", batch_size=32
+            function=armory.data.datasets.cifar10, framework="tf", batch_size=32
         )
         assert dataset.function == armory.data.datasets.cifar10
         assert dataset.framework == "tf"
