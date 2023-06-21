@@ -137,10 +137,16 @@ def main(argv: list = sys.argv[1:]):
         wrapper_kwargs={},
         weights_file=None,
         # Can't set this to True when not wrapping the dataset in ArmoryDataGenerator
-        # because then it isn't an ART DataGenerator subclass (and yields an error)
+        # because then it isn't an ART DataGenerator subclass (and yields an error).
+        # I believe we could call ART's `fit` method rather than `fit_generator` to
+        # avoid a need to subclass DataGenerator.
         fit=True,
         fit_kwargs={"nb_epochs": 20},
     )
+
+    ###
+    # The rest of this file was directly copied from the existing cifar example
+    ###
 
     attack = Attack(
         function="art.attacks.evasion:ProjectedGradientDescent",
