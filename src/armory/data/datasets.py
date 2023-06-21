@@ -56,6 +56,10 @@ class AbstractArmoryDataGenerator(Protocol):
     def __next__(self) -> Tuple[np.ndarray, Union[np.ndarray, List]]:
         raise NotImplementedError
 
+    @abstractmethod
+    def __len__(self) -> int:
+        raise NotImplementedError
+
 
 class ArmoryDataGenerator(DataGenerator, AbstractArmoryDataGenerator):
     """
