@@ -33,9 +33,17 @@ class VisionDatasetWrapper:
             raise StopIteration()
 
         # This doesn't work with ArmoryDataGenerator and variable_length=True {
+        # Observed error is in the preprocessing function during check_shapes:
+        #    ValueError: len(actual) 1 + len(target) 4
+        #
+        # I think this comes down to my not understanding what the correct return
+        # X, Y datatypes should be in order to work with the `np_1D_object_array`
+        # manipulation that gets applied by ArmoryDataGenerator.
+        #
         # result = self.dataset[self.current]
         # image = np.asarray(result["image"])
         # label = result["label"]
+        # self.current += 1
         # }
 
         # this works with ArmoryDataGenerator and variable_length=False {
@@ -45,6 +53,7 @@ class VisionDatasetWrapper:
         ## result = self.dataset[self.current]
         ## image = np.array([np.asarray(result["image"])])
         ## label = np.array([result["label"]])
+        ## self.current += 1
         ## }
 
         ## this works for batching {
@@ -100,7 +109,7 @@ def load_dataset_as_adg(split: str, epochs: int, **kwargs):
         epochs=epochs, 
         preprocessing_fn=cifar10_canonical_preprocessing,
         context=cifar10_context,
-        # variable_length=True,
+        # variable_length=True,  # Doesn't work (see note above)
     )
 
 
