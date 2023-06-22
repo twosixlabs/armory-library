@@ -135,7 +135,3 @@ def test_mnist_experiment():
         },
         "sysconfig": {"gpus": ["all"], "use_gpu": True},
     }
-
-
-test_initializers()
-test_mnist_experiment()
