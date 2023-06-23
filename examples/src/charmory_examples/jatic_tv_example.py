@@ -2,9 +2,14 @@
 Example programmatic entrypoint for scenario execution
 """
 import json
+from pprint import pprint
 import math
 import sys
 
+import art.attacks.evasion
+
+import armory.baseline_models.pytorch.cifar
+import armory.scenarios.image_classification
 import armory.version
 from armory.data.datasets import ArmoryDataGenerator, cifar10_canonical_preprocessing, cifar10_context
 from charmory.engine import Engine
@@ -102,16 +107,16 @@ def main(argv: list = sys.argv[1:]):
 
     dataset = Dataset(
         # To use a JATIC dataset "directly":
-        #function="charmory_examples.jatic_tv_example:load_dataset",
+        #function=load_dataset,
         # To use a JATIC dataset wrapped in ArmoryDataGenerator:
-        function="charmory_examples.jatic_tv_example:load_dataset_as_adg",
+        function=load_dataset_as_adg,
 
         framework="numpy",
         batch_size=64,
     )
 
     model = Model(
-        function="armory.baseline_models.pytorch.cifar:get_art_model",
+        function=armory.baseline_models.pytorch.cifar.get_art_model,
         model_kwargs={},
         wrapper_kwargs={},
         weights_file=None,
@@ -126,7 +131,7 @@ def main(argv: list = sys.argv[1:]):
     ###
 
     attack = Attack(
-        function="art.attacks.evasion:ProjectedGradientDescent",
+        function=art.attacks.evasion.ProjectedGradientDescent,
         kwargs={
             "batch_size": 1,
             "eps": 0.031,
@@ -143,7 +148,7 @@ def main(argv: list = sys.argv[1:]):
     )
 
     scenario = Scenario(
-        function="armory.scenarios.image_classification:ImageClassificationTask",
+        function=armory.scenarios.image_classification.ImageClassificationTask,
         kwargs={},
     )
 
@@ -177,7 +182,7 @@ def main(argv: list = sys.argv[1:]):
     results = cifar_engine.run()
 
     print("=" * 64)
-    print(json.dumps(baseline.asdict(), indent=4, sort_keys=True))
+    pprint(baseline)
     print("-" * 64)
     print(
         json.dumps(
