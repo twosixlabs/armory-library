@@ -2,7 +2,6 @@
 Primary class for scenario
 """
 
-import copy
 import sys
 import time
 
