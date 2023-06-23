@@ -2,8 +2,6 @@
 Primary class for scenario
 """
 
-import copy
-import dataclasses
 import sys
 import time
 
@@ -17,6 +15,7 @@ from armory.logs import log
 from armory.metrics import compute
 from armory.utils import config_loading
 import armory.version
+from charmory.evaluation import Evaluation
 
 
 class Scenario:
@@ -26,15 +25,16 @@ class Scenario:
     provides significant common processing.
     """
 
+    # change name and type of config to evaluation
     def __init__(
         self,
-        config,
+        evaluation: Evaluation,
         check_run: bool = False,
     ):
-        self.config = self.load_config(config, check_run=check_run)
+        self.check_run = check_run
         self.model = None
         self.dataset = {"test": None, "train": None}
-
+        self.evaluation = evaluation
         self.i = -1
         self.num_eval_batches = None
         self.skip_benign = False
@@ -49,7 +49,7 @@ class Scenario:
         # Load the model
         self._loaded_model = self.load_model()
         self.model = self._loaded_model["model"]
-        self.model_name = self._loaded_model["model_name"]
+        self.model_name = f"{self.evaluation.model.function.__module__}.{self.evaluation.model.function.__name__}"
         self.use_fit = self._loaded_model["use_fit"]
         self.fit_kwargs = self._loaded_model["fit_kwargs"]
         self.predict_kwargs = self._loaded_model["predict_kwargs"]
@@ -57,7 +57,7 @@ class Scenario:
 
         # Load the dataset(s)
         self.dataset = self.load_dataset_config()
-        if bool(self.config["model"]["fit"]):
+        if self.evaluation.model.fit:
             self.train_dataset = self.dataset["train"]
             self.fit()
         self.test_dataset = self.dataset["test"]
@@ -76,54 +76,15 @@ class Scenario:
         # Load Export Meters
         self.load_export_meters()
 
-    def load_config(self, config, check_run: bool = False) -> dict:
-        # TODO: Remove this attribute. Do all processing needed here.
-        self.check_run = check_run
-
-        _config = {
-            "attack": None,
-            "author": None,
-            "dataset": None,
-            "defense": None,
-            "description": None,
-            "eval_id": None,
-            "flatten": None,
-            "metric": None,
-            "model": None,
-            "name": None,
-            "scenario": None,
-            "sysconfig": None,
-        }
-
-        for key in _config.keys():
-            value = getattr(config, key, None)
-
-            # if type(value) == charmory.evaluation.Dataset:
-            if dataclasses.is_dataclass(value):
-                _config[key] = dataclasses.asdict(value)
-            # elif isinstance(value, (dict, list)):
-            #     _config[key] = copy.deepcopy(value)
-            else:
-                _config[key] = value
-
-        return _config
-
     def load_dataset_config(self):
         _dataset = {"test": None, "train": None}
 
-        config = self.config
-        config_dataset = config["dataset"]
-        use_fit = config["model"]["fit"]
+        eval_dataset = self.evaluation.dataset
+        use_fit = self.evaluation.model.fit
 
-        if hasattr(config_dataset, "test"):
-            # Dataset is a custom Armory generator
-            _dataset["test"] = config_dataset["test"]
-            if hasattr(config_dataset, "train"):
-                _dataset["train"] = config_dataset["train"]
-        else:
-            _dataset["test"] = self.load_dataset(config_dataset)
-            if bool(use_fit):
-                _dataset["train"] = self.load_train_dataset()
+        _dataset["test"] = self.load_dataset(eval_dataset)
+        if use_fit:
+            _dataset["train"] = self.load_train_dataset()
 
         return _dataset
 
@@ -159,7 +120,7 @@ class Scenario:
 
         output = {
             "armory_version": armory.version.__version__,
-            "config": self.config,
+            "evaluation": self.evaluation,
             "results": self.results,
             "timestamp": int(self.time_stamp),
         }
@@ -173,13 +134,11 @@ class Scenario:
         self.hub.set_context(stage="finished")
 
     def load_model(self, defended=True):
-        model_config = self.config["model"]
-        module, method = model_config["function"].split(":")
-        model_name = f"{module}.{method}"
-        model, _ = config_loading.load_model(model_config)
+        model_config = self.evaluation.model
+        model = config_loading.load_model(model_config)
 
         if defended:
-            defense_config = self.config.get("defense") or {}
+            defense_config = self.evaluation.defense or {}
             defense_type = defense_config.get("type")
             if defense_type in ["Preprocessor", "Postprocessor"]:
                 log.info(f"Applying internal {defense_type} defense to model")
@@ -194,22 +153,26 @@ class Scenario:
             log.info("Not loading any defenses for model")
             defense_type = None
 
+        fit_kwargs_val = model_config.fit_kwargs or {}
+
+        predict_kwargs_val = {}
+
         return {
             "model": model,
-            "model_name": model_name,
             "defense_type": defense_type,
-            "use_fit": bool(model_config["fit"]),
-            "fit_kwargs": model_config.get("fit_kwargs", {}),
-            "predict_kwargs": model_config.get("predict_kwargs", {}),
+            "use_fit": model_config.fit,
+            "fit_kwargs": fit_kwargs_val,
+            "predict_kwargs": predict_kwargs_val,
         }
 
     def load_train_dataset(self, train_split_default="train"):
-        dataset_config = self.config["dataset"]
+        dataset_config = self.evaluation.dataset
         log.info("Loading train dataset...")
+
         return config_loading.load_dataset(
             dataset_config,
             epochs=self.fit_kwargs["nb_epochs"],
-            split=dataset_config.get("train_split", train_split_default),
+            split=train_split_default,
             check_run=self.check_run,
             shuffle_files=True,
         )
@@ -223,24 +186,24 @@ class Scenario:
             self.model.fit_generator(self.train_dataset, **self.fit_kwargs)
 
     def load_attack(self):
-        attack_config = self.config["attack"]
-        attack_type = attack_config.get("type")
+        attack_config = self.evaluation.attack
+        attack_type = attack_config.type
         if attack_type == "preloaded" and self.skip_misclassified:
             raise ValueError("Cannot use skip_misclassified with preloaded dataset")
 
-        if "summary_writer" in attack_config.get("kwargs", {}):
-            summary_writer_kwarg = attack_config.get("kwargs").get("summary_writer")
+        kwargs_val = attack_config.kwargs
+
+        if "summary_writer" in kwargs_val:
+            summary_writer_kwarg = attack_config.kwargs.get("summary_writer")
             if isinstance(summary_writer_kwarg, str):
                 log.warning(
                     f"Overriding 'summary_writer' attack kwarg {summary_writer_kwarg} with {self.scenario_output_dir}."
                 )
-            attack_config["kwargs"][
+            attack_config.kwargs[
                 "summary_writer"
             ] = f"{self.scenario_output_dir}/tfevents_{self.time_stamp}"
         if attack_type == "preloaded":
-            preloaded_split = attack_config.get("kwargs", {}).get(
-                "split", "adversarial"
-            )
+            preloaded_split = kwargs_val.get("split", "adversarial")
             self.test_dataset = config_loading.load_adversarial_dataset(
                 attack_config,
                 epochs=1,
@@ -248,20 +211,26 @@ class Scenario:
                 num_batches=self.num_eval_batches,
                 shuffle_files=False,
             )
-            targeted = attack_config.get("targeted", False)
+
+            targeted = False
+
         else:
             attack = config_loading.load_attack(attack_config, self.model)
             self.attack = attack
-            targeted = attack_config.get("kwargs", {}).get("targeted", False)
+
+            targeted_val = attack_config.kwargs
+
+            targeted = targeted_val.get("targeted", False)
             if targeted:
                 label_targeter = config_loading.load_label_targeter(
-                    attack_config["targeted_labels"]
+                    attack_config.targeted_labels
                 )
 
-        use_label = bool(attack_config.get("use_label"))
+        use_label = bool(attack_config.use_label)
         if targeted and use_label:
             raise ValueError("Targeted attacks cannot have 'use_label'")
-        generate_kwargs = copy.deepcopy(attack_config.get("generate_kwargs", {}))
+
+        generate_kwargs = {}
 
         self.attack_type = attack_type
         self.targeted = targeted
@@ -272,9 +241,10 @@ class Scenario:
 
     def load_dataset(self, dataset_config=None, eval_split_default="test"):
         dataset_config = (
-            self.config["dataset"] if dataset_config is None else dataset_config
+            self.evaluation.dataset if dataset_config is None else dataset_config
         )
-        eval_split = dataset_config.get("eval_split", eval_split_default)
+        eval_split = eval_split_default
+
         # Evaluate the ART model on benign test examples
         log.info("Loading test dataset...")
         return config_loading.load_dataset(
@@ -292,7 +262,7 @@ class Scenario:
                 "Run 'load_attack' before 'load_metrics' if not just doing benign inference"
             )
 
-        metrics_config = self.config["metric"]
+        metrics_config = self.evaluation.metric
         metrics_logger = MetricsLogger.from_config(
             metrics_config,
             include_benign=not self.skip_benign,
@@ -303,12 +273,9 @@ class Scenario:
         self.metrics_logger = metrics_logger
 
     def load_export_meters(self):
-        if self.config["scenario"].get("export_samples") is not None:
-            log.warning(
-                "The export_samples field was deprecated in Armory 0.15.0. Please use export_batches instead."
-            )
+        # Removed warning logged regarding deprecated field from Armory 0.15.0
+        num_export_batches = 0
 
-        num_export_batches = self.config["scenario"].get("export_batches", 0)
         if num_export_batches is True:
             num_export_batches = len(self.test_dataset)
         self.num_export_batches = int(num_export_batches)
