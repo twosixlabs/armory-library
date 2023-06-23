@@ -170,16 +170,10 @@ class Scenario:
         dataset_config = self.evaluation.dataset
         log.info("Loading train dataset...")
 
-        split_val = (
-            dataset_config.train_split
-            if hasattr(dataset_config, "train_split")
-            else train_split_default
-        )
-
         return config_loading.load_dataset(
             dataset_config,
             epochs=self.fit_kwargs["nb_epochs"],
-            split=split_val,
+            split=train_split_default,
             check_run=self.check_run,
             shuffle_files=True,
         )
@@ -198,7 +192,7 @@ class Scenario:
         if attack_type == "preloaded" and self.skip_misclassified:
             raise ValueError("Cannot use skip_misclassified with preloaded dataset")
 
-        kwargs_val = attack_config.kwargs if hasattr(attack_config, "kwargs") else {}
+        kwargs_val = attack_config.kwargs
 
         if "summary_writer" in kwargs_val:
             summary_writer_kwarg = attack_config.kwargs.get("summary_writer")
@@ -219,17 +213,13 @@ class Scenario:
                 shuffle_files=False,
             )
 
-            targeted = (
-                attack_config.targeted if hasattr(attack_config, "targeted") else False
-            )
+            targeted = False
 
         else:
             attack = config_loading.load_attack(attack_config, self.model)
             self.attack = attack
 
-            targeted_val = (
-                attack_config.kwargs if hasattr(attack_config, "kwargs") else {}
-            )
+            targeted_val = attack_config.kwargs
 
             targeted = targeted_val.get("targeted", False)
             if targeted:
@@ -241,11 +231,7 @@ class Scenario:
         if targeted and use_label:
             raise ValueError("Targeted attacks cannot have 'use_label'")
 
-        generate_kwargs = (
-            copy.deepcopy(attack_config.generate_kwargs)
-            if hasattr(attack_config, "generate_kwargs")
-            else {}
-        )
+        generate_kwargs = {}
 
         self.attack_type = attack_type
         self.targeted = targeted
@@ -258,11 +244,7 @@ class Scenario:
         dataset_config = (
             self.evaluation.dataset if dataset_config is None else dataset_config
         )
-        eval_split = (
-            dataset_config.eval_split
-            if hasattr(dataset_config, "eval_split")
-            else eval_split_default
-        )
+        eval_split = eval_split_default
 
         # Evaluate the ART model on benign test examples
         log.info("Loading test dataset...")
@@ -293,11 +275,7 @@ class Scenario:
 
     def load_export_meters(self):
         # Removed warning logged regarding deprecated field from Armory 0.15.0
-        num_export_batches = (
-            self.evaluation.scenario.export_batches
-            if hasattr(self.evaluation.scenario, "export_batches")
-            else 0
-        )
+        num_export_batches = 0
 
         if num_export_batches is True:
             num_export_batches = len(self.test_dataset)
