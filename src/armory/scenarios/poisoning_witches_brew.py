@@ -288,7 +288,7 @@ class WitchesBrewScenario(Poison):
             )  # you can pass in saved weights, but so far, this won't save them for you.
             proxy_config = copy.deepcopy(self.config["model"])
             proxy_config["weights_file"] = proxy_weights
-            proxy_model, _ = config_loading.load_model(proxy_config)
+            proxy_model = config_loading.load_model(proxy_config)
 
             #  Train proxy model for gradient matching attack, if no pre-saved dataset or if we are overwriting it.
             if (
