@@ -11,7 +11,7 @@ from armory.utils.config_loading import load_model
 
 class TestModel:
     def _get_model(self, model_config):
-        model, _ = load_model(model_config)
+        model = load_model(model_config)
         if not isinstance(
             model, (ClassifierMixin, SpeechRecognizerMixin, ObjectDetectorMixin)
         ):

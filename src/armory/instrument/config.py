@@ -167,10 +167,11 @@ class MetricsLogger:
             )
             self.connect(meters, writer)
 
+    # TODO: Find a better way to way to allow Metrics Logger to get the data it needs -msw
     @classmethod
     def from_config(
         cls,
-        config,
+        evaluation,
         include_benign=True,
         include_adversarial=True,
         include_targeted=True,
@@ -179,7 +180,11 @@ class MetricsLogger:
             include_benign=include_benign,
             include_adversarial=include_adversarial,
             include_targeted=include_targeted,
-            **{k: v for k, v in config.items() if k != "profiler_type"},
+            **{
+                key: vars(evaluation)[key]
+                for key in vars(evaluation)
+                if key != "profiler_type"
+            },
         )
 
     def _sink(self, results_dict):

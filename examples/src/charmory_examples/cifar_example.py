@@ -2,8 +2,14 @@
 Example programmatic entrypoint for scenario execution
 """
 import json
+from pprint import pprint
 import sys
 
+import art.attacks.evasion
+
+import armory.baseline_models.pytorch.cifar
+import armory.data.datasets
+import armory.scenarios.image_classification
 import armory.version
 from charmory.blocks import cifar10, mnist  # noqa: F401
 from charmory.engine import Engine
@@ -27,11 +33,11 @@ def main(argv: list = sys.argv[1:]):
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
 
     dataset = Dataset(
-        function="armory.data.datasets:cifar10", framework="numpy", batch_size=64
+        function=armory.data.datasets.cifar10, framework="numpy", batch_size=64
     )
 
     model = Model(
-        function="armory.baseline_models.pytorch.cifar:get_art_model",
+        function=armory.baseline_models.pytorch.cifar.get_art_model,
         model_kwargs={},
         wrapper_kwargs={},
         weights_file=None,
@@ -40,7 +46,7 @@ def main(argv: list = sys.argv[1:]):
     )
 
     attack = Attack(
-        function="art.attacks.evasion:ProjectedGradientDescent",
+        function=art.attacks.evasion.ProjectedGradientDescent,
         kwargs={
             "batch_size": 1,
             "eps": 0.031,
@@ -57,7 +63,7 @@ def main(argv: list = sys.argv[1:]):
     )
 
     scenario = Scenario(
-        function="armory.scenarios.image_classification:ImageClassificationTask",
+        function=armory.scenarios.image_classification.ImageClassificationTask,
         kwargs={},
     )
 
@@ -91,7 +97,9 @@ def main(argv: list = sys.argv[1:]):
     results = cifar_engine.run()
 
     print("=" * 64)
-    print(json.dumps(baseline.asdict(), indent=4, sort_keys=True))
+    # print(json.dumps(baseline.asdict(), indent=4, sort_keys=True))
+    # Have altered the json formatted printing in favor for a pprint as the new Evaluation objects contain nonseriabalizable fields which create issues
+    pprint(baseline)
     print("-" * 64)
     print(
         json.dumps(
