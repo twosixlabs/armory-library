@@ -118,12 +118,7 @@ _PROFILERS = {
 
 
 def profiler_from_config(metric):
-    profiler_type = metric.profiler_type
-    if isinstance(profiler_type, str):
-        profiler_type = profiler_type.lower()
-    elif not profiler_type:
-        profiler_type = None
-
+    profiler_type = metric.profiler_type.lower()
     try:
         return _PROFILERS[profiler_type]()
     except KeyError:
