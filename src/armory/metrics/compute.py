@@ -117,20 +117,9 @@ _PROFILERS = {
 }
 
 
-def profiler_class(name=None):
-    """
-    Return profiler class by name
-    """
-    if isinstance(name, str):
-        name = name.lower()
-    elif not name:
-        name = None
-
+def profiler_from_config(metric):
+    profiler_type = metric.profiler_type.lower()
     try:
-        return _PROFILERS[name]
+        return _PROFILERS[profiler_type]()
     except KeyError:
-        raise KeyError(f"Profiler {name} is not in {tuple(_PROFILERS)}.")
-
-
-def profiler_from_config(config):
-    return profiler_class(config.get("profiler_type"))()
+        raise KeyError(f"Profiler {profiler_type} is not in {tuple(_PROFILERS)}.")

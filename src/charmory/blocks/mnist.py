@@ -1,5 +1,9 @@
 """Evaluation components for MNIST baseline."""
+import art.attacks.evasion
 
+import armory.baseline_models.keras.mnist
+import armory.data.datasets
+import armory.scenarios.image_classification
 from charmory.evaluation import (
     Attack,
     Dataset,
@@ -18,11 +22,11 @@ like
 """
 
 dataset = Dataset(
-    function="armory.data.datasets:mnist", framework="numpy", batch_size=128
+    function=armory.data.datasets.mnist, framework="numpy", batch_size=128
 )
 
 model = Model(
-    function="armory.baseline_models.keras.mnist:get_art_model",
+    function=armory.baseline_models.keras.mnist.get_art_model,
     model_kwargs={},
     wrapper_kwargs={},
     weights_file=None,
@@ -31,7 +35,7 @@ model = Model(
 )
 
 attack = Attack(
-    function="art.attacks.evasion:FastGradientMethod",
+    function=art.attacks.evasion.FastGradientMethod,
     kwargs={
         "batch_size": 1,
         "eps": 0.2,
@@ -47,7 +51,7 @@ attack = Attack(
 
 
 scenario = Scenario(
-    function="armory.scenarios.image_classification:ImageClassificationTask",
+    function=armory.scenarios.image_classification.ImageClassificationTask,
     kwargs={},
 )
 

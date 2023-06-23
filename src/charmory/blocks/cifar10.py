@@ -1,5 +1,9 @@
 """Evaluation components for CIFAR10 baseline."""
+import art.attacks.evasion
 
+import armory.baseline_models.pytorch.cifar
+import armory.data.datasets
+import armory.scenarios.image_classification
 from charmory.evaluation import (
     Attack,
     Dataset,
@@ -11,10 +15,10 @@ from charmory.evaluation import (
 )
 
 dataset = Dataset(
-    function="armory.data.datasets:cifar10", framework="numpy", batch_size=64
+    function=armory.data.datasets.cifar10, framework="numpy", batch_size=64
 )
 model = Model(
-    function="armory.baseline_models.pytorch.cifar:get_art_model",
+    function=armory.baseline_models.pytorch.cifar.get_art_model,
     model_kwargs={},
     wrapper_kwargs={},
     weights_file=None,
@@ -23,7 +27,7 @@ model = Model(
 )
 
 attack = Attack(
-    function="art.attacks.evasion:ProjectedGradientDescent",
+    function=art.attacks.evasion.ProjectedGradientDescent,
     kwargs={
         "batch_size": 1,
         "eps": 0.031,
@@ -41,7 +45,7 @@ attack = Attack(
 
 
 scenario = Scenario(
-    function="armory.scenarios.image_classification:ImageClassificationTask",
+    function=armory.scenarios.image_classification.ImageClassificationTask,
     kwargs={},
 )
 

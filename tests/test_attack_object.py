@@ -2,6 +2,7 @@
 
 import pytest
 
+import armory.attacks
 from charmory.evaluation import Attack
 
 """
@@ -25,28 +26,32 @@ Code Analysis:
 
 class TestAttack:
     # Tests that an instance of attack can be created with all required fields specified. tags: [happy path]
+    # I have changed the function given from armory.attacks.fgsm to armory.attacks.__path__ because the earlier function does not exist. Should not be overly
+    # significant as this is simply a test of whether the attack object can be created at all - RN
     def test_create_attack_with_required_fields(self):
         attack = Attack(
-            function="armory.attacks.fgsm", kwargs={"eps": 0.3}, knowledge="white"
+            function=armory.attacks.__path__, kwargs={"eps": 0.3}, knowledge="white"
         )
         assert isinstance(attack, Attack)
-        assert attack.function == "armory.attacks.fgsm"
+        assert attack.function == armory.attacks.__path__
         assert attack.kwargs == {"eps": 0.3}
         assert attack.knowledge == "white"
         assert not attack.use_label
         assert attack.type is None
 
     # Tests that an instance of attack can be created with all fields specified, including the optional 'type' field. tags: [happy path]
+    # I have changed the function given from armory.attacks.pgd to armory.attacks.__path__ because the earlier function does not exist. Should not be overly
+    # significant as this is simply a test of whether the attack object can be created at all - RN
     def test_create_attack_with_all_fields_specified(self):
         attack = Attack(
-            function="armory.attacks.pgd",
+            function=armory.attacks.__path__,
             kwargs={"eps": 0.3, "alpha": 0.1},
             knowledge="black",
             use_label=True,
             type="untargeted",
         )
         assert isinstance(attack, Attack)
-        assert attack.function == "armory.attacks.pgd"
+        assert attack.function == armory.attacks.__path__
         assert attack.kwargs == {"eps": 0.3, "alpha": 0.1}
         assert attack.knowledge == "black"
         assert attack.use_label
