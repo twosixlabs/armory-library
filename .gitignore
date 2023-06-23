@@ -1,6 +1,7 @@
 # -------------- Project ------------------
 src/armory/version.py
 mlruns/
+examples/src/charmory_examples/version.py
 
 # ------------- Template ------------------
 # Ignore dataset, tmp, and output directories
