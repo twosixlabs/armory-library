@@ -23,40 +23,17 @@ import numpy as np
 
 
 class VisionDatasetWrapper:
+    """
+    Wrapper around JATIC dataset to support iterator interface and return X, Y
+    tuple in the correct format
+    """
+
     def __init__(self, dataset: VisionDataset):
         self.dataset = dataset
         self.current = 0
         self.batch_size = 64 # this could be variable/set via argument
         
     def __next__(self):
-        if self.current > len(self.dataset):
-            raise StopIteration()
-
-        # This doesn't work with ArmoryDataGenerator and variable_length=True {
-        # Observed error is in the preprocessing function during check_shapes:
-        #    ValueError: len(actual) 1 + len(target) 4
-        #
-        # I think this comes down to my not understanding what the correct return
-        # X, Y datatypes should be in order to work with the `np_1D_object_array`
-        # manipulation that gets applied by ArmoryDataGenerator.
-        #
-        # result = self.dataset[self.current]
-        # image = np.asarray(result["image"])
-        # label = result["label"]
-        # self.current += 1
-        # }
-
-        # this works with ArmoryDataGenerator and variable_length=False {
-        # (also works in place of ArmoryDataGenerator, but only when fit=False)
-
-        ## this works when no batching occurs {
-        ## result = self.dataset[self.current]
-        ## image = np.array([np.asarray(result["image"])])
-        ## label = np.array([result["label"]])
-        ## self.current += 1
-        ## }
-
-        ## this works for batching {
         stop = min(self.current + self.batch_size, len(self.dataset))
         image = []
         label = []
@@ -73,9 +50,7 @@ class VisionDatasetWrapper:
             self.current = 0
         image = np.array([np.asarray(img) for img in image])
         label = np.array(label)
-        ## }
 
-        # }
         return image, label
 
     def __len__(self):
@@ -93,8 +68,6 @@ def load_dataset(split: str, **kwargs):
         download=True,
     )
     assert isinstance(dataset, JaticDataset)
-    # Have to wrap the JATIC dataset to have an iterator interface and return X, Y
-    # tuple in the correct format
     return VisionDatasetWrapper(dataset)
 
 
@@ -110,15 +83,12 @@ def load_dataset_as_adg(split: str, epochs: int, **kwargs):
     )
     assert isinstance(dataset, JaticDataset)
     return ArmoryDataGenerator(
-        # Have to wrap the JATIC dataset to have an iterator interface and return X, Y
-        # tuple in the correct format
         generator=VisionDatasetWrapper(dataset),
         size=len(dataset),
         batch_size=64,
         epochs=epochs, 
         preprocessing_fn=cifar10_canonical_preprocessing,
         context=cifar10_context,
-        # variable_length=True,  # Doesn't work (see note above)
     )
 
 
@@ -147,8 +117,6 @@ def main(argv: list = sys.argv[1:]):
         weights_file=None,
         # Can't set this to True when not wrapping the dataset in ArmoryDataGenerator
         # because then it isn't an ART DataGenerator subclass (and yields an error).
-        # I believe we could call ART's `fit` method rather than `fit_generator` to
-        # avoid a need to subclass DataGenerator.
         fit=True,
         fit_kwargs={"nb_epochs": 20},
     )
