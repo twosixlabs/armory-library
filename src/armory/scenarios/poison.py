@@ -124,7 +124,7 @@ class Poison(Scenario):
     def load_model(self, defended=True):
         # Scenario assumes canonical preprocessing_fn is used makes images all same size
         model_config = self.config["model"]
-        model, _ = config_loading.load_model(model_config)
+        model = config_loading.load_model(model_config)
 
         if defended:
             defense_config = self.config.get("defense") or {}
@@ -257,9 +257,7 @@ class Poison(Scenario):
                 defense_model_config = adhoc_config.get(
                     "defense_model", self.config["model"]
                 )
-                classifier_for_defense, _ = config_loading.load_model(
-                    defense_model_config
-                )
+                classifier_for_defense = config_loading.load_model(defense_model_config)
                 log.info(
                     f"Fitting model {defense_model_config['module']}.{defense_model_config['name']} "
                     f"for defense {defense_config['name']}..."

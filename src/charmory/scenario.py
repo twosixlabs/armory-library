@@ -135,7 +135,7 @@ class Scenario:
 
     def load_model(self, defended=True):
         model_config = self.evaluation.model
-        model, _ = config_loading.load_model(model_config)
+        model = config_loading.load_model(model_config)
 
         if defended:
             defense_config = self.evaluation.defense or {}
