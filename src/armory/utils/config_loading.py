@@ -70,13 +70,6 @@ def load_dataset(dataset_config, *args, num_batches=None, check_run=False, **kwa
     dataset_fn = dataset_config.function
     dataset_config.function = None
 
-    # Add remaining dataset_config items to kwargs
-    for remaining_kwarg in vars(dataset_config).keys():
-        if vars(dataset_config)[remaining_kwarg] is not None:
-            if remaining_kwarg in ["eval_split", "train_split"]:
-                continue
-            kwargs[remaining_kwarg] = vars(dataset_config)[remaining_kwarg]
-
     dataset = dataset_fn(batch_size=batch_size, framework=framework, *args, **kwargs)
     if not isinstance(dataset, ArmoryDataGenerator):
         raise ValueError(f"{dataset} is not an instance of {ArmoryDataGenerator}")
