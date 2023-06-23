@@ -35,7 +35,12 @@ class VisionDatasetWrapper:
         
     def __next__(self):
         stop = min(self.current + self.batch_size, len(self.dataset))
-        result = self.dataset[slice(self.current, stop)]
+        image = []
+        label = []
+        for i in range(self.current, stop):
+            result = self.dataset[i]
+            image.append(np.asarray(result["image"]))
+            label.append(result["label"])
         self.current = stop
         if self.current == len(self.dataset):
             # This is weird, have to reset back to beginning of array
@@ -43,8 +48,8 @@ class VisionDatasetWrapper:
             # datasets work around this by repeating the data that gets
             # loaded so the final length is dataset-length * num-epochs.
             self.current = 0
-        image = np.array([np.asarray(img) for img in result["image"]])
-        label = np.array(result["label"])
+        image = np.asarray(image)
+        label = np.asarray(label)
 
         return image, label
 
