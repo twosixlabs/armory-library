@@ -36,16 +36,13 @@ from armory.utils import labels
 
 
 def load_fn(sub_config):
-    # module = sub_config["function"].__module__
-    # method = sub_config["function"].__name__
-    # return getattr(import_module(module), method)
     return sub_config.function
 
 
 def load(sub_config):
     fn = load_fn(sub_config)
-    args = sub_config.args
-    kwargs = sub_config.kwargs
+    args = sub_config.args or []
+    kwargs = sub_config.kwargs or {}
 
     if "clip_values" in kwargs:
         kwargs["clip_values"] = tuple(kwargs["clip_values"])
@@ -64,15 +61,11 @@ def load_dataset(dataset_config, *args, num_batches=None, check_run=False, **kwa
         dataset_config
     )  # Avoid modifying original dictionary
 
-    batch_size = 1
-    if hasattr(dataset_config, "batch_size"):
-        batch_size = dataset_config.batch_size
-        dataset_config.batch_size = None
+    batch_size = dataset_config.batch_size
+    dataset_config.batch_size = None
 
-    framework = "numpy"
-    if hasattr(dataset_config, "framework"):
-        framework = dataset_config.framework
-        dataset_config.framework = None
+    framework = dataset_config.framework
+    dataset_config.framework = None
 
     dataset_fn = dataset_config.function
     dataset_config.function = None
@@ -104,9 +97,7 @@ def load_model(model_config):
     model_module = import_module(model_config.function.__module__)
     model_fn = model_config.function
 
-    weights_file = (
-        model_config.weights_file if hasattr(model_config, "weights_file") else None
-    )
+    weights_file = model_config.weights_file or None
 
     if isinstance(weights_file, str):
         weights_path = maybe_download_weights_from_s3(

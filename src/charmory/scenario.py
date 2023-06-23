@@ -80,19 +80,12 @@ class Scenario:
     def load_dataset_config(self):
         _dataset = {"test": None, "train": None}
 
-        eval = self.evaluation
-        eval_dataset = eval.dataset
-        use_fit = eval.model.fit
+        eval_dataset = self.evaluation.dataset
+        use_fit = self.evaluation.model.fit
 
-        if hasattr(eval_dataset, "test"):
-            # Dataset is a custom Armory generator
-            _dataset["test"] = eval_dataset["test"]
-            if hasattr(eval_dataset, "train"):
-                _dataset["train"] = eval_dataset["train"]
-        else:
-            _dataset["test"] = self.load_dataset(eval_dataset)
-            if use_fit:
-                _dataset["train"] = self.load_train_dataset()
+        _dataset["test"] = self.load_dataset(eval_dataset)
+        if use_fit:
+            _dataset["train"] = self.load_train_dataset()
 
         return _dataset
 
@@ -161,20 +154,14 @@ class Scenario:
             log.info("Not loading any defenses for model")
             defense_type = None
 
-        fit_kwargs_val = (
-            model_config.fit_kwargs if hasattr(model_config, "fit_kwargs") else {}
-        )
+        fit_kwargs_val = model_config.fit_kwargs or {}
 
-        predict_kwargs_val = (
-            model_config.predict_kwargs
-            if hasattr(model_config, "predict_kwargs")
-            else {}
-        )
+        predict_kwargs_val = {}
 
         return {
             "model": model,
             "defense_type": defense_type,
-            "use_fit": bool(model_config.fit),
+            "use_fit": model_config.fit,
             "fit_kwargs": fit_kwargs_val,
             "predict_kwargs": predict_kwargs_val,
         }
