@@ -87,7 +87,6 @@ def load_model(model_config):
     preprocessing_fn can be a tuple of functions or None values
         If so, it applies to training and inference separately
     """
-    model_module = import_module(model_config.function.__module__)
     model_fn = model_config.function
 
     weights_file = model_config.weights_file or None
@@ -119,22 +118,7 @@ def load_model(model_config):
             "Are you loading model weights from an online repository?"
         )
 
-    preprocessing_fn = getattr(model_module, "preprocessing_fn", None)
-    if preprocessing_fn is not None:
-        if isinstance(preprocessing_fn, tuple):
-            if len(preprocessing_fn) != 2:
-                raise ValueError(
-                    f"preprocessing tuple length {len(preprocessing_fn)} != 2"
-                )
-            elif not all([x is None or callable(x) for x in preprocessing_fn]):
-                raise TypeError(
-                    f"preprocessing_fn tuple elements {preprocessing_fn} must be None or callable"
-                )
-        elif not callable(preprocessing_fn):
-            raise TypeError(
-                f"preprocessing_fn {preprocessing_fn} must be None, tuple, or callable"
-            )
-    return model, preprocessing_fn
+    return model
 
 
 def load_attack(attack_config, classifier):
