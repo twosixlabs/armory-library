@@ -52,7 +52,7 @@ class Poison_CLBD(Poison):
         self.source_class = adhoc_config["source_class"]
         self.target_class = adhoc_config["target_class"]
         if self.use_poison:
-            proxy, _ = config_loading.load_model(self.config["model"])
+            proxy = config_loading.load_model(self.config["model"])
 
             fit_kwargs = {
                 "batch_size": self.fit_batch_size,

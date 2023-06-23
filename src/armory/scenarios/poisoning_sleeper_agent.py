@@ -72,7 +72,7 @@ class SleeperAgentScenario(Poison):
         if self.use_poison:
             #  Create and train proxy model for gradient matching attack.
             proxy_config = copy.deepcopy(self.config["model"])
-            proxy_model, _ = config_loading.load_model(proxy_config)
+            proxy_model = config_loading.load_model(proxy_config)
             log.info("Fitting proxy model for attack . . .")
             proxy_model.fit(
                 self.x_clean,

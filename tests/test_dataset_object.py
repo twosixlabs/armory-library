@@ -2,6 +2,7 @@
 
 import pytest
 
+import armory.data.datasets
 from charmory.evaluation import Dataset
 
 """
@@ -23,18 +24,18 @@ class TestDataset:
     # Tests that a dataset object can be created with valid function, framework, and batch_size inputs. tags: [happy path]
     def test_create_dataset_valid_inputs(self):
         dataset = Dataset(
-            function="armory.data.datasets.cifar10", framework="tf", batch_size=32
+            function=armory.data.datasets.cifar10, framework="tf", batch_size=32
         )
-        assert dataset.function == "armory.data.datasets.cifar10"
+        assert dataset.function == armory.data.datasets.cifar10
         assert dataset.framework == "tf"
         assert dataset.batch_size == 32
 
     # Tests that the function field of a dataset object can be accessed. tags: [happy path]
     def test_access_function_field(self):
         dataset = Dataset(
-            function="armory.data.datasets.cifar10", framework="tf", batch_size=32
+            function=armory.data.datasets.cifar10, framework="tf", batch_size=32
         )
-        assert dataset.function == "armory.data.datasets.cifar10"
+        assert dataset.function == armory.data.datasets.cifar10
 
     # Tests that a dataset object cannot be created with an invalid function input. tags: [edge case]
     def test_create_dataset_invalid_function_input(self):
@@ -45,13 +46,13 @@ class TestDataset:
     # Tests that the framework field of a dataset object can be accessed. tags: [happy path]
     def test_access_framework_field(self):
         dataset = Dataset(
-            function="armory.data.datasets.cifar10", framework="tf", batch_size=32
+            function=armory.data.datasets.cifar10, framework="tf", batch_size=32
         )
         assert dataset.framework == "tf"
 
     # Tests that the batch_size field of a dataset object can be accessed. tags: [happy path]
     def test_access_batch_size_field(self):
         dataset = Dataset(
-            function="armory.data.datasets.cifar10", framework="tf", batch_size=32
+            function=armory.data.datasets.cifar10, framework="tf", batch_size=32
         )
         assert dataset.batch_size == 32

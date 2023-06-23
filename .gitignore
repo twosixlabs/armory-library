@@ -118,3 +118,6 @@ venv*
 # editors
 .idea/
 .vscode/
+
+# macOS trash
+.DS_Store

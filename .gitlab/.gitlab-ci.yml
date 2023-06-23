@@ -1,4 +1,7 @@
-image: "python:3.8-slim-bullseye"
+default:
+  image: "python:3.8-slim-bullseye"
+  tags:
+    - twosix
 
 stages:
   - "📡 Code Linting"
