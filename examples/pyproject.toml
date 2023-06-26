@@ -32,8 +32,17 @@ developer =[
     "flake8",
 ]
 
+jatic = [
+    "jatic_toolbox @ git+https://gitlab.jatic.net/jatic/cdao/jatic-toolbox.git",
+    # HuggingFace
+    "datasets",
+    "huggingface_hub",
+    "transformers",
+]
+
 all = [
     "armory-examples[developer]",
+    "armory-examples[jatic]",
 ]
 
 [build-system]
