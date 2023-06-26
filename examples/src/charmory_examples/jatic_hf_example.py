@@ -25,8 +25,12 @@ from charmory.evaluation import (
 from jatic_toolbox import load_dataset as load_jatic_dataset
 
 
-def load_dataset(split: str, epochs: int, batch_size: int, **kwargs):
-    print(f"Loading dataset from jatic_toolbox, {split=}, {batch_size=}, {epochs=}")
+def load_dataset(
+    split: str, epochs: int, batch_size: int, shuffle_files: bool, **kwargs
+):
+    print(
+        f"Loading dataset from jatic_toolbox, {split=}, {batch_size=}, {epochs=}, {shuffle_files=}"
+    )
     dataset = load_jatic_dataset(
         provider="huggingface",
         dataset_name="cifar10",
@@ -36,8 +40,8 @@ def load_dataset(split: str, epochs: int, batch_size: int, **kwargs):
     return JaticVisionDatasetGenerator(
         dataset=dataset,
         batch_size=batch_size,
-        epochs=epochs, 
-        shuffle=split == "train",
+        epochs=epochs,
+        shuffle=shuffle_files,
         preprocessing_fn=cifar10_canonical_preprocessing,
         context=cifar10_context,
     )
