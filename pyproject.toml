@@ -71,7 +71,7 @@ developer =[
     "pytest",
     "hatch",  # build tool
     "wheel",  # build tool
-    "black",
+    "black[jupyter]",
     "isort",
     "flake8",
     "bandit[toml]", # code scanning
