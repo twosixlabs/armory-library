@@ -7,19 +7,11 @@ import numpy as np
 from torch.utils.data.dataloader import DataLoader
 
 
-def _image_transform(batch):
-    if type(batch["image"]) == list:
-        batch["image"] = [np.asarray(img) for img in batch["image"]]
-    else:
-        batch["image"] = np.asarray(batch["image"])
-
-    return batch
-
 class _InnerGenerator:
     """Iterable wrapper around a dataset that contains image and label features"""
 
     def __init__(self, dataset, shuffle, batch_size, image_key, label_key):
-        dataset.set_transform(_image_transform)
+        dataset.set_transform(self._transform_image)
         self.loader = DataLoader(
             dataset=dataset,
             batch_size=batch_size,
@@ -28,6 +20,16 @@ class _InnerGenerator:
         self.iterator = iter(self.loader)
         self.image_key = image_key
         self.label_key = label_key
+
+    def _transform_image(self, batch):
+        """Transform PIL images to numpy arrays"""
+        transformed_batch = dict(**batch)
+        image = batch[self.image_key]
+        if type(image) == list:
+            transformed_batch[self.image_key] = [np.asarray(img) for img in image]
+        else:
+            transformed_batch[self.image_key] = np.asarray(image)
+        return transformed_batch
 
     def __next__(self):
         try:
