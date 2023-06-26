@@ -37,6 +37,7 @@ def load_dataset(split: str, epochs: int, batch_size: int, **kwargs):
         dataset=dataset,
         batch_size=batch_size,
         epochs=epochs, 
+        shuffle=split == "train",
         preprocessing_fn=cifar10_canonical_preprocessing,
         context=cifar10_context,
     )

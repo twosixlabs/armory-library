@@ -8,12 +8,15 @@ import numpy as np
 class _InnerGenerator:
     """Iterable wrapper around a dataset that contains image and label features"""
 
-    def __init__(self, dataset, batch_size, image_key, label_key):
+    def __init__(self, dataset, shuffle, batch_size, image_key, label_key):
         self.dataset = dataset
         self.image_key = image_key
         self.label_key = label_key
+        self.shuffle = shuffle
         self.batch_size = batch_size
         self.current = 0
+        if self.shuffle:
+            self.dataset._dataset = self.dataset._dataset.shuffle()
 
     def __next__(self):
         # Create batch
@@ -30,6 +33,8 @@ class _InnerGenerator:
         self.current = stop
         if self.current == len(self.dataset):
             self.current = 0
+            if self.shuffle:
+                self.dataset._dataset = self.dataset._dataset.shuffle()
 
         return np.asarray(x), np.asarray(y)
 
@@ -43,6 +48,7 @@ class JaticVisionDatasetGenerator(ArmoryDataGenerator):
         dataset,
         epochs: int,
         batch_size = 1,
+        shuffle = False,
         image_key = "image",
         label_key = "label",
         preprocessing_fn = None,
@@ -50,7 +56,7 @@ class JaticVisionDatasetGenerator(ArmoryDataGenerator):
         context = None,
     ):
         super().__init__(
-            generator=_InnerGenerator(dataset, batch_size=batch_size, image_key=image_key, label_key=label_key),
+            generator=_InnerGenerator(dataset, shuffle=shuffle, batch_size=batch_size, image_key=image_key, label_key=label_key),
             size=len(dataset),
             batch_size=batch_size,
             epochs=epochs,
