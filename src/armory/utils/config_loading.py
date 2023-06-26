@@ -30,11 +30,7 @@ from art.defences.trainer import Trainer
 
 from armory.art_experimental.attacks import patch
 from armory.art_experimental.attacks.sweep import SweepAttack
-from armory.data.datasets import (
-    AbstractArmoryDataGenerator,
-    ArmoryDataGenerator,
-    EvalGenerator,
-)
+from armory.data.datasets import ArmoryDataGenerator, EvalGenerator
 from armory.data.utils import maybe_download_weights_from_s3
 from armory.utils import labels
 
@@ -75,7 +71,7 @@ def load_dataset(dataset_config, *args, num_batches=None, check_run=False, **kwa
     dataset_config.function = None
 
     dataset = dataset_fn(batch_size=batch_size, framework=framework, *args, **kwargs)
-    assert isinstance(dataset, AbstractArmoryDataGenerator)
+    assert isinstance(dataset, ArmoryDataGenerator)
     if check_run:
         return EvalGenerator(dataset, num_eval_batches=1)
     if num_batches:
