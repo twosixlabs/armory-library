@@ -10,7 +10,7 @@ import art.attacks.evasion
 import armory.baseline_models.pytorch.cifar
 import armory.scenarios.image_classification
 import armory.version
-from armory.data.datasets import ArmoryDataGenerator, cifar10_canonical_preprocessing, cifar10_context
+from armory.data.datasets import cifar10_canonical_preprocessing, cifar10_context
 from charmory.datasets import JaticVisionDatasetGenerator
 from charmory.engine import Engine
 from charmory.evaluation import (
@@ -25,7 +25,7 @@ from charmory.evaluation import (
 from jatic_toolbox import load_dataset as load_jatic_dataset
 
 
-def load_dataset_as_adg(split: str, epochs: int, batch_size: int, **kwargs):
+def load_dataset(split: str, epochs: int, batch_size: int, **kwargs):
     print(f"Loading dataset from jatic_toolbox, {split=}, {batch_size=}, {epochs=}")
     dataset = load_jatic_dataset(
         provider="huggingface",
@@ -33,9 +33,8 @@ def load_dataset_as_adg(split: str, epochs: int, batch_size: int, **kwargs):
         task="image-classification",
         split=split,
     )
-    return ArmoryDataGenerator(
-        generator=JaticVisionDatasetGenerator(dataset, batch_size=batch_size),
-        size=len(dataset),
+    return JaticVisionDatasetGenerator(
+        dataset=dataset,
         batch_size=batch_size,
         epochs=epochs, 
         preprocessing_fn=cifar10_canonical_preprocessing,
@@ -52,7 +51,7 @@ def main(argv: list = sys.argv[1:]):
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
 
     dataset = Dataset(
-        function=load_dataset_as_adg,
+        function=load_dataset,
         framework="numpy",
         batch_size=64,
     )
