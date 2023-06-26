@@ -3,7 +3,6 @@ Example programmatic entrypoint for scenario execution
 """
 import json
 from pprint import pprint
-import math
 import sys
 
 import art.attacks.evasion
@@ -11,11 +10,8 @@ import art.attacks.evasion
 import armory.baseline_models.pytorch.cifar
 import armory.scenarios.image_classification
 import armory.version
-from armory.data.datasets import (
-    ArmoryDataGenerator,
-    cifar10_canonical_preprocessing,
-    cifar10_context,
-)
+from armory.data.datasets import cifar10_canonical_preprocessing, cifar10_context
+from charmory.datasets import JaticVisionDatasetGenerator
 from charmory.engine import Engine
 from charmory.evaluation import (
     Attack,
@@ -27,47 +23,10 @@ from charmory.evaluation import (
     SysConfig,
 )
 from jatic_toolbox import load_dataset as load_jatic_dataset
-from jatic_toolbox.protocols import Dataset as JaticDataset, VisionDataset
-import numpy as np
 
 
-class VisionDatasetWrapper:
-    """
-    Wrapper around JATIC dataset to support iterator interface and return X, Y
-    tuple in the correct format
-    """
-
-    def __init__(self, dataset: VisionDataset):
-        self.dataset = dataset
-        self.current = 0
-        self.batch_size = 64  # this could be variable/set via argument
-
-    def __next__(self):
-        stop = min(self.current + self.batch_size, len(self.dataset))
-        image = []
-        label = []
-        for i in range(self.current, stop):
-            result = self.dataset[i]
-            image.append(np.asarray(result["image"]))
-            label.append(result["label"])
-        self.current = stop
-        if self.current == len(self.dataset):
-            # This is weird, have to reset back to beginning of array
-            # in order to work with the training epochs. Built-in armory
-            # datasets work around this by repeating the data that gets
-            # loaded so the final length is dataset-length * num-epochs.
-            self.current = 0
-        image = np.asarray(image)
-        label = np.asarray(label)
-
-        return image, label
-
-    def __len__(self):
-        return math.ceil(len(self.dataset) / self.batch_size)
-
-
-def load_dataset(split: str, **kwargs):
-    print(f"Loading dataset from jatic_toolbox, {split=}")
+def load_dataset(split: str, epochs: int, batch_size: int, **kwargs):
+    print(f"Loading dataset from jatic_toolbox, {split=}, {batch_size=}, {epochs=}")
     dataset = load_jatic_dataset(
         provider="torchvision",
         dataset_name="CIFAR10",
@@ -76,26 +35,11 @@ def load_dataset(split: str, **kwargs):
         root="/tmp/torchvision_datasets",
         download=True,
     )
-    assert isinstance(dataset, JaticDataset)
-    return VisionDatasetWrapper(dataset)
-
-
-def load_dataset_as_adg(split: str, epochs: int, **kwargs):
-    print(f"Loading dataset from jatic_toolbox, {split=}, {epochs=}")
-    dataset = load_jatic_dataset(
-        provider="torchvision",
-        dataset_name="CIFAR10",
-        task="image-classification",
-        split=split,
-        root="/tmp/torchvision_datasets",
-        download=True,
-    )
-    assert isinstance(dataset, JaticDataset)
-    return ArmoryDataGenerator(
-        generator=VisionDatasetWrapper(dataset),
-        size=len(dataset),
-        batch_size=64,
-        epochs=epochs,
+    return JaticVisionDatasetGenerator(
+        dataset=dataset,
+        batch_size=batch_size,
+        epochs=epochs, 
+        shuffle=split == "train",
         preprocessing_fn=cifar10_canonical_preprocessing,
         context=cifar10_context,
     )
@@ -110,10 +54,7 @@ def main(argv: list = sys.argv[1:]):
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
 
     dataset = Dataset(
-        # To use a JATIC dataset "directly":
-        # function=load_dataset,
-        # To use a JATIC dataset wrapped in ArmoryDataGenerator:
-        function=load_dataset_as_adg,
+        function=load_dataset,
         framework="numpy",
         batch_size=64,
     )
@@ -123,8 +64,6 @@ def main(argv: list = sys.argv[1:]):
         model_kwargs={},
         wrapper_kwargs={},
         weights_file=None,
-        # Can't set this to True when not wrapping the dataset in ArmoryDataGenerator
-        # because then it isn't an ART DataGenerator subclass (and yields an error).
         fit=True,
         fit_kwargs={"nb_epochs": 20},
     )
