@@ -2,14 +2,13 @@
 
 # This could get merged with armory.data.datasets
 
+from armory.data.datasets import ArmoryDataGenerator
 import numpy as np
 
-class JaticVisionDatasetGenerator:
-    """
-    Wrapper around a dataset that contains image and label features.
-    """
+class _InnerGenerator:
+    """Iterable wrapper around a dataset that contains image and label features"""
 
-    def __init__(self, dataset, batch_size = 1, image_key = "image", label_key = "label"):
+    def __init__(self, dataset, batch_size, image_key, label_key):
         self.dataset = dataset
         self.image_key = image_key
         self.label_key = label_key
@@ -33,3 +32,29 @@ class JaticVisionDatasetGenerator:
             self.current = 0
 
         return np.asarray(x), np.asarray(y)
+
+
+class JaticVisionDatasetGenerator(ArmoryDataGenerator):
+    """
+    Data generator for a JATIC image classification dataset.
+    """
+
+    def __init__(self,
+        dataset,
+        epochs: int,
+        batch_size = 1,
+        image_key = "image",
+        label_key = "label",
+        preprocessing_fn = None,
+        label_preprocessing_fn = None,
+        context = None,
+    ):
+        super().__init__(
+            generator=_InnerGenerator(dataset, batch_size=batch_size, image_key=image_key, label_key=label_key),
+            size=len(dataset),
+            batch_size=batch_size,
+            epochs=epochs,
+            preprocessing_fn=preprocessing_fn,
+            label_preprocessing_fn=label_preprocessing_fn,
+            context=context,
+        )
