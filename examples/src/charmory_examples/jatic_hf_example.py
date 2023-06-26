@@ -11,7 +11,11 @@ import art.attacks.evasion
 import armory.baseline_models.pytorch.cifar
 import armory.scenarios.image_classification
 import armory.version
-from armory.data.datasets import ArmoryDataGenerator, cifar10_canonical_preprocessing, cifar10_context
+from armory.data.datasets import (
+    ArmoryDataGenerator,
+    cifar10_canonical_preprocessing,
+    cifar10_context,
+)
 from charmory.engine import Engine
 from charmory.evaluation import (
     Attack,
@@ -36,8 +40,8 @@ class VisionDatasetWrapper:
     def __init__(self, dataset: VisionDataset):
         self.dataset = dataset
         self.current = 0
-        self.batch_size = 64 # this could be variable/set via argument
-        
+        self.batch_size = 64  # this could be variable/set via argument
+
     def __next__(self):
         stop = min(self.current + self.batch_size, len(self.dataset))
         image = []
@@ -87,7 +91,7 @@ def load_dataset_as_adg(split: str, epochs: int, **kwargs):
         generator=VisionDatasetWrapper(dataset),
         size=len(dataset),
         batch_size=64,
-        epochs=epochs, 
+        epochs=epochs,
         preprocessing_fn=cifar10_canonical_preprocessing,
         context=cifar10_context,
     )
@@ -103,10 +107,9 @@ def main(argv: list = sys.argv[1:]):
 
     dataset = Dataset(
         # To use a JATIC dataset "directly":
-        #function=load_dataset,
+        # function=load_dataset,
         # To use a JATIC dataset wrapped in ArmoryDataGenerator:
         function=load_dataset_as_adg,
-
         framework="numpy",
         batch_size=64,
     )
