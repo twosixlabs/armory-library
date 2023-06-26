@@ -4,39 +4,40 @@
 
 from armory.data.datasets import ArmoryDataGenerator
 import numpy as np
+from torch.utils.data.dataloader import DataLoader
+
+
+def _image_transform(batch):
+    if type(batch["image"]) == list:
+        batch["image"] = [np.asarray(img) for img in batch["image"]]
+    else:
+        batch["image"] = np.asarray(batch["image"])
+
+    return batch
 
 class _InnerGenerator:
     """Iterable wrapper around a dataset that contains image and label features"""
 
     def __init__(self, dataset, shuffle, batch_size, image_key, label_key):
-        self.dataset = dataset
+        dataset.set_transform(_image_transform)
+        self.loader = DataLoader(
+            dataset=dataset,
+            batch_size=batch_size,
+            shuffle=shuffle,
+        )
+        self.iterator = iter(self.loader)
         self.image_key = image_key
         self.label_key = label_key
-        self.shuffle = shuffle
-        self.batch_size = batch_size
-        self.current = 0
-        if self.shuffle:
-            self.dataset._dataset = self.dataset._dataset.shuffle()
 
     def __next__(self):
-        # Create batch
-        stop = min(self.current + self.batch_size, len(self.dataset))
-        x = []
-        y = []
-        for i in range(self.current, stop):
-            sample = self.dataset[i]
-            x.append(np.asarray(sample[self.image_key]))
-            y.append(sample[self.label_key])
+        try:
+            sample = next(self.iterator)
+        except StopIteration:
+            # Reset when we reach the end of the iterator/epoch
+            self.iterator = iter(self.loader)
+            sample = next(self.iterator)
 
-        # Reset the current index back to 0 when we reach the end so
-        # that this iterator is indefinite
-        self.current = stop
-        if self.current == len(self.dataset):
-            self.current = 0
-            if self.shuffle:
-                self.dataset._dataset = self.dataset._dataset.shuffle()
-
-        return np.asarray(x), np.asarray(y)
+        return np.asarray(sample[self.image_key]), sample[self.label_key]
 
 
 class JaticVisionDatasetGenerator(ArmoryDataGenerator):
