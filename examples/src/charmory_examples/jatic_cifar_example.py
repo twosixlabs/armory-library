@@ -22,14 +22,18 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
-from jatic_toolbox import load_dataset as load_jatic_dataset
+from jatic_toolbox import (
+    load_dataset as load_jatic_dataset,
+    __version__ as jatic_version,
+)
 
 
-def load_dataset(
+def load_huggingface_dataset(
     split: str, epochs: int, batch_size: int, shuffle_files: bool, **kwargs
 ):
     print(
-        f"Loading dataset from jatic_toolbox, {split=}, {batch_size=}, {epochs=}, {shuffle_files=}"
+        "Loading HuggingFace dataset from jatic_toolbox, "
+        f"{split=}, {batch_size=}, {epochs=}, {shuffle_files=}"
     )
     dataset = load_jatic_dataset(
         provider="huggingface",
@@ -47,11 +51,41 @@ def load_dataset(
     )
 
 
+def load_torchvision_dataset(
+    split: str, epochs: int, batch_size: int, shuffle_files: bool, **kwargs
+):
+    print(
+        "Loading torchvision dataset from jatic_toolbox, "
+        f"{split=}, {batch_size=}, {epochs=}, {shuffle_files=}"
+    )
+    dataset = load_jatic_dataset(
+        provider="torchvision",
+        dataset_name="CIFAR10",
+        task="image-classification",
+        split=split,
+        root="/tmp/torchvision_datasets",
+        download=True,
+    )
+    return JaticVisionDatasetGenerator(
+        dataset=dataset,
+        batch_size=batch_size,
+        epochs=epochs,
+        shuffle=shuffle_files,
+        preprocessing_fn=cifar10_canonical_preprocessing,
+        context=cifar10_context,
+    )
+
+
 def main(argv: list = sys.argv[1:]):
     if len(argv) > 0:
         if "--version" in argv:
-            print(armory.version.__version__)
+            print(f"armory: {armory.version.__version__}")
+            print(f"JATIC-toolbox: {jatic_version}")
             sys.exit(0)
+
+    load_dataset = load_huggingface_dataset
+    if "torchvision" in argv:
+        load_dataset = load_torchvision_dataset
 
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
 
