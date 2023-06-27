@@ -31,6 +31,7 @@ cache: &global_cache
 
 
 before_script:
+  - echo -e "machine gitlab.jatic.net\nlogin gitlab-ci-token\npassword ${CI_JOB_TOKEN}" > ~/.netrc
   - apt-get update -qqy
   - apt-get install -qqy --no-install-recommends --no-install-suggests git libgl1-mesa-glx gnupg build-essential rsync make software-properties-common
   - python -m pip install --upgrade pip build wheel
