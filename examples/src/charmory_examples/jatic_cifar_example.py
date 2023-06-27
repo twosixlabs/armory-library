@@ -11,7 +11,10 @@ import armory.baseline_models.pytorch.cifar
 import armory.scenarios.image_classification
 import armory.version
 from armory.data.datasets import cifar10_canonical_preprocessing, cifar10_context
-from charmory.datasets import JaticVisionDatasetGenerator
+from charmory.datasets import (
+    JaticVisionDatasetGenerator,
+    JaticVisionDataloaderGenerator,
+)
 from charmory.engine import Engine
 from charmory.evaluation import (
     Attack,
@@ -22,6 +25,7 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
+from jatic_toolbox._internals.interop.evaluate import get_dataloader
 from jatic_toolbox import (
     load_dataset as load_jatic_dataset,
     __version__ as jatic_version,
@@ -76,6 +80,44 @@ def load_torchvision_dataset(
     )
 
 
+def load_dataloader(
+    split: str, epochs: int, batch_size: int, shuffle_files: bool, **kwargs
+):
+    print(
+        "Loading HuggingFace dataset and dataloader from jatic_toolbox, "
+        f"{split=}, {batch_size=}, {epochs=}, {shuffle_files=}"
+    )
+    # works with either provider
+    dataset = load_jatic_dataset(
+        provider="huggingface",
+        dataset_name="cifar10",
+        task="image-classification",
+        split=split,
+    )
+    # dataset = load_jatic_dataset(
+    #     provider="torchvision",
+    #     dataset_name="CIFAR10",
+    #     task="image-classification",
+    #     split=split,
+    #     root="/tmp/torchvision_datasets",
+    #     download=True,
+    # )
+    dataloader = get_dataloader(
+        dataset=dataset,
+        batch_size=batch_size,
+        split=split,
+        shuffle=shuffle_files,
+    )
+    return JaticVisionDataloaderGenerator(
+        dataloader=dataloader,
+        size=len(dataset),
+        batch_size=batch_size,
+        epochs=epochs,
+        preprocessing_fn=cifar10_canonical_preprocessing,
+        context=cifar10_context,
+    )
+
+
 def main(argv: list = sys.argv[1:]):
     if len(argv) > 0:
         if "--version" in argv:
@@ -86,6 +128,8 @@ def main(argv: list = sys.argv[1:]):
     load_dataset = load_huggingface_dataset
     if "torchvision" in argv:
         load_dataset = load_torchvision_dataset
+    if "dataloader" in argv:
+        load_dataset = load_dataloader
 
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
 
