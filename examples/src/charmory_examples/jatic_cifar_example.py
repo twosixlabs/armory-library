@@ -13,7 +13,7 @@ import armory.baseline_models.pytorch.cifar
 from armory.data.datasets import cifar10_canonical_preprocessing, cifar10_context
 import armory.scenarios.image_classification
 import armory.version
-from charmory.datasets import JaticVisionDatasetGenerator
+from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import Engine
 from charmory.evaluation import (
     Attack,
