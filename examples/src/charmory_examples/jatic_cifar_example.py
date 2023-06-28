@@ -6,11 +6,13 @@ from pprint import pprint
 import sys
 
 import art.attacks.evasion
+from jatic_toolbox import __version__ as jatic_version
+from jatic_toolbox import load_dataset as load_jatic_dataset
 
 import armory.baseline_models.pytorch.cifar
+from armory.data.datasets import cifar10_canonical_preprocessing, cifar10_context
 import armory.scenarios.image_classification
 import armory.version
-from armory.data.datasets import cifar10_canonical_preprocessing, cifar10_context
 from charmory.datasets import JaticVisionDatasetGenerator
 from charmory.engine import Engine
 from charmory.evaluation import (
@@ -21,10 +23,6 @@ from charmory.evaluation import (
     Model,
     Scenario,
     SysConfig,
-)
-from jatic_toolbox import (
-    load_dataset as load_jatic_dataset,
-    __version__ as jatic_version,
 )
 
 

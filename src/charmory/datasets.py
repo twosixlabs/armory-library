@@ -2,10 +2,11 @@
 
 # This could get merged with armory.data.datasets
 
-from armory.data.datasets import ArmoryDataGenerator
 from PIL.Image import Image
 import numpy as np
 from torch.utils.data.dataloader import DataLoader
+
+from armory.data.datasets import ArmoryDataGenerator
 
 
 class _DataLoaderGenerator:
@@ -40,21 +41,23 @@ def _collate_image_classification(image_key, label_key):
 
     return collate
 
+
 class JaticVisionDatasetGenerator(ArmoryDataGenerator):
     """
     Data generator for a JATIC image classification dataset.
     """
 
-    def __init__(self,
+    def __init__(
+        self,
         dataset,
         epochs: int,
-        batch_size = 1,
-        shuffle = False,
-        image_key = "image",
-        label_key = "label",
-        preprocessing_fn = None,
-        label_preprocessing_fn = None,
-        context = None,
+        batch_size=1,
+        shuffle=False,
+        image_key="image",
+        label_key="label",
+        preprocessing_fn=None,
+        label_preprocessing_fn=None,
+        context=None,
     ):
         super().__init__(
             generator=_DataLoaderGenerator(
