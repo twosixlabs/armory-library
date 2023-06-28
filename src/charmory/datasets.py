@@ -3,44 +3,42 @@
 # This could get merged with armory.data.datasets
 
 from armory.data.datasets import ArmoryDataGenerator
+from PIL.Image import Image
 import numpy as np
 from torch.utils.data.dataloader import DataLoader
 
 
-class _InnerGenerator:
-    """Iterable wrapper around a dataset that contains image and label features"""
+class _DataLoaderGenerator:
+    """
+    Iterable wrapper around a pytorch data loader to enable infinite iteration (required by ART)
+    """
 
-    def __init__(self, dataset, shuffle, batch_size, image_key, label_key):
-        dataset.set_transform(self._transform_image)
-        self.loader = DataLoader(
-            dataset=dataset,
-            batch_size=batch_size,
-            shuffle=shuffle,
-        )
+    def __init__(self, loader):
+        self.loader = loader
         self.iterator = iter(self.loader)
-        self.image_key = image_key
-        self.label_key = label_key
-
-    def _transform_image(self, batch):
-        """Transform PIL images to numpy arrays"""
-        transformed_batch = dict(**batch)
-        image = batch[self.image_key]
-        if type(image) == list:
-            transformed_batch[self.image_key] = [np.asarray(img) for img in image]
-        else:
-            transformed_batch[self.image_key] = np.asarray(image)
-        return transformed_batch
 
     def __next__(self):
         try:
-            sample = next(self.iterator)
+            batch = next(self.iterator)
         except StopIteration:
             # Reset when we reach the end of the iterator/epoch
             self.iterator = iter(self.loader)
-            sample = next(self.iterator)
+            batch = next(self.iterator)
+        return batch
 
-        return np.asarray(sample[self.image_key]), sample[self.label_key]
 
+def _collate_image_classification(image_key, label_key):
+    """Create a collate function that works with image classification samples"""
+
+    def collate(batch):
+        if isinstance(batch[0][image_key], Image):
+            x = np.asarray([np.asarray(sample[image_key]) for sample in batch])
+        else:
+            x = np.asarray([sample[image_key] for sample in batch])
+        y = [sample[label_key] for sample in batch]
+        return x, y
+
+    return collate
 
 class JaticVisionDatasetGenerator(ArmoryDataGenerator):
     """
@@ -59,7 +57,14 @@ class JaticVisionDatasetGenerator(ArmoryDataGenerator):
         context = None,
     ):
         super().__init__(
-            generator=_InnerGenerator(dataset, shuffle=shuffle, batch_size=batch_size, image_key=image_key, label_key=label_key),
+            generator=_DataLoaderGenerator(
+                DataLoader(
+                    dataset=dataset,
+                    batch_size=batch_size,
+                    shuffle=shuffle,
+                    collate_fn=_collate_image_classification(image_key, label_key),
+                )
+            ),
             size=len(dataset),
             batch_size=batch_size,
             epochs=epochs,
