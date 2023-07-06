@@ -32,7 +32,6 @@ class Scenario:
         check_run: bool = False,
     ):
         self.check_run = check_run
-        self.model = None
         self.dataset = {"test": None, "train": None}
         self.evaluation = evaluation
         self.i = -1
@@ -46,14 +45,8 @@ class Scenario:
         self.export_subdir = "armory"
         self.results = None
 
-        # Load the model
-        self._loaded_model = self.load_model()
-        self.model = self._loaded_model["model"]
-        self.model_name = f"{self.evaluation.model.function.__module__}.{self.evaluation.model.function.__name__}"
-        self.use_fit = self._loaded_model["use_fit"]
-        self.fit_kwargs = self._loaded_model["fit_kwargs"]
-        self.predict_kwargs = self._loaded_model["predict_kwargs"]
-        self.defense_type = self._loaded_model["defense_type"]
+        # Set up the model
+        self.model, self.defense_type = self.setup_model()
 
         # Load the dataset(s)
         self.dataset = self.load_dataset_config()
@@ -133,9 +126,9 @@ class Scenario:
             self.evaluate_current()
         self.hub.set_context(stage="finished")
 
-    def load_model(self, defended=True):
+    def setup_model(self, defended=True):
         model_config = self.evaluation.model
-        model = config_loading.load_model(model_config)
+        model = model_config.model
 
         if defended:
             defense_config = self.evaluation.defense or {}
@@ -153,17 +146,7 @@ class Scenario:
             log.info("Not loading any defenses for model")
             defense_type = None
 
-        fit_kwargs_val = model_config.fit_kwargs or {}
-
-        predict_kwargs_val = {}
-
-        return {
-            "model": model,
-            "defense_type": defense_type,
-            "use_fit": model_config.fit,
-            "fit_kwargs": fit_kwargs_val,
-            "predict_kwargs": predict_kwargs_val,
-        }
+        return model, defense_type
 
     def load_train_dataset(self, train_split_default="train"):
         dataset_config = self.evaluation.dataset
@@ -171,7 +154,7 @@ class Scenario:
 
         return config_loading.load_dataset(
             dataset_config,
-            epochs=self.fit_kwargs["nb_epochs"],
+            epochs=self.evaluation.model.fit_kwargs.get("nb_epochs", 1),
             split=train_split_default,
             check_run=self.check_run,
             shuffle_files=True,
@@ -180,10 +163,14 @@ class Scenario:
     def fit(self):
         if self.defense_type == "Trainer":
             log.info(f"Training with {type(self.trainer)} Trainer defense...")
-            self.trainer.fit_generator(self.train_dataset, **self.fit_kwargs)
+            self.trainer.fit_generator(
+                self.train_dataset, **self.evaluation.model.fit_kwargs
+            )
         else:
-            log.info(f"Fitting model {self.model_name}...")
-            self.model.fit_generator(self.train_dataset, **self.fit_kwargs)
+            log.info("Fitting model ...")
+            self.model.fit_generator(
+                self.train_dataset, **self.evaluation.model.fit_kwargs
+            )
 
     def load_attack(self):
         attack_config = self.evaluation.attack
@@ -327,7 +314,7 @@ class Scenario:
         x, y = self.x, self.y
         x.flags.writeable = False
         with self.profiler.measure("Inference"):
-            y_pred = self.model.predict(x, **self.predict_kwargs)
+            y_pred = self.model.predict(x, **self.evaluation.model.predict_kwargs)
         self.y_pred = y_pred
         self.probe.update(y_pred=y_pred)
 
@@ -372,7 +359,9 @@ class Scenario:
         else:
             # Ensure that input sample isn't overwritten by model
             x_adv.flags.writeable = False
-            y_pred_adv = self.model.predict(x_adv, **self.predict_kwargs)
+            y_pred_adv = self.model.predict(
+                x_adv, **self.evaluation.model.predict_kwargs
+            )
 
         self.probe.update(x_adv=x_adv, y_pred_adv=y_pred_adv)
         if self.targeted:

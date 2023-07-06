@@ -16,7 +16,8 @@ class Engine:
     def run(self):
         results = self.scenario.evaluate()
 
+        # what are these for?
         self.dataset = self.scenario.dataset
-        self.model = self.scenario._loaded_model
+        self.model = self.scenario.model
 
         return results
