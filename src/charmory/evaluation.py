@@ -2,7 +2,8 @@
 
 # TODO: review the Optionals with @woodall
 
-from dataclasses import asdict, dataclass
+from art.estimators import BaseEstimator
+from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Dict, List, Literal, Optional
 
 MethodName = Callable[
@@ -51,13 +52,12 @@ class Metric:
 
 
 @dataclass
-class Model:
-    function: MethodName
-    model_kwargs: StrDict
-    wrapper_kwargs: StrDict
-    weights_file: Optional[List[str]]
-    fit: bool
-    fit_kwargs: StrDict
+class ModelConfig:
+    name: str
+    model: BaseEstimator
+    fit: bool = False
+    fit_kwargs: StrDict = field(default_factory=dict)
+    predict_kwargs: StrDict = field(default_factory=dict)
 
 
 @dataclass
@@ -78,7 +78,7 @@ class Evaluation:
     name: str
     description: str
     author: Optional[str]
-    model: Model
+    model: ModelConfig
     scenario: Scenario
     dataset: Dataset
     attack: Optional[Attack] = None

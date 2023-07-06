@@ -20,7 +20,7 @@ from charmory.evaluation import (
     Dataset,
     Evaluation,
     Metric,
-    Model,
+    ModelConfig,
     Scenario,
     SysConfig,
 )
@@ -93,11 +93,11 @@ def main(argv: list = sys.argv[1:]):
         batch_size=64,
     )
 
-    model = Model(
-        function=armory.baseline_models.pytorch.cifar.get_art_model,
-        model_kwargs={},
-        wrapper_kwargs={},
-        weights_file=None,
+    model = ModelConfig(
+        name="cifar",
+        model=armory.baseline_models.pytorch.cifar.get_art_model(
+            model_kwargs={}, wrapper_kwargs={}
+        ),
         fit=True,
         fit_kwargs={"nb_epochs": 20},
     )
