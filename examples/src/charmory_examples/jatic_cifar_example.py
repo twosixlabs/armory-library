@@ -3,19 +3,17 @@ Example programmatic entrypoint for scenario execution
 """
 import json
 from pprint import pprint
-import math
 import sys
 
 import art.attacks.evasion
+from jatic_toolbox import __version__ as jatic_version
+from jatic_toolbox import load_dataset as load_jatic_dataset
 
 import armory.baseline_models.pytorch.cifar
+from armory.data.datasets import cifar10_canonical_preprocessing, cifar10_context
 import armory.scenarios.image_classification
 import armory.version
-from armory.data.datasets import (
-    ArmoryDataGenerator,
-    cifar10_canonical_preprocessing,
-    cifar10_context,
-)
+from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import Engine
 from charmory.evaluation import (
     Attack,
@@ -26,72 +24,51 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
-from jatic_toolbox import load_dataset as load_jatic_dataset
-from jatic_toolbox.protocols import Dataset as JaticDataset, VisionDataset
-import numpy as np
 
 
-class VisionDatasetWrapper:
-    """
-    Wrapper around JATIC dataset to support iterator interface and return X, Y
-    tuple in the correct format
-    """
-
-    def __init__(self, dataset: VisionDataset):
-        self.dataset = dataset
-        self.current = 0
-        self.batch_size = 64  # this could be variable/set via argument
-
-    def __next__(self):
-        stop = min(self.current + self.batch_size, len(self.dataset))
-        image = []
-        label = []
-        for i in range(self.current, stop):
-            result = self.dataset[i]
-            image.append(np.asarray(result["image"]))
-            label.append(result["label"])
-        self.current = stop
-        if self.current == len(self.dataset):
-            # This is weird, have to reset back to beginning of array
-            # in order to work with the training epochs. Built-in armory
-            # datasets work around this by repeating the data that gets
-            # loaded so the final length is dataset-length * num-epochs.
-            self.current = 0
-        image = np.asarray(image)
-        label = np.asarray(label)
-
-        return image, label
-
-    def __len__(self):
-        return math.ceil(len(self.dataset) / self.batch_size)
-
-
-def load_dataset(split: str, **kwargs):
-    print(f"Loading dataset from jatic_toolbox, {split=}")
+def load_huggingface_dataset(
+    split: str, epochs: int, batch_size: int, shuffle_files: bool, **kwargs
+):
+    print(
+        "Loading HuggingFace dataset from jatic_toolbox, "
+        f"{split=}, {batch_size=}, {epochs=}, {shuffle_files=}"
+    )
     dataset = load_jatic_dataset(
         provider="huggingface",
         dataset_name="cifar10",
         task="image-classification",
         split=split,
     )
-    assert isinstance(dataset, JaticDataset)
-    return VisionDatasetWrapper(dataset)
-
-
-def load_dataset_as_adg(split: str, epochs: int, **kwargs):
-    print(f"Loading dataset from jatic_toolbox, {split=}, {epochs=}")
-    dataset = load_jatic_dataset(
-        provider="huggingface",
-        dataset_name="cifar10",
-        task="image-classification",
-        split=split,
-    )
-    assert isinstance(dataset, JaticDataset)
-    return ArmoryDataGenerator(
-        generator=VisionDatasetWrapper(dataset),
-        size=len(dataset),
-        batch_size=64,
+    return JaticVisionDatasetGenerator(
+        dataset=dataset,
+        batch_size=batch_size,
         epochs=epochs,
+        shuffle=shuffle_files,
+        preprocessing_fn=cifar10_canonical_preprocessing,
+        context=cifar10_context,
+    )
+
+
+def load_torchvision_dataset(
+    split: str, epochs: int, batch_size: int, shuffle_files: bool, **kwargs
+):
+    print(
+        "Loading torchvision dataset from jatic_toolbox, "
+        f"{split=}, {batch_size=}, {epochs=}, {shuffle_files=}"
+    )
+    dataset = load_jatic_dataset(
+        provider="torchvision",
+        dataset_name="CIFAR10",
+        task="image-classification",
+        split=split,
+        root="/tmp/torchvision_datasets",
+        download=True,
+    )
+    return JaticVisionDatasetGenerator(
+        dataset=dataset,
+        batch_size=batch_size,
+        epochs=epochs,
+        shuffle=shuffle_files,
         preprocessing_fn=cifar10_canonical_preprocessing,
         context=cifar10_context,
     )
@@ -100,16 +77,18 @@ def load_dataset_as_adg(split: str, epochs: int, **kwargs):
 def main(argv: list = sys.argv[1:]):
     if len(argv) > 0:
         if "--version" in argv:
-            print(armory.version.__version__)
+            print(f"armory: {armory.version.__version__}")
+            print(f"JATIC-toolbox: {jatic_version}")
             sys.exit(0)
+
+    load_dataset = load_huggingface_dataset
+    if "torchvision" in argv:
+        load_dataset = load_torchvision_dataset
 
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
 
     dataset = Dataset(
-        # To use a JATIC dataset "directly":
-        # function=load_dataset,
-        # To use a JATIC dataset wrapped in ArmoryDataGenerator:
-        function=load_dataset_as_adg,
+        function=load_dataset,
         framework="numpy",
         batch_size=64,
     )
@@ -119,8 +98,6 @@ def main(argv: list = sys.argv[1:]):
         model_kwargs={},
         wrapper_kwargs={},
         weights_file=None,
-        # Can't set this to True when not wrapping the dataset in ArmoryDataGenerator
-        # because then it isn't an ART DataGenerator subclass (and yields an error).
         fit=True,
         fit_kwargs={"nb_epochs": 20},
     )
