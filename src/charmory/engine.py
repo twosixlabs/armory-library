@@ -17,7 +17,10 @@ class Engine:
         results = self.scenario.evaluate()
 
         # what are these for?
-        self.dataset = self.scenario.dataset
+        self.dataset = {
+            "test": self.scenario.test_dataset,
+            "train": self.scenario.train_dataset,
+        }
         self.model = self.scenario.model
 
         return results

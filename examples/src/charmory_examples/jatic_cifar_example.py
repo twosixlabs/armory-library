@@ -18,7 +18,7 @@ from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import Engine
 from charmory.evaluation import (
     Attack,
-    Dataset,
+    DatasetConfig,
     Evaluation,
     Metric,
     ModelConfig,
@@ -88,10 +88,22 @@ def main(argv: list = sys.argv[1:]):
 
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
 
-    dataset = Dataset(
-        function=load_dataset,
-        framework="numpy",
-        batch_size=64,
+    dataset = DatasetConfig(
+        name="CIFAR10",
+        load_train_dataset=partial(
+            load_dataset,
+            split="train",
+            epochs=20,
+            batch_size=64,
+            shuffle_files=True,
+        ),
+        load_test_dataset=partial(
+            load_dataset,
+            split="test",
+            epochs=1,
+            batch_size=64,
+            shuffle_files=False,
+        ),
     )
 
     cifar_model = armory.baseline_models.pytorch.cifar.get_art_model(
