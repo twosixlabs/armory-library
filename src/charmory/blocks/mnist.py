@@ -9,10 +9,11 @@ from charmory.evaluation import (
     Dataset,
     Evaluation,
     Metric,
-    Model,
+    ModelConfig,
     Scenario,
     SysConfig,
 )
+from functools import partial
 
 """These pieces have fully qualified names which allows them to be used
 like
@@ -25,11 +26,14 @@ dataset = Dataset(
     function=armory.data.datasets.mnist, framework="numpy", batch_size=128
 )
 
-model = Model(
-    function=armory.baseline_models.keras.mnist.get_art_model,
-    model_kwargs={},
-    wrapper_kwargs={},
-    weights_file=None,
+model = ModelConfig(
+    name="keras mnist",
+    load_model=partial(
+        armory.baseline_models.keras.mnist.get_art_model,
+        model_kwargs={},
+        wrapper_kwargs={},
+        weights_file=None,
+    )
     fit=True,
     fit_kwargs={"nb_epochs": 20},
 )
