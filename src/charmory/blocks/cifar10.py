@@ -25,7 +25,7 @@ model = ModelConfig(
         armory.baseline_models.pytorch.cifar.get_art_model,
         model_kwargs={},
         wrapper_kwargs={},
-        weights_file=None,
+        weights_path=None,
     ),
     fit=True,
     fit_kwargs={"nb_epochs": 20},
