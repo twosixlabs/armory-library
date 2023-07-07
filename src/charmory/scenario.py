@@ -46,7 +46,7 @@ class Scenario:
         self.results = None
 
         # Set up the model
-        self.model, self.defense_type = self.setup_model()
+        self.model, self.defense_type = self.load_model()
 
         # Load the dataset(s)
         self.dataset = self.load_dataset_config()
@@ -126,9 +126,9 @@ class Scenario:
             self.evaluate_current()
         self.hub.set_context(stage="finished")
 
-    def setup_model(self, defended=True):
+    def load_model(self, defended=True):
         model_config = self.evaluation.model
-        model = model_config.model
+        model = model_config.load_model()
 
         if defended:
             defense_config = self.evaluation.defense or {}
