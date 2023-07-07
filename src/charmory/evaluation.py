@@ -2,6 +2,7 @@
 
 # TODO: review the Optionals with @woodall
 
+from armory.data.datasets import ArmoryDataGenerator
 from art.estimators import BaseEstimator
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Dict, List, Literal, Optional
@@ -22,10 +23,10 @@ class Attack:
 
 
 @dataclass
-class Dataset:
-    function: MethodName
-    framework: Literal["tf", "torch", "numpy"]
-    batch_size: int
+class DatasetConfig:
+    name: str
+    load_test_dataset: Callable[[], ArmoryDataGenerator]
+    load_train_dataset: Optional[Callable[[], ArmoryDataGenerator]] = None
 
 
 @dataclass
@@ -80,7 +81,7 @@ class Evaluation:
     author: Optional[str]
     model: ModelConfig
     scenario: Scenario
-    dataset: Dataset
+    dataset: DatasetConfig
     attack: Optional[Attack] = None
     defense: Optional[Defense] = None
     metric: Optional[Metric] = None
