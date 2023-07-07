@@ -1,6 +1,7 @@
 """
 Example programmatic entrypoint for scenario execution
 """
+from functools import partial
 import json
 from pprint import pprint
 import sys
@@ -95,8 +96,10 @@ def main(argv: list = sys.argv[1:]):
 
     model = ModelConfig(
         name="cifar",
-        model=armory.baseline_models.pytorch.cifar.get_art_model(
-            model_kwargs={}, wrapper_kwargs={}
+        load_model=partial(
+            armory.baseline_models.pytorch.cifar.get_art_model,
+            model_kwargs={},
+            wrapper_kwargs={},
         ),
         fit=True,
         fit_kwargs={"nb_epochs": 20},

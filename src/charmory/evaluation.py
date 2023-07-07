@@ -54,7 +54,7 @@ class Metric:
 @dataclass
 class ModelConfig:
     name: str
-    model: BaseEstimator
+    load_model: Callable[[], BaseEstimator]
     fit: bool = False
     fit_kwargs: StrDict = field(default_factory=dict)
     predict_kwargs: StrDict = field(default_factory=dict)
