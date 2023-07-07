@@ -94,13 +94,19 @@ def main(argv: list = sys.argv[1:]):
         batch_size=64,
     )
 
+    cifar_model = armory.baseline_models.pytorch.cifar.get_art_model(
+        model_kwargs={},
+        wrapper_kwargs={},
+    )
+
     model = ModelConfig(
         name="cifar",
-        load_model=partial(
-            armory.baseline_models.pytorch.cifar.get_art_model,
-            model_kwargs={},
-            wrapper_kwargs={},
-        ),
+        load_model=lambda: cifar_model,
+        # load_model=partial(
+        #     armory.baseline_models.pytorch.cifar.get_art_model,
+        #     model_kwargs={},
+        #     wrapper_kwargs={},
+        # ),
         fit=True,
         fit_kwargs={"nb_epochs": 20},
     )
