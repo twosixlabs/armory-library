@@ -23,10 +23,10 @@ class Attack:
 
 
 @dataclass
-class DatasetConfig:
+class Dataset:
     name: str
-    load_test_dataset: Callable[[], ArmoryDataGenerator]
-    load_train_dataset: Optional[Callable[[], ArmoryDataGenerator]] = None
+    test_dataset: ArmoryDataGenerator
+    train_dataset: Optional[ArmoryDataGenerator] = None
 
 
 @dataclass
@@ -53,9 +53,9 @@ class Metric:
 
 
 @dataclass
-class ModelConfig:
+class Model:
     name: str
-    load_model: Callable[[], BaseEstimator]
+    model: BaseEstimator
     fit: bool = False
     fit_kwargs: StrDict = field(default_factory=dict)
     predict_kwargs: StrDict = field(default_factory=dict)
@@ -79,9 +79,9 @@ class Evaluation:
     name: str
     description: str
     author: Optional[str]
-    model: ModelConfig
+    model: Model
     scenario: Scenario
-    dataset: DatasetConfig
+    dataset: Dataset
     attack: Optional[Attack] = None
     defense: Optional[Defense] = None
     metric: Optional[Metric] = None
