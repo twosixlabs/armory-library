@@ -13,7 +13,6 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
-from functools import partial
 
 """These pieces have fully qualified names which allows them to be used
 like

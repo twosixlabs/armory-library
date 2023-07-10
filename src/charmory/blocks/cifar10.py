@@ -13,7 +13,6 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
-from functools import partial
 
 dataset = Dataset(
     name="CIFAR10",
