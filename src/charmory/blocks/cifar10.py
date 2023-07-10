@@ -9,20 +9,31 @@ from charmory.evaluation import (
     Dataset,
     Evaluation,
     Metric,
-    ModelConfig,
+    Model,
     Scenario,
     SysConfig,
 )
 from functools import partial
 
 dataset = Dataset(
-    function=armory.data.datasets.cifar10, framework="numpy", batch_size=64
+    name="CIFAR10",
+    train_dataset=armory.data.datasets.cifar10(
+        split="train",
+        epochs=20,
+        batch_size=64,
+        shuffle_files=True,
+    ),
+    test_dataset=armory.data.datasets.cifar10(
+        split="test",
+        epochs=1,
+        batch_size=64,
+        shuffle_files=False,
+    ),
 )
 
-model = ModelConfig(
+model = Model(
     name="pytorch cifar",
-    load_model=partial(
-        armory.baseline_models.pytorch.cifar.get_art_model,
+    model=armory.baseline_models.pytorch.cifar.get_art_model(
         model_kwargs={},
         wrapper_kwargs={},
         weights_path=None,

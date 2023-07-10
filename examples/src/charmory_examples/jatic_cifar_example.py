@@ -18,10 +18,10 @@ from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import Engine
 from charmory.evaluation import (
     Attack,
-    DatasetConfig,
+    Dataset,
     Evaluation,
     Metric,
-    ModelConfig,
+    Model,
     Scenario,
     SysConfig,
 )
@@ -88,17 +88,15 @@ def main(argv: list = sys.argv[1:]):
 
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
 
-    dataset = DatasetConfig(
+    dataset = Dataset(
         name="CIFAR10",
-        load_train_dataset=partial(
-            load_dataset,
+        train_dataset=load_dataset(
             split="train",
             epochs=20,
             batch_size=64,
             shuffle_files=True,
         ),
-        load_test_dataset=partial(
-            load_dataset,
+        test_dataset=load_dataset(
             split="test",
             epochs=1,
             batch_size=64,
@@ -111,14 +109,9 @@ def main(argv: list = sys.argv[1:]):
         wrapper_kwargs={},
     )
 
-    model = ModelConfig(
+    model = Model(
         name="cifar",
-        load_model=lambda: cifar_model,
-        # load_model=partial(
-        #     armory.baseline_models.pytorch.cifar.get_art_model,
-        #     model_kwargs={},
-        #     wrapper_kwargs={},
-        # ),
+        model=cifar_model,
         fit=True,
         fit_kwargs={"nb_epochs": 20},
     )
@@ -188,9 +181,10 @@ def main(argv: list = sys.argv[1:]):
     )
 
     print("=" * 64)
-    print(cifar_engine.dataset)
+    print(dataset.train_dataset)
+    print(dataset.test_dataset)
     print("-" * 64)
-    print(cifar_engine.model)
+    print(model)
 
     print("=" * 64)
     print("CIFAR10 Experiment Complete!")
