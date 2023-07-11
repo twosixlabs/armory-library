@@ -2,10 +2,11 @@
 
 # TODO: review the Optionals with @woodall
 
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Literal, Optional
+
 from armory.data.datasets import ArmoryDataGenerator
 from art.estimators import BaseEstimator
-from dataclasses import asdict, dataclass, field
-from typing import Any, Callable, Dict, List, Literal, Optional
 
 MethodName = Callable[
     ..., Any
@@ -86,21 +87,6 @@ class Evaluation:
     defense: Optional[Defense] = None
     metric: Optional[Metric] = None
     sysconfig: Optional[SysConfig] = None
-
-    def asdict(self) -> dict:
-        return asdict(self)
-
-    def flatten(self):
-        """return all parameters as (dot.path, value) pairs for externalization"""
-
-        def flatten_dict(root, path):
-            for key, value in root.items():
-                if isinstance(value, dict):
-                    yield from flatten_dict(value, path + [key])
-                else:
-                    yield ".".join(path + [key]), value
-
-        return [x for x in flatten_dict(self.asdict(), [])]
 
 
 # List of old armory environmental variables used in evaluations
