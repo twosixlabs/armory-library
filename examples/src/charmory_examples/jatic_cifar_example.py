@@ -1,7 +1,6 @@
 """
 Example programmatic entrypoint for scenario execution
 """
-from functools import partial
 import json
 from pprint import pprint
 import sys
