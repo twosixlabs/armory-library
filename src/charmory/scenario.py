@@ -9,11 +9,13 @@ from tqdm import tqdm
 
 import armory
 from armory import metrics
+from armory.data.datasets import ArmoryDataGenerator
 from armory.instrument import MetricsLogger, del_globals, get_hub, get_probe
 from armory.instrument.export import ExportMeter, PredictionMeter
 from armory.logs import log
 from armory.metrics import compute
 from armory.utils import config_loading
+from art.estimators import BaseEstimator
 import armory.version
 from charmory.evaluation import Evaluation
 
@@ -32,8 +34,6 @@ class Scenario:
         check_run: bool = False,
     ):
         self.check_run = check_run
-        self.model = None
-        self.dataset = {"test": None, "train": None}
         self.evaluation = evaluation
         self.i = -1
         self.num_eval_batches = None
@@ -46,21 +46,16 @@ class Scenario:
         self.export_subdir = "armory"
         self.results = None
 
-        # Load the model
-        self._loaded_model = self.load_model()
-        self.model = self._loaded_model["model"]
-        self.model_name = f"{self.evaluation.model.function.__module__}.{self.evaluation.model.function.__name__}"
-        self.use_fit = self._loaded_model["use_fit"]
-        self.fit_kwargs = self._loaded_model["fit_kwargs"]
-        self.predict_kwargs = self._loaded_model["predict_kwargs"]
-        self.defense_type = self._loaded_model["defense_type"]
+        # Set up the model
+        self.model = self.get_model_from_evaluation()
+        self.defense_type = self.apply_defense_to_model()
 
-        # Load the dataset(s)
-        self.dataset = self.load_dataset_config()
+        # Set up the dataset(s)
+        self.test_dataset = self.get_test_dataset_from_evaluation()
+        self.train_dataset = self.maybe_get_train_dataset_from_evaluation()
+
         if self.evaluation.model.fit:
-            self.train_dataset = self.dataset["train"]
             self.fit()
-        self.test_dataset = self.dataset["test"]
 
         # Load the attack
         self.load_attack()
@@ -75,18 +70,6 @@ class Scenario:
 
         # Load Export Meters
         self.load_export_meters()
-
-    def load_dataset_config(self):
-        _dataset = {"test": None, "train": None}
-
-        eval_dataset = self.evaluation.dataset
-        use_fit = self.evaluation.model.fit
-
-        _dataset["test"] = self.load_dataset(eval_dataset)
-        if use_fit:
-            _dataset["train"] = self.load_train_dataset()
-
-        return _dataset
 
     def evaluate(self):
         """
@@ -133,19 +116,45 @@ class Scenario:
             self.evaluate_current()
         self.hub.set_context(stage="finished")
 
-    def load_model(self, defended=True):
-        model_config = self.evaluation.model
-        model = config_loading.load_model(model_config)
+    def get_test_dataset_from_evaluation(self):
+        test_dataset = self.evaluation.dataset.test_dataset
+        assert isinstance(
+            test_dataset, ArmoryDataGenerator
+        ), "Evaluation dataset's test_dataset is not an instance of ArmoryDataGenerator"
+        return test_dataset
 
-        if defended:
+    def maybe_get_train_dataset_from_evaluation(self):
+        if self.evaluation.model.fit:
+            assert self.evaluation.dataset.train_dataset is not None, (
+                "Requested to train the model but the evaluation dataset does not "
+                "provide a train_dataset"
+            )
+            train_dataset = self.evaluation.dataset.train_dataset
+            assert isinstance(
+                train_dataset, ArmoryDataGenerator
+            ), "Evaluation dataset's train_dataset is not an instance of ArmoryDataGenerator"
+            return train_dataset
+        return None
+
+    def get_model_from_evaluation(self):
+        model = self.evaluation.model.model
+        assert isinstance(
+            model, BaseEstimator
+        ), "Evaluation model is not an instance of BaseEstimator"
+        return model
+
+    def apply_defense_to_model(self):
+        if self.evaluation.defense is not None:
             defense_config = self.evaluation.defense or {}
             defense_type = defense_config.get("type")
             if defense_type in ["Preprocessor", "Postprocessor"]:
                 log.info(f"Applying internal {defense_type} defense to model")
-                model = config_loading.load_defense_internal(defense_config, model)
+                self.model = config_loading.load_defense_internal(
+                    defense_config, self.model
+                )
             elif defense_type == "Trainer":
                 self.trainer = config_loading.load_defense_wrapper(
-                    defense_config, model
+                    defense_config, self.model
                 )
             elif defense_type is not None:
                 raise ValueError(f"{defense_type} not currently supported")
@@ -153,37 +162,19 @@ class Scenario:
             log.info("Not loading any defenses for model")
             defense_type = None
 
-        fit_kwargs_val = model_config.fit_kwargs or {}
-
-        predict_kwargs_val = {}
-
-        return {
-            "model": model,
-            "defense_type": defense_type,
-            "use_fit": model_config.fit,
-            "fit_kwargs": fit_kwargs_val,
-            "predict_kwargs": predict_kwargs_val,
-        }
-
-    def load_train_dataset(self, train_split_default="train"):
-        dataset_config = self.evaluation.dataset
-        log.info("Loading train dataset...")
-
-        return config_loading.load_dataset(
-            dataset_config,
-            epochs=self.fit_kwargs["nb_epochs"],
-            split=train_split_default,
-            check_run=self.check_run,
-            shuffle_files=True,
-        )
+        return defense_type
 
     def fit(self):
         if self.defense_type == "Trainer":
             log.info(f"Training with {type(self.trainer)} Trainer defense...")
-            self.trainer.fit_generator(self.train_dataset, **self.fit_kwargs)
+            self.trainer.fit_generator(
+                self.train_dataset, **self.evaluation.model.fit_kwargs
+            )
         else:
-            log.info(f"Fitting model {self.model_name}...")
-            self.model.fit_generator(self.train_dataset, **self.fit_kwargs)
+            log.info("Fitting model ...")
+            self.model.fit_generator(
+                self.train_dataset, **self.evaluation.model.fit_kwargs
+            )
 
     def load_attack(self):
         attack_config = self.evaluation.attack
@@ -238,23 +229,6 @@ class Scenario:
             self.label_targeter = label_targeter
         self.use_label = use_label
         self.generate_kwargs = generate_kwargs
-
-    def load_dataset(self, dataset_config=None, eval_split_default="test"):
-        dataset_config = (
-            self.evaluation.dataset if dataset_config is None else dataset_config
-        )
-        eval_split = eval_split_default
-
-        # Evaluate the ART model on benign test examples
-        log.info("Loading test dataset...")
-        return config_loading.load_dataset(
-            dataset_config,
-            epochs=1,
-            split=eval_split,
-            num_batches=self.num_eval_batches,
-            check_run=self.check_run,
-            shuffle_files=False,
-        )
 
     def load_metrics(self):
         if not hasattr(self, "targeted"):
@@ -327,7 +301,7 @@ class Scenario:
         x, y = self.x, self.y
         x.flags.writeable = False
         with self.profiler.measure("Inference"):
-            y_pred = self.model.predict(x, **self.predict_kwargs)
+            y_pred = self.model.predict(x, **self.evaluation.model.predict_kwargs)
         self.y_pred = y_pred
         self.probe.update(y_pred=y_pred)
 
@@ -372,7 +346,9 @@ class Scenario:
         else:
             # Ensure that input sample isn't overwritten by model
             x_adv.flags.writeable = False
-            y_pred_adv = self.model.predict(x_adv, **self.predict_kwargs)
+            y_pred_adv = self.model.predict(
+                x_adv, **self.evaluation.model.predict_kwargs
+            )
 
         self.probe.update(x_adv=x_adv, y_pred_adv=y_pred_adv)
         if self.targeted:

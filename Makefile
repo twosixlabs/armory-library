@@ -51,7 +51,6 @@ define ExecuteTests
 
 	echo "🤞 Executing configuration tests..."
 	python -m pytest -c pyproject.toml -s ./tests/test_attack_object.py
-	python -m pytest -c pyproject.toml -s ./tests/test_dataset_object.py
 	python -m pytest -c pyproject.toml -s ./tests/test_evaluation.py
 
 	echo "🤞 Executing unit tests..."
