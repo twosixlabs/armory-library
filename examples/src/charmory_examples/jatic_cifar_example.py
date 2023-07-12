@@ -88,16 +88,29 @@ def main(argv: list = sys.argv[1:]):
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
 
     dataset = Dataset(
-        function=load_dataset,
-        framework="numpy",
-        batch_size=64,
+        name="CIFAR10",
+        train_dataset=load_dataset(
+            split="train",
+            epochs=20,
+            batch_size=64,
+            shuffle_files=True,
+        ),
+        test_dataset=load_dataset(
+            split="test",
+            epochs=1,
+            batch_size=64,
+            shuffle_files=False,
+        ),
+    )
+
+    cifar_model = armory.baseline_models.pytorch.cifar.get_art_model(
+        model_kwargs={},
+        wrapper_kwargs={},
     )
 
     model = Model(
-        function=armory.baseline_models.pytorch.cifar.get_art_model,
-        model_kwargs={},
-        wrapper_kwargs={},
-        weights_file=None,
+        name="cifar",
+        model=cifar_model,
         fit=True,
         fit_kwargs={"nb_epochs": 20},
     )
@@ -167,9 +180,10 @@ def main(argv: list = sys.argv[1:]):
     )
 
     print("=" * 64)
-    print(cifar_engine.dataset)
+    print(dataset.train_dataset)
+    print(dataset.test_dataset)
     print("-" * 64)
-    print(cifar_engine.model)
+    print(model)
 
     print("=" * 64)
     print("CIFAR10 Experiment Complete!")

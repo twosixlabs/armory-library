@@ -2,8 +2,11 @@
 
 # TODO: review the Optionals with @woodall
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Literal, Optional
+
+from armory.data.datasets import ArmoryDataGenerator
+from art.estimators import BaseEstimator
 
 MethodName = Callable[
     ..., Any
@@ -22,9 +25,9 @@ class Attack:
 
 @dataclass
 class Dataset:
-    function: MethodName
-    framework: Literal["tf", "torch", "numpy"]
-    batch_size: int
+    name: str
+    test_dataset: ArmoryDataGenerator
+    train_dataset: Optional[ArmoryDataGenerator] = None
 
 
 @dataclass
@@ -52,12 +55,11 @@ class Metric:
 
 @dataclass
 class Model:
-    function: MethodName
-    model_kwargs: StrDict
-    wrapper_kwargs: StrDict
-    weights_file: Optional[List[str]]
-    fit: bool
-    fit_kwargs: StrDict
+    name: str
+    model: BaseEstimator
+    fit: bool = False
+    fit_kwargs: StrDict = field(default_factory=dict)
+    predict_kwargs: StrDict = field(default_factory=dict)
 
 
 @dataclass
@@ -85,21 +87,6 @@ class Evaluation:
     defense: Optional[Defense] = None
     metric: Optional[Metric] = None
     sysconfig: Optional[SysConfig] = None
-
-    def asdict(self) -> dict:
-        return asdict(self)
-
-    def flatten(self):
-        """return all parameters as (dot.path, value) pairs for externalization"""
-
-        def flatten_dict(root, path):
-            for key, value in root.items():
-                if isinstance(value, dict):
-                    yield from flatten_dict(value, path + [key])
-                else:
-                    yield ".".join(path + [key]), value
-
-        return [x for x in flatten_dict(self.asdict(), [])]
 
 
 # List of old armory environmental variables used in evaluations
