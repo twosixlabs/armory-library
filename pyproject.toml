@@ -49,10 +49,17 @@ dependencies = [
     "torch >= 2.0.0",
     "torchaudio >= 2.0.1",
     "torchvision >= 0.15.1",
+    "pytorch-lightning",
 
     # tensorflow
     "tf-models-official",
     "tensorflow >= 2.11.0",
+
+    "jatic_toolbox @ git+https://gitlab.jatic.net/jatic/cdao/jatic-toolbox.git",
+    # HuggingFace
+    "datasets",
+    "huggingface_hub",
+    "transformers",
 ]
 
 [project.urls]
