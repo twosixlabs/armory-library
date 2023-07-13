@@ -692,6 +692,24 @@ def canonical_image_preprocess(context, batch):
 
     return batch
 
+def pokemon_image_preprocess(context, batch):
+    #commented out preprocess will need to rewrite later
+    '''
+    check_shapes(batch.shape, (None,) + context.x_shape)
+    if batch.dtype != context.input_type:
+        raise ValueError("input batch dtype {batch.dtype} != {context.input_type}")
+    assert batch.min() >= context.input_min
+    assert batch.max() <= context.input_max
+
+    batch = batch.astype(context.output_type) / context.quantization
+
+    if batch.dtype != context.output_type:
+        raise ValueError("output batch dtype {batch.dtype} != {context.output_type}")
+    assert batch.min() >= context.output_min
+    assert batch.max() <= context.output_max
+    '''
+    return batch
+
 
 def canonical_variable_image_preprocess(context, batch):
     """
@@ -742,7 +760,10 @@ coco_context = ImageContext(x_shape=(None, None, 3))
 ucf101_context = VideoContext(x_shape=(None, None, None, 3), frame_rate=25)
 carla_obj_det_single_modal_context = ImageContext(x_shape=(960, 1280, 3))
 carla_obj_det_multimodal_context = ImageContext(x_shape=(960, 1280, 6))
+pokemon_context = ImageContext(x_shape=(244, 244, 3))
 
+def pokemon_preprocessing(batch):
+    return pokemon_image_preprocess(pokemon_context, batch)
 
 def mnist_canonical_preprocessing(batch):
     return canonical_image_preprocess(mnist_context, batch)

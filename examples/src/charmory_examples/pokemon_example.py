@@ -6,11 +6,14 @@ from pprint import pprint
 import sys
 
 import art.attacks.evasion
+from art.estimators.classification import PyTorchClassifier
+import torch
+import torch.nn as nn
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox import load_dataset as load_jatic_dataset
 
-import armory.baseline_models.pytorch.cifar
-from armory.data.datasets import cifar10_canonical_preprocessing, cifar10_context
+import armory.baseline_models.pytorch.pokemon
+from armory.data.datasets import cifar10_canonical_preprocessing, cifar10_context, pokemon_context, pokemon_preprocessing
 import armory.scenarios.image_classification
 import armory.version
 from charmory.data import JaticVisionDatasetGenerator
@@ -24,6 +27,7 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
+from pdb import set_trace
 
 
 def load_huggingface_dataset(
@@ -35,45 +39,21 @@ def load_huggingface_dataset(
     )
     dataset = load_jatic_dataset(
         provider="huggingface",
-        #dataset_name="keremberke/pokemon-classification",
-        dataset_name="food101",
+        dataset_name="keremberke/pokemon-classification",
         task="image-classification",
+        name='full',
         split=split,
-        #name="mini"
     )
     return JaticVisionDatasetGenerator(
         dataset=dataset,
         batch_size=batch_size,
         epochs=epochs,
         shuffle=shuffle_files,
-        preprocessing_fn=cifar10_canonical_preprocessing,
-        context=cifar10_context,
+        preprocessing_fn=pokemon_preprocessing,
+        context=pokemon_context,
     )
 
 
-def load_torchvision_dataset(
-    split: str, epochs: int, batch_size: int, shuffle_files: bool, **kwargs
-):
-    print(
-        "Loading torchvision dataset from jatic_toolbox, "
-        f"{split=}, {batch_size=}, {epochs=}, {shuffle_files=}"
-    )
-    dataset = load_jatic_dataset(
-        provider="torchvision",
-        dataset_name="CIFAR10",
-        task="image-classification",
-        split=split,
-        root="/tmp/torchvision_datasets",
-        download=True,
-    )
-    return JaticVisionDatasetGenerator(
-        dataset=dataset,
-        batch_size=batch_size,
-        epochs=epochs,
-        shuffle=shuffle_files,
-        preprocessing_fn=cifar10_canonical_preprocessing,
-        context=cifar10_context,
-    )
 
 
 def main(argv: list = sys.argv[1:]):
@@ -83,26 +63,40 @@ def main(argv: list = sys.argv[1:]):
             print(f"JATIC-toolbox: {jatic_version}")
             sys.exit(0)
 
-    load_dataset = load_huggingface_dataset
-    if "torchvision" in argv:
-        load_dataset = load_torchvision_dataset
+
 
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
 
     dataset = Dataset(
-        function=load_dataset,
-        framework="numpy",
-        batch_size=64,
+        name="POKEMON",
+        train_dataset=load_huggingface_dataset(
+            split="train",
+            epochs=20,
+            batch_size=64,
+            shuffle_files=True,
+        ),
+        test_dataset=load_huggingface_dataset(
+            split="test",
+            epochs=1,
+            batch_size=64,
+            shuffle_files=False,
+        ),
+    )
+    #set_trace()
+
+    #
+    pokemon_model = armory.baseline_models.pytorch.pokemon.get_art_model(
+        model_kwargs={},
+        wrapper_kwargs={},
     )
 
     model = Model(
-        function=armory.baseline_models.pytorch.cifar.get_art_model,
-        model_kwargs={},
-        wrapper_kwargs={},
-        weights_file=None,
+        name="yolo",
+        model=pokemon_model,
         fit=True,
         fit_kwargs={"nb_epochs": 20},
     )
+    
 
     ###
     # The rest of this file was directly copied from the existing cifar example
@@ -142,8 +136,8 @@ def main(argv: list = sys.argv[1:]):
     sysconfig = SysConfig(gpus=["all"], use_gpu=True)
 
     baseline = Evaluation(
-        name="cifar_baseline",
-        description="Baseline cifar10 image classification",
+        name="yolo_pokemon",
+        description="Baseline Pokemon image classification",
         author="msw@example.com",
         dataset=dataset,
         model=model,
@@ -155,9 +149,9 @@ def main(argv: list = sys.argv[1:]):
     )
 
     print(f"Starting Demo for {baseline.name}")
-
-    cifar_engine = Engine(baseline)
-    results = cifar_engine.run()
+    #set_trace()
+    yolo_engine = Engine(baseline)
+    results = yolo_engine.run()
 
     print("=" * 64)
     pprint(baseline)
@@ -169,12 +163,13 @@ def main(argv: list = sys.argv[1:]):
     )
 
     print("=" * 64)
-    print(cifar_engine.dataset)
+    print(dataset.train_dataset)
+    print(dataset.test_dataset)
     print("-" * 64)
-    print(cifar_engine.model)
+    print(model)
 
     print("=" * 64)
-    print("CIFAR10 Experiment Complete!")
+    print("Pokemon Experiment Complete!")
     return 0
 
 
