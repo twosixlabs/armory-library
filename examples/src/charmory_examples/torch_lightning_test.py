@@ -55,15 +55,15 @@ class FoodClassifier(pl.LightningModule):
             ]
         )
         self.training_data = datasets.Food101(
-            root="data", split="train", download=False, transform=transform
+            root="/home/rahul/cache", split="train", download=True, transform=transform
         )
         self.test_data = datasets.Food101(
-            root="data", split="test", download=False, transform=transform
+            root="/home/rahul/cache", split="test", download=True, transform=transform
         )
         # Alter the download fields and the root to where the dataset is downloaded.
 
     def train_dataloader(self):
-        half_data = list(range(0, len(self.training_data), 2))
+        # half_data = list(range(0, len(self.training_data), 2))
         # third_data = list(range(0, len(self.training_data), 3))
         # fourth_data = list(range(0, len(self.training_data), 4))
         # fifth_data = list(range(0, len(self.training_data), 5))
@@ -72,8 +72,8 @@ class FoodClassifier(pl.LightningModule):
         # eighth_data = list(range(0, len(self.training_data), 8))
         # ninth_data = list(range(0, len(self.training_data), 9))
         # tenth_data = list(range(0, len(self.training_data), 10))
-        half_training_set = torch.utils.data.Subset(self.training_data, half_data)
-        return DataLoader(half_training_set, shuffle=True)
+        # half_training_set = torch.utils.data.Subset(self.training_data, half_data)
+        return DataLoader(self.training_data, shuffle=True)
 
     def test_dataloader(self):
         return DataLoader(self.test_data, shuffle=True)
@@ -91,14 +91,14 @@ class FoodClassifier(pl.LightningModule):
         return float(self.correct_predictions / 25250)
 
 
-trainer = pl.Trainer(max_epochs=1, accelerator="auto", devices="auto", strategy="auto")
+trainer = pl.Trainer(max_epochs=5, accelerator="auto", devices="auto", strategy="auto")
 model = FoodClassifier()
 trainer.fit(model)
 trainer.test(model)
 print(model.get_testing_acc())
 """
 checkpoint_path = "1_epoch_full_train.ckpt"
-trained_model = model.load_from_checkpoint(checkpoint_path
+trained_model = model.load_from_checkpoint(checkpoint_path)
 trainer.test(trained_model)
 print(trained_model.get_testing_acc())
 """

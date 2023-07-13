@@ -742,6 +742,22 @@ coco_context = ImageContext(x_shape=(None, None, 3))
 ucf101_context = VideoContext(x_shape=(None, None, None, 3), frame_rate=25)
 carla_obj_det_single_modal_context = ImageContext(x_shape=(960, 1280, 3))
 carla_obj_det_multimodal_context = ImageContext(x_shape=(960, 1280, 6))
+food101_context = ImageContext(x_shape=(None, None, 3))
+
+
+def food101_canonical_preprocessing(batch):
+    img_out = []
+    for image in batch:
+        if image.shape == (512, 512, 3):
+            img_out.append(image)
+        else:
+            dim0 = image.shape[0]
+            dim1 = image.shape[1]
+            pad_width = ((0, 512 - dim0), (0, 512 - dim1), (0, 0))
+
+            img_out.append(np.pad(image, pad_width, "constant", constant_values=0))
+
+    return np.array(img_out, dtype=np.float32)
 
 
 def mnist_canonical_preprocessing(batch):
