@@ -1,15 +1,15 @@
-import art
-import art.attacks.evasion
-
-# import msw.a
-import pytest
+from unittest.mock import MagicMock
 
 import armory
 import armory.baseline_models.keras.mnist
 import armory.data.datasets
 import armory.scenarios
-from charmory.blocks import mnist
+import art
+import art.attacks.evasion
 import charmory.evaluation as evaluation
+
+# import msw.a
+import pytest
 
 
 def test_initializers():
@@ -27,8 +27,12 @@ def test_initializers():
 
     # Changed the function given in the dataset instantiation from armory.load_mnist (which doesnt exist) to armory.data.datasets.mnist and given that all the classes
     # are simply being instantiated to verify that they dont fault upon instantation this should be fine - RN
-    dataset = evaluation.Dataset(armory.data.datasets.mnist, "tf", 128)
-    assert dataset.framework == "tf"
+    dataset = evaluation.Dataset(
+        name="test",
+        test_dataset=armory.data.datasets.mnist(
+            batch_size=128,
+        ),
+    )
 
     with pytest.raises(TypeError):
         # I changed the function given in the defense object instantiation from armory.some_defense (which doesnt exist) to armory.__path__ which does exist - RN
@@ -48,16 +52,11 @@ def test_initializers():
     assert metric.profiler_type == "basic"
 
     model = evaluation.Model(
-        armory.baseline_models.__path__,
-        weights_file=None,
-        wrapper_kwargs={},
-        model_kwargs={},
+        name="test",
+        model=MagicMock(),
         fit=True,
         fit_kwargs={},
     )
-    # Changed the model.function param from msw.a.model (which doesnt exist) to armory.baseline_models.__path__ as the whole purpose of the function is to test
-    # whether instantiating the objects works at all.
-    assert model.function == armory.baseline_models.__path__
 
     scenario = evaluation.Scenario(armory.scenarios.__path__, {})
     # Changed the scenario.function param from armory.scenarios.image_classification (which doesnt exist) to armory.scenario.__path__ as the whole purpose of the function
@@ -84,54 +83,3 @@ def test_initializers():
         sysconfig=sysconfig,
     )
     assert exp.name == "null experiment"
-
-
-def test_mnist_experiment():
-    exp = mnist.baseline
-
-    assert exp.asdict() == {
-        "name": "mnist_baseline",
-        "description": "derived from mnist_baseline.json",
-        "author": "msw@example.com",
-        "model": {
-            "function": armory.baseline_models.keras.mnist.get_art_model,
-            "model_kwargs": {},
-            "wrapper_kwargs": {},
-            "weights_file": None,
-            "fit": True,
-            "fit_kwargs": {"nb_epochs": 20},
-        },
-        "scenario": {
-            "function": armory.scenarios.image_classification.ImageClassificationTask,
-            "kwargs": {},
-        },
-        "dataset": {
-            "function": armory.data.datasets.mnist,
-            "framework": "numpy",
-            "batch_size": 128,
-        },
-        "attack": {
-            "function": art.attacks.evasion.FastGradientMethod,
-            "kwargs": {
-                "batch_size": 1,
-                "eps": 0.2,
-                "eps_step": 0.1,
-                "minimal": False,
-                "num_random_init": 0,
-                "targeted": False,
-            },
-            "knowledge": "white",
-            "use_label": True,
-            "type": None,
-        },
-        "defense": None,
-        "metric": {
-            "profiler_type": "basic",
-            "supported_metrics": ["accuracy"],
-            "perturbation": ["linf"],
-            "task": ["categorical_accuracy"],
-            "means": True,
-            "record_metric_per_sample": False,
-        },
-        "sysconfig": {"gpus": ["all"], "use_gpu": True},
-    }
