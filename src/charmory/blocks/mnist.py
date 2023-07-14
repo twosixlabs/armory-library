@@ -22,14 +22,28 @@ like
 """
 
 dataset = Dataset(
-    function=armory.data.datasets.mnist, framework="numpy", batch_size=128
+    name="MNIST",
+    train_dataset=armory.data.datasets.mnist(
+        split="train",
+        epochs=20,
+        batch_size=128,
+        shuffle_files=True,
+    ),
+    test_dataset=armory.data.datasets.mnist(
+        split="test",
+        epochs=1,
+        batch_size=128,
+        shuffle_files=False,
+    ),
 )
 
 model = Model(
-    function=armory.baseline_models.keras.mnist.get_art_model,
-    model_kwargs={},
-    wrapper_kwargs={},
-    weights_file=None,
+    name="keras mnist",
+    model=armory.baseline_models.keras.mnist.get_art_model(
+        model_kwargs={},
+        wrapper_kwargs={},
+        weights_path=None,
+    ),
     fit=True,
     fit_kwargs={"nb_epochs": 20},
 )

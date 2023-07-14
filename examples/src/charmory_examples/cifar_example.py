@@ -5,13 +5,11 @@ import json
 from pprint import pprint
 import sys
 
-import art.attacks.evasion
-
 import armory.baseline_models.pytorch.cifar
 import armory.data.datasets
 import armory.scenarios.image_classification
 import armory.version
-from charmory.blocks import cifar10, mnist  # noqa: F401
+import art.attacks.evasion
 from charmory.engine import Engine
 from charmory.evaluation import (
     Attack,
@@ -33,14 +31,28 @@ def main(argv: list = sys.argv[1:]):
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
 
     dataset = Dataset(
-        function=armory.data.datasets.cifar10, framework="numpy", batch_size=64
+        name="CIFAR10",
+        train_dataset=armory.data.datasets.cifar10(
+            split="train",
+            epochs=20,
+            batch_size=64,
+            shuffle_files=True,
+        ),
+        test_dataset=armory.data.datasets.cifar10(
+            split="test",
+            epochs=1,
+            batch_size=64,
+            shuffle_files=False,
+        ),
     )
 
     model = Model(
-        function=armory.baseline_models.pytorch.cifar.get_art_model,
-        model_kwargs={},
-        wrapper_kwargs={},
-        weights_file=None,
+        name="cifar",
+        model=armory.baseline_models.pytorch.cifar.get_art_model(
+            model_kwargs={},
+            wrapper_kwargs={},
+            weights_path=None,
+        ),
         fit=True,
         fit_kwargs={"nb_epochs": 20},
     )
@@ -108,9 +120,10 @@ def main(argv: list = sys.argv[1:]):
     )
 
     print("=" * 64)
-    print(cifar_engine.dataset)
+    print(dataset.train_dataset)
+    print(dataset.test_dataset)
     print("-" * 64)
-    print(cifar_engine.model)
+    print(model.model)
 
     print("=" * 64)
     print("CIFAR10 Experiment Complete!")
