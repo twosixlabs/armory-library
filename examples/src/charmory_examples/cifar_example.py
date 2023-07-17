@@ -5,11 +5,12 @@ import json
 from pprint import pprint
 import sys
 
+import art.attacks.evasion
+
 import armory.baseline_models.pytorch.cifar
 import armory.data.datasets
 import armory.scenarios.image_classification
 import armory.version
-import art.attacks.evasion
 from charmory.engine import Engine
 from charmory.evaluation import (
     Attack,
@@ -77,6 +78,7 @@ def main(argv: list = sys.argv[1:]):
     scenario = Scenario(
         function=armory.scenarios.image_classification.ImageClassificationTask,
         kwargs={},
+        export_batches=True,
     )
 
     metric = Metric(

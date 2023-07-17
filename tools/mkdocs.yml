@@ -24,3 +24,4 @@ nav:
   - Home: index.md
   - Getting Started: getting_started.md
   - Developers Guide: developers/README.md
+  - Exporting Data: exporting_data.md

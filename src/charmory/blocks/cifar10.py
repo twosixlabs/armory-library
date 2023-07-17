@@ -62,7 +62,9 @@ attack = Attack(
 scenario = Scenario(
     function=armory.scenarios.image_classification.ImageClassificationTask,
     kwargs={},
+    export_batches=True,
 )
+
 
 metric = Metric(
     profiler_type="basic",

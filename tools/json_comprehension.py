@@ -68,7 +68,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    json_files = list(Path(args.directory).glob("*.json"))
+    json_files = list(Path(args.directory).rglob("*.json"))
     unique_keys = process_json_files(json_files)
 
     pprint(unique_keys, stream=args.output)
