@@ -33,7 +33,7 @@ developer =[
 ]
 
 jatic = [
-    "jatic_toolbox @ git+https://gitlab.jatic.net/jatic/cdao/jatic-toolbox.git",
+    "jatic_toolbox @ git+ssh://git@gitlab.jatic.net/jatic/cdao/jatic-toolbox.git@v0.2.0rc1",
     # HuggingFace
     "datasets",
     "huggingface_hub",
