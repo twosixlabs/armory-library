@@ -68,8 +68,6 @@ class Metric:
 class Model:
     name: str
     model: BaseEstimator
-    fit: bool = False
-    fit_kwargs: Dict[str, Any] = field(default_factory=dict)
     predict_kwargs: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -104,10 +102,3 @@ class Evaluation:
     defense: Optional[Defense] = None
     metric: Optional[Metric] = None
     sysconfig: Optional[SysConfig] = None
-
-    def __post_init__(self):
-        if self.model.fit:
-            assert self.dataset.train_dataset is not None, (
-                "Requested to train the model but the evaluation dataset does not "
-                "provide a train_dataset"
-            )
