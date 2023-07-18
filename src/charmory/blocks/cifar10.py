@@ -37,8 +37,6 @@ model = Model(
         wrapper_kwargs={},
         weights_path=None,
     ),
-    fit=True,
-    fit_kwargs={"nb_epochs": 20},
 )
 
 attack = Attack(

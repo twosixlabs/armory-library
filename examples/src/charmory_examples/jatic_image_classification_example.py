@@ -212,8 +212,6 @@ def main():
     model = Model(
         name="ResNet-18",
         model=loaded_model,
-        fit=True,
-        fit_kwargs={"nb_epochs": TRAINING_EPOCHS},
     )
 
     ###
@@ -269,6 +267,7 @@ def main():
     print(f"Starting Demo for {baseline.name}")
 
     cifar_engine = Engine(baseline)
+    cifar_engine.train(nb_epochs=TRAINING_EPOCHS)
     results = cifar_engine.run()
 
     print("=" * 64)
