@@ -205,7 +205,6 @@ def main():
 
     dataset = Dataset(
         name="CIFAR10",
-        train_dataset=train_dataset,
         test_dataset=test_dataset,
     )
 
@@ -266,8 +265,10 @@ def main():
 
     print(f"Starting Demo for {baseline.name}")
 
+    print("Training model...")
+    model.model.fit_generator(train_dataset, nb_epochs=20)
+
     cifar_engine = Engine(baseline)
-    cifar_engine.train(nb_epochs=TRAINING_EPOCHS)
     results = cifar_engine.run()
 
     print("=" * 64)
@@ -280,8 +281,7 @@ def main():
     )
 
     print("=" * 64)
-    print(dataset.train_dataset)
-    print(dataset.test_dataset)
+    print(dataset)
     print("-" * 64)
     print(model)
 

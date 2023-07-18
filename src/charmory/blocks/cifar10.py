@@ -16,12 +16,6 @@ from charmory.evaluation import (
 
 dataset = Dataset(
     name="CIFAR10",
-    train_dataset=armory.data.datasets.cifar10(
-        split="train",
-        epochs=20,
-        batch_size=64,
-        shuffle_files=True,
-    ),
     test_dataset=armory.data.datasets.cifar10(
         split="test",
         epochs=1,
