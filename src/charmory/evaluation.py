@@ -31,6 +31,15 @@ class Dataset:
     test_dataset: ArmoryDataGenerator
     train_dataset: Optional[ArmoryDataGenerator] = None
 
+    def __post_init__(self):
+        assert isinstance(
+            self.test_dataset, ArmoryDataGenerator
+        ), "Evaluation dataset's test_dataset is not an instance of ArmoryDataGenerator"
+        if self.train_dataset is not None:
+            assert isinstance(
+                self.train_dataset, ArmoryDataGenerator
+            ), "Evaluation dataset's train_dataset is not an instance of ArmoryDataGenerator"
+
 
 @dataclass
 class Defense:
@@ -63,6 +72,11 @@ class Model:
     fit_kwargs: Dict[str, Any] = field(default_factory=dict)
     predict_kwargs: Dict[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self):
+        assert isinstance(
+            self.model, BaseEstimator
+        ), "Evaluation model is not an instance of BaseEstimator"
+
 
 @dataclass
 class Scenario:
@@ -90,3 +104,10 @@ class Evaluation:
     defense: Optional[Defense] = None
     metric: Optional[Metric] = None
     sysconfig: Optional[SysConfig] = None
+
+    def __post_init__(self):
+        if self.model.fit:
+            assert self.dataset.train_dataset is not None, (
+                "Requested to train the model but the evaluation dataset does not "
+                "provide a train_dataset"
+            )
