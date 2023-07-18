@@ -33,12 +33,6 @@ def main(argv: list = sys.argv[1:]):
 
     dataset = Dataset(
         name="CIFAR10",
-        train_dataset=armory.data.datasets.cifar10(
-            split="train",
-            epochs=20,
-            batch_size=64,
-            shuffle_files=True,
-        ),
         test_dataset=armory.data.datasets.cifar10(
             split="test",
             epochs=1,
@@ -105,8 +99,18 @@ def main(argv: list = sys.argv[1:]):
 
     print(f"Starting Demo for {baseline.name}")
 
+    print("Training model...")
+    model.model.fit_generator(
+        armory.data.datasets.cifar10(
+            split="train",
+            epochs=20,
+            batch_size=64,
+            shuffle_files=True,
+        ),
+        nb_epochs=20,
+    )
+
     cifar_engine = Engine(baseline)
-    cifar_engine.train(nb_epochs=20)
     results = cifar_engine.run()
 
     print("=" * 64)
@@ -121,10 +125,9 @@ def main(argv: list = sys.argv[1:]):
     )
 
     print("=" * 64)
-    print(dataset.train_dataset)
-    print(dataset.test_dataset)
+    print(dataset)
     print("-" * 64)
-    print(model.model)
+    print(model)
 
     print("=" * 64)
     print("CIFAR10 Experiment Complete!")
