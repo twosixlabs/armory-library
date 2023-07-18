@@ -7,12 +7,10 @@ from pathlib import Path
 import sys
 import time
 
-from art.estimators import BaseEstimator
 from tqdm import tqdm
 
 import armory
 from armory import metrics
-from armory.data.datasets import ArmoryDataGenerator
 from armory.instrument import MetricsLogger, del_globals, get_hub, get_probe
 from armory.instrument.export import ExportMeter, PredictionMeter
 from armory.logs import log
@@ -56,12 +54,12 @@ class Scenario(ABC):
         self.results = None
 
         # Set up the model
-        self.model = self.get_model_from_evaluation()
+        self.model = self.evaluation.model.model
         self.defense_type = self.apply_defense_to_model()
 
         # Set up the dataset(s)
-        self.test_dataset = self.get_test_dataset_from_evaluation()
-        self.train_dataset = self.maybe_get_train_dataset_from_evaluation()
+        self.test_dataset = self.evaluation.dataset.test_dataset
+        self.train_dataset = self.evaluation.dataset.train_dataset
 
         if self.evaluation.model.fit:
             self.fit()
@@ -132,33 +130,6 @@ class Scenario(ABC):
             self.next()
             self.evaluate_current()
         self.hub.set_context(stage="finished")
-
-    def get_test_dataset_from_evaluation(self):
-        test_dataset = self.evaluation.dataset.test_dataset
-        assert isinstance(
-            test_dataset, ArmoryDataGenerator
-        ), "Evaluation dataset's test_dataset is not an instance of ArmoryDataGenerator"
-        return test_dataset
-
-    def maybe_get_train_dataset_from_evaluation(self):
-        if self.evaluation.model.fit:
-            assert self.evaluation.dataset.train_dataset is not None, (
-                "Requested to train the model but the evaluation dataset does not "
-                "provide a train_dataset"
-            )
-            train_dataset = self.evaluation.dataset.train_dataset
-            assert isinstance(
-                train_dataset, ArmoryDataGenerator
-            ), "Evaluation dataset's train_dataset is not an instance of ArmoryDataGenerator"
-            return train_dataset
-        return None
-
-    def get_model_from_evaluation(self):
-        model = self.evaluation.model.model
-        assert isinstance(
-            model, BaseEstimator
-        ), "Evaluation model is not an instance of BaseEstimator"
-        return model
 
     def apply_defense_to_model(self):
         if self.evaluation.defense is not None:

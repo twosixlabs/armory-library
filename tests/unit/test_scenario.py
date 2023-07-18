@@ -83,31 +83,6 @@ class TestScenario(Scenario):
 ###
 
 
-def test_init_raises_on_invalid_model(evaluation):
-    evaluation.model.model = 42
-    with pytest.raises(AssertionError, match=r"model.*instance of"):
-        TestScenario(evaluation)
-
-
-def test_init_raises_on_invalid_test_dataset(evaluation):
-    evaluation.dataset.test_dataset = 42
-    with pytest.raises(AssertionError, match=r"test_dataset.*instance of"):
-        TestScenario(evaluation)
-
-
-def test_init_raises_on_missing_train_dataset(evaluation):
-    evaluation.model.fit = True
-    with pytest.raises(AssertionError, match=r"not provide.*train_dataset"):
-        TestScenario(evaluation)
-
-
-def test_init_raises_on_invalid_train_dataset(evaluation):
-    evaluation.model.fit = True
-    evaluation.dataset.train_dataset = 42
-    with pytest.raises(AssertionError, match=r"train_dataset.*instance of"):
-        TestScenario(evaluation)
-
-
 def test_init_does_not_train_model(evaluation):
     with patch.object(Scenario, "fit") as mock_fit:
         TestScenario(evaluation)
