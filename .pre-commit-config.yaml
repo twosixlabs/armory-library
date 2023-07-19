@@ -20,3 +20,11 @@ repos:
       - id: flake8
         args:
           - "--config=./tools/flake8.cfg"
+  # JSON formatting/validation
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-json
+      - id: pretty-format-json
+        args:
+          - "--indent=4"
