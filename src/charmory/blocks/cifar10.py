@@ -3,7 +3,6 @@ import art.attacks.evasion
 
 import armory.baseline_models.pytorch.cifar
 import armory.data.datasets
-import armory.scenarios.image_classification
 from charmory.evaluation import (
     Attack,
     Dataset,
@@ -13,6 +12,7 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
+import charmory.scenarios.image_classification
 
 dataset = Dataset(
     name="CIFAR10",
@@ -58,7 +58,7 @@ attack = Attack(
 
 
 scenario = Scenario(
-    function=armory.scenarios.image_classification.ImageClassificationTask,
+    function=charmory.scenarios.image_classification.ImageClassificationTask,
     kwargs={},
     export_batches=True,
 )
