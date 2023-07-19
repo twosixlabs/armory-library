@@ -29,11 +29,16 @@ class Attack:
 class Dataset:
     name: str
     test_dataset: ArmoryDataGenerator
+    train_dataset: Optional[ArmoryDataGenerator] = None
 
     def __post_init__(self):
         assert isinstance(
             self.test_dataset, ArmoryDataGenerator
         ), "Evaluation dataset's test_dataset is not an instance of ArmoryDataGenerator"
+        if self.train_dataset is not None:
+            assert isinstance(
+                self.train_dataset, ArmoryDataGenerator
+            ), "Evaluation dataset's train_dataset is not an instance of ArmoryDataGenerator"
 
 
 @dataclass

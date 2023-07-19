@@ -30,6 +30,11 @@ def test_dataset():
 
 
 @pytest.fixture
+def train_dataset():
+    return MagicMock(spec=ArmoryDataGenerator)
+
+
+@pytest.fixture
 def dataset(test_dataset):
     return Dataset(
         name="test",
@@ -78,5 +83,15 @@ class TestScenario(Scenario):
 ###
 
 
-def test_scenario_init(evaluation):
-    TestScenario(evaluation)
+def test_init_does_not_train_model(evaluation):
+    with patch.object(Scenario, "fit") as mock_fit:
+        TestScenario(evaluation)
+        mock_fit.assert_not_called()
+
+
+def test_init_trains_model(evaluation, train_dataset):
+    evaluation.model.fit = True
+    evaluation.dataset.train_dataset = train_dataset
+    with patch.object(Scenario, "fit") as mock_fit:
+        TestScenario(evaluation)
+        mock_fit.assert_called_once()
