@@ -1,5 +1,9 @@
+from armory.logs import log
+from charmory.evaluation import Evaluation
+
+
 class Engine:
-    def __init__(self, evaluation):
+    def __init__(self, evaluation: Evaluation):
         self.evaluation = evaluation
         self.scenario = evaluation.scenario.function(self.evaluation)
 
@@ -14,7 +18,15 @@ class Engine:
             "Requested to train the model but the evaluation dataset does not "
             "provide a train_dataset"
         )
-        self.scenario.fit(nb_epochs=nb_epochs)
+        log.info(
+            f"Fitting {self.evaluation.model.name} model with "
+            f"{self.evaluation.dataset.name} dataset..."
+        )
+        # TODO trainer defense
+        self.evaluation.model.model.fit_generator(
+            self.evaluation.dataset.train_dataset,
+            nb_epochs=nb_epochs,
+        )
 
     def run(self):
         results = self.scenario.evaluate()
