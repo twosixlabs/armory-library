@@ -78,14 +78,14 @@ class Scenario(ABC):
         self.load_metrics()
 
         # Load Export Meters
-        # Setup batch exports
         self.num_export_batches = 0
         if self.evaluation.scenario.export_batches:
             self.num_export_batches = len(self.test_dataset)
             # Create the export directory
             Path(self.export_dir).mkdir(parents=True, exist_ok=True)
-
-        self.sample_exporter = self._load_sample_exporter()
+            self.sample_exporter = self._load_sample_exporter()
+        else:
+            self.sample_exporter = None
 
         self.load_export_meters(self.num_export_batches, self.sample_exporter)
 
