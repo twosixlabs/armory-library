@@ -1,0 +1,36 @@
+default_install_hook_types:
+  - pre-commit
+  - pre-merge-commit
+default_language_version:
+  python: python3.8
+repos:
+  # Python formatting
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+  # Python import sorting
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args:
+          - "--settings-file=./pyproject.toml"
+  # Python style
+  - repo: https://github.com/PyCQA/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+        args:
+          - "--config=./tools/flake8.cfg"
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      # JSON formatting/validation
+      - id: check-json
+      - id: pretty-format-json
+        args:
+          - "--indent=4"
+      # By default, prevents files greater than 500kb
+      # add arg "--maxkb=xxxx" to change the threshold
+      - id: check-added-large-files
