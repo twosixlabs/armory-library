@@ -7,6 +7,7 @@ a good example of using the JATIC toolbox or Armory.
 """
 import argparse
 import json
+import os
 from pprint import pprint
 import sys
 
@@ -64,7 +65,7 @@ def load_huggingface_dataset(transform):
         provider="huggingface",
         dataset_name="cifar10",
         task="image-classification",
-        split="test",
+        split = "test",
     )
     test_dataset.set_transform(transform)
     test_dataset_generator = JaticVisionDatasetGenerator(
