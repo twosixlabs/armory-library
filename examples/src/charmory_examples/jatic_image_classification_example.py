@@ -7,16 +7,21 @@ a good example of using the JATIC toolbox or Armory.
 """
 import argparse
 import json
-import os
 from pprint import pprint
 import sys
+
+import art.attacks.evasion
+from art.estimators.classification import PyTorchClassifier
+from jatic_toolbox import __version__ as jatic_version
+from jatic_toolbox import load_dataset as load_jatic_dataset
+from jatic_toolbox import load_model as load_jatic_model
+import torch
+import torch.nn as nn
 
 import armory.baseline_models.pytorch.resnet18
 import armory.data.datasets
 import armory.scenarios.image_classification
 import armory.version
-import art.attacks.evasion
-from art.estimators.classification import PyTorchClassifier
 from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import Engine
 from charmory.evaluation import (
@@ -32,11 +37,6 @@ from charmory.utils import (
     adapt_jatic_image_classification_model_for_art,
     create_jatic_image_classification_dataset_transform,
 )
-from jatic_toolbox import __version__ as jatic_version
-from jatic_toolbox import load_dataset as load_jatic_dataset
-from jatic_toolbox import load_model as load_jatic_model
-import torch
-import torch.nn as nn
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 BATCH_SIZE = 16
@@ -65,7 +65,7 @@ def load_huggingface_dataset(transform):
         provider="huggingface",
         dataset_name="cifar10",
         task="image-classification",
-        split = "test",
+        split="test",
     )
     test_dataset.set_transform(transform)
     test_dataset_generator = JaticVisionDatasetGenerator(
