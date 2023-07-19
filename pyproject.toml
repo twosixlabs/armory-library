@@ -75,6 +75,7 @@ developer =[
     "isort",
     "flake8",
     "bandit[toml]", # code scanning
+    "pre-commit",
 ]
 
 documentation = [

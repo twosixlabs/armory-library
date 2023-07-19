@@ -43,7 +43,7 @@ code-linting:
   only:
     - merge_requests
   script:
-    - pip install isort black flake8
+    - pip install pre-commit
     - make lint
 
 static_analysis:
