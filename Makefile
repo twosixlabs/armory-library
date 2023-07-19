@@ -117,7 +117,7 @@ install: ## Setup a Virtual Python Environment
 .PHONY: lint
 lint: ## Run style checks
 	echo "🦄 Linting code..."
-	ARMORY_CI_TEST=1 ./tools/pre-commit.sh
+	python -m pre_commit run --all-files
 
 
 .PHONY: scan
