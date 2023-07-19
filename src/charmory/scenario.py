@@ -59,6 +59,7 @@ class Scenario(ABC):
 
         # Set up the dataset(s)
         self.test_dataset = self.evaluation.dataset.test_dataset
+        self.train_dataset = self.evaluation.dataset.train_dataset
 
         # Load the attack
         # NOTE: This is somtimes called in the subclass constructor(super().__init__),
@@ -147,6 +148,14 @@ class Scenario(ABC):
             defense_type = None
 
         return defense_type
+
+    def fit(self, **kwargs):
+        if self.defense_type == "Trainer":
+            log.info(f"Training with {type(self.trainer)} Trainer defense...")
+            self.trainer.fit_generator(self.train_dataset, **kwargs)
+        else:
+            log.info(f"Fitting {self.evaluation.model.name} model ...")
+            self.model.fit_generator(self.train_dataset, **kwargs)
 
     def load_attack(self):
         attack_config = self.evaluation.attack

@@ -23,6 +23,12 @@ like
 
 dataset = Dataset(
     name="MNIST",
+    train_dataset=armory.data.datasets.mnist(
+        split="train",
+        epochs=20,
+        batch_size=128,
+        shuffle_files=True,
+    ),
     test_dataset=armory.data.datasets.mnist(
         split="test",
         epochs=1,
