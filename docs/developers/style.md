@@ -29,24 +29,30 @@ We use [isort](https://pycqa.github.io/isort/) to sort Python imports.
 
 ### Pre-commit Hooks
 
-The above tools can be ran automatically, prior to each commit, by sourcing `tools/pre-commit.sh` in `.git/hooks/pre-commit`. See the example below:
+The above tools can be ran automatically, prior to each commit, by installing
+the Python `pre-commit` package and setting up git hooks.
 
 ```bash
-echo "./tools/pre-commit.sh" > .git/hooks/pre-commit
-chmod 755 ".git/hooks/pre-commit"
-```
-NOTE: if there are shell errors when the pre-commit hook is launched, you may need to modify it to your shell of choice:
-```bash
-echo "<shell> tools/pre-commit.sh" > .git/hooks/pre-commit
+python -m pip install pre-commit
+python -m pre_commit install
 ```
 
-There is an `EARLY_EXIT` variable in `tools/pre-commit.sh` that can be modified that causes the script to exit on the first failure.
-
-Note: these hooks depend on some python tools being installed in your environment. These
-can be installed using:
+Note: the `pre-commit` package is already installed as part of the `developer`
+flavor dependencies.
 
 ```bash
 pip install .[developer]
+```
+
+The pre-commit tool can be invoked manually as well.
+
+```bash
+# run all tools on currently-staged files
+python -m pre_commit run
+# run just the black hook
+python -m pre_commit run black
+# run all tools on all files in the repo
+python -m pre_commit run --all-files
 ```
 For more information about how to contribute to armory, see [Contributing to Armory](/CONTRIBUTING.md).
 

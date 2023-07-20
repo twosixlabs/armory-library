@@ -2,7 +2,6 @@
 
 # This could get merged with armory.data.datasets
 
-from PIL.Image import Image
 import numpy as np
 from torch.utils.data.dataloader import DataLoader
 
@@ -32,10 +31,7 @@ def _collate_image_classification(image_key, label_key):
     """Create a collate function that works with image classification samples"""
 
     def collate(batch):
-        if isinstance(batch[0][image_key], Image):
-            x = np.asarray([np.asarray(sample[image_key]) for sample in batch])
-        else:
-            x = np.asarray([sample[image_key] for sample in batch])
+        x = np.asarray([sample[image_key] for sample in batch])
         y = np.asarray([sample[label_key] for sample in batch])
         return x, y
 
@@ -58,6 +54,7 @@ class JaticVisionDatasetGenerator(ArmoryDataGenerator):
         preprocessing_fn=None,
         label_preprocessing_fn=None,
         context=None,
+        size=None,
     ):
         super().__init__(
             generator=_DataLoaderGenerator(
@@ -68,7 +65,7 @@ class JaticVisionDatasetGenerator(ArmoryDataGenerator):
                     collate_fn=_collate_image_classification(image_key, label_key),
                 )
             ),
-            size=len(dataset),
+            size=size or len(dataset),
             batch_size=batch_size,
             epochs=epochs,
             preprocessing_fn=preprocessing_fn,

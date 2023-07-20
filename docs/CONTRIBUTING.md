@@ -13,7 +13,7 @@ For more details, including how to set up your development environment for eithe
 Armory Development follows the [GitHub Standard Fork & Pull Request Workflow](https://gist.github.com/Chaser324/ce0505fbed06b947d962).
 
 Armory uses GitHub Actions to test contributions, for more details see [Armory CI](/.github/ci_test.yml).  Generally it will be most
-useful to set up the [Armory pre-commit hooks](/tools/pre-commit.sh).  For more information see the [Armory Style Guide](/docs/style.md).
+useful to set up the Armory pre-commit hooks.  For more information see the [Armory Style Guide](/docs/developers/style.md#pre-commit-hooks).
 
 ## Setting up the Development Environment
 Armory follows the [GitHub Standard Fork & Pull Request Workflow](https://gist.github.com/Chaser324/ce0505fbed06b947d962) and therefore, to
