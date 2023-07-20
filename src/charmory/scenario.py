@@ -2,9 +2,12 @@
 Primary class for scenario
 """
 
+from abc import ABC, abstractmethod
+from pathlib import Path
 import sys
 import time
 
+from art.estimators import BaseEstimator
 from tqdm import tqdm
 
 import armory
@@ -14,13 +17,13 @@ from armory.instrument import MetricsLogger, del_globals, get_hub, get_probe
 from armory.instrument.export import ExportMeter, PredictionMeter
 from armory.logs import log
 from armory.metrics import compute
+from armory.paths import HostPaths
 from armory.utils import config_loading
-from art.estimators import BaseEstimator
 import armory.version
 from charmory.evaluation import Evaluation
 
 
-class Scenario:
+class Scenario(ABC):
     """
     Contains the configuration and helper classes needed to execute an Amory evaluation.
     This is the base class of specific tasks like ImageClassificationTask and
@@ -33,6 +36,10 @@ class Scenario:
         evaluation: Evaluation,
         check_run: bool = False,
     ):
+        # Set up instrumentation
+        self.probe = get_probe("scenario")
+        self.hub = get_hub()
+
         self.check_run = check_run
         self.evaluation = evaluation
         self.i = -1
@@ -41,9 +48,11 @@ class Scenario:
         self.skip_attack = False
         self.skip_misclassified = False
 
+        # Set export paths
         self.time_stamp = time.time()
-        self.export_dir = "/tmp"
-        self.export_subdir = "armory"
+        self.evaluation_id = str(self.time_stamp)
+        self.export_dir = f"{HostPaths().output_dir}/{self.evaluation_id}/outputs"
+        self.export_subdir = "saved_samples"
         self.results = None
 
         # Set up the model
@@ -58,25 +67,34 @@ class Scenario:
             self.fit()
 
         # Load the attack
+        # NOTE: This is somtimes called in the subclass constructor(super().__init__),
+        # and contains attributes that are used for exporting metrics. -CW
         self.load_attack()
 
         # Load the defense
         # TODO: Better interface for defense. -CW
 
         # Load Metrics
-        self.probe = get_probe("scenario")
-        self.hub = get_hub()
         self.load_metrics()
 
         # Load Export Meters
-        self.load_export_meters()
+        self.num_export_batches = 0
+        if self.evaluation.scenario.export_batches:
+            self.num_export_batches = len(self.test_dataset)
+            # Create the export directory
+            Path(self.export_dir).mkdir(parents=True, exist_ok=True)
+            self.sample_exporter = self._load_sample_exporter()
+        else:
+            self.sample_exporter = None
+
+        self.load_export_meters(self.num_export_batches, self.sample_exporter)
 
     def evaluate(self):
         """
         Evaluate a config for robustness against attack and save results JSON
         """
         try:
-            self.run_inference()
+            self.evaluate_all()
             self.finalize_results()
             log.debug("Clearing global instrumentation variables")
             del_globals()
@@ -101,15 +119,14 @@ class Scenario:
                 "finalize_results() before saving output."
             )
 
-        output = {
+        return {
             "armory_version": armory.version.__version__,
             "evaluation": self.evaluation,
             "results": self.results,
             "timestamp": int(self.time_stamp),
         }
-        return output
 
-    def run_inference(self):
+    def evaluate_all(self):
         log.info("Running inference on benign and adversarial examples")
         for _ in tqdm(range(len(self.test_dataset)), desc="Evaluation"):
             self.next()
@@ -246,21 +263,14 @@ class Scenario:
         self.profiler = compute.profiler_from_config(metrics_config)
         self.metrics_logger = metrics_logger
 
-    def load_export_meters(self):
-        # Removed warning logged regarding deprecated field from Armory 0.15.0
-        num_export_batches = 0
-
-        if num_export_batches is True:
-            num_export_batches = len(self.test_dataset)
-        self.num_export_batches = int(num_export_batches)
-        self.sample_exporter = self._load_sample_exporter()
-
+    def load_export_meters(self, num_export_batches: int, sample_exporter):
+        # The export_samples field was deprecated in Armory 0.15.0. Please use scenario.export_batches instead.
         for probe_value in ["x", "x_adv"]:
             export_meter = ExportMeter(
                 f"{probe_value}_exporter",
-                self.sample_exporter,
+                sample_exporter,
                 f"scenario.{probe_value}",
-                max_batches=self.num_export_batches,
+                max_batches=num_export_batches,
             )
             self.hub.connect_meter(export_meter, use_default_writers=False)
             if self.skip_attack:
@@ -272,10 +282,11 @@ class Scenario:
             y_probe="scenario.y",
             y_pred_clean_probe="scenario.y_pred" if not self.skip_benign else None,
             y_pred_adv_probe="scenario.y_pred_adv" if not self.skip_attack else None,
-            max_batches=self.num_export_batches,
+            max_batches=num_export_batches,
         )
         self.hub.connect_meter(pred_meter, use_default_writers=False)
 
+    @abstractmethod
     def _load_sample_exporter(self):
         raise NotImplementedError(
             f"_load_sample_exporter() method is not implemented for scenario {self.__class__}"

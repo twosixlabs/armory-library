@@ -1,17 +1,12 @@
-from armory.data.datasets import ArmoryDataGenerator
-from art.estimators import BaseEstimator
-from charmory.evaluation import (
-    Attack,
-    Dataset,
-    Evaluation,
-    Metric,
-    Model,
-    Scenario as EvalScenario,
-)
-from charmory.scenario import Scenario
-import pytest
 from unittest.mock import MagicMock, patch
 
+from art.estimators import BaseEstimator
+import pytest
+
+from armory.data.datasets import ArmoryDataGenerator
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
+from charmory.evaluation import Scenario as EvalScenario
+from charmory.scenario import Scenario
 
 pytestmark = pytest.mark.unit
 

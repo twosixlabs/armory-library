@@ -68,7 +68,7 @@ pip install --no-compile --editable '.[all]'
 Before committing any code, we run a pre-commit script that lints the code to ensure it meets our coding standards:
 
 ```bash
-./tools/pre-commit.sh
+python -m pre_commit # or just `pre-commit`
 ```
 
 ## Building the Application

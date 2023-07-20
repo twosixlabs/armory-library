@@ -1,15 +1,14 @@
 from unittest.mock import MagicMock
 
+import art
+import art.attacks.evasion
+import pytest
+
 import armory
 import armory.baseline_models.keras.mnist
 import armory.data.datasets
 import armory.scenarios
-import art
-import art.attacks.evasion
 import charmory.evaluation as evaluation
-
-# import msw.a
-import pytest
 
 
 def test_initializers():

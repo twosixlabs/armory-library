@@ -29,22 +29,22 @@ cache: &global_cache
   paths:
     - $PIP_CACHE_DIR
 
-
 before_script:
-  - echo -e "machine gitlab.jatic.net\nlogin gitlab-ci-token\npassword ${CI_JOB_TOKEN}" > ~/.netrc
   - apt-get update -qqy
   - apt-get install -qqy --no-install-recommends --no-install-suggests git libgl1-mesa-glx gnupg build-essential rsync make software-properties-common
   - python -m pip install --upgrade pip build wheel
-
+  # Set up authenticated access for JATIC gitlab repositories
+  - echo -e "machine gitlab.jatic.net\nlogin gitlab-ci-token\npassword ${CI_JOB_TOKEN}" > ~/.netrc
+  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.jatic.net".insteadof "ssh://git@gitlab.jatic.net"
+  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.jatic.net/".insteadOf "git@gitlab.jatic.net:"
 
 code-linting:
   stage: "📡 Code Linting"
   only:
     - merge_requests
   script:
-    - pip install isort black flake8
+    - pip install pre-commit
     - make lint
-
 
 static_analysis:
   stage: "🚧 Static Analysis"
@@ -62,7 +62,6 @@ static_analysis:
     - pip install bandit mypy
     - make scan
 
-
 unit-test:
   stage: "🧪 Unit Tests"
   dependencies:
@@ -73,7 +72,6 @@ unit-test:
   script:
     - make install
     - make test
-
 
 examples-test:
   stage: "🧪 Unit Tests"
@@ -86,7 +84,6 @@ examples-test:
     - cd examples
     - make install
     - make test
-
 
 pages:
   stage: "📖 Generate Docs"
@@ -102,7 +99,6 @@ pages:
   script:
     - pip install mkdocs mkdocstrings mkdocs-exclude mkdocs-material
     - make docs
-
 
 build:
   stage: "🔨 Build"
