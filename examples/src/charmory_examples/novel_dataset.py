@@ -1,8 +1,4 @@
-"""
-Example programmatic entrypoint for scenario execution
-"""
-
-# Using Food101 dataset rather than pcam dataset due to bug in jatic_toolbox torchvision compatibility code
+# Using Food101 dataset
 import json
 from pprint import pprint
 import math
@@ -43,7 +39,7 @@ class VisionDatasetWrapper:
     def __init__(self, dataset: VisionDataset):
         self.dataset = dataset
         self.current = 0
-        self.batch_size = 64  # this could be variable/set via argument
+        self.batch_size = 128  # this could be variable/set via argument
 
     def __next__(self):
         stop = min(self.current + self.batch_size, len(self.dataset))
@@ -77,6 +73,7 @@ def load_dataset(split: str, **kwargs):
         task="image-classification",
         split=split,
         root="/home/rahul/cache",
+        # Will need to change this root accordingly
         download=True,
     )
     assert isinstance(dataset, JaticDataset)
@@ -91,13 +88,14 @@ def load_dataset_as_adg(split: str, epochs: int, **kwargs):
         task="image-classification",
         split=split,
         root="/home/rahul/cache",
+        # Will need to change this root accordingly
         download=True,
     )
     assert isinstance(dataset, JaticDataset)
     return ArmoryDataGenerator(
         generator=VisionDatasetWrapper(dataset),
         size=len(dataset),
-        batch_size=1,
+        batch_size=128,
         epochs=epochs,
         preprocessing_fn=food101_canonical_preprocessing,
         context=food101_context,
@@ -117,7 +115,7 @@ def main(argv: list = sys.argv[1:]):
         # To use a JATIC dataset wrapped in ArmoryDataGenerator:
         function=load_dataset_as_adg,
         framework="numpy",
-        batch_size=64,
+        batch_size=128,
     )
 
     model = Model(
@@ -128,7 +126,7 @@ def main(argv: list = sys.argv[1:]):
         # Can't set this to True when not wrapping the dataset in ArmoryDataGenerator
         # because then it isn't an ART DataGenerator subclass (and yields an error).
         fit=True,
-        fit_kwargs={"nb_epochs": 20},
+        fit_kwargs={"nb_epochs": 10},
     )
 
     attack = Attack(
