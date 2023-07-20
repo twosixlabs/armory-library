@@ -22,7 +22,7 @@ class Engine:
             f"Fitting {self.evaluation.model.name} model with "
             f"{self.evaluation.dataset.name} dataset..."
         )
-        # TODO trainer defense
+        # TODO trainer defense when poisoning attacks are supported
         self.evaluation.model.model.fit_generator(
             self.evaluation.dataset.train_dataset,
             nb_epochs=nb_epochs,
