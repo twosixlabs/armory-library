@@ -87,7 +87,7 @@ class FoodClassifier(pl.LightningModule):
         self.correct_predictions += correct_pred.item()
         return correct_pred, total_pred
 
-    def get_testing_acc(self):
+    def get_testing_accuracy(self) -> float:
         return float(self.correct_predictions / 25250)
 
 
@@ -95,7 +95,7 @@ trainer = pl.Trainer(max_epochs=5, accelerator="auto", devices="auto", strategy=
 model = FoodClassifier()
 trainer.fit(model)
 trainer.test(model)
-print(model.get_testing_acc())
+print(model.get_testing_accuracy())
 """
 checkpoint_path = "1_epoch_full_train.ckpt"
 trained_model = model.load_from_checkpoint(checkpoint_path)
