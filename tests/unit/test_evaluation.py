@@ -2,7 +2,6 @@ from unittest.mock import MagicMock
 
 from art.estimators import BaseEstimator
 import pytest
-from unittest.mock import MagicMock
 
 from armory.data.datasets import ArmoryDataGenerator
 import charmory.evaluation as evaluation
