@@ -39,6 +39,7 @@ from armory.data.utils import (
 from armory.data.xview import xview as xv  # noqa: F401
 from armory.logs import log
 
+
 os.environ["KMP_WARNINGS"] = "0"
 
 CHECKSUMS_DIR = os.path.join(os.path.dirname(__file__), "url_checksums")
@@ -692,24 +693,6 @@ def canonical_image_preprocess(context, batch):
 
     return batch
 
-def pokemon_image_preprocess(context, batch):
-    #commented out preprocess will need to rewrite later
-    '''
-    check_shapes(batch.shape, (None,) + context.x_shape)
-    if batch.dtype != context.input_type:
-        raise ValueError("input batch dtype {batch.dtype} != {context.input_type}")
-    assert batch.min() >= context.input_min
-    assert batch.max() <= context.input_max
-
-    batch = batch.astype(context.output_type) / context.quantization
-
-    if batch.dtype != context.output_type:
-        raise ValueError("output batch dtype {batch.dtype} != {context.output_type}")
-    assert batch.min() >= context.output_min
-    assert batch.max() <= context.output_max
-    '''
-    return batch
-
 
 def canonical_variable_image_preprocess(context, batch):
     """
@@ -745,6 +728,27 @@ def canonical_variable_image_preprocess(context, batch):
         assert x.min() >= context.output_min
         assert x.max() <= context.output_max
 
+    return batch
+
+
+def pokemon_image_preprocess(context, batch):
+    """
+    Preprocessing when images are of variable size. Took this function from canonical_image_preprocess 
+    and had to delete one line with 'check_shapes' method that was causing issues
+    """
+
+    if batch.dtype != context.input_type:
+        raise ValueError("input batch dtype {batch.dtype} != {context.input_type}")
+    assert batch.min() >= context.input_min
+    assert batch.max() <= context.input_max
+
+    batch = batch.astype(context.output_type) / context.quantization
+
+    if batch.dtype != context.output_type:
+        raise ValueError("output batch dtype {batch.dtype} != {context.output_type}")
+    assert batch.min() >= context.output_min
+    assert batch.max() <= context.output_max
+    
     return batch
 
 
