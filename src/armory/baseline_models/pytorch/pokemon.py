@@ -8,7 +8,7 @@ from art.estimators.classification import PyTorchClassifier
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ultralyticsplus import YOLO, postprocess_classify_output
+
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -41,7 +41,6 @@ class Net(nn.Module):
         return output
 
 def make_pokemon_model(**kwargs) -> Net:
-    #yolo_model = YOLO('keremberke/yolov8m-pokemon-classification') 
     return Net()
 
 def get_art_model(

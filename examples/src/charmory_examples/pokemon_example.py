@@ -6,9 +6,6 @@ from pprint import pprint
 import sys
 
 import art.attacks.evasion
-from art.estimators.classification import PyTorchClassifier
-import torch
-import torch.nn as nn
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox import load_dataset as load_jatic_dataset
 
@@ -27,9 +24,8 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
-from pdb import set_trace
 
-
+# Loads Pokemon Classification HuggingFace Example
 def load_huggingface_dataset(
     split: str, epochs: int, batch_size: int, shuffle_files: bool, **kwargs
 ):
@@ -82,16 +78,14 @@ def main(argv: list = sys.argv[1:]):
             shuffle_files=False,
         ),
     )
-    #set_trace()
 
-    #
     pokemon_model = armory.baseline_models.pytorch.pokemon.get_art_model(
         model_kwargs={},
         wrapper_kwargs={},
     )
 
     model = Model(
-        name="yolo",
+        name="pokemon",
         model=pokemon_model,
         fit=True,
         fit_kwargs={"nb_epochs": 20},
@@ -136,7 +130,7 @@ def main(argv: list = sys.argv[1:]):
     sysconfig = SysConfig(gpus=["all"], use_gpu=True)
 
     baseline = Evaluation(
-        name="yolo_pokemon",
+        name="pokemon",
         description="Baseline Pokemon image classification",
         author="msw@example.com",
         dataset=dataset,
@@ -149,9 +143,9 @@ def main(argv: list = sys.argv[1:]):
     )
 
     print(f"Starting Demo for {baseline.name}")
-    #set_trace()
-    yolo_engine = Engine(baseline)
-    results = yolo_engine.run()
+
+    pokemon_engine = Engine(baseline)
+    results = pokemon_engine.run()
 
     print("=" * 64)
     pprint(baseline)
