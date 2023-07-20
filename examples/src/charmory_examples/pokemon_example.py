@@ -10,7 +10,7 @@ from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox import load_dataset as load_jatic_dataset
 
 import armory.baseline_models.pytorch.pokemon
-from armory.data.datasets import cifar10_canonical_preprocessing, cifar10_context, pokemon_context, pokemon_preprocessing
+from armory.data.datasets import pokemon_context, pokemon_preprocessing
 import armory.scenarios.image_classification
 import armory.version
 from charmory.data import JaticVisionDatasetGenerator
