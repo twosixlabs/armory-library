@@ -63,6 +63,7 @@ class FoodClassifier(pl.LightningModule):
         # Alter the download fields and the root to where the dataset is downloaded.
 
     def train_dataloader(self):
+        """return a shuffled Dataloader for the training dataset using some subset of the training dataset"""
         # half_data = list(range(0, len(self.training_data), 2))
         # third_data = list(range(0, len(self.training_data), 3))
         # fourth_data = list(range(0, len(self.training_data), 4))
@@ -76,6 +77,7 @@ class FoodClassifier(pl.LightningModule):
         return DataLoader(self.training_data, shuffle=True)
 
     def test_dataloader(self):
+        """return a shuffled Dataloader for the testing dataset"""
         return DataLoader(self.test_data, shuffle=True)
 
     def test_step(self, batch, batch_idx):
