@@ -3,6 +3,10 @@
 from copy import deepcopy
 from typing import Sequence
 
+from art.defences.postprocessor import Postprocessor
+from art.defences.preprocessor import Preprocessor
+from art.estimators import BaseEstimator
+
 
 def adapt_jatic_image_classification_model_for_art(model):
     """
@@ -46,6 +50,60 @@ def adapt_jatic_image_classification_model_for_art(model):
             return result.logits
 
     model.forward = patched_forward
+
+
+def apply_art_postprocessor_defense(estimator: BaseEstimator, defense: Postprocessor):
+    """
+    Applies the given postprocessor defense to the model, handling the presence
+    or absence of existing postprocessors
+
+    Example::
+
+        from art.defences.postprocessor import GaussianNoise
+        from art.estimators.classification import PyTorchClassifier
+        from charmory.utils import apply_art_postprocessor_defense
+
+        classifier = PyTorchClassifier(...)
+        defense = JpegCompression(...)
+        apply_art_postprocessor_defense(classifier, defense)
+
+    Args:
+        estimator: ART estimator to which to apply the postprocessor defense
+        defense: ART postprocessor defense to be applied to the model
+    """
+    defenses = estimator.get_params().get("postprocessing_defences")
+    if defenses:
+        defenses.append(defense)
+    else:
+        defenses = [defense]
+    estimator.set_params(postprocessing_defences=defenses)
+
+
+def apply_art_preprocessor_defense(estimator: BaseEstimator, defense: Preprocessor):
+    """
+    Applies the given preprocessor defense to the model, handling the presence
+    or absence of existing preprocessors
+
+    Example::
+
+        from art.defences.preprocessor import JpegCompression
+        from art.estimators.classification import PyTorchClassifier
+        from charmory.utils import apply_art_preprocessor_defense
+
+        classifier = PyTorchClassifier(...)
+        defense = JpegCompression(...)
+        apply_art_preprocessor_defense(classifier, defense)
+
+    Args:
+        estimator: ART estimator to which to apply the preprocessor defense
+        defense: ART preprocessor defense to be applied to the model
+    """
+    defenses = estimator.get_params().get("preprocessing_defences")
+    if defenses:
+        defenses.append(defense)
+    else:
+        defenses = [defense]
+    estimator.set_params(preprocessing_defences=defenses)
 
 
 def create_jatic_image_classification_dataset_transform(
