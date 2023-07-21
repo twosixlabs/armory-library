@@ -5,6 +5,8 @@ from charmory.evaluation import Evaluation
 class Engine:
     def __init__(self, evaluation: Evaluation):
         self.evaluation = evaluation
+        # Need to apply pre/post-processor defenses before the attack is instantiated
+        self.apply_defense()
         self.scenario = evaluation.scenario.function(self.evaluation)
 
     def train(self, nb_epochs=1):
@@ -27,6 +29,28 @@ class Engine:
             self.evaluation.dataset.train_dataset,
             nb_epochs=nb_epochs,
         )
+
+    def apply_defense(self):
+        """Apply the evaluation defense, if any, to the evaluation model"""
+        if self.evaluation.defense is not None:
+            if self.evaluation.defense.type == "Preprocessor":
+                defenses = self.evaluation.model.model.get_params().get(
+                    "preprocessing_defences"
+                )
+                if defenses:
+                    defenses.append(self.evaluation.defense.defense)
+                else:
+                    defenses = [self.evaluation.defense.defense]
+                self.evaluation.model.model.set_params(preprocessing_defences=defenses)
+            elif self.evaluation.defense.type == "Postprocessor":
+                defenses = self.evaluation.model.model.get_params().get(
+                    "postprocessing_defences"
+                )
+                if defenses:
+                    defenses.append(self.evaluation.defense.defense)
+                else:
+                    defenses = [self.evaluation.defense.defense]
+                self.evaluation.model.model.set_params(postprocessing_defences=defenses)
 
     def run(self):
         results = self.scenario.evaluate()
