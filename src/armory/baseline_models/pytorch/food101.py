@@ -17,6 +17,7 @@ class Net(nn.Module):
     """
 
     def __init__(self):
+        # Model architecture loosely adapted from the cifar baseline_model
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, 3, stride=2, padding=1)
         self.conv2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)
@@ -24,7 +25,7 @@ class Net(nn.Module):
         self.fc2 = nn.Linear(256, 101)
 
     def forward(self, x):
-        x = x.permute(0, 3, 1, 2)
+        # x = x.permute(0, 3, 1, 2)
         x = self.conv1(x)
         x = F.relu(x)
         x = F.max_pool2d(x, 2)
