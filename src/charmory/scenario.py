@@ -50,6 +50,9 @@ class Scenario(ABC):
         self,
         evaluation: Evaluation,
         check_run: bool = False,
+        skip_benign: bool = False,
+        skip_attack: bool = False,
+        skip_misclassified: bool = False,
     ):
         # Set up instrumentation
         self.probe = get_probe("scenario")
@@ -58,9 +61,9 @@ class Scenario(ABC):
         self.check_run = check_run
         self.evaluation = evaluation
         self.num_eval_batches = None
-        self.skip_benign = False
-        self.skip_attack = False
-        self.skip_misclassified = False
+        self.skip_benign = skip_benign
+        self.skip_attack = skip_attack
+        self.skip_misclassified = skip_misclassified
 
         # Set export paths
         self.time_stamp = time.time()
