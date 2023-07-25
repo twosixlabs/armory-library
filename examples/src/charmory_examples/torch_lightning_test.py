@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 import pytorch_lightning as pl
 import argparse
+import os
 
 parser = argparse.ArgumentParser(
     description="Run the training and testing pipeline for the Food101 Dataset using Lightning",
@@ -23,6 +24,12 @@ parser.add_argument(
     type=int,
     default=1,
     help="The fraction of the training dataset you would like to use for training -> 2 meaning half of the dataset, 3 meaning a third of the dataset, etc.",
+)
+parser.add_argument(
+    "--logdir",
+    type=str,
+    default=os.getcwd(),
+    help="The directory that you would like the lightning training logs to be saved to. Default value is the current working directory",
 )
 args = parser.parse_args()
 STEP_VALUE = args.step
@@ -101,7 +108,13 @@ class FoodClassifier(pl.LightningModule):
         return float(self.correct_predictions / 25250)
 
 
-trainer = pl.Trainer(max_epochs=5, accelerator="auto", devices="auto", strategy="auto")
+trainer = pl.Trainer(
+    max_epochs=5,
+    accelerator="auto",
+    devices="auto",
+    strategy="auto",
+    default_root_dir=args.logdir,
+)
 model = FoodClassifier()
 trainer.fit(model)
 trainer.test(model)
