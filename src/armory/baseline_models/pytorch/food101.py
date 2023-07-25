@@ -21,7 +21,7 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, 3, stride=2, padding=1)
         self.conv2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)
-        self.fc1 = nn.Linear(131072, 256)
+        self.fc1 = nn.Linear(16 * 32 * 256, 256)
         self.fc2 = nn.Linear(256, 101)
 
     def forward(self, x):

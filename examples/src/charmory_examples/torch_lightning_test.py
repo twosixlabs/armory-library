@@ -12,17 +12,20 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import pytorch_lightning as pl
-import sys
+import argparse
 
-
-def get_step():
-    if len(sys.argv) == 1:
-        return 1
-    else:
-        try:
-            return int(sys.argv[1])
-        except:
-            return 1
+parser = argparse.ArgumentParser(
+    description="Run the training and testing pipeline for the Food101 Dataset using Lightning",
+    formatter_class=argparse.RawTextHelpFormatter,
+)
+parser.add_argument(
+    "--step",
+    type=int,
+    default=1,
+    help="The fraction of the training dataset you would like to use for training -> 2 meaning half of the dataset, 3 meaning a third of the dataset, etc.",
+)
+args = parser.parse_args()
+STEP_VALUE = args.step
 
 
 class FoodClassifier(pl.LightningModule):
@@ -32,7 +35,7 @@ class FoodClassifier(pl.LightningModule):
         super(FoodClassifier, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, 3, stride=2, padding=1)
         self.conv2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)
-        self.fc1 = nn.Linear(131072, 256)
+        self.fc1 = nn.Linear(16 * 32 * 256, 256)
         self.fc2 = nn.Linear(256, 101)
 
     def forward(self, x):
@@ -77,7 +80,7 @@ class FoodClassifier(pl.LightningModule):
 
     def train_dataloader(self):
         """return a shuffled Dataloader for the training dataset using some subset of the training dataset"""
-        mask = list(range(0, len(self.training_data), get_step()))
+        mask = list(range(0, len(self.training_data), STEP_VALUE))
         masked_training_set = torch.utils.data.Subset(self.training_data, mask)
         return DataLoader(masked_training_set, shuffle=True)
 

@@ -29,14 +29,14 @@ TRAINING_EPOCHS = 1
 ROOT = "/home/rahul/cache"
 
 
-def load_torchvision_dataset():
+def load_torchvision_dataset(root_path):
     print("Loading torchvision dataset from jatic_toolbox")
     train_dataset = load_jatic_dataset(
         provider="torchvision",
         dataset_name="Food101",
         task="image-classification",
         split="train",
-        root=ROOT,
+        root=root_path,
         download=True,
         transform=torchvision.transforms.Compose(
             [
@@ -56,7 +56,7 @@ def load_torchvision_dataset():
         dataset_name="Food101",
         task="image-classification",
         split="test",
-        root=ROOT,
+        root=root_path,
         download=True,
         transform=torchvision.transforms.Compose(
             [
@@ -76,7 +76,7 @@ def load_torchvision_dataset():
 
 
 def main():
-    train_dataset, test_dataset = load_torchvision_dataset()
+    train_dataset, test_dataset = load_torchvision_dataset(ROOT)
 
     dataset = Dataset(
         name="Food101",
