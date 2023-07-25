@@ -200,6 +200,9 @@ def test_run_attack(evaluation):
     assert batch.y_target is None
 
 
+# TODO write more tests for run_attack after attack refactor
+
+
 def test_evaluate_current_when_skip_benign_enabled(evaluation):
     scenario = TestScenario(evaluation, skip_benign=True)
     scenario.run_benign = MagicMock()
