@@ -1,5 +1,6 @@
 """
 Example of PyTorch Lightning Data and ML pipeline on Food101 Dataset. Includes support for differing size of training datasets.
+Provide the step you would like for the training dataset as a command line argument (do not specify a step arg if you would like to train on the whole trainset)
 """
 
 import torch
@@ -11,10 +12,22 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import pytorch_lightning as pl
+import sys
+
+
+def get_step():
+    if len(sys.argv) == 1:
+        return 1
+    else:
+        try:
+            return int(sys.argv[1])
+        except:
+            return 1
 
 
 class FoodClassifier(pl.LightningModule):
     def __init__(self):
+        # Loosely adapted from the CIFAR10 Baseline model
         self.correct_predictions = 0
         super(FoodClassifier, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, 3, stride=2, padding=1)
@@ -64,17 +77,9 @@ class FoodClassifier(pl.LightningModule):
 
     def train_dataloader(self):
         """return a shuffled Dataloader for the training dataset using some subset of the training dataset"""
-        # half_data = list(range(0, len(self.training_data), 2))
-        # third_data = list(range(0, len(self.training_data), 3))
-        # fourth_data = list(range(0, len(self.training_data), 4))
-        # fifth_data = list(range(0, len(self.training_data), 5))
-        # sixth_data = list(range(0, len(self.training_data), 6))
-        # seventh_data = list(range(0, len(self.training_data), 7))
-        # eighth_data = list(range(0, len(self.training_data), 8))
-        # ninth_data = list(range(0, len(self.training_data), 9))
-        # tenth_data = list(range(0, len(self.training_data), 10))
-        # half_training_set = torch.utils.data.Subset(self.training_data, half_data)
-        return DataLoader(self.training_data, shuffle=True)
+        mask = list(range(0, len(self.training_data), get_step()))
+        masked_training_set = torch.utils.data.Subset(self.training_data, mask)
+        return DataLoader(masked_training_set, shuffle=True)
 
     def test_dataloader(self):
         """return a shuffled Dataloader for the testing dataset"""
