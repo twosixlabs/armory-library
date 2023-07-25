@@ -41,7 +41,7 @@ class FoodClassifier(pl.LightningModule):
         inputs, labels = batch
         outputs = self(inputs)
         loss = F.cross_entropy(outputs, labels)
-        print("train_loss", loss)
+        self.log("train_loss", loss)
         return loss
 
     def configure_optimizers(self):
@@ -78,7 +78,7 @@ class FoodClassifier(pl.LightningModule):
 
     def test_dataloader(self):
         """return a shuffled Dataloader for the testing dataset"""
-        return DataLoader(self.test_data, shuffle=True)
+        return DataLoader(self.test_data, shuffle=False)
 
     def test_step(self, batch, batch_idx):
         inputs, labels = batch

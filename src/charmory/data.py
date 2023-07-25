@@ -31,7 +31,10 @@ def _collate_image_classification(image_key, label_key):
     """Create a collate function that works with image classification samples"""
 
     def collate(batch):
-        x = np.asarray([sample[image_key] for sample in batch])
+        if type(batch[0][image_key]) != np.ndarray:
+            x = np.asarray([sample[image_key].numpy() for sample in batch])
+        else:
+            x = np.asarray([sample[image_key] for sample in batch])
         y = np.asarray([sample[label_key] for sample in batch])
         return x, y
 
