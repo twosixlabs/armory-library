@@ -18,9 +18,7 @@ dependencies = [
     "setuptools_scm",
     "jsonschema",
     "loguru",
-    "PyYAML",
     "requests",
-    "toml",
 
     # engine
     "adversarial-robustness-toolbox == 1.14.0",
@@ -102,10 +100,10 @@ extras = [
 ]
 
 all = [
-    "armory-testbed[developer]",
-    "armory-testbed[documentation]",
-    "armory-testbed[tracking]",
-    # "armory-testbed[extras]",
+    "charmory[developer]",
+    "charmory[documentation]",
+    "charmory[tracking]",
+    # "charmory[extras]",
 ]
 
 
