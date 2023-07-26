@@ -111,7 +111,7 @@ class FoodClassifierTrainer(pl.LightningModule):
         return correct_pred, total_pred
 
     def get_testing_accuracy(self) -> float:
-        return float(self.correct_predictions / 25250)
+        return float(self.correct_predictions / len(self.test_data))
 
 
 trainer = pl.Trainer(
