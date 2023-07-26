@@ -20,7 +20,6 @@ import torch.nn as nn
 
 import armory.baseline_models.pytorch.resnet18
 import armory.data.datasets
-import armory.scenarios.image_classification
 import armory.version
 from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import Engine
@@ -33,6 +32,7 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
+import charmory.scenarios.image_classification
 from charmory.utils import (
     adapt_jatic_image_classification_model_for_art,
     create_jatic_image_classification_dataset_transform,
@@ -213,8 +213,6 @@ def main():
     model = Model(
         name="ResNet-18",
         model=loaded_model,
-        fit=True,
-        fit_kwargs={"nb_epochs": TRAINING_EPOCHS},
     )
 
     ###
@@ -239,7 +237,7 @@ def main():
     )
 
     scenario = Scenario(
-        function=armory.scenarios.image_classification.ImageClassificationTask,
+        function=charmory.scenarios.image_classification.ImageClassificationTask,
         kwargs={},
     )
 
@@ -270,6 +268,7 @@ def main():
     print(f"Starting Demo for {baseline.name}")
 
     cifar_engine = Engine(baseline)
+    cifar_engine.train(nb_epochs=TRAINING_EPOCHS)
     results = cifar_engine.run()
 
     print("=" * 64)

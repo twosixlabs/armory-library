@@ -9,7 +9,6 @@ import art.attacks.evasion
 
 import armory.baseline_models.pytorch.cifar
 import armory.data.datasets
-import armory.scenarios.image_classification
 import armory.version
 from charmory.engine import Engine
 from charmory.evaluation import (
@@ -21,6 +20,7 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
+import charmory.scenarios.image_classification
 
 
 def main(argv: list = sys.argv[1:]):
@@ -54,8 +54,6 @@ def main(argv: list = sys.argv[1:]):
             wrapper_kwargs={},
             weights_path=None,
         ),
-        fit=True,
-        fit_kwargs={"nb_epochs": 20},
     )
 
     attack = Attack(
@@ -76,7 +74,7 @@ def main(argv: list = sys.argv[1:]):
     )
 
     scenario = Scenario(
-        function=armory.scenarios.image_classification.ImageClassificationTask,
+        function=charmory.scenarios.image_classification.ImageClassificationTask,
         kwargs={},
         export_batches=True,
     )
@@ -108,6 +106,7 @@ def main(argv: list = sys.argv[1:]):
     print(f"Starting Demo for {baseline.name}")
 
     cifar_engine = Engine(baseline)
+    cifar_engine.train(nb_epochs=20)
     results = cifar_engine.run()
 
     print("=" * 64)
