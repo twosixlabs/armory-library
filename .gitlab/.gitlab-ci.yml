@@ -9,7 +9,7 @@ stages:
   - "🧪 Unit Tests"
   - "📖 Generate Docs"
   - "🔨 Build"
-  # - "🚀 Deploy"  # TODO: Add deploy stage for Advana target; e.g. package, container, etc. -CW
+  - "🚀 Publish"
 
 variables:
   LC_ALL: "C.UTF-8"
@@ -103,6 +103,7 @@ pages:
 build:
   stage: "🔨 Build"
   artifacts:
+    expire_in: 1 week
     paths:
       - dist/*.whl
   dependencies:
@@ -115,5 +116,13 @@ build:
   script:
     - make install
     - make build
-    # TODO: Add build for Advana target; e.g. package, container, etc. -CW
-    # - make docker
+
+publish:
+  stage: "🚀 Publish"
+  dependencies:
+    - build
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - pip install twine
+    - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
