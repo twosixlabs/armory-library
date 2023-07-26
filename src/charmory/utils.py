@@ -2,6 +2,8 @@
 
 from copy import deepcopy
 from typing import Sequence
+import numpy as np
+import PIL
 
 
 def adapt_jatic_image_classification_model_for_art(model):
@@ -103,3 +105,27 @@ def create_jatic_image_classification_dataset_transform(
         return transformed
 
     return transform
+
+
+class PILtoNumpy(object):
+    """
+    Custom torchvision transform that converts PIL images to numpy arrays
+
+    Example::
+
+        training_data = torchvision.datasets.Food101(
+        root="some/root/location",
+        split = "train",
+        download=True,
+        transform=torchvision.transforms.Compose([torchvision.transforms.Resize(512,512), PILtoNumpy()])
+
+    Args:
+        the __call__ method takes a sample of type PIL.Image.Image
+    Returns:
+        the sample PIL Image converted to a numpy array.
+    """
+
+    def __call__(self, sample):
+        assert isinstance(sample, PIL.Image.Image)
+        np_image = np.array(sample)
+        return np_image

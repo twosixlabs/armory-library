@@ -6,8 +6,6 @@ import art.attacks.evasion
 from jatic_toolbox import load_dataset as load_jatic_dataset
 import torch
 from torchvision import transforms as T
-import PIL
-import numpy as np
 
 import armory.baseline_models.pytorch.food101
 import armory.data.datasets
@@ -24,19 +22,12 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
+from charmory.utils import PILtoNumpy
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 BATCH_SIZE = 16
 TRAINING_EPOCHS = 1
 ROOT = "/home/rahul/cache"
-
-
-# Custom torchvision transform designed to convert PIL images to numpy arrays
-class PILtoNumpy(object):
-    def __call__(self, sample):
-        assert isinstance(sample, PIL.Image.Image) == True
-        np_image = np.array(sample)
-        return np_image
 
 
 def load_torchvision_dataset(root_path):
