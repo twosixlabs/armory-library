@@ -31,6 +31,7 @@ repos:
       - id: pretty-format-json
         args:
           - "--indent=4"
+        exclude: ".*ipynb$"
       # By default, prevents files greater than 500kb
       # add arg "--maxkb=xxxx" to change the threshold
       - id: check-added-large-files
