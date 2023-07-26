@@ -5,7 +5,9 @@ import sys
 import art.attacks.evasion
 from jatic_toolbox import load_dataset as load_jatic_dataset
 import torch
-import torchvision
+from torchvision import transforms as T
+import PIL
+import numpy as np
 
 import armory.baseline_models.pytorch.food101
 import armory.data.datasets
@@ -29,6 +31,14 @@ TRAINING_EPOCHS = 1
 ROOT = "/home/rahul/cache"
 
 
+# Custom torchvision transform designed to convert PIL images to numpy arrays
+class PILtoNumpy(object):
+    def __call__(self, sample):
+        assert isinstance(sample, PIL.Image.Image) == True
+        np_image = np.array(sample)
+        return np_image
+
+
 def load_torchvision_dataset(root_path):
     print("Loading torchvision dataset from jatic_toolbox")
     train_dataset = load_jatic_dataset(
@@ -38,10 +48,10 @@ def load_torchvision_dataset(root_path):
         split="train",
         root=root_path,
         download=True,
-        transform=torchvision.transforms.Compose(
+        transform=T.Compose(
             [
-                torchvision.transforms.ToTensor(),
-                torchvision.transforms.Resize(size=(512, 512)),
+                T.Resize(size=(512, 512)),
+                PILtoNumpy(),
             ]
         ),
     )
@@ -58,10 +68,10 @@ def load_torchvision_dataset(root_path):
         split="test",
         root=root_path,
         download=True,
-        transform=torchvision.transforms.Compose(
+        transform=T.Compose(
             [
-                torchvision.transforms.ToTensor(),
-                torchvision.transforms.Resize(size=(512, 512)),
+                T.Resize(size=(512, 512)),
+                PILtoNumpy(),
             ]
         ),
     )
@@ -84,7 +94,7 @@ def main():
         test_dataset=test_dataset,
     )
     model = Model(
-        name="food101",
+        name="Food101",
         model=armory.baseline_models.pytorch.food101.get_art_model(
             model_kwargs={},
             wrapper_kwargs={},
