@@ -3,9 +3,11 @@
 from copy import deepcopy
 from typing import Sequence
 
+import PIL
 from art.defences.postprocessor import Postprocessor
 from art.defences.preprocessor import Preprocessor
 from art.estimators import BaseEstimator
+import numpy as np
 
 
 def adapt_jatic_image_classification_model_for_art(model):
@@ -190,3 +192,27 @@ def is_defended(estimator: BaseEstimator):
     if postprocessor_defenses:
         return True
     return False
+
+
+class PILtoNumpy(object):
+    """
+    Custom torchvision transform that converts PIL images to numpy arrays
+
+    Example::
+
+        training_data = torchvision.datasets.Food101(
+        root="some/root/location",
+        split = "train",
+        download=True,
+        transform=torchvision.transforms.Compose([torchvision.transforms.Resize(512,512), PILtoNumpy()])
+
+    Args:
+        the __call__ method takes a sample of type PIL.Image.Image
+    Returns:
+        the sample PIL Image converted to a numpy array.
+    """
+
+    def __call__(self, sample):
+        assert isinstance(sample, PIL.Image.Image)
+        np_image = np.array(sample)
+        return np_image
