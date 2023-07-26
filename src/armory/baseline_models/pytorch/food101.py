@@ -25,6 +25,7 @@ class Net(nn.Module):
         self.fc2 = nn.Linear(256, 101)
 
     def forward(self, x):
+        x = x.permute(0, 3, 1, 2)
         x = self.conv1(x)
         x = F.relu(x)
         x = F.max_pool2d(x, 2)

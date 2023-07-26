@@ -1,6 +1,6 @@
 """
 Example of PyTorch Lightning Data and ML pipeline on Food101 Dataset. Includes support for differing size of training datasets.
-Provide the step you would like for the training dataset as a command line argument (do not specify a step arg if you would like to train on the whole trainset)
+Give train dataset step and training log path as args
 """
 
 import torch
@@ -35,11 +35,9 @@ args = parser.parse_args()
 STEP_VALUE = args.step
 
 
-class FoodClassifier(pl.LightningModule):
+class FoodNN(nn.Module):
     def __init__(self):
-        # Loosely adapted from the CIFAR10 Baseline model
-        self.correct_predictions = 0
-        super(FoodClassifier, self).__init__()
+        super(FoodNN, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, 3, stride=2, padding=1)
         self.conv2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)
         self.fc1 = nn.Linear(16 * 32 * 256, 256)
@@ -60,9 +58,17 @@ class FoodClassifier(pl.LightningModule):
         output = F.log_softmax(x, dim=1)
         return output
 
+
+class FoodClassifierTrainer(pl.LightningModule):
+    def __init__(self, model):
+        # Loosely adapted from the CIFAR10 Baseline model
+        super(FoodClassifierTrainer, self).__init__()
+        self.model = model
+        self.correct_predictions = 0
+
     def training_step(self, batch, batch_idx):
         inputs, labels = batch
-        outputs = self(inputs)
+        outputs = self.model(inputs)
         loss = F.cross_entropy(outputs, labels)
         self.log("train_loss", loss)
         return loss
@@ -97,7 +103,7 @@ class FoodClassifier(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         inputs, labels = batch
-        outputs = self(inputs)
+        outputs = self.model(inputs)
         _, predictions = torch.max(outputs, 1)
         correct_pred = torch.sum(predictions == labels)
         total_pred = labels.numel()
@@ -115,13 +121,9 @@ trainer = pl.Trainer(
     strategy="auto",
     default_root_dir=args.logdir,
 )
-model = FoodClassifier()
+
+food_nn = FoodNN()
+model = FoodClassifierTrainer(food_nn)
 trainer.fit(model)
 trainer.test(model)
-print(model.get_testing_accuracy())
-"""
-checkpoint_path = "1_epoch_full_train.ckpt"
-trained_model = model.load_from_checkpoint(checkpoint_path)
-trainer.test(trained_model)
-print(trained_model.get_testing_acc())
-"""
+print("Accuracy: " + str(model.get_testing_accuracy()))
