@@ -2,8 +2,9 @@
 
 from copy import deepcopy
 from typing import Sequence
-import numpy as np
+
 import PIL
+import numpy as np
 
 
 def adapt_jatic_image_classification_model_for_art(model):
