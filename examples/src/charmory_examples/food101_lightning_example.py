@@ -3,17 +3,18 @@ Example of PyTorch Lightning Data and ML pipeline on Food101 Dataset. Includes s
 Give train dataset step and training log path as args
 """
 
+import argparse
+import os
+
+import pytorch_lightning as pl
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.utils.data import DataLoader
 import torchvision
 from torchvision import datasets
 import torchvision.transforms
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import DataLoader
-import torch.optim as optim
-import pytorch_lightning as pl
-import argparse
-import os
 
 parser = argparse.ArgumentParser(
     description="Run the training and testing pipeline for the Food101 Dataset using Lightning",
