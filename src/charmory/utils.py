@@ -161,3 +161,32 @@ def create_jatic_image_classification_dataset_transform(
         return transformed
 
     return transform
+
+
+def is_defended(estimator: BaseEstimator):
+    """
+    Checks if the given estimator has any preprocessor or postprocessor defenses
+    applied to it.
+
+    Example::
+
+        from art.estimators.classification import PyTorchClassifier
+        from charmory.utils import is_defended
+
+        classifier = PyTorchClassifier(...)
+        if is_defended(classifier):
+            pass
+
+    Args:
+        estimator: ART estimator to be checked for defenses
+
+    Returns:
+        True if ART estimator has defenses, else False
+    """
+    preprocessor_defenses = estimator.get_params().get("preprocessing_defences")
+    if preprocessor_defenses:
+        return True
+    postprocessor_defenses = estimator.get_params().get("postprocessing_defences")
+    if postprocessor_defenses:
+        return True
+    return False
