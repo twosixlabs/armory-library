@@ -58,7 +58,7 @@ endef
 
 
 define TypeCheck
-	python -m mypy src          \
+	python -m mypy src           \
 		--ignore-missing-imports   \
 		--follow-imports=skip      \
 		--show-error-codes         \
