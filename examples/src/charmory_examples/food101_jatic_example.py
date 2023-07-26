@@ -9,7 +9,6 @@ from torchvision import transforms as T
 
 import armory.baseline_models.pytorch.food101
 import armory.data.datasets
-import charmory.scenarios.image_classification
 import armory.version
 from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import Engine
@@ -22,6 +21,7 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
+import charmory.scenarios.image_classification
 from charmory.utils import PILtoNumpy
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
