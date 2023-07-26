@@ -1,10 +1,8 @@
 """Armory Experiment Configuration Classes"""
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Literal, Optional, Union
+from typing import Any, Callable, Dict, List, Literal, Optional
 
-from art.defences.postprocessor import Postprocessor
-from art.defences.preprocessor import Preprocessor
 from art.estimators import BaseEstimator
 
 from armory.data.datasets import ArmoryDataGenerator
@@ -41,32 +39,6 @@ class Dataset:
             assert isinstance(
                 self.train_dataset, ArmoryDataGenerator
             ), "Evaluation dataset's train_dataset is not an instance of ArmoryDataGenerator"
-
-
-@dataclass
-class Defense:
-    defense: Union[Preprocessor, Postprocessor]
-    type: Literal[
-        "Preprocessor",
-        "Postprocessor",
-        # "Trainer",
-        # "Transformer",
-        # "PoisonFilteringDefense",
-    ]
-
-    def __post_init__(self):
-        if self.type == "Preprocessor":
-            assert isinstance(
-                self.defense, Preprocessor
-            ), "Evaluation defense is not an instance of Preprocessor"
-        elif self.type == "Postprocessor":
-            assert isinstance(
-                self.defense, Preprocessor
-            ), "Evaluation defense is not an instance of Preprocessor"
-        else:
-            raise NotImplementedError(
-                f"Evaluation defense type, {self.type} is unsupported"
-            )
 
 
 @dataclass
@@ -114,6 +86,5 @@ class Evaluation:
     dataset: Dataset
     author: Optional[str]
     attack: Optional[Attack] = None
-    defense: Optional[Defense] = None
     metric: Optional[Metric] = None
     sysconfig: Optional[SysConfig] = None
