@@ -17,7 +17,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "armory-testbed @ {root:uri}/../",
+    "charmory @ {root:uri}/../",
     "pytorch-lightning"
 ]
 
