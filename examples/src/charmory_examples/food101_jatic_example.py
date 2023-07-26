@@ -9,7 +9,7 @@ from torchvision import transforms as T
 
 import armory.baseline_models.pytorch.food101
 import armory.data.datasets
-import armory.scenarios.image_classification
+import charmory.scenarios.image_classification
 import armory.version
 from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import Engine
@@ -91,8 +91,6 @@ def main():
             wrapper_kwargs={},
             weights_path=None,
         ),
-        fit=True,
-        fit_kwargs={"nb_epochs": TRAINING_EPOCHS},
     )
 
     ###
@@ -117,7 +115,7 @@ def main():
     )
 
     scenario = Scenario(
-        function=armory.scenarios.image_classification.ImageClassificationTask,
+        function=charmory.scenarios.image_classification.ImageClassificationTask,
         kwargs={},
     )
 
@@ -148,6 +146,7 @@ def main():
     print(f"Starting Demo for {baseline.name}")
 
     food_engine = Engine(baseline)
+    food_engine.train(nb_epochs=TRAINING_EPOCHS)
     results = food_engine.run()
 
     print("=" * 64)
