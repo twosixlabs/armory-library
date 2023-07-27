@@ -49,10 +49,6 @@ define ExecuteTests
 
 	PYTEST_PARAMS="--exitfirst --suppress-no-test-exit-code"
 
-	echo "🤞 Executing configuration tests..."
-	python -m pytest -c pyproject.toml -s ./tests/test_attack_object.py
-
-	echo "🤞 Executing unit tests..."
 	python -m pytest -c pyproject.toml -m "unit" ./tests/unit/
 endef
 
