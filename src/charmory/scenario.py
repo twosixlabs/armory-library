@@ -168,12 +168,9 @@ class Scenario(ABC):
         if targeted and use_label:
             raise ValueError("Targeted attacks cannot have 'use_label'")
 
-        generate_kwargs = {}
-
         self.attack_type = attack_type
         self.targeted = targeted
         self.use_label = use_label
-        self.generate_kwargs = generate_kwargs
 
     def load_metrics(self):
         if not hasattr(self, "targeted"):
@@ -262,7 +259,9 @@ class Scenario(ABC):
                 else:
                     y_target = None
 
-                x_adv = self.attack.generate(x=x, y=y_target, **self.generate_kwargs)
+                x_adv = self.attack.generate(
+                    x=x, y=y_target, **self.evaluation.attack.generate_kwargs
+                )
 
         self.hub.set_context(stage="adversarial")
         if self.skip_misclassified and batch.misclassified:
