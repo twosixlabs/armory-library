@@ -144,8 +144,6 @@ class Scenario(ABC):
     def load_attack(self):
         attack_config = self.evaluation.attack
         attack_type = attack_config.type
-        if attack_type == "preloaded" and self.skip_misclassified:
-            raise ValueError("Cannot use skip_misclassified with preloaded dataset")
 
         kwargs_val = attack_config.kwargs
 
@@ -158,25 +156,13 @@ class Scenario(ABC):
             attack_config.kwargs[
                 "summary_writer"
             ] = f"{self.scenario_output_dir}/tfevents_{self.time_stamp}"
-        if attack_type == "preloaded":
-            preloaded_split = kwargs_val.get("split", "adversarial")
-            self.test_dataset = config_loading.load_adversarial_dataset(
-                attack_config,
-                epochs=1,
-                split=preloaded_split,
-                num_batches=self.num_eval_batches,
-                shuffle_files=False,
-            )
 
-            targeted = False
+        attack = config_loading.load_attack(attack_config, self.model)
+        self.attack = attack
 
-        else:
-            attack = config_loading.load_attack(attack_config, self.model)
-            self.attack = attack
+        targeted_val = attack_config.kwargs
 
-            targeted_val = attack_config.kwargs
-
-            targeted = targeted_val.get("targeted", False)
+        targeted = targeted_val.get("targeted", False)
 
         use_label = bool(attack_config.use_label)
         if targeted and use_label:
@@ -268,16 +254,6 @@ class Scenario(ABC):
                 y_target = None
 
                 x_adv = x
-            elif self.attack_type == "preloaded":
-                if self.targeted:
-                    y, y_target = y
-                else:
-                    y_target = None
-
-                if len(x) == 2:
-                    x, x_adv = x
-                else:
-                    x_adv = x
             else:
                 if self.use_label:
                     y_target = y
