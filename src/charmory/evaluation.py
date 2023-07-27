@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional
 from art.estimators import BaseEstimator
 
 from armory.data.datasets import ArmoryDataGenerator
+from charmory.labels import LabelTargeter
 
 MethodName = Callable[
     ..., Any
@@ -23,6 +24,13 @@ class Attack:
     sweep_params: Optional[Dict[str, Any]] = field(default_factory=dict)
     targeted: Optional[bool] = False
     targeted_labels: Optional[Dict[str, Any]] = field(default_factory=dict)
+    label_targeter: Optional[LabelTargeter] = None
+
+    def __post_init__(self):
+        if self.label_targeter:
+            assert isinstance(
+                self.label_targeter, LabelTargeter
+            ), "Evaluation attack's label_targeter is not an instance of LabelTargeter"
 
 
 @dataclass

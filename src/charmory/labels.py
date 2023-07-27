@@ -3,8 +3,19 @@ Label-related utilties
 """
 
 import importlib
+from typing import Any, Protocol, runtime_checkable
 
 import numpy as np
+
+
+@runtime_checkable
+class LabelTargeter(Protocol):
+    """A generator of target labels for an attack"""
+
+    def generate(self, y) -> Any:
+        """Generates target label for an attack given the original label"""
+        pass
+
 
 # Targeters assume a numpy 1D array as input to generate
 
