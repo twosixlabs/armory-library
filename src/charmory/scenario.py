@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import sys
 import time
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from tqdm import tqdm
 
@@ -76,7 +76,8 @@ class Scenario(ABC):
         self.test_dataset = self.evaluation.dataset.test_dataset
 
         # Set up the attack
-        self.attack = self.evaluation.attack.attack
+        if not self.skip_attack:
+            assert self.evaluation.attack, "Evaluation does not contain an attack"
 
         # Load Metrics
         self.load_metrics()
@@ -202,25 +203,34 @@ class Scenario(ABC):
             )
 
     def run_attack(self, batch: Batch):
+        if TYPE_CHECKING:
+            assert self.evaluation.attack
+
         self.hub.set_context(stage="attack")
         x = batch.x
         y = batch.y
         y_pred = batch.y_pred
 
         with self.profiler.measure("Attack"):
+            # Don't generate the attack if the benign was already misclassified
             if self.skip_misclassified and batch.misclassified:
                 y_target = None
-
                 x_adv = x
+
             else:
-                if self.evaluation.attack.use_label:
-                    y_target = y
-                elif self.evaluation.attack.label_targeter:
+                # If targeted, use the label targeter to generate the target label
+                if self.evaluation.attack.targeted:
+                    if TYPE_CHECKING:
+                        assert self.evaluation.attack.label_targeter
                     y_target = self.evaluation.attack.label_targeter.generate(y)
                 else:
-                    y_target = None
+                    # If untargeted, use either the natural or benign labels
+                    # (when set to None, the ART attack handles the benign label)
+                    y_target = (
+                        y if self.evaluation.attack.use_label_for_untargeted else None
+                    )
 
-                x_adv = self.attack.generate(
+                x_adv = self.evaluation.attack.attack.generate(
                     x=x, y=y_target, **self.evaluation.attack.generate_kwargs
                 )
 

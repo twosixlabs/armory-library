@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from art.attacks import Attack as ArtAttack
+from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
 import pytest
 
@@ -39,7 +39,9 @@ def evaluation_scenario():
 
 @pytest.fixture
 def evaluation_attack():
-    return charmory.evaluation.Attack(name="test", attack=MagicMock(spec=ArtAttack))
+    attack = MagicMock(spec=EvasionAttack)
+    attack.targeted = False
+    return charmory.evaluation.Attack(name="test", attack=attack)
 
 
 @pytest.fixture

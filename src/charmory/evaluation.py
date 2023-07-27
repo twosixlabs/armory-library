@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Literal, Optional
 
-from art.attacks import Attack as ArtAttack
+from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
 
 from armory.data.datasets import ArmoryDataGenerator
@@ -17,23 +17,32 @@ MethodName = Callable[
 @dataclass
 class Attack:
     name: str
-    attack: ArtAttack
+    attack: EvasionAttack
     generate_kwargs: Dict[str, Any] = field(default_factory=dict)
-    use_label: bool = False
-    targeted: Optional[bool] = False
+    use_label_for_untargeted: bool = False
     label_targeter: Optional[LabelTargeter] = None
 
     def __post_init__(self):
         assert isinstance(
-            self.attack, ArtAttack
-        ), "Evaluation attack is not an instance of Attack"
-        if self.label_targeter:
+            self.attack, EvasionAttack
+        ), "Evaluation attack is not an instance of EvasionAttack"
+
+        if self.targeted:
             assert isinstance(
                 self.label_targeter, LabelTargeter
             ), "Evaluation attack's label_targeter is not an instance of LabelTargeter"
+            assert (
+                not self.use_label_for_untargeted
+            ), "Evaluation attack is targeted, use_label_for_targeted cannot be True"
+        else:
+            assert (
+                not self.label_targeter
+            ), "Evaluation attack is untargeted, cannot use a label_targeter"
 
-        if self.targeted and self.use_label:
-            raise ValueError("Targeted attacks cannot have 'use_label'")
+    @property
+    def targeted(self) -> bool:
+        """Whether the attack is targeted"""
+        return self.attack.targeted
 
 
 @dataclass
