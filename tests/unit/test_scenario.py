@@ -64,18 +64,20 @@ def test_run_attack_when_skip_misclassified_enabled(evaluation):
         misclassified=True,
     )
     evaluation.model.model.predict = MagicMock()
+    evaluation.attack.attack.generate = MagicMock()
 
     scenario = TestScenario(evaluation, skip_misclassified=True)
     scenario.hub.set_context(batch=0)
     scenario.run_attack(batch)
 
     evaluation.model.model.predict.assert_not_called()
+    evaluation.attack.attack.generate.assert_not_called()
     nptest.assert_array_equal(batch.x_adv, batch.x)
     nptest.assert_array_equal(batch.y_pred_adv, batch.y_pred)
     assert batch.y_target is None
 
 
-def test_run_attack(evaluation):
+def test_run_attack_when_targeted(evaluation):
     batch = Scenario.Batch(
         i=0,
         x=np.array([0, 1, 2]),
@@ -85,8 +87,39 @@ def test_run_attack(evaluation):
     )
     x_adv = np.array([0.0, 0.9, 2.1])
     y_pred_adv = np.array([0.1, 0.8, 0.1])
-    evaluation.model.model.predict = MagicMock(return_value=y_pred_adv)
+    y_target = np.array([0.0, 1.0, 0.0])
 
+    evaluation.attack.attack.targeted = True
+    evaluation.attack.label_targeter = MagicMock()
+    evaluation.attack.label_targeter.generate = MagicMock(return_value=y_target)
+
+    evaluation.model.model.predict = MagicMock(return_value=y_pred_adv)
+    evaluation.attack.attack.generate = MagicMock(return_value=x_adv)
+
+    scenario = TestScenario(evaluation)
+    scenario.hub.set_context(batch=0)
+    scenario.run_attack(batch)
+
+    evaluation.attack.label_targeter.generate.assert_called_with(batch.y)
+    evaluation.attack.attack.generate.assert_called_with(x=batch.x, y=y_target)
+    evaluation.model.model.predict.assert_called_with(x_adv)
+    nptest.assert_array_equal(batch.x_adv, x_adv)
+    nptest.assert_array_equal(batch.y_pred_adv, y_pred_adv)
+    nptest.assert_array_equal(batch.y_target, y_target)
+
+
+def test_run_attack_when_targeted_and_using_benign_labels(evaluation):
+    batch = Scenario.Batch(
+        i=0,
+        x=np.array([0, 1, 2]),
+        y=np.array([0.0, 0.0, 1.0]),
+        y_pred=np.array([0.1, 0.1, 0.8]),
+        misclassified=True,
+    )
+    x_adv = np.array([0.0, 0.9, 2.1])
+    y_pred_adv = np.array([0.1, 0.8, 0.1])
+
+    evaluation.model.model.predict = MagicMock(return_value=y_pred_adv)
     evaluation.attack.attack.generate = MagicMock(return_value=x_adv)
 
     scenario = TestScenario(evaluation)
@@ -100,7 +133,31 @@ def test_run_attack(evaluation):
     assert batch.y_target is None
 
 
-# TODO write more tests for run_attack after attack refactor
+def test_run_attack_when_untargeted_and_using_natural_labels(evaluation):
+    batch = Scenario.Batch(
+        i=0,
+        x=np.array([0, 1, 2]),
+        y=np.array([0.0, 0.0, 1.0]),
+        y_pred=np.array([0.1, 0.1, 0.8]),
+        misclassified=True,
+    )
+    x_adv = np.array([0.0, 0.9, 2.1])
+    y_pred_adv = np.array([0.1, 0.8, 0.1])
+
+    evaluation.attack.use_label_for_untargeted = True
+
+    evaluation.model.model.predict = MagicMock(return_value=y_pred_adv)
+    evaluation.attack.attack.generate = MagicMock(return_value=x_adv)
+
+    scenario = TestScenario(evaluation)
+    scenario.hub.set_context(batch=0)
+    scenario.run_attack(batch)
+
+    evaluation.attack.attack.generate.assert_called_with(x=batch.x, y=batch.y)
+    evaluation.model.model.predict.assert_called_with(x_adv)
+    nptest.assert_array_equal(batch.x_adv, x_adv)
+    nptest.assert_array_equal(batch.y_pred_adv, y_pred_adv)
+    nptest.assert_array_equal(batch.y_target, batch.y)
 
 
 def test_evaluate_current_when_skip_benign_enabled(evaluation):
