@@ -1,3 +1,6 @@
+from unittest.mock import MagicMock
+
+from art.attacks import Attack as ArtAttack
 import pytest
 
 import charmory.evaluation as evaluation
@@ -43,21 +46,27 @@ def test_dataset_init_when_train_dataset(data_generator):
     )
 
 
+def test_attack_init_raises_on_invalid_attack():
+    with pytest.raises(AssertionError, match=r"attack.*instance of"):
+        evaluation.Attack(
+            name="test",
+            attack=42,
+        )
+
+
 def test_attack_init_raises_on_invalid_label_targeter():
     with pytest.raises(AssertionError, match=r"label_targeter.*instance of"):
         evaluation.Attack(
-            function=str,
-            kwargs={},
-            knowledge="white",
+            name="test",
+            attack=MagicMock(spec=ArtAttack),
             label_targeter=42,
         )
 
 
 def test_attack_init_when_label_targeter_provided():
     evaluation.Attack(
-        function=str,
-        kwargs={},
-        knowledge="white",
+        name="test",
+        attack=MagicMock(spec=ArtAttack),
         label_targeter=FixedLabelTargeter(value=42),
     )
 

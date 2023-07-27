@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock, call
 
-from art.attacks import Attack as ArtAttack
 import numpy as np
 import numpy.testing as nptest
 import pytest
@@ -88,15 +87,13 @@ def test_run_attack(evaluation):
     y_pred_adv = np.array([0.1, 0.8, 0.1])
     evaluation.model.model.predict = MagicMock(return_value=y_pred_adv)
 
-    attack = MagicMock(spec=ArtAttack)
-    attack.generate = MagicMock(return_value=x_adv)
-    evaluation.attack.function = MagicMock(return_value=attack)
+    evaluation.attack.attack.generate = MagicMock(return_value=x_adv)
 
     scenario = TestScenario(evaluation)
     scenario.hub.set_context(batch=0)
     scenario.run_attack(batch)
 
-    scenario.attack.generate.assert_called_with(x=batch.x, y=None)
+    evaluation.attack.attack.generate.assert_called_with(x=batch.x, y=None)
     evaluation.model.model.predict.assert_called_with(x_adv)
     nptest.assert_array_equal(batch.x_adv, x_adv)
     nptest.assert_array_equal(batch.y_pred_adv, y_pred_adv)
