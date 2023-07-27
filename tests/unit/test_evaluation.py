@@ -42,6 +42,16 @@ def test_dataset_init_when_train_dataset(data_generator):
     )
 
 
+def test_attack_init_raises_on_invalid_label_targeter():
+    with pytest.raises(AssertionError, match=r"label_targeter.*instance of"):
+        evaluation.Attack(
+            function=str,
+            kwargs={},
+            knowledge="white",
+            label_targeter=42,
+        )
+
+
 def test_evaluation_init(
     evaluation_model,
     evaluation_dataset,
