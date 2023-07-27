@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Literal, Optional
 
+from art.attacks import Attack as ArtAttack
 from art.estimators import BaseEstimator
 
 from armory.data.datasets import ArmoryDataGenerator
@@ -15,21 +16,24 @@ MethodName = Callable[
 
 @dataclass
 class Attack:
-    function: MethodName
-    kwargs: Dict[str, Any]
-    knowledge: Literal["white", "black"]
-    use_label: bool = False
+    name: str
+    attack: ArtAttack
     generate_kwargs: Dict[str, Any] = field(default_factory=dict)
-    sweep_params: Optional[Dict[str, Any]] = field(default_factory=dict)
+    use_label: bool = False
     targeted: Optional[bool] = False
-    targeted_labels: Optional[Dict[str, Any]] = field(default_factory=dict)
     label_targeter: Optional[LabelTargeter] = None
 
     def __post_init__(self):
+        assert isinstance(
+            self.attack, ArtAttack
+        ), "Evaluation attack is not an instance of Attack"
         if self.label_targeter:
             assert isinstance(
                 self.label_targeter, LabelTargeter
             ), "Evaluation attack's label_targeter is not an instance of LabelTargeter"
+
+        if self.targeted and self.use_label:
+            raise ValueError("Targeted attacks cannot have 'use_label'")
 
 
 @dataclass

@@ -18,7 +18,6 @@ from armory.instrument.export import ExportMeter, PredictionMeter
 from armory.logs import log
 from armory.metrics import compute
 from armory.paths import HostPaths
-from armory.utils import config_loading
 import armory.version
 from charmory.evaluation import Evaluation
 
@@ -76,10 +75,8 @@ class Scenario(ABC):
         # Set up the dataset(s)
         self.test_dataset = self.evaluation.dataset.test_dataset
 
-        # Load the attack
-        # NOTE: This is somtimes called in the subclass constructor(super().__init__),
-        # and contains attributes that are used for exporting metrics. -CW
-        self.load_attack()
+        # Set up the attack
+        self.attack = self.evaluation.attack.attack
 
         # Load Metrics
         self.load_metrics()
@@ -141,47 +138,13 @@ class Scenario(ABC):
             self.evaluate_current(batch)
         self.hub.set_context(stage="finished")
 
-    def load_attack(self):
-        attack_config = self.evaluation.attack
-
-        kwargs_val = attack_config.kwargs
-
-        if "summary_writer" in kwargs_val:
-            summary_writer_kwarg = attack_config.kwargs.get("summary_writer")
-            if isinstance(summary_writer_kwarg, str):
-                log.warning(
-                    f"Overriding 'summary_writer' attack kwarg {summary_writer_kwarg} with {self.scenario_output_dir}."
-                )
-            attack_config.kwargs[
-                "summary_writer"
-            ] = f"{self.scenario_output_dir}/tfevents_{self.time_stamp}"
-
-        attack = config_loading.load_attack(attack_config, self.model)
-        self.attack = attack
-
-        targeted_val = attack_config.kwargs
-
-        targeted = targeted_val.get("targeted", False)
-
-        use_label = bool(attack_config.use_label)
-        if targeted and use_label:
-            raise ValueError("Targeted attacks cannot have 'use_label'")
-
-        self.targeted = targeted
-        self.use_label = use_label
-
     def load_metrics(self):
-        if not hasattr(self, "targeted"):
-            log.warning(
-                "Run 'load_attack' before 'load_metrics' if not just doing benign inference"
-            )
-
         metrics_config = self.evaluation.metric
         metrics_logger = MetricsLogger.from_config(
             metrics_config,
             include_benign=not self.skip_benign,
             include_adversarial=not self.skip_attack,
-            include_targeted=self.targeted,
+            include_targeted=self.evaluation.attack.targeted,
         )
         self.profiler = compute.profiler_from_config(metrics_config)
         self.metrics_logger = metrics_logger
@@ -250,7 +213,7 @@ class Scenario(ABC):
 
                 x_adv = x
             else:
-                if self.use_label:
+                if self.evaluation.attack.use_label:
                     y_target = y
                 elif self.evaluation.attack.label_targeter:
                     y_target = self.evaluation.attack.label_targeter.generate(y)
@@ -272,7 +235,7 @@ class Scenario(ABC):
             )
 
         self.probe.update(x_adv=x_adv, y_pred_adv=y_pred_adv)
-        if self.targeted:
+        if self.evaluation.attack.targeted:
             self.probe.update(y_target=y_target)
 
         batch.x_adv = x_adv
