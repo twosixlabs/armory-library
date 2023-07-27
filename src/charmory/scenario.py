@@ -235,6 +235,7 @@ class Scenario(ABC):
                 )
 
         self.hub.set_context(stage="adversarial")
+        # Don't evaluate the attack if the benign was already misclassified
         if self.skip_misclassified and batch.misclassified:
             y_pred_adv = y_pred
         else:
