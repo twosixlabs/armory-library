@@ -1,6 +1,7 @@
 import pytest
 
 import charmory.evaluation as evaluation
+from charmory.labels import FixedLabelTargeter
 
 # These tests use fixtures from conftest.py
 
@@ -50,6 +51,15 @@ def test_attack_init_raises_on_invalid_label_targeter():
             knowledge="white",
             label_targeter=42,
         )
+
+
+def test_attack_init_when_label_targeter_provided():
+    evaluation.Attack(
+        function=str,
+        kwargs={},
+        knowledge="white",
+        label_targeter=FixedLabelTargeter(value=42),
+    )
 
 
 def test_evaluation_init(

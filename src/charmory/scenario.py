@@ -177,10 +177,6 @@ class Scenario(ABC):
             targeted_val = attack_config.kwargs
 
             targeted = targeted_val.get("targeted", False)
-            if targeted:
-                label_targeter = config_loading.load_label_targeter(
-                    attack_config.targeted_labels
-                )
 
         use_label = bool(attack_config.use_label)
         if targeted and use_label:
@@ -190,8 +186,6 @@ class Scenario(ABC):
 
         self.attack_type = attack_type
         self.targeted = targeted
-        if self.targeted:
-            self.label_targeter = label_targeter
         self.use_label = use_label
         self.generate_kwargs = generate_kwargs
 
@@ -287,8 +281,8 @@ class Scenario(ABC):
             else:
                 if self.use_label:
                     y_target = y
-                elif self.targeted:
-                    y_target = self.label_targeter.generate(y)
+                elif self.evaluation.attack.label_targeter:
+                    y_target = self.evaluation.attack.label_targeter.generate(y)
                 else:
                     y_target = None
 
