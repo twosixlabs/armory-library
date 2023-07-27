@@ -48,13 +48,15 @@ def main(argv: list = sys.argv[1:]):
         ),
     )
 
+    classifier = armory.baseline_models.pytorch.cifar.get_art_model(
+        model_kwargs={},
+        wrapper_kwargs={},
+        weights_path=None,
+    )
+
     model = Model(
         name="cifar",
-        model=armory.baseline_models.pytorch.cifar.get_art_model(
-            model_kwargs={},
-            wrapper_kwargs={},
-            weights_path=None,
-        ),
+        model=classifier,
     )
 
     defense = art.defences.preprocessor.JpegCompression(
@@ -66,20 +68,19 @@ def main(argv: list = sys.argv[1:]):
     apply_art_preprocessor_defense(model.model, defense)
 
     attack = Attack(
-        function=art.attacks.evasion.ProjectedGradientDescent,
-        kwargs={
-            "batch_size": 1,
-            "eps": 0.031,
-            "eps_step": 0.007,
-            "max_iter": 20,
-            "num_random_init": 1,
-            "random_eps": False,
-            "targeted": False,
-            "verbose": False,
-        },
-        knowledge="white",
-        use_label=True,
-        type=None,
+        name="PGD",
+        attack=art.attacks.evasion.ProjectedGradientDescent(
+            classifier,
+            batch_size=1,
+            eps=0.031,
+            eps_step=0.007,
+            max_iter=20,
+            num_random_init=1,
+            random_eps=False,
+            targeted=False,
+            verbose=False,
+        ),
+        use_label_for_untargeted=True,
     )
 
     scenario = Scenario(
