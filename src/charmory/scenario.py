@@ -143,7 +143,6 @@ class Scenario(ABC):
 
     def load_attack(self):
         attack_config = self.evaluation.attack
-        attack_type = attack_config.type
 
         kwargs_val = attack_config.kwargs
 
@@ -168,7 +167,6 @@ class Scenario(ABC):
         if targeted and use_label:
             raise ValueError("Targeted attacks cannot have 'use_label'")
 
-        self.attack_type = attack_type
         self.targeted = targeted
         self.use_label = use_label
 

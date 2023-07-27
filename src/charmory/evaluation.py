@@ -19,7 +19,6 @@ class Attack:
     kwargs: Dict[str, Any]
     knowledge: Literal["white", "black"]
     use_label: bool = False
-    type: Optional[str] = None
     generate_kwargs: Dict[str, Any] = field(default_factory=dict)
     sweep_params: Optional[Dict[str, Any]] = field(default_factory=dict)
     targeted: Optional[bool] = False
