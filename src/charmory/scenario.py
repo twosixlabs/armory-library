@@ -145,7 +145,9 @@ class Scenario(ABC):
             metrics_config,
             include_benign=not self.skip_benign,
             include_adversarial=not self.skip_attack,
-            include_targeted=self.evaluation.attack.targeted,
+            include_targeted=(
+                self.evaluation.attack.targeted if self.evaluation.attack else False
+            ),
         )
         self.profiler = compute.profiler_from_config(metrics_config)
         self.metrics_logger = metrics_logger
