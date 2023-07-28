@@ -10,7 +10,7 @@ from typing import List, Union
 
 import requests
 
-from armory import paths
+# from armory import paths
 from armory.logs import log
 from armory.utils.configuration import get_verify_ssl
 
@@ -103,7 +103,8 @@ def download_and_extract_repo(
     verify_ssl = get_verify_ssl()
 
     if external_repo_dir is None:
-        external_repo_dir = paths.HostPaths().external_repo_dir
+        # external_repo_dir = paths.HostPaths().external_repo_dir
+        external_repo_dir = "/tmp/external"
 
     os.makedirs(external_repo_dir, exist_ok=True)
     headers = {}
@@ -155,14 +156,16 @@ def download_and_extract_repo(
 
 
 def add_local_repo(local_repo_name: str) -> None:
-    local_repo_dir = paths.HostPaths().local_git_dir
+    # local_repo_dir = paths.HostPaths().local_git_dir
+    local_repo_dir = "/tmp/external"
     path = os.path.join(local_repo_dir, local_repo_name)
     add_path(path, include_parent=True)
 
 
 def add_pythonpath(subpath: str, external_repo_dir: str = None) -> None:
     if external_repo_dir is None:
-        external_repo_dir = paths.HostPaths().external_repo_dir
+        # external_repo_dir = paths.HostPaths().external_repo_dir
+        external_repo_dir = "/tmp/external"
 
     path = os.path.join(external_repo_dir, subpath)
     add_path(path, include_parent=True)
