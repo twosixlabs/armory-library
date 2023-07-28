@@ -95,10 +95,9 @@ class SysConfig:
         import json
 
         armory_dir = Path.home() / ".armory"
-        armory_config = Path(armory_dir / "config.json")
         self.paths = {
             "armory_dir": str(armory_dir),
-            "armory_config": str(armory_config),
+            "armory_config": str(armory_dir / "config.json"),
             "dataset_dir": str(armory_dir / "datasets"),
             "local_git_dir": str(armory_dir / "git"),
             "saved_model_dir": str(armory_dir / "saved_models"),
@@ -108,13 +107,9 @@ class SysConfig:
             "external_repo_dir": str(armory_dir / "tmp" / "external"),
         }
 
-        # Create directories
-        for d in self.paths.values():
-            Path(d).mkdir(parents=True, exist_ok=True)
-
         # Load config and update paths
-        if Path(armory_config).exists():
-            _config = json.loads(armory_config.read_text())
+        if Path(self.paths["armory_config"]).exists():
+            _config = json.loads(Path(self.paths["armory_config"]).read_text())
             for k in (
                 "dataset_dir",
                 "local_git_dir",
@@ -123,6 +118,11 @@ class SysConfig:
                 "tmp_dir",
             ):
                 setattr(self, k, armory_dir / _config[k])
+
+        # Create directories
+        for d in self.paths.values():
+            if not d.endswith(".json"):
+                Path(d).mkdir(parents=True, exist_ok=True)
 
 
 @dataclass
