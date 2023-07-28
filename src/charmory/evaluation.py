@@ -84,7 +84,6 @@ class Scenario:
     export_batches: Optional[bool] = False
 
 
-import json
 @dataclass
 class SysConfig:
     gpus: List[str]
@@ -93,6 +92,8 @@ class SysConfig:
 
     def __post_init__(self):
         # TODO: Discuss/refactor the following
+        import json
+
         armory_dir = Path.home() / ".armory"
         armory_config = Path(armory_dir / "config.json")
         self.paths = {
@@ -122,8 +123,6 @@ class SysConfig:
                 "tmp_dir",
             ):
                 setattr(self, k, armory_dir / _config[k])
-
-
 
 
 @dataclass
