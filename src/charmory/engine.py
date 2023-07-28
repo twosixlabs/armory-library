@@ -1,10 +1,16 @@
+from contextlib import nullcontext
+from typing import Any, Dict, Optional
+
+import mlflow
+
 from armory.logs import log
 from charmory.evaluation import Evaluation
 
 
 class Engine:
-    def __init__(self, evaluation: Evaluation):
+    def __init__(self, evaluation: Evaluation, enable_tracking=False):
         self.evaluation = evaluation
+        self.enable_tracking = enable_tracking
         self.scenario = evaluation.scenario.function(self.evaluation)
 
     def train(self, nb_epochs=1):
@@ -28,6 +34,43 @@ class Engine:
             nb_epochs=nb_epochs,
         )
 
+    def _track(self):
+        """Create context manager for tracking the evaluation run"""
+        if not self.enable_tracking:
+            return nullcontext()
+
+        else:
+            experiment = mlflow.get_experiment_by_name(self.evaluation.name)
+            if experiment:
+                experiment_id = experiment.experiment_id
+            else:
+                experiment_id = mlflow.create_experiment(self.evaluation.name)
+
+            return mlflow.start_run(
+                experiment_id=experiment_id,
+                description=self.evaluation.description,
+                tags={
+                    "author": self.evaluation.author,
+                },
+            )
+
+    def _track_results(
+        self, active_run: Optional[mlflow.ActiveRun], results: Dict[str, Any]
+    ):
+        """Record evaluation run results"""
+        if not self.enable_tracking:
+            return
+
+        assert active_run
+
+        for key, val in results["results"].items():
+            if key == "compute":
+                continue
+            mlflow.log_metric(key, val[0])
+
     def run(self):
-        results = self.scenario.evaluate()
+        with self._track() as active_run:
+            results = self.scenario.evaluate()
+            self._track_results(active_run, results)
+
         return results
