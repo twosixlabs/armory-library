@@ -50,6 +50,8 @@ dependencies = [
     "tf-models-official",
     "tensorflow >= 2.11.0",
 
+    # tracking
+    "mlflow",
 ]
 
 [project.urls]
@@ -77,8 +79,6 @@ developer = [
 
 documentation = ["mkdocs", "mkdocstrings", "mkdocs-exclude", "mkdocs-material"]
 
-tracking = ["mlflow"]
-
 extras = [
     # deepspeech
     "python-levenshtein",
@@ -102,7 +102,6 @@ extras = [
 all = [
     "charmory[developer]",
     "charmory[documentation]",
-    "charmory[tracking]",
     # "charmory[extras]",
 ]
 
