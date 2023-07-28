@@ -1,6 +1,7 @@
 """Armory Experiment Configuration Classes"""
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional
 
 from art.estimators import BaseEstimator
@@ -83,11 +84,24 @@ class Scenario:
     export_batches: Optional[bool] = False
 
 
-@dataclass
 class SysConfig:
-    # TODO: should get ArmoryControls (e.g. num_eval_batches, num_epochs, etc.)
     gpus: List[str]
     use_gpu: bool = False
+    paths: Dict[str, str] = field(default_factory=dict)
+
+    def __post_init__(self):
+        armory_dir = Path.home() / ".armory"
+        self.paths = {
+            "armory_dir": str(armory_dir),
+            "armory_config": str(armory_dir / "config.json"),
+            "dataset_dir": str(armory_dir / "datasets"),
+            "local_git_dir": str(armory_dir / "git"),
+            "saved_model_dir": str(armory_dir / "saved_models"),
+            "pytorch_dir": str(armory_dir / "saved_models" / "pytorch"),
+            "tmp_dir": str(armory_dir / "tmp"),
+            "output_dir": str(armory_dir / "outputs"),
+            "external_repo_dir": str(armory_dir / "tmp" / "external"),
+        }
 
 
 @dataclass
