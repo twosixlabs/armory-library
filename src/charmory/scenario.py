@@ -66,7 +66,9 @@ class Scenario(ABC):
         self.time_stamp = time.time()
         self.evaluation_id = str(self.time_stamp)
 
-        self.export_dir = f"{evaluation.sysconfig.paths["output_dir"]}/{self.evaluation_id}/outputs"
+        self.export_dir = (
+            f"{evaluation.sysconfig.paths['output_dir']}/{self.evaluation_id}/outputs"
+        )
         self.export_subdir = "saved_samples"
         self.results = None
 
