@@ -84,16 +84,20 @@ class Scenario:
     export_batches: Optional[bool] = False
 
 
+import json
+@dataclass
 class SysConfig:
     gpus: List[str]
     use_gpu: bool = False
     paths: Dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self):
+        # TODO: Discuss/refactor the following
         armory_dir = Path.home() / ".armory"
+        armory_config = Path(armory_dir / "config.json")
         self.paths = {
             "armory_dir": str(armory_dir),
-            "armory_config": str(armory_dir / "config.json"),
+            "armory_config": str(armory_config),
             "dataset_dir": str(armory_dir / "datasets"),
             "local_git_dir": str(armory_dir / "git"),
             "saved_model_dir": str(armory_dir / "saved_models"),
@@ -102,6 +106,24 @@ class SysConfig:
             "output_dir": str(armory_dir / "outputs"),
             "external_repo_dir": str(armory_dir / "tmp" / "external"),
         }
+
+        # Create directories
+        for d in self.paths.values():
+            Path(d).mkdir(parents=True, exist_ok=True)
+
+        # Load config and update paths
+        if Path(armory_config).exists():
+            _config = json.loads(armory_config.read_text())
+            for k in (
+                "dataset_dir",
+                "local_git_dir",
+                "saved_model_dir",
+                "output_dir",
+                "tmp_dir",
+            ):
+                setattr(self, k, armory_dir / _config[k])
+
+
 
 
 @dataclass
