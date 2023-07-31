@@ -69,9 +69,7 @@ def main(argv: list = sys.argv[1:]):
         )
 
         attack = Attack(
-            function=track_init_params("attack")(
-                art.attacks.evasion.ProjectedGradientDescent
-            ),
+            function=track_init_params()(art.attacks.evasion.ProjectedGradientDescent),
             kwargs={
                 "batch_size": 1,
                 "eps": 0.031,
