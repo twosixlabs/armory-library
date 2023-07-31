@@ -39,15 +39,12 @@ class ExternalRepoImport(contextlib.AbstractContextManager):
 
 
 class ExternalPipInstalledImport(contextlib.AbstractContextManager):
-    def __init__(self, package="", dockerimage=""):
+    def __init__(self, package=""):
         super().__init__()
-        error_message_lines = [
+        self.error_message = "\n".join([
             f"{package} is an external dependency.",
             f"Please 'pip install {package}' in local environment",
-        ]
-        if dockerimage:
-            error_message_lines.append(f"    OR use docker image {dockerimage}")
-        self.error_message = "\n".join(error_message_lines)
+        ])
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None and issubclass(exc_type, ImportError):
