@@ -31,6 +31,15 @@ class Dataset:
     test_dataset: ArmoryDataGenerator
     train_dataset: Optional[ArmoryDataGenerator] = None
 
+    def __post_init__(self):
+        assert isinstance(
+            self.test_dataset, ArmoryDataGenerator
+        ), "Evaluation dataset's test_dataset is not an instance of ArmoryDataGenerator"
+        if self.train_dataset is not None:
+            assert isinstance(
+                self.train_dataset, ArmoryDataGenerator
+            ), "Evaluation dataset's train_dataset is not an instance of ArmoryDataGenerator"
+
 
 @dataclass
 class Defense:
@@ -59,9 +68,12 @@ class Metric:
 class Model:
     name: str
     model: BaseEstimator
-    fit: bool = False
-    fit_kwargs: Dict[str, Any] = field(default_factory=dict)
     predict_kwargs: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        assert isinstance(
+            self.model, BaseEstimator
+        ), "Evaluation model is not an instance of BaseEstimator"
 
 
 @dataclass

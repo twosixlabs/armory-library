@@ -3,16 +3,16 @@ Primary class for scenario
 """
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from pathlib import Path
 import sys
 import time
+from typing import Any, Optional
 
-from art.estimators import BaseEstimator
 from tqdm import tqdm
 
 import armory
 from armory import metrics
-from armory.data.datasets import ArmoryDataGenerator
 from armory.instrument import MetricsLogger, del_globals, get_hub, get_probe
 from armory.instrument.export import ExportMeter, PredictionMeter
 from armory.logs import log
@@ -30,11 +30,27 @@ class Scenario(ABC):
     provides significant common processing.
     """
 
+    @dataclass
+    class Batch:
+        """Iteration batch being evaluated during scenario evaluation"""
+
+        i: int
+        x: Any
+        y: Any
+        y_pred: Optional[Any] = None
+        y_target: Optional[Any] = None
+        x_adv: Optional[Any] = None
+        y_pred_adv: Optional[Any] = None
+        misclassified: Optional[bool] = None
+
     # change name and type of config to evaluation
     def __init__(
         self,
         evaluation: Evaluation,
         check_run: bool = False,
+        skip_benign: bool = False,
+        skip_attack: bool = False,
+        skip_misclassified: bool = False,
     ):
         # Set up instrumentation
         self.probe = get_probe("scenario")
@@ -42,11 +58,10 @@ class Scenario(ABC):
 
         self.check_run = check_run
         self.evaluation = evaluation
-        self.i = -1
         self.num_eval_batches = None
-        self.skip_benign = False
-        self.skip_attack = False
-        self.skip_misclassified = False
+        self.skip_benign = skip_benign
+        self.skip_attack = skip_attack
+        self.skip_misclassified = skip_misclassified
 
         # Set export paths
         self.time_stamp = time.time()
@@ -56,15 +71,11 @@ class Scenario(ABC):
         self.results = None
 
         # Set up the model
-        self.model = self.get_model_from_evaluation()
+        self.model = self.evaluation.model.model
         self.defense_type = self.apply_defense_to_model()
 
         # Set up the dataset(s)
-        self.test_dataset = self.get_test_dataset_from_evaluation()
-        self.train_dataset = self.maybe_get_train_dataset_from_evaluation()
-
-        if self.evaluation.model.fit:
-            self.fit()
+        self.test_dataset = self.evaluation.dataset.test_dataset
 
         # Load the attack
         # NOTE: This is somtimes called in the subclass constructor(super().__init__),
@@ -128,37 +139,11 @@ class Scenario(ABC):
 
     def evaluate_all(self):
         log.info("Running inference on benign and adversarial examples")
+        batch = None
         for _ in tqdm(range(len(self.test_dataset)), desc="Evaluation"):
-            self.next()
-            self.evaluate_current()
+            batch = self.next(batch)
+            self.evaluate_current(batch)
         self.hub.set_context(stage="finished")
-
-    def get_test_dataset_from_evaluation(self):
-        test_dataset = self.evaluation.dataset.test_dataset
-        assert isinstance(
-            test_dataset, ArmoryDataGenerator
-        ), "Evaluation dataset's test_dataset is not an instance of ArmoryDataGenerator"
-        return test_dataset
-
-    def maybe_get_train_dataset_from_evaluation(self):
-        if self.evaluation.model.fit:
-            assert self.evaluation.dataset.train_dataset is not None, (
-                "Requested to train the model but the evaluation dataset does not "
-                "provide a train_dataset"
-            )
-            train_dataset = self.evaluation.dataset.train_dataset
-            assert isinstance(
-                train_dataset, ArmoryDataGenerator
-            ), "Evaluation dataset's train_dataset is not an instance of ArmoryDataGenerator"
-            return train_dataset
-        return None
-
-    def get_model_from_evaluation(self):
-        model = self.evaluation.model.model
-        assert isinstance(
-            model, BaseEstimator
-        ), "Evaluation model is not an instance of BaseEstimator"
-        return model
 
     def apply_defense_to_model(self):
         if self.evaluation.defense is not None:
@@ -180,18 +165,6 @@ class Scenario(ABC):
             defense_type = None
 
         return defense_type
-
-    def fit(self):
-        if self.defense_type == "Trainer":
-            log.info(f"Training with {type(self.trainer)} Trainer defense...")
-            self.trainer.fit_generator(
-                self.train_dataset, **self.evaluation.model.fit_kwargs
-            )
-        else:
-            log.info("Fitting model ...")
-            self.model.fit_generator(
-                self.train_dataset, **self.evaluation.model.fit_kwargs
-            )
 
     def load_attack(self):
         attack_config = self.evaluation.attack
@@ -292,42 +265,37 @@ class Scenario(ABC):
             f"_load_sample_exporter() method is not implemented for scenario {self.__class__}"
         )
 
-    def next(self):
+    def next(self, prev: Optional[Batch]):
         self.hub.set_context(stage="next")
         x, y = next(self.test_dataset)
-        i = self.i + 1
+        i = prev.i + 1 if prev else 0
         self.hub.set_context(batch=i)
-        self.i, self.x, self.y = i, x, y
         self.probe.update(i=i, x=x, y=y)
-        self.y_pred, self.y_target, self.x_adv, self.y_pred_adv = None, None, None, None
+        return self.Batch(i=i, x=x, y=y)
 
-    def _check_x(self, function_name):
-        if not hasattr(self, "x"):
-            raise ValueError(f"Run `next()` before `{function_name}()`")
-
-    def run_benign(self):
-        self._check_x("run_benign")
+    def run_benign(self, batch: Batch):
         self.hub.set_context(stage="benign")
 
-        x, y = self.x, self.y
-        x.flags.writeable = False
+        batch.x.flags.writeable = False
         with self.profiler.measure("Inference"):
-            y_pred = self.model.predict(x, **self.evaluation.model.predict_kwargs)
-        self.y_pred = y_pred
-        self.probe.update(y_pred=y_pred)
+            batch.y_pred = self.model.predict(
+                batch.x, **self.evaluation.model.predict_kwargs
+            )
+        self.probe.update(y_pred=batch.y_pred)
 
         if self.skip_misclassified:
-            self.misclassified = not any(
-                metrics.task.batch.categorical_accuracy(y, y_pred)
+            batch.misclassified = not any(
+                metrics.task.batch.categorical_accuracy(batch.y, batch.y_pred)
             )
 
-    def run_attack(self):
-        self._check_x("run_attack")
+    def run_attack(self, batch: Batch):
         self.hub.set_context(stage="attack")
-        x, y, y_pred = self.x, self.y, self.y_pred
+        x = batch.x
+        y = batch.y
+        y_pred = batch.y_pred
 
         with self.profiler.measure("Attack"):
-            if self.skip_misclassified and self.misclassified:
+            if self.skip_misclassified and batch.misclassified:
                 y_target = None
 
                 x_adv = x
@@ -352,7 +320,7 @@ class Scenario(ABC):
                 x_adv = self.attack.generate(x=x, y=y_target, **self.generate_kwargs)
 
         self.hub.set_context(stage="adversarial")
-        if self.skip_misclassified and self.misclassified:
+        if self.skip_misclassified and batch.misclassified:
             y_pred_adv = y_pred
         else:
             # Ensure that input sample isn't overwritten by model
@@ -365,14 +333,15 @@ class Scenario(ABC):
         if self.targeted:
             self.probe.update(y_target=y_target)
 
-        self.x_adv, self.y_target, self.y_pred_adv = x_adv, y_target, y_pred_adv
+        batch.x_adv = x_adv
+        batch.y_target = y_target
+        batch.y_pred_adv = y_pred_adv
 
-    def evaluate_current(self):
-        self._check_x("evaluate_current")
+    def evaluate_current(self, batch: Batch):
         if not self.skip_benign:
-            self.run_benign()
+            self.run_benign(batch)
         if not self.skip_attack:
-            self.run_attack()
+            self.run_attack(batch)
 
     def finalize_results(self):
         self.metric_results = self.metrics_logger.results()

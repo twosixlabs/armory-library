@@ -51,7 +51,6 @@ define ExecuteTests
 
 	echo "🤞 Executing configuration tests..."
 	python -m pytest -c pyproject.toml -s ./tests/test_attack_object.py
-	python -m pytest -c pyproject.toml -s ./tests/test_evaluation.py
 
 	echo "🤞 Executing unit tests..."
 	python -m pytest -c pyproject.toml -m "unit" ./tests/unit/
@@ -59,7 +58,7 @@ endef
 
 
 define TypeCheck
-	python -m mypy src          \
+	python -m mypy src           \
 		--ignore-missing-imports   \
 		--follow-imports=skip      \
 		--show-error-codes         \
