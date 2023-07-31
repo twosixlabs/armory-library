@@ -1,70 +1,117 @@
-"""A mock-up demo to show how Armory and MLflow interact."""
+"""Utilities to support experiment tracking within Armory."""
 
-from loguru import logger as log
+from functools import wraps
+from typing import Callable, List, Optional, TypeVar
+
 import mlflow
 
-from charmory.blocks import mnist
-from charmory.evaluation import Evaluation
+# This was only added to the builtin `typing` in Python 3.10,
+# so we have to use `typing_extensions` for 3.8 support
+from typing_extensions import ParamSpec
+
+P = ParamSpec("P")
+T = TypeVar("T")
 
 
-class Evaluator:
-    def __init__(self, eval: Evaluation):
-        self.eval = eval
+def track_params(prefix: str, ignore: Optional[List[str]] = None):
+    """
+    Create a decorator to log function keyword arguments as parameters with
+    MLFlow.
 
-        mlexp = mlflow.get_experiment_by_name(eval.name)
-        if mlexp:
-            self.experiment_id = mlexp.experiment_id
-            log.info(f"Experiment {eval.name} already exists {self.experiment_id}")
-        else:
-            self.experiment_id = mlflow.create_experiment(eval.name)
-            log.info(f"Creating experiment {eval.name} as {self.experiment_id}")
+    Example::
 
-    def run(self):
-        """fake an evaluation to demonstrate mlflow tracking."""
-        log.info("Starting mlflow run:")
-        self.show()
-        self.active_run = mlflow.start_run(
-            experiment_id=self.experiment_id,
-            description=self.eval.description,
-            tags={
-                "author": self.eval.author,
-            },
-        )
+        from charmory.track import track_params
 
-        # fake variable epsilon and results
-        result = self.fake_result()
+        @track_params("model")
+        def load_model(name: str, batch_size: int):
+            pass
 
-        for key, value in self.eval.flatten():
-            mlflow.log_param(key, value)
+        # Or for a third-party function that cannot have the decorator
+        # already applied, you can apply it inline
+        track_params("third_party")(third_party_func)(arg=42)
 
-        for k, v in result.items():
-            mlflow.log_metric(k, v)
+    Args:
+        prefix: String to be prefixed to all keyword argument names
+        ignore: Optional list of keyword arguments to be ignored
 
-        mlflow.end_run()
-        return result
+    Returns:
+        Function decorator
+    """
 
-    def fake_result(self):
-        import random
+    def _decorator(func: Callable[P, T]) -> Callable[P, T]:
+        @wraps(func)
+        def _wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            mlflow.log_param(
+                f"{prefix}._func", f"{func.__module__}.{func.__qualname__}"
+            )
+            for key, val in kwargs.items():
+                if ignore and key in ignore:
+                    continue
+                mlflow.log_param(f"{prefix}.{key}", val)
 
-        epsilon = random.random()
-        result = {"benign": epsilon, "adversarial": 1 - epsilon}
-        assert self.eval.attack
-        self.eval.attack.kwargs["eps"] = epsilon
-        return result
+            return func(*args, **kwargs)
 
-    def show(self):
-        experiment = mlflow.get_experiment(experiment_id=self.experiment_id)
-        table = {
-            "name": experiment.name,
-            "tags": experiment.tags,
-            "experiment_id": experiment.experiment_id,
-            "artifact_location": experiment.artifact_location,
-            "lifecycle_stage": experiment.lifecycle_stage,
-            "creation_time": experiment.creation_time,
-        }
-        for label, value in table.items():
-            log.info(f"{label}: {value}")
+        return _wrapper
+
+    return _decorator
 
 
-if __name__ == "__main__":
-    Evaluator(mnist.baseline).run()
+def track_init_params(prefix: str, ignore: Optional[List[str]] = None):
+    """
+    Create a decorator to log class dunder-init keyword arguments as parameters
+    with MLFlow.
+
+    Example::
+
+        from charmory.track import track_init_params
+
+        @track_init_params("dataset")
+        class MyDataset:
+            def __init__(self, batch_size: int):
+                pass
+
+        # Or for a third-party class that cannot have the decorator
+        # already applied, you can apply it inline
+        obj = track_init_params("third_party")(ThirdPartyClass)(arg=42)
+
+    Args:
+        prefix: String to be prefixed to all keyword argument names
+        ignore: Optional list of keyword arguments to be ignored
+
+    Returns:
+        Class decorator
+    """
+
+    def _decorator(cls: T) -> T:
+        cls.__init__ = track_params(prefix, ignore)(cls.__init__)
+        return cls
+
+    return _decorator
+
+
+def track_evaluation(name: str, description: Optional[str] = None):
+    """
+    Create a context manager for tracking an evaluation run with MLFlow.
+
+    Example::
+
+        from charmory.track import track_evaluation
+
+        with track_evaluation("my_experiment"):
+            # Perform evaluation run
+
+    Args:
+        name: Experiment name (should be the same between runs)
+        description: Optional description of the run
+    """
+
+    experiment = mlflow.get_experiment_by_name(name)
+    if experiment:
+        experiment_id = experiment.experiment_id
+    else:
+        experiment_id = mlflow.create_experiment(name)
+
+    return mlflow.start_run(
+        experiment_id=experiment_id,
+        description=description,
+    )
