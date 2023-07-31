@@ -6,6 +6,7 @@ import numpy as np
 from torch.utils.data.dataloader import DataLoader
 
 from armory.data.datasets import ArmoryDataGenerator
+from charmory.track import track_init_params
 
 
 class _DataLoaderGenerator:
@@ -38,6 +39,7 @@ def _collate_image_classification(image_key, label_key):
     return collate
 
 
+@track_init_params()
 class JaticVisionDatasetGenerator(ArmoryDataGenerator):
     """
     Data generator for a JATIC image classification dataset.

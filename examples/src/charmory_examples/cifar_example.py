@@ -38,14 +38,14 @@ def main(argv: list = sys.argv[1:]):
     with track_evaluation(NAME, description=DESCRIPTION):
         dataset = Dataset(
             name="CIFAR10",
-            train_dataset=track_params("train_dataset")(armory.data.datasets.cifar10)(
+            train_dataset=track_params()(armory.data.datasets.cifar10)(
                 split="train",
                 epochs=20,
                 batch_size=64,
                 shuffle_files=True,
             ),
             test_dataset=armory.data.datasets.EvalGenerator(
-                track_params("test_dataset")(armory.data.datasets.cifar10)(
+                track_params()(armory.data.datasets.cifar10)(
                     split="test",
                     epochs=1,
                     batch_size=64,
