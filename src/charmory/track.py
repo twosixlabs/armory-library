@@ -44,15 +44,17 @@ def track_params(prefix: Optional[str] = None, ignore: Optional[List[str]] = Non
     def _decorator(func: Callable[P, T]) -> Callable[P, T]:
         @wraps(func)
         def _wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-            _prefix = prefix if prefix else func.__name__
-            mlflow.log_param(
-                f"{_prefix}._func", f"{func.__module__}.{func.__qualname__}"
-            )
+            active_run = mlflow.active_run()
+            if active_run:
+                _prefix = prefix if prefix else func.__name__
+                mlflow.log_param(
+                    f"{_prefix}._func", f"{func.__module__}.{func.__qualname__}"
+                )
 
-            for key, val in kwargs.items():
-                if ignore and key in ignore:
-                    continue
-                mlflow.log_param(f"{_prefix}.{key}", val)
+                for key, val in kwargs.items():
+                    if ignore and key in ignore:
+                        continue
+                    mlflow.log_param(f"{_prefix}.{key}", val)
 
             return func(*args, **kwargs)
 
