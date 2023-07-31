@@ -37,7 +37,7 @@ log.level("METRIC", no=24, color="<blue>", icon="\N{downwards quadruple arrow}")
 default_message_filters = {
     "": "WARNING",
     "armory": "INFO",
-    "art": "INFO",
+    "art": "WARNING",
     "docker": "INFO",
     "botocore": "WARNING",
     "matplotlib": "INFO",

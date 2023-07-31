@@ -9,7 +9,7 @@ stages:
   - "🧪 Unit Tests"
   - "📖 Generate Docs"
   - "🔨 Build"
-  # - "🚀 Deploy"  # TODO: Add deploy stage for Advana target; e.g. package, container, etc. -CW
+  - "🚀 Publish"
 
 variables:
   LC_ALL: "C.UTF-8"
@@ -38,10 +38,16 @@ before_script:
   - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.jatic.net".insteadof "ssh://git@gitlab.jatic.net"
   - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.jatic.net/".insteadOf "git@gitlab.jatic.net:"
 
+.default_rules:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "web"  # Manually-triggered pipelines
+
 code-linting:
   stage: "📡 Code Linting"
-  only:
-    - merge_requests
+  rules:
+    - !reference [.default_rules, rules]
   script:
     - pip install pre-commit
     - make lint
@@ -56,8 +62,8 @@ static_analysis:
   allow_failure: true
   dependencies:
     - code-linting
-  only:
-    - merge_requests
+  rules:
+    - !reference [.default_rules, rules]
   script:
     - pip install bandit mypy
     - make scan
@@ -66,9 +72,8 @@ unit-test:
   stage: "🧪 Unit Tests"
   dependencies:
     - code-linting
-  only:
-    - jatic
-    - merge_requests
+  rules:
+    - !reference [.default_rules, rules]
   script:
     - make install
     - make test
@@ -77,9 +82,8 @@ examples-test:
   stage: "🧪 Unit Tests"
   dependencies:
     - code-linting
-  only:
-    - jatic
-    - merge_requests
+  rules:
+    - !reference [.default_rules, rules]
   script:
     - cd examples
     - make install
@@ -93,9 +97,8 @@ pages:
   dependencies:
     - code-linting
     - unit-test
-  only:
-    - jatic
-    - merge_requests
+  rules:
+    - !reference [.default_rules, rules]
   script:
     - pip install mkdocs mkdocstrings mkdocs-exclude mkdocs-material
     - make docs
@@ -103,17 +106,26 @@ pages:
 build:
   stage: "🔨 Build"
   artifacts:
+    expire_in: 1 week
     paths:
       - dist/*.whl
   dependencies:
     - code-linting
     - examples-test
     - unit-test
-  only:
-    - jatic
-    - merge_requests
+  rules:
+    - !reference [.default_rules, rules]
+    - if: $CI_COMMIT_TAG
   script:
     - make install
     - make build
-    # TODO: Add build for Advana target; e.g. package, container, etc. -CW
-    # - make docker
+
+publish:
+  stage: "🚀 Publish"
+  dependencies:
+    - build
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - pip install twine
+    - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
