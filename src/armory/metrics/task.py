@@ -138,8 +138,7 @@ class Entailment:
             cache_dir = os.path.join(paths.HostPaths().saved_model_dir, "huggingface")
 
         with ExternalPipInstalledImport(
-            package="transformers",
-            dockerimage="twosixarmory/pytorch-deepspeech",
+            package="transformers"
         ):
             from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
