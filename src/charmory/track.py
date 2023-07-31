@@ -47,6 +47,18 @@ def track_params(prefix: Optional[str] = None, ignore: Optional[List[str]] = Non
             active_run = mlflow.active_run()
             if active_run:
                 _prefix = prefix if prefix else func.__name__
+
+                # MLFlow does not allow duplicates, so check the active
+                # run and adjust the prefix if needed
+                count = 0
+                param = _prefix
+                while param in active_run.data.params:
+                    count += 1
+                    param = f"{_prefix}.{count}"
+                if count:
+                    _prefix = f"{_prefix}.{count}"
+                active_run.data.params[_prefix] = True
+
                 mlflow.log_param(
                     f"{_prefix}._func", f"{func.__module__}.{func.__qualname__}"
                 )

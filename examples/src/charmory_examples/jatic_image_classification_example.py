@@ -49,7 +49,7 @@ TRAINING_EPOCHS = 20
 def load_huggingface_dataset(transform):
     print("Loading HuggingFace dataset from jatic_toolbox")
 
-    train_dataset = track_params("train_dataset")(load_jatic_dataset)(
+    train_dataset = track_params()(load_jatic_dataset)(
         provider="huggingface",
         dataset_name="cifar10",
         task="image-classification",
@@ -64,7 +64,7 @@ def load_huggingface_dataset(transform):
         size=512,  # Use a subset just for demo purposes
     )
 
-    test_dataset = track_params("test_dataset")(load_jatic_dataset)(
+    test_dataset = track_params()(load_jatic_dataset)(
         provider="huggingface",
         dataset_name="cifar10",
         task="image-classification",
@@ -84,7 +84,7 @@ def load_huggingface_dataset(transform):
 
 def load_torchvision_dataset(transform):
     print("Loading torchvision dataset from jatic_toolbox")
-    train_dataset = track_params("train_dataset")(load_jatic_dataset)(
+    train_dataset = track_params()(load_jatic_dataset)(
         provider="torchvision",
         dataset_name="CIFAR10",
         task="image-classification",
@@ -101,7 +101,7 @@ def load_torchvision_dataset(transform):
         size=512,  # Use a subset just for demo purposes
     )
 
-    test_dataset = track_params("test_dataset")(load_jatic_dataset)(
+    test_dataset = track_params()(load_jatic_dataset)(
         provider="torchvision",
         dataset_name="CIFAR10",
         task="image-classification",
