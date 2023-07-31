@@ -21,6 +21,7 @@ def download_all(download_config, scenario):
             _download_weights(weights_file)
 
 
+# TODO
 def _download_weights(weights_file, force_download=False):
     if not weights_file:
         return
