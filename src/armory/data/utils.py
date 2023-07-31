@@ -31,7 +31,7 @@ def add_checksums_dir(dir):
 
 
 def maybe_download_weights_from_s3(
-    weights_file: str, *, auto_expand_tars: bool = False
+    weights_file: str, *, auto_expand_tars: bool = False, saved_model_dir: str = None
 ) -> str:
     """
     Download weights file from S3 if not already present in `saved_model_dir`.
@@ -39,6 +39,7 @@ def maybe_download_weights_from_s3(
     :param
         weights_file (str): name of weights file to download
         auto_expand_tars (bool): if True, expand tar archives into a subdirectory
+        saved_model_dir (str): path to directory containing weights file
 
     :return
         filepath (str): path to downloaded weights file
