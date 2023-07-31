@@ -137,9 +137,7 @@ class Entailment:
         if cache_dir is None:
             cache_dir = os.path.join(paths.HostPaths().saved_model_dir, "huggingface")
 
-        with ExternalPipInstalledImport(
-            package="transformers"
-        ):
+        with ExternalPipInstalledImport(package="transformers"):
             from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)

@@ -36,14 +36,3 @@ def test_invalid_model_weight():
     weights_file = "does_not_exist.h5"
     with pytest.raises(ValueError, match="attempting to load a custom set of weights"):
         maybe_download_weights_from_s3(weights_file)
-
-
-@pytest.mark.parametrize(
-    "name, repo",
-    [
-        ("single", "twosixlabs/armory-example"),
-        ("single branch", "twosixlabs/armory-example@master"),
-        ("single in list", ["twosixlabs/armory-example"]),
-        ("multiple in list", ["twosixlabs/armory-example", "twosixlabs/armory"]),
-    ],
-)
