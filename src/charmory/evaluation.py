@@ -1,6 +1,7 @@
 """Armory Experiment Configuration Classes"""
-
 from dataclasses import dataclass, field
+import json
+import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional
 
@@ -92,9 +93,12 @@ class SysConfig:
 
     def __post_init__(self):
         # TODO: Discuss/refactor the following
-        import json
+        if os.environ.get("ARMORY_HOME"):
+            armory_dir = Path(os.environ["ARMORY_HOME"])
+        else:
+            armory_dir = Path.home() / ".armory"
+            os.environ["ARMORY_HOME"] = str(armory_dir)
 
-        armory_dir = Path.home() / ".armory"
         self.paths = {
             "armory_dir": str(armory_dir),
             "armory_config": str(armory_dir / "config.json"),
