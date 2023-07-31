@@ -21,6 +21,10 @@ from charmory.evaluation import (
     SysConfig,
 )
 import charmory.scenarios.image_classification
+from charmory.track import track_evaluation, track_init_params, track_params
+
+NAME = "cifar_baseline"
+DESCRIPTION = "Baseline cifar10 image classification"
 
 
 def main(argv: list = sys.argv[1:]):
@@ -31,83 +35,93 @@ def main(argv: list = sys.argv[1:]):
 
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
 
-    dataset = Dataset(
-        name="CIFAR10",
-        train_dataset=armory.data.datasets.cifar10(
-            split="train",
-            epochs=20,
-            batch_size=64,
-            shuffle_files=True,
-        ),
-        test_dataset=armory.data.datasets.cifar10(
-            split="test",
-            epochs=1,
-            batch_size=64,
-            shuffle_files=False,
-        ),
-    )
+    with track_evaluation(NAME, description=DESCRIPTION):
+        dataset = Dataset(
+            name="CIFAR10",
+            train_dataset=track_params("train_dataset")(armory.data.datasets.cifar10)(
+                split="train",
+                epochs=20,
+                batch_size=64,
+                shuffle_files=True,
+            ),
+            test_dataset=armory.data.datasets.EvalGenerator(
+                track_params("test_dataset")(armory.data.datasets.cifar10)(
+                    split="test",
+                    epochs=1,
+                    batch_size=64,
+                    shuffle_files=False,
+                ),
+                num_eval_batches=5,
+            ),
+        )
 
-    model = Model(
-        name="cifar",
-        model=armory.baseline_models.pytorch.cifar.get_art_model(
+        classifier = track_params("model")(
+            armory.baseline_models.pytorch.cifar.get_art_model
+        )(
             model_kwargs={},
             wrapper_kwargs={},
             weights_path=None,
-        ),
-    )
+        )
 
-    attack = Attack(
-        function=art.attacks.evasion.ProjectedGradientDescent,
-        kwargs={
-            "batch_size": 1,
-            "eps": 0.031,
-            "eps_step": 0.007,
-            "max_iter": 20,
-            "num_random_init": 1,
-            "random_eps": False,
-            "targeted": False,
-            "verbose": False,
-        },
-        knowledge="white",
-        use_label=True,
-        type=None,
-    )
+        model = Model(
+            name="cifar",
+            model=classifier,
+        )
 
-    scenario = Scenario(
-        function=charmory.scenarios.image_classification.ImageClassificationTask,
-        kwargs={},
-        export_batches=True,
-    )
+        attack = Attack(
+            function=track_init_params("attack")(
+                art.attacks.evasion.ProjectedGradientDescent
+            ),
+            kwargs={
+                "batch_size": 1,
+                "eps": 0.031,
+                "eps_step": 0.007,
+                "max_iter": 20,
+                "num_random_init": 1,
+                "random_eps": False,
+                "targeted": False,
+                "verbose": False,
+            },
+            knowledge="white",
+            use_label=True,
+            type=None,
+        )
 
-    metric = Metric(
-        profiler_type="basic",
-        supported_metrics=["accuracy"],
-        perturbation=["linf"],
-        task=["categorical_accuracy"],
-        means=True,
-        record_metric_per_sample=False,
-    )
+        scenario = Scenario(
+            function=charmory.scenarios.image_classification.ImageClassificationTask,
+            kwargs={},
+            export_batches=True,
+        )
 
-    sysconfig = SysConfig(gpus=["all"], use_gpu=True)
+        metric = Metric(
+            profiler_type="basic",
+            supported_metrics=["accuracy"],
+            perturbation=["linf"],
+            task=["categorical_accuracy"],
+            means=True,
+            record_metric_per_sample=False,
+        )
 
-    baseline = Evaluation(
-        name="cifar_baseline",
-        description="Baseline cifar10 image classification",
-        author="msw@example.com",
-        dataset=dataset,
-        model=model,
-        attack=attack,
-        scenario=scenario,
-        defense=None,
-        metric=metric,
-        sysconfig=sysconfig,
-    )
+        sysconfig = SysConfig(gpus=["all"], use_gpu=True)
 
-    print(f"Starting Demo for {baseline.name}")
+        baseline = Evaluation(
+            name=NAME,
+            description=DESCRIPTION,
+            author="msw@example.com",
+            dataset=dataset,
+            model=model,
+            attack=attack,
+            scenario=scenario,
+            defense=None,
+            metric=metric,
+            sysconfig=sysconfig,
+        )
 
-    cifar_engine = Engine(baseline)
-    cifar_engine.train(nb_epochs=20)
-    results = cifar_engine.run()
+        print(f"Starting Demo for {baseline.name}")
+
+        cifar_engine = Engine(baseline)
+        # cifar_engine.train(nb_epochs=20)
+        results = cifar_engine.run(track=True)
 
     print("=" * 64)
     # print(json.dumps(baseline.asdict(), indent=4, sort_keys=True))
@@ -119,12 +133,6 @@ def main(argv: list = sys.argv[1:]):
             results, default=lambda o: "<not serializable>", indent=4, sort_keys=True
         )
     )
-
-    print("=" * 64)
-    print(dataset.train_dataset)
-    print(dataset.test_dataset)
-    print("-" * 64)
-    print(model.model)
 
     print("=" * 64)
     print("CIFAR10 Experiment Complete!")
