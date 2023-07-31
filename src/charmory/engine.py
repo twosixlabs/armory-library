@@ -55,13 +55,16 @@ class Engine:
             )
 
     def _track_results(
-        self, active_run: Optional[mlflow.ActiveRun], results: Dict[str, Any]
+        self,
+        active_run: Optional[mlflow.ActiveRun],
+        results: Dict[str, Any],
+        force_track: bool,
     ):
         """Record evaluation run results"""
-        if not self.enable_tracking:
+        if not self.enable_tracking and not force_track:
             return
 
-        assert active_run
+        # assert active_run
 
         for key, values in results["results"].items():
             if key == "compute":
@@ -69,9 +72,9 @@ class Engine:
             for val in values:
                 mlflow.log_metric(key, val)
 
-    def run(self):
+    def run(self, track=False):
         with self._track() as active_run:
             results = self.scenario.evaluate()
-            self._track_results(active_run, results)
+            self._track_results(active_run, results, track)
 
         return results
