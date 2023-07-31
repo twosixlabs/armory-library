@@ -63,10 +63,11 @@ class Engine:
 
         assert active_run
 
-        for key, val in results["results"].items():
+        for key, values in results["results"].items():
             if key == "compute":
                 continue
-            mlflow.log_metric(key, val[0])
+            for val in values:
+                mlflow.log_metric(key, val)
 
     def run(self):
         with self._track() as active_run:
