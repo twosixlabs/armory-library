@@ -736,7 +736,7 @@ def pokemon_image_preprocess(context, batch):
     Preprocessing when images are of variable size. Took this function from canonical_image_preprocess 
     and had to delete one line with 'check_shapes' method that was causing issues
     """
-
+    
     if batch.dtype != context.input_type:
         raise ValueError("input batch dtype {batch.dtype} != {context.input_type}")
     assert batch.min() >= context.input_min

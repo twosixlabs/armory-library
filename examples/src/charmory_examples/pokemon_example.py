@@ -8,6 +8,7 @@ import sys
 import art.attacks.evasion
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox import load_dataset as load_jatic_dataset
+import torchvision
 
 import armory.baseline_models.pytorch.pokemon
 from armory.data.datasets import pokemon_context, pokemon_preprocessing
@@ -24,30 +25,51 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
+from charmory.utils import (
+    
+    create_jatic_image_classification_dataset_transform,
+)
+BATCH_SIZE = 16
+TRAINING_EPOCHS = 20
 
 # Loads Pokemon Classification HuggingFace Example
-def load_huggingface_dataset(
-    split: str, epochs: int, batch_size: int, shuffle_files: bool, **kwargs
-):
-    print(
-        "Loading HuggingFace dataset from jatic_toolbox, "
-        f"{split=}, {batch_size=}, {epochs=}, {shuffle_files=}"
-    )
-    dataset = load_jatic_dataset(
+def load_huggingface_dataset():
+    train_dataset = load_jatic_dataset(
         provider="huggingface",
         dataset_name="keremberke/pokemon-classification",
         task="image-classification",
         name='full',
-        split=split,
+        split="train"
     )
-    return JaticVisionDatasetGenerator(
-        dataset=dataset,
-        batch_size=batch_size,
-        epochs=epochs,
-        shuffle=shuffle_files,
-        preprocessing_fn=pokemon_preprocessing,
-        context=pokemon_context,
+    transform=torchvision.transforms.Compose(
+            [
+                torchvision.transforms.ToTensor(),
+                torchvision.transforms.Resize(size=(244, 244)),
+            ]
+        )
+    train_dataset.set_transform(transform)
+    train_dataset_generator = JaticVisionDatasetGenerator(
+        dataset=train_dataset,
+        batch_size=BATCH_SIZE,
+        epochs=TRAINING_EPOCHS,
+        shuffle=True,
+
     )
+    test_dataset = load_jatic_dataset(
+        provider="huggingface",
+        dataset_name="keremberke/pokemon-classification",
+        task="image-classification",
+        name='full',
+        split="test",
+    )
+    test_dataset.set_transform(transform)
+    test_dataset_generator = JaticVisionDatasetGenerator(
+        dataset=test_dataset,
+        batch_size=BATCH_SIZE,
+        epochs=1,
+        shuffle=True,
+    )
+    return train_dataset_generator, test_dataset_generator
 
 
 
@@ -62,33 +84,25 @@ def main(argv: list = sys.argv[1:]):
 
 
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
-
+    
+    train_dataset, test_dataset = load_huggingface_dataset()
     dataset = Dataset(
         name="POKEMON",
-        train_dataset=load_huggingface_dataset(
-            split="train",
-            epochs=20,
-            batch_size=64,
-            shuffle_files=True,
-        ),
-        test_dataset=load_huggingface_dataset(
-            split="test",
-            epochs=1,
-            batch_size=64,
-            shuffle_files=False,
-        ),
+        train_dataset=train_dataset,
+        test_dataset=test_dataset
     )
 
     pokemon_model = armory.baseline_models.pytorch.pokemon.get_art_model(
         model_kwargs={},
         wrapper_kwargs={},
+        weights_path=None,
     )
-
+    transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
     model = Model(
         name="pokemon",
         model=pokemon_model,
         fit=True,
-        fit_kwargs={"nb_epochs": 20},
+        fit_kwargs={"nb_epochs": TRAINING_EPOCHS},
     )
     
 
