@@ -18,7 +18,6 @@ from botocore.exceptions import ClientError
 import requests
 from tqdm import tqdm
 
-from armory import paths
 from armory.data.progress_percentage import ProgressPercentage, ProgressPercentageUpload
 from armory.logs import is_progress, log
 from armory.utils.configuration import get_verify_ssl
@@ -35,12 +34,16 @@ def maybe_download_weights_from_s3(
     weights_file: str, *, auto_expand_tars: bool = False
 ) -> str:
     """
+    Download weights file from S3 if not already present in `saved_model_dir`.
 
-    :param weights_file:
-    :param auto_expand_tars:
-    :return:
+    :param
+        weights_file (str): name of weights file to download
+        auto_expand_tars (bool): if True, expand tar archives into a subdirectory
+
+    :return
+        filepath (str): path to downloaded weights file
     """
-    saved_model_dir = paths.HostPaths().saved_model_dir
+
     filepath = os.path.join(saved_model_dir, weights_file)
 
     if os.path.isfile(filepath):
