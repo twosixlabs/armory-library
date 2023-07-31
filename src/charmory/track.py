@@ -1,7 +1,9 @@
 """Utilities to support experiment tracking within Armory."""
 
 from functools import wraps
-from typing import Callable, List, Optional, TypeVar
+import os
+from pathlib import Path
+from typing import Callable, List, Optional, TypeVar, Union
 
 import mlflow
 
@@ -89,7 +91,9 @@ def track_init_params(prefix: str, ignore: Optional[List[str]] = None):
     return _decorator
 
 
-def track_evaluation(name: str, description: Optional[str] = None):
+def track_evaluation(
+    name: str, description: Optional[str] = None, uri: Optional[Union[str, Path]] = None
+):
     """
     Create a context manager for tracking an evaluation run with MLFlow.
 
@@ -103,7 +107,13 @@ def track_evaluation(name: str, description: Optional[str] = None):
     Args:
         name: Experiment name (should be the same between runs)
         description: Optional description of the run
+        uri: Optional MLFlow server URI, defaults to ~/.armory/mlruns
     """
+
+    if not os.environ.get("MLFLOW_TRACKING_URI"):
+        if uri is None:
+            uri = Path(Path.home(), ".armory/mlruns")
+        mlflow.set_tracking_uri(uri)
 
     experiment = mlflow.get_experiment_by_name(name)
     if experiment:
