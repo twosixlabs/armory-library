@@ -15,7 +15,7 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def track_params(prefix: str, ignore: Optional[List[str]] = None):
+def track_params(prefix: Optional[str] = None, ignore: Optional[List[str]] = None):
     """
     Create a decorator to log function keyword arguments as parameters with
     MLFlow.
@@ -24,16 +24,17 @@ def track_params(prefix: str, ignore: Optional[List[str]] = None):
 
         from charmory.track import track_params
 
-        @track_params("model")
+        @track_params()
         def load_model(name: str, batch_size: int):
             pass
 
         # Or for a third-party function that cannot have the decorator
         # already applied, you can apply it inline
-        track_params("third_party")(third_party_func)(arg=42)
+        track_params()(third_party_func)(arg=42)
 
     Args:
-        prefix: String to be prefixed to all keyword argument names
+        prefix: Optional prefix for all keyword argument names (default is
+            inferred from decorated function name)
         ignore: Optional list of keyword arguments to be ignored
 
     Returns:
@@ -43,13 +44,15 @@ def track_params(prefix: str, ignore: Optional[List[str]] = None):
     def _decorator(func: Callable[P, T]) -> Callable[P, T]:
         @wraps(func)
         def _wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            _prefix = prefix if prefix else func.__name__
             mlflow.log_param(
-                f"{prefix}._func", f"{func.__module__}.{func.__qualname__}"
+                f"{_prefix}._func", f"{func.__module__}.{func.__qualname__}"
             )
+
             for key, val in kwargs.items():
                 if ignore and key in ignore:
                     continue
-                mlflow.log_param(f"{prefix}.{key}", val)
+                mlflow.log_param(f"{_prefix}.{key}", val)
 
             return func(*args, **kwargs)
 
@@ -58,7 +61,7 @@ def track_params(prefix: str, ignore: Optional[List[str]] = None):
     return _decorator
 
 
-def track_init_params(prefix: str, ignore: Optional[List[str]] = None):
+def track_init_params(prefix: Optional[str] = None, ignore: Optional[List[str]] = None):
     """
     Create a decorator to log class dunder-init keyword arguments as parameters
     with MLFlow.
@@ -67,17 +70,18 @@ def track_init_params(prefix: str, ignore: Optional[List[str]] = None):
 
         from charmory.track import track_init_params
 
-        @track_init_params("dataset")
+        @track_init_params()
         class MyDataset:
             def __init__(self, batch_size: int):
                 pass
 
         # Or for a third-party class that cannot have the decorator
         # already applied, you can apply it inline
-        obj = track_init_params("third_party")(ThirdPartyClass)(arg=42)
+        obj = track_init_params()(ThirdPartyClass)(arg=42)
 
     Args:
-        prefix: String to be prefixed to all keyword argument names
+        prefix: Optional prefix for all keyword argument names (default is
+            inferred from decorated class name)
         ignore: Optional list of keyword arguments to be ignored
 
     Returns:
@@ -85,7 +89,8 @@ def track_init_params(prefix: str, ignore: Optional[List[str]] = None):
     """
 
     def _decorator(cls: T) -> T:
-        cls.__init__ = track_params(prefix, ignore)(cls.__init__)
+        _prefix = prefix if prefix else cls.__name__
+        cls.__init__ = track_params(_prefix, ignore)(cls.__init__)
         return cls
 
     return _decorator
