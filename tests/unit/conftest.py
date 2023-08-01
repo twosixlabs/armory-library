@@ -65,7 +65,7 @@ def evaluation(
     evaluation_scenario,
     evaluation_attack,
     evaluation_metric,
-    evaluation_sysconfig
+    evaluation_sysconfig,
 ):
     return charmory.evaluation.Evaluation(
         name="test",
