@@ -1,12 +1,12 @@
 """
 CNN model for 28x28x1 image classification
 """
-import os
-from pathlib import Path
 import tarfile
 
 from art.estimators.classification import TFClassifier
 import tensorflow.compat.v1 as tf
+
+from armory.utils.configuration import get_configured_path
 
 tf.disable_eager_execution()
 # TODO Update when ART is fixed with default_graph thing
@@ -35,9 +35,7 @@ def get_art_model(model_kwargs, wrapper_kwargs, weights_path=None):
 
     if weights_path:
         # Load Model using preferred save/restore method
-        saved_model_dir = os.getenv(
-            "SAVED_MODEL_DIR", str(Path.home() / ".armory/saved_models")
-        )
+        saved_model_dir = get_configured_path("SAVED_MODEL_DIR", "saved_models")
         tar = tarfile.open(weights_path)
         tar.extractall(path=saved_model_dir)
         tar.close()

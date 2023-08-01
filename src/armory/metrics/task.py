@@ -5,7 +5,6 @@ Task metrics (comparing y to y_pred)
 from collections import Counter
 import functools
 import os
-from pathlib import Path
 
 import numpy as np
 from tidecv import TIDE
@@ -22,6 +21,7 @@ from armory.metrics.common import (
     result_formatter,
     set_namespace,
 )
+from armory.utils.configuration import get_configured_path
 from armory.utils.external_repo import ExternalPipInstalledImport
 
 aggregate = MetricNameSpace()
@@ -135,9 +135,7 @@ class Entailment:
                 )
 
         if cache_dir is None:
-            _saved_model_dir = os.getenv(
-                "SAVED_MODEL_DIR", str(Path.home() / ".armory/saved_models")
-            )
+            _saved_model_dir = get_configured_path("SAVED_MODEL_DIR", "saved_models")
             cache_dir = os.path.join(_saved_model_dir, "huggingface")
 
         with ExternalPipInstalledImport(package="transformers"):

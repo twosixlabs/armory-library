@@ -1,6 +1,5 @@
 import copy
 import os
-from pathlib import Path
 
 import numpy as np
 
@@ -9,6 +8,7 @@ from armory.instrument import GlobalMeter, LogWriter, Meter, ResultsWriter
 from armory.logs import log
 from armory.scenarios.poison import Poison
 from armory.utils import config_loading
+from armory.utils.configuration import get_configured_path
 
 
 class DatasetPoisonerWitchesBrew:
@@ -279,7 +279,7 @@ class WitchesBrewScenario(Poison):
             )
 
             attack_dir = os.path.join(
-                os.getenv("SAVED_MODEL_DIR", str(Path.home() / ".armory/saved_models")),
+                get_configured_path("SAVED_MODEL_DIR", "saved_models"),
                 "attacks",
             )
             os.makedirs(attack_dir, exist_ok=True)

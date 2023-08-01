@@ -5,7 +5,6 @@ Utils for data processing
 import hashlib
 import json
 import os
-from pathlib import Path
 import random
 import shutil
 import string
@@ -21,7 +20,7 @@ from tqdm import tqdm
 
 from armory.data.progress_percentage import ProgressPercentage, ProgressPercentageUpload
 from armory.logs import is_progress, log
-from armory.utils.configuration import get_verify_ssl
+from armory.utils.configuration import get_configured_path, get_verify_ssl
 
 CHECKSUMS_DIRS = []
 
@@ -49,9 +48,7 @@ def maybe_download_weights_from_s3(
     filepath = os.path.join(saved_model_dir, weights_file)
 
     if saved_model_dir is None:
-        saved_model_dir = os.getenv(
-            "SAVED_MODEL_DIR", str(Path.home() / ".armory/saved_models")
-        )
+        saved_model_dir = get_configured_path("SAVED_MODEL_DIR", "saved_models")
 
     if os.path.isfile(filepath):
         log.info(f"Using available {weights_file} in Armory `saved_model_dir`")

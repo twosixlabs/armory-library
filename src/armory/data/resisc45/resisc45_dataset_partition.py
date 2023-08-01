@@ -7,8 +7,9 @@ This script is to break the original RAR file into 3 separate folders for
 """
 
 import os
-from pathlib import Path
 import shutil
+
+from armory.utils.configuration import get_configured_path
 
 LABELS = [
     "airplane",
@@ -62,7 +63,7 @@ LABELS = [
 def split_data(rootdir=None, full="NWPU-RESISC45"):
     if rootdir is None:
         rootdir = os.path.join(
-            os.getenv("DATASET_DIR", str(Path.home() / ".armory/datasets")),
+            get_configured_path("DATASET_DIR", "datasets"),
             "downloads",
             "manual",
             "resisc45",

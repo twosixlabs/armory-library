@@ -10,7 +10,6 @@ The 'downloads' subdirectory under <dataset_dir> is reserved for caching.
 
 import json
 import os
-from pathlib import Path
 import re
 from typing import Callable, List, Tuple, Union
 
@@ -38,6 +37,7 @@ from armory.data.utils import (
 )
 from armory.data.xview import xview as xv  # noqa: F401
 from armory.logs import log
+from armory.utils.configuration import get_configured_path
 
 os.environ["KMP_WARNINGS"] = "0"
 
@@ -454,7 +454,7 @@ def _generator_from_tfds(
     """
 
     if dataset_dir is None:
-        dataset_dir = os.getenv("DATASET_DIR", str(Path.home() / ".armory/datasets"))
+        dataset_dir = get_configured_path("DATASET_DIR", "datasets")
 
     if cache_dataset:
         _cache_dataset(
