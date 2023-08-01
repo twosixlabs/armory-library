@@ -32,7 +32,7 @@ from armory.art_experimental.attacks import patch
 from armory.art_experimental.attacks.sweep import SweepAttack
 from armory.data.datasets import ArmoryDataGenerator, EvalGenerator
 from armory.data.utils import maybe_download_weights_from_s3
-from armory.utils import labels
+import charmory.labels as labels
 
 
 def load_fn(sub_config):

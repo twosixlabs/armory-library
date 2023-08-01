@@ -224,20 +224,19 @@ def main():
         ###
 
         attack = Attack(
-            function=track_init_params(art.attacks.evasion.ProjectedGradientDescent),
-            kwargs={
-                "batch_size": 1,
-                "eps": 0.031,
-                "eps_step": 0.007,
-                "max_iter": 20,
-                "num_random_init": 1,
-                "random_eps": False,
-                "targeted": False,
-                "verbose": False,
-            },
-            knowledge="white",
-            use_label=True,
-            type=None,
+            name="PGD",
+            attack=track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
+                loaded_model,
+                batch_size=1,
+                eps=0.031,
+                eps_step=0.007,
+                max_iter=20,
+                num_random_init=1,
+                random_eps=False,
+                targeted=False,
+                verbose=False,
+            ),
+            use_label_for_untargeted=True,
         )
 
         scenario = Scenario(
@@ -264,7 +263,6 @@ def main():
             model=model,
             attack=attack,
             scenario=scenario,
-            defense=None,
             metric=metric,
             sysconfig=sysconfig,
         )
@@ -283,12 +281,6 @@ def main():
             results, default=lambda o: "<not serializable>", indent=4, sort_keys=True
         )
     )
-
-    print("=" * 64)
-    print(dataset.train_dataset)
-    print(dataset.test_dataset)
-    print("-" * 64)
-    print(model)
 
     print("=" * 64)
     print("JATIC Experiment Complete!")
