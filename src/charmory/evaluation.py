@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional
+from pathlib import Path
 
 from art.estimators import BaseEstimator
 
@@ -105,7 +106,8 @@ class SysConfig:
         self._create_directories_and_update_env_vars()
 
     def _initialize_paths(self):
-        """Construct the paths for each directory."""
+        """Construct the paths for each directory. Some of these are old keys used in armory version <= 0.19.0
+           and will be deprecated in the future. Please use `armory_home` instead."""
         self.paths = {
             "armory_home": Path(self.armory_home),
             "dataset_dir": Path(self.armory_home / "datasets"),
