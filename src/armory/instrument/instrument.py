@@ -30,9 +30,9 @@ Example:
 """
 
 import json
+import os
+from pathlib import Path
 from typing import Callable
-
-import armory.paths
 
 try:
     # If numpy is available, enable NumpyEncoder for json export
@@ -261,7 +261,9 @@ class Hub:
         self.default_writers = []
         self.closed = False
         self.export_subdir = "saved_samples"
-        self._set_output_dir(armory.paths.HostPaths().output_dir)
+        self._set_output_dir(
+            os.getenv("OUTPUT_DIR", str(Path.home() / ".armory/outputs"))
+        )
 
     def _set_output_dir(self, name):
         self.output_dir = name

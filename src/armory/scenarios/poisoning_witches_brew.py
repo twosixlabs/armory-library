@@ -1,9 +1,10 @@
 import copy
 import os
+from pathlib import Path
 
 import numpy as np
 
-from armory import metrics, paths
+from armory import metrics
 from armory.instrument import GlobalMeter, LogWriter, Meter, ResultsWriter
 from armory.logs import log
 from armory.scenarios.poison import Poison
@@ -277,7 +278,10 @@ class WitchesBrewScenario(Poison):
                 else None
             )
 
-            attack_dir = os.path.join(paths.HostPaths().saved_model_dir, "attacks")
+            attack_dir = os.path.join(
+                os.getenv("SAVED_MODEL_DIR", str(Path.home() / ".armory/saved_models")),
+                "attacks",
+            )
             os.makedirs(attack_dir, exist_ok=True)
             if data_filepath is not None:
                 data_filepath = os.path.join(attack_dir, data_filepath)
