@@ -101,7 +101,9 @@ def download_and_extract_repo(
     verify_ssl = get_verify_ssl()
 
     if external_repo_dir is None:
-        external_repo_dir = "/tmp/external"
+        external_repo_dir = os.getenv(
+            "EXTERNAL_REPO_DIR", str(Path.home() / ".armory/external")
+        )
 
     os.makedirs(external_repo_dir, exist_ok=True)
     headers = {}
@@ -153,14 +155,18 @@ def download_and_extract_repo(
 
 
 def add_local_repo(local_repo_name: str) -> None:
-    local_repo_dir = "/tmp/external"
+    local_repo_dir = os.getenv(
+        "EXTERNAL_REPO_DIR", str(Path.home() / ".armory/external")
+    )
     path = os.path.join(local_repo_dir, local_repo_name)
     add_path(path, include_parent=True)
 
 
 def add_pythonpath(subpath: str, external_repo_dir: str = None) -> None:
     if external_repo_dir is None:
-        external_repo_dir = "/tmp/external"
+        external_repo_dir = os.getenv(
+            "EXTERNAL_REPO_DIR", str(Path.home() / ".armory/external")
+        )
 
     path = os.path.join(external_repo_dir, subpath)
     add_path(path, include_parent=True)

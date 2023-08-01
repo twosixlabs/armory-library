@@ -10,7 +10,6 @@ import numpy as np
 from tidecv import TIDE
 import tidecv.data
 
-from armory import paths
 from armory.data.adversarial.apricot_metadata import (
     ADV_PATCH_MAGIC_NUMBER_LABEL_ID,
     APRICOT_PATCHES,
@@ -135,7 +134,10 @@ class Entailment:
                 )
 
         if cache_dir is None:
-            cache_dir = os.path.join(paths.HostPaths().saved_model_dir, "huggingface")
+            _saved_model_dir = os.getenv(
+                "SAVED_MODEL_DIR", str(Path.home() / ".armory/saved_models")
+            )
+            cache_dir = os.path.join(_saved_model_dir, "huggingface")
 
         with ExternalPipInstalledImport(package="transformers"):
             from transformers import AutoModelForSequenceClassification, AutoTokenizer

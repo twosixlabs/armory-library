@@ -3,7 +3,6 @@ Utility to download model weights to cache.
 """
 import os
 
-from armory import paths
 from armory.data.utils import _read_validate_scenario_config, download_file_from_s3
 from armory.logs import log
 
@@ -21,12 +20,13 @@ def download_all(download_config, scenario):
             _download_weights(weights_file)
 
 
-# TODO
 def _download_weights(weights_file, force_download=False):
     if not weights_file:
         return
 
-    saved_model_dir = paths.HostPaths().saved_model_dir
+    saved_model_dir = os.getenv(
+        "SAVED_MODEL_DIR", str(Path.home() / ".armory/saved_models")
+    )
     filepath = os.path.join(saved_model_dir, weights_file)
 
     if os.path.isfile(filepath) and not force_download:
