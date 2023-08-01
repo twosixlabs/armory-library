@@ -45,14 +45,11 @@ def main(argv: list = sys.argv[1:]):
                 batch_size=64,
                 shuffle_files=True,
             ),
-            test_dataset=armory.data.datasets.EvalGenerator(
-                track_params()(armory.data.datasets.cifar10)(
-                    split="test",
-                    epochs=1,
-                    batch_size=64,
-                    shuffle_files=False,
-                ),
-                num_eval_batches=5,
+            test_dataset=track_params()(armory.data.datasets.cifar10)(
+                split="test",
+                epochs=1,
+                batch_size=64,
+                shuffle_files=False,
             ),
         )
 
@@ -69,7 +66,7 @@ def main(argv: list = sys.argv[1:]):
             model=classifier,
         )
 
-        defense = art.defences.preprocessor.JpegCompression(
+        defense = track_init_params(art.defences.preprocessor.JpegCompression)(
             apply_fit=False,
             apply_predict=True,
             clip_values=(0.0, 1.0),
@@ -125,7 +122,7 @@ def main(argv: list = sys.argv[1:]):
         print(f"Starting Demo for {baseline.name}")
 
         cifar_engine = Engine(baseline)
-        # cifar_engine.train(nb_epochs=20)
+        cifar_engine.train(nb_epochs=20)
         results = cifar_engine.run()
 
     print("=" * 64)
