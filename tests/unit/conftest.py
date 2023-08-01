@@ -70,4 +70,5 @@ def evaluation(
         scenario=evaluation_scenario,
         attack=evaluation_attack,
         metric=evaluation_metric,
+        sysconfig=charmory.evaluation.SysConfig(gpus=["all"], use_gpu=True),
     )
