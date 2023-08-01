@@ -31,6 +31,6 @@ class Engine:
 
     def run(self):
         results = self.scenario.evaluate()
-        track_metrics({k: v for k, v in results["results"].items() if k != "compute"})
+        track_metrics(results["results"]["metrics"])
 
         return results
