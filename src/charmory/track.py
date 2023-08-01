@@ -4,7 +4,7 @@ from functools import wraps
 import os
 from pathlib import Path
 import sys
-from typing import Callable, List, Optional, TypeVar, Union, overload
+from typing import Callable, Mapping, Optional, Sequence, TypeVar, Union, overload
 
 import mlflow
 import mlflow.cli
@@ -21,7 +21,7 @@ T = TypeVar("T")
 def track_params(
     *,
     prefix: Optional[str] = None,
-    ignore: Optional[List[str]] = None,
+    ignore: Optional[Sequence[str]] = None,
 ) -> Callable[[Callable[P, T]], Callable[P, T]]:
     ...
 
@@ -31,7 +31,7 @@ def track_params(
     _func: Callable[P, T],
     *,
     prefix: Optional[str] = None,
-    ignore: Optional[List[str]] = None,
+    ignore: Optional[Sequence[str]] = None,
 ) -> Callable[P, T]:
     ...
 
@@ -40,7 +40,7 @@ def track_params(
     _func: Optional[Callable] = None,
     *,
     prefix: Optional[str] = None,
-    ignore: Optional[List[str]] = None,
+    ignore: Optional[Sequence[str]] = None,
 ):
     """
     Create a decorator to log function keyword arguments as parameters with
@@ -109,7 +109,7 @@ def track_params(
 def track_init_params(
     *,
     prefix: Optional[str] = None,
-    ignore: Optional[List[str]] = None,
+    ignore: Optional[Sequence[str]] = None,
 ) -> Callable[[T], T]:
     ...
 
@@ -119,7 +119,7 @@ def track_init_params(
     _cls: T,
     *,
     prefix: Optional[str] = None,
-    ignore: Optional[List[str]] = None,
+    ignore: Optional[Sequence[str]] = None,
 ) -> T:
     ...
 
@@ -128,7 +128,7 @@ def track_init_params(
     _cls: Optional[object] = None,
     *,
     prefix: Optional[str] = None,
-    ignore: Optional[List[str]] = None,
+    ignore: Optional[Sequence[str]] = None,
 ):
     """
     Create a decorator to log class dunder-init keyword arguments as parameters
@@ -202,6 +202,21 @@ def track_evaluation(
         experiment_id=experiment_id,
         description=description,
     )
+
+
+def track_metrics(metrics: Mapping[str, Sequence[float]]):
+    """
+    Log the given metrics with MLFlow.
+
+    Args:
+        metrics: Mapping of metrics names to values
+    """
+    if not mlflow.active_run():
+        return
+
+    for key, values in metrics.items():
+        for value in values:
+            mlflow.log_metric(key, value)
 
 
 def server():

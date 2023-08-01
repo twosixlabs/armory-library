@@ -49,7 +49,7 @@ TRAINING_EPOCHS = 20
 def load_huggingface_dataset(transform):
     print("Loading HuggingFace dataset from jatic_toolbox")
 
-    train_dataset = track_params()(load_jatic_dataset)(
+    train_dataset = track_params(load_jatic_dataset)(
         provider="huggingface",
         dataset_name="cifar10",
         task="image-classification",
@@ -64,7 +64,7 @@ def load_huggingface_dataset(transform):
         size=512,  # Use a subset just for demo purposes
     )
 
-    test_dataset = track_params()(load_jatic_dataset)(
+    test_dataset = track_params(load_jatic_dataset)(
         provider="huggingface",
         dataset_name="cifar10",
         task="image-classification",
@@ -84,7 +84,7 @@ def load_huggingface_dataset(transform):
 
 def load_torchvision_dataset(transform):
     print("Loading torchvision dataset from jatic_toolbox")
-    train_dataset = track_params()(load_jatic_dataset)(
+    train_dataset = track_params(load_jatic_dataset)(
         provider="torchvision",
         dataset_name="CIFAR10",
         task="image-classification",
@@ -101,7 +101,7 @@ def load_torchvision_dataset(transform):
         size=512,  # Use a subset just for demo purposes
     )
 
-    test_dataset = track_params()(load_jatic_dataset)(
+    test_dataset = track_params(load_jatic_dataset)(
         provider="torchvision",
         dataset_name="CIFAR10",
         task="image-classification",
@@ -123,7 +123,7 @@ def load_torchvision_dataset(transform):
 
 def load_huggingface_model():
     print("Loading HuggingFace model from jatic_toolbox")
-    model = track_params()(load_jatic_model)(
+    model = track_params(load_jatic_model)(
         provider="huggingface",
         model_name="microsoft/resnet-18",
         task="image-classification",
@@ -131,7 +131,7 @@ def load_huggingface_model():
     adapt_jatic_image_classification_model_for_art(model)
     model.to(DEVICE)
 
-    classifier = track_init_params()(PyTorchClassifier)(
+    classifier = track_init_params(PyTorchClassifier)(
         model,
         loss=nn.CrossEntropyLoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
@@ -148,7 +148,7 @@ def load_huggingface_model():
 
 def load_torchvision_model():
     print("Loading torchvision model from jatic_toolbox")
-    model = track_params()(load_jatic_model)(
+    model = track_params(load_jatic_model)(
         provider="torchvision",
         model_name="resnet18",
         task="image-classification",
@@ -156,7 +156,7 @@ def load_torchvision_model():
     adapt_jatic_image_classification_model_for_art(model)
     model.to(DEVICE)
 
-    classifier = track_init_params()(PyTorchClassifier)(
+    classifier = track_init_params(PyTorchClassifier)(
         model,
         loss=nn.CrossEntropyLoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
@@ -224,7 +224,7 @@ def main():
         ###
 
         attack = Attack(
-            function=track_init_params()(art.attacks.evasion.ProjectedGradientDescent),
+            function=track_init_params(art.attacks.evasion.ProjectedGradientDescent),
             kwargs={
                 "batch_size": 1,
                 "eps": 0.031,
@@ -273,7 +273,7 @@ def main():
 
         cifar_engine = Engine(baseline)
         cifar_engine.train(nb_epochs=TRAINING_EPOCHS)
-        results = cifar_engine.run(track=True)
+        results = cifar_engine.run()
 
     print("=" * 64)
     pprint(baseline)

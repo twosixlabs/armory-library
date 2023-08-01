@@ -119,7 +119,7 @@ def main(argv: list = sys.argv[1:]):
 
         cifar_engine = Engine(baseline)
         # cifar_engine.train(nb_epochs=20)
-        results = cifar_engine.run(track=True)
+        results = cifar_engine.run()
 
     print("=" * 64)
     # print(json.dumps(baseline.asdict(), indent=4, sort_keys=True))
