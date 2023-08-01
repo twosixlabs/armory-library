@@ -451,6 +451,10 @@ def _generator_from_tfds(
         output batches are 1D np.arrays of objects
     lambda_map - if not None, mapping function to apply to dataset elements
     """
+
+    if dataset_dir is None:
+        dataset_dir = os.getenv("DATASET_DIR", str(Path.home() / ".armory/datasets"))
+
     if cache_dataset:
         _cache_dataset(
             dataset_dir,
