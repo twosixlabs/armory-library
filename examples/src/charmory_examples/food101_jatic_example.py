@@ -138,7 +138,6 @@ def main():
         model=model,
         attack=attack,
         scenario=scenario,
-        defense=None,
         metric=metric,
         sysconfig=sysconfig,
     )

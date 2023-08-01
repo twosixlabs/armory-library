@@ -21,6 +21,7 @@ from charmory.evaluation import (
     SysConfig,
 )
 import charmory.scenarios.image_classification
+from charmory.utils import apply_art_preprocessor_defense
 
 
 def main(argv: list = sys.argv[1:]):
@@ -55,6 +56,14 @@ def main(argv: list = sys.argv[1:]):
             weights_path=None,
         ),
     )
+
+    defense = art.defences.preprocessor.JpegCompression(
+        apply_fit=False,
+        apply_predict=True,
+        clip_values=(0.0, 1.0),
+        quality=50,
+    )
+    apply_art_preprocessor_defense(model.model, defense)
 
     attack = Attack(
         function=art.attacks.evasion.ProjectedGradientDescent,
@@ -98,7 +107,6 @@ def main(argv: list = sys.argv[1:]):
         model=model,
         attack=attack,
         scenario=scenario,
-        defense=None,
         metric=metric,
         sysconfig=sysconfig,
     )
@@ -119,12 +127,6 @@ def main(argv: list = sys.argv[1:]):
             results, default=lambda o: "<not serializable>", indent=4, sort_keys=True
         )
     )
-
-    print("=" * 64)
-    print(dataset.train_dataset)
-    print(dataset.test_dataset)
-    print("-" * 64)
-    print(model.model)
 
     print("=" * 64)
     print("CIFAR10 Experiment Complete!")
