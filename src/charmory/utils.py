@@ -165,7 +165,7 @@ def create_jatic_image_classification_dataset_transform(
     return transform
 
 
-def is_defended(estimator: BaseEstimator):
+def is_defended(estimator: BaseEstimator) -> bool:
     """
     Checks if the given estimator has any preprocessor or postprocessor defenses
     applied to it.
