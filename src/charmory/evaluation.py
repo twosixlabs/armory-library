@@ -98,44 +98,24 @@ class SysConfig:
 
     gpus: List[str]
     use_gpu: bool = False
-    paths: Dict[str, str] = field(default_factory=dict)
+    paths: Dict[str, str] = field(init=False)
     armory_home: str = os.getenv("ARMORY_HOME", str(Path.home() / ".armory"))
 
     def __post_init__(self):
         self.armory_home = Path(self.armory_home)
         self._initialize_paths()
-        self._load_config_and_update_paths()
         self._create_directories_and_update_env_vars()
 
     def _initialize_paths(self):
         """Construct the paths for each directory and file"""
         self.paths = {
             "armory_home": str(self.armory_home),
-            "armory_config": str(self.armory_home / "config.json"),
             "dataset_dir": str(self.armory_home / "datasets"),
-            "local_git_dir": str(self.armory_home / "git"),
             "saved_model_dir": str(self.armory_home / "saved_models"),
-            "pytorch_dir": str(self.armory_home / "saved_models" / "pytorch"),
             "tmp_dir": str(self.armory_home / "tmp"),
             "output_dir": str(self.armory_home / "outputs"),
             "external_repo_dir": str(self.armory_home / "tmp" / "external"),
         }
-
-    def _load_config_and_update_paths(self):
-        """Load the configuration file and update the paths accordingly."""
-        config_path = Path(self.paths["armory_config"])
-        if config_path.exists():
-            with open(config_path, "r") as f:
-                config = json.load(f)
-            # Update paths based on the configuration
-            for key in (
-                "dataset_dir",
-                "local_git_dir",
-                "saved_model_dir",
-                "output_dir",
-                "tmp_dir",
-            ):
-                self.paths[key] = str(self.armory_home / config[key])
 
     def _create_directories_and_update_env_vars(self):
         """Create directories if they do not exist and update environment variables."""
