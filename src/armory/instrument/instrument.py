@@ -30,8 +30,6 @@ Example:
 """
 
 import json
-import os
-from pathlib import Path
 from typing import Callable
 
 try:
@@ -41,6 +39,7 @@ except ImportError:
     json_utils = None
 
 from armory import log
+from armory.utils.configuration import get_configured_path
 
 _PROBES = {}
 _HUB = None
@@ -261,9 +260,7 @@ class Hub:
         self.default_writers = []
         self.closed = False
         self.export_subdir = "saved_samples"
-        self._set_output_dir(
-            os.getenv("OUTPUT_DIR", str(Path.home() / ".armory/outputs"))
-        )
+        self._set_output_dir(get_configured_path("OUTPUT_DIR", "outputs"))
 
     def _set_output_dir(self, name):
         self.output_dir = name

@@ -3,7 +3,6 @@ Utils to pull external repos for evaluation
 """
 import contextlib
 import os
-from pathlib import Path
 import shutil
 import sys
 import tarfile
@@ -12,7 +11,7 @@ from typing import List, Union
 import requests
 
 from armory.logs import log
-from armory.utils.configuration import get_verify_ssl
+from armory.utils.configuration import get_configured_path, get_verify_ssl
 
 
 class ExternalRepoImport(contextlib.AbstractContextManager):
@@ -102,9 +101,7 @@ def download_and_extract_repo(
     verify_ssl = get_verify_ssl()
 
     if external_repo_dir is None:
-        external_repo_dir = os.getenv(
-            "EXTERNAL_REPO_DIR", str(Path.home() / ".armory/external")
-        )
+        external_repo_dir = get_configured_path("EXTERNAL_REPO_DIR", "external")
 
     os.makedirs(external_repo_dir, exist_ok=True)
     headers = {}
@@ -156,18 +153,14 @@ def download_and_extract_repo(
 
 
 def add_local_repo(local_repo_name: str) -> None:
-    local_repo_dir = os.getenv(
-        "EXTERNAL_REPO_DIR", str(Path.home() / ".armory/external")
-    )
+    local_repo_dir = get_configured_path("EXTERNAL_REPO_DIR", "external")
     path = os.path.join(local_repo_dir, local_repo_name)
     add_path(path, include_parent=True)
 
 
 def add_pythonpath(subpath: str, external_repo_dir: str = None) -> None:
     if external_repo_dir is None:
-        external_repo_dir = os.getenv(
-            "EXTERNAL_REPO_DIR", str(Path.home() / ".armory/external")
-        )
+        external_repo_dir = get_configured_path("EXTERNAL_REPO_DIR", "external")
 
     path = os.path.join(external_repo_dir, subpath)
     add_path(path, include_parent=True)
