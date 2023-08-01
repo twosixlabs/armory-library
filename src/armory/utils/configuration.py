@@ -12,7 +12,17 @@ DEFAULT_SCHEMA = os.path.join(os.path.dirname(__file__), "config_schema.json")
 
 
 def get_configured_path(env_var: str, default_subdir: str) -> str:
-    return os.getenv(env_var, str(Path.home() / ".armory" / default_subdir))
+    # Retrieve the value of the environment variable
+    env_var_value = os.getenv(env_var)
+
+    # If the environment variable does not exist,
+    # construct a default path using the home directory, '.armory', and the provided default subdirectory
+    if env_var_value is None:
+        default_path = str(Path.home() / ".armory" / default_subdir)
+        return default_path
+
+    # If the environment variable exists, return its value
+    return env_var_value
 
 
 def get_verify_ssl():
