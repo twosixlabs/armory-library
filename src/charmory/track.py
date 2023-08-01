@@ -3,9 +3,11 @@
 from functools import wraps
 import os
 from pathlib import Path
+import sys
 from typing import Callable, List, Optional, TypeVar, Union, overload
 
 import mlflow
+import mlflow.cli
 
 # This was only added to the builtin `typing` in Python 3.10,
 # so we have to use `typing_extensions` for 3.8 support
@@ -200,3 +202,14 @@ def track_evaluation(
         experiment_id=experiment_id,
         description=description,
     )
+
+
+def server():
+    """Start the MLFlow server"""
+    args = sys.argv[1:]
+    if "--backend-store-uri" not in sys.argv:
+        if not os.environ.get("MLFLOW_TRACKING_URI"):
+            path = Path(Path.home(), ".armory/mlruns")
+            args.extend(["--backend-store-uri", path.as_uri()])
+
+    mlflow.cli.server(args)
