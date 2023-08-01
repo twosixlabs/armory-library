@@ -3,7 +3,7 @@
 from functools import wraps
 import os
 from pathlib import Path
-from typing import Callable, List, Optional, TypeVar, Union
+from typing import Callable, List, Optional, TypeVar, Union, overload
 
 import mlflow
 
@@ -15,7 +15,31 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def track_params(prefix: Optional[str] = None, ignore: Optional[List[str]] = None):
+@overload
+def track_params(
+    *,
+    prefix: Optional[str] = None,
+    ignore: Optional[List[str]] = None,
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    ...
+
+
+@overload
+def track_params(
+    _func: Callable[P, T],
+    *,
+    prefix: Optional[str] = None,
+    ignore: Optional[List[str]] = None,
+) -> Callable[P, T]:
+    ...
+
+
+def track_params(
+    _func: Optional[Callable] = None,
+    *,
+    prefix: Optional[str] = None,
+    ignore: Optional[List[str]] = None,
+):
     """
     Create a decorator to log function keyword arguments as parameters with
     MLFlow.
@@ -30,15 +54,16 @@ def track_params(prefix: Optional[str] = None, ignore: Optional[List[str]] = Non
 
         # Or for a third-party function that cannot have the decorator
         # already applied, you can apply it inline
-        track_params()(third_party_func)(arg=42)
+        track_params(third_party_func)(arg=42)
 
     Args:
+        _func: Optional function to be decorated
         prefix: Optional prefix for all keyword argument names (default is
             inferred from decorated function name)
         ignore: Optional list of keyword arguments to be ignored
 
     Returns:
-        Function decorator
+        Decorated function if `_func` was provided, else a function decorator
     """
 
     def _decorator(func: Callable[P, T]) -> Callable[P, T]:
@@ -72,10 +97,37 @@ def track_params(prefix: Optional[str] = None, ignore: Optional[List[str]] = Non
 
         return _wrapper
 
-    return _decorator
+    if _func is None:
+        return _decorator
+    else:
+        return _decorator(_func)
 
 
-def track_init_params(prefix: Optional[str] = None, ignore: Optional[List[str]] = None):
+@overload
+def track_init_params(
+    *,
+    prefix: Optional[str] = None,
+    ignore: Optional[List[str]] = None,
+) -> Callable[[T], T]:
+    ...
+
+
+@overload
+def track_init_params(
+    _cls: T,
+    *,
+    prefix: Optional[str] = None,
+    ignore: Optional[List[str]] = None,
+) -> T:
+    ...
+
+
+def track_init_params(
+    _cls: Optional[object] = None,
+    *,
+    prefix: Optional[str] = None,
+    ignore: Optional[List[str]] = None,
+):
     """
     Create a decorator to log class dunder-init keyword arguments as parameters
     with MLFlow.
@@ -91,23 +143,27 @@ def track_init_params(prefix: Optional[str] = None, ignore: Optional[List[str]] 
 
         # Or for a third-party class that cannot have the decorator
         # already applied, you can apply it inline
-        obj = track_init_params()(ThirdPartyClass)(arg=42)
+        obj = track_init_params(ThirdPartyClass)(arg=42)
 
     Args:
+        _cls: Optional class to be decorated
         prefix: Optional prefix for all keyword argument names (default is
             inferred from decorated class name)
         ignore: Optional list of keyword arguments to be ignored
 
     Returns:
-        Class decorator
+        Decorated class if `_cls` was provided, else a class decorator
     """
 
     def _decorator(cls: T) -> T:
-        _prefix = prefix if prefix else cls.__name__
-        cls.__init__ = track_params(_prefix, ignore)(cls.__init__)
+        _prefix = prefix if prefix else getattr(cls, "__name__", "")
+        cls.__init__ = track_params(prefix=_prefix, ignore=ignore)(cls.__init__)
         return cls
 
-    return _decorator
+    if _cls is None:
+        return _decorator
+    else:
+        return _decorator(_cls)
 
 
 def track_evaluation(

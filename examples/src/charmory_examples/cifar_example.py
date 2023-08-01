@@ -38,7 +38,7 @@ def main(argv: list = sys.argv[1:]):
     with track_evaluation(NAME, description=DESCRIPTION):
         dataset = Dataset(
             name="CIFAR10",
-            train_dataset=track_params()(armory.data.datasets.cifar10)(
+            train_dataset=track_params(armory.data.datasets.cifar10)(
                 split="train",
                 epochs=20,
                 batch_size=64,
@@ -55,7 +55,7 @@ def main(argv: list = sys.argv[1:]):
             ),
         )
 
-        classifier = track_params("model")(
+        classifier = track_params(prefix="model")(
             armory.baseline_models.pytorch.cifar.get_art_model
         )(
             model_kwargs={},
@@ -69,7 +69,7 @@ def main(argv: list = sys.argv[1:]):
         )
 
         attack = Attack(
-            function=track_init_params()(art.attacks.evasion.ProjectedGradientDescent),
+            function=track_init_params(art.attacks.evasion.ProjectedGradientDescent),
             kwargs={
                 "batch_size": 1,
                 "eps": 0.031,
