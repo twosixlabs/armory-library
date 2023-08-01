@@ -90,25 +90,23 @@ class SysConfig:
     gpus: List[str]
     use_gpu: bool = False
     paths: Dict[str, str] = field(default_factory=dict)
+    # armory_home: str = os.getenv("ARMORY_HOME", str(Path.home() / ".armory"))
 
     def __post_init__(self):
         # TODO: Discuss/refactor the following
-        if os.environ.get("ARMORY_HOME"):
-            armory_dir = Path(os.environ["ARMORY_HOME"])
-        else:
-            armory_dir = Path.home() / ".armory"
-            os.environ["ARMORY_HOME"] = str(armory_dir)
+        armory_home = os.getenv("ARMORY_HOME", str(Path.home() / ".armory"))
 
         self.paths = {
-            "armory_dir": str(armory_dir),
-            "armory_config": str(armory_dir / "config.json"),
-            "dataset_dir": str(armory_dir / "datasets"),
-            "local_git_dir": str(armory_dir / "git"),
-            "saved_model_dir": str(armory_dir / "saved_models"),
-            "pytorch_dir": str(armory_dir / "saved_models" / "pytorch"),
-            "tmp_dir": str(armory_dir / "tmp"),
-            "output_dir": str(armory_dir / "outputs"),
-            "external_repo_dir": str(armory_dir / "tmp" / "external"),
+            "armory_home": str(armory_home),
+            "armory_dir": str(armory_home),
+            "armory_config": str(armory_home / "config.json"),
+            "dataset_dir": str(armory_home / "datasets"),
+            "local_git_dir": str(armory_home / "git"),
+            "saved_model_dir": str(armory_home / "saved_models"),
+            "pytorch_dir": str(armory_home / "saved_models" / "pytorch"),
+            "tmp_dir": str(armory_home / "tmp"),
+            "output_dir": str(armory_home / "outputs"),
+            "external_repo_dir": str(armory_home / "tmp" / "external"),
         }
 
         # Load config and update paths
@@ -121,11 +119,12 @@ class SysConfig:
                 "output_dir",
                 "tmp_dir",
             ):
-                setattr(self, k, armory_dir / _config[k])
+                setattr(self, k, armory_home / _config[k])
 
-        # Create directories
-        for d in self.paths.values():
+        # Create directories and update environment variables
+        for k, d in self.paths.items():
             if not d.endswith(".json"):
+                os.environ[k.upper()] = d
                 Path(d).mkdir(parents=True, exist_ok=True)
 
 
