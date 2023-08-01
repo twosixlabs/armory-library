@@ -97,35 +97,31 @@ class SysConfig:
 
     gpus: List[str]
     use_gpu: bool = False
-    paths: Dict[str, str] = field(init=False)
-    armory_home: str = os.getenv("ARMORY_HOME", str(Path.home() / ".armory"))
+    paths: Dict[str, Path] = field(init=False)
+    armory_home: Path = Path(os.getenv("ARMORY_HOME", Path.home() / ".armory"))
 
     def __post_init__(self):
-        self.armory_home = Path(self.armory_home)
         self._initialize_paths()
         self._create_directories_and_update_env_vars()
 
     def _initialize_paths(self):
-        """Construct the paths for each directory and file"""
+        """Construct the paths for each directory."""
         self.paths = {
-            "armory_home": str(self.armory_home),
-            "dataset_dir": str(self.armory_home / "datasets"),
-            "saved_model_dir": str(self.armory_home / "saved_models"),
-            "tmp_dir": str(self.armory_home / "tmp"),
-            "output_dir": str(self.armory_home / "outputs"),
-            "external_repo_dir": str(self.armory_home / "tmp" / "external"),
+            "armory_home": Path(self.armory_home),
+            "dataset_dir": Path(self.armory_home / "datasets"),
+            "saved_model_dir": Path(self.armory_home / "saved_models"),
+            "tmp_dir": Path(self.armory_home / "tmp"),
+            "output_dir": Path(self.armory_home / "outputs"),
+            "external_repo_dir": Path(self.armory_home / "tmp" / "external"),
         }
 
     def _create_directories_and_update_env_vars(self):
         """Create directories if they do not exist and update environment variables."""
-        for key, path_str in self.paths.items():
-            path = Path(path_str)
-            # Do not create directories for .json files
-            if path.suffix != ".json":
-                # Set environment variable
-                os.environ[key.upper()] = path_str
-                # Create directory if it does not exist
-                path.mkdir(parents=True, exist_ok=True)
+        for key, config_path in self.paths.items():
+            # Set environment variable
+            os.environ[key.upper()] = str(config_path)
+            # Create directory if it does not exist
+            config_path.mkdir(parents=True, exist_ok=True)
 
 
 @dataclass
