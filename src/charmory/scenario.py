@@ -72,7 +72,6 @@ class Scenario(ABC):
 
         # Set up the model
         self.model = self.evaluation.model.model
-        self.defense_type = self.apply_defense_to_model()
 
         # Set up the dataset(s)
         self.test_dataset = self.evaluation.dataset.test_dataset
@@ -81,9 +80,6 @@ class Scenario(ABC):
         # NOTE: This is somtimes called in the subclass constructor(super().__init__),
         # and contains attributes that are used for exporting metrics. -CW
         self.load_attack()
-
-        # Load the defense
-        # TODO: Better interface for defense. -CW
 
         # Load Metrics
         self.load_metrics()
@@ -144,27 +140,6 @@ class Scenario(ABC):
             batch = self.next(batch)
             self.evaluate_current(batch)
         self.hub.set_context(stage="finished")
-
-    def apply_defense_to_model(self):
-        if self.evaluation.defense is not None:
-            defense_config = self.evaluation.defense or {}
-            defense_type = defense_config.get("type")
-            if defense_type in ["Preprocessor", "Postprocessor"]:
-                log.info(f"Applying internal {defense_type} defense to model")
-                self.model = config_loading.load_defense_internal(
-                    defense_config, self.model
-                )
-            elif defense_type == "Trainer":
-                self.trainer = config_loading.load_defense_wrapper(
-                    defense_config, self.model
-                )
-            elif defense_type is not None:
-                raise ValueError(f"{defense_type} not currently supported")
-        else:
-            log.info("Not loading any defenses for model")
-            defense_type = None
-
-        return defense_type
 
     def load_attack(self):
         attack_config = self.evaluation.attack

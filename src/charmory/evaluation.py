@@ -42,19 +42,6 @@ class Dataset:
 
 
 @dataclass
-class Defense:
-    function: MethodName
-    kwargs: Dict[str, Any]
-    type: Literal[
-        "Preprocessor",
-        "Postprocessor",
-        "Trainer",
-        "Transformer",
-        "PoisonFilteringDefense",
-    ]
-
-
-@dataclass
 class Metric:
     profiler_type: Literal["basic", "deterministic"]
     supported_metrics: List[str]
@@ -99,6 +86,5 @@ class Evaluation:
     dataset: Dataset
     author: Optional[str]
     attack: Optional[Attack] = None
-    defense: Optional[Defense] = None
     metric: Optional[Metric] = None
     sysconfig: Optional[SysConfig] = None
