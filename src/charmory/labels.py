@@ -2,21 +2,21 @@
 Label-related utilties
 """
 
-import importlib
+from typing import Any, Protocol, runtime_checkable
 
 import numpy as np
 
+
+@runtime_checkable
+class LabelTargeter(Protocol):
+    """A generator of target labels for an attack"""
+
+    def generate(self, y) -> Any:
+        """Generates target label for an attack given the original label"""
+        pass
+
+
 # Targeters assume a numpy 1D array as input to generate
-
-
-def import_from_module(name, attribute):
-    if not isinstance(name, str) or not isinstance(attribute, str):
-        raise ValueError(
-            "When 'import_from' is used, it and the attribute must be of type str,"
-            f" not {name} and {attribute}"
-        )
-    module = importlib.import_module(name)
-    return getattr(module, attribute)
 
 
 class FixedLabelTargeter:
@@ -66,8 +66,6 @@ class RoundRobinTargeter:
 
 class ManualTargeter:
     def __init__(self, *, values, import_from=False, repeat=False, dtype=int):
-        if import_from:
-            values = import_from_module(import_from, values)
         if not values:
             raise ValueError('"values" cannot be an empty list')
         self.values = values
@@ -133,8 +131,6 @@ class MatchedTranscriptLengthTargeter:
     """
 
     def __init__(self, *, transcripts, import_from=False):
-        if import_from:
-            transcripts = import_from_module(import_from, transcripts)
         if not transcripts:
             raise ValueError('"transcripts" cannot be None or an empty list')
         for t in transcripts:
