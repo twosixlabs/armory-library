@@ -111,7 +111,6 @@ class SysConfig:
             "armory_home": Path(self.armory_home),
             "dataset_dir": Path(self.armory_home / "datasets"),
             "saved_model_dir": Path(self.armory_home / "saved_models"),
-            "tmp_dir": Path(self.armory_home / "tmp"),
             "output_dir": Path(self.armory_home / "outputs"),
             "external_repo_dir": Path(self.armory_home / "tmp" / "external"),
         }
