@@ -130,7 +130,8 @@ class PILtoNumpy(object):
         assert isinstance(sample, PIL.Image.Image)
         np_image = np.array(sample)
         return np_image
-    
+
+
 class PILtoNumpy_HuggingFace(object):
     """
     Custom torchvision transform a HuggingFace Dataset dictionary which
@@ -148,7 +149,7 @@ class PILtoNumpy_HuggingFace(object):
             name='full',
             split="train"
         )
-        
+
         train_dataset.set_transform(transform)
     Args:
         the __call__ method takes a sample of type dict "{"image": [...],"label": [...] }".
@@ -156,8 +157,7 @@ class PILtoNumpy_HuggingFace(object):
     Returns:
         the sample dict with converted PIL Image to numpy array.
     """
-    
-    def __call__(self, sample):   
-        sample['image'] = [np.asarray(img) for img in sample['image']]
+
+    def __call__(self, sample):
+        sample["image"] = [np.asarray(img) for img in sample["image"]]
         return sample
-  
