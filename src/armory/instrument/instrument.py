@@ -32,8 +32,6 @@ Example:
 import json
 from typing import Callable
 
-import armory.paths
-
 try:
     # If numpy is available, enable NumpyEncoder for json export
     from armory.utils import json_utils
@@ -41,6 +39,7 @@ except ImportError:
     json_utils = None
 
 from armory import log
+from armory.utils.configuration import get_configured_path
 
 _PROBES = {}
 _HUB = None
@@ -261,7 +260,7 @@ class Hub:
         self.default_writers = []
         self.closed = False
         self.export_subdir = "saved_samples"
-        self._set_output_dir(armory.paths.HostPaths().output_dir)
+        self._set_output_dir(get_configured_path("OUTPUT_DIR", "outputs"))
 
     def _set_output_dir(self, name):
         self.output_dir = name

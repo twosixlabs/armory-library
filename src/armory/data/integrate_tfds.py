@@ -9,11 +9,11 @@ import sys
 
 import tensorflow_datasets as tfds
 
-from armory import paths
 from armory.data.datasets import CACHED_CHECKSUMS_DIR, _parse_dataset_name
 from armory.data.template_boilerplate import fn_template
 from armory.data.utils import sha256, upload_file_to_s3
 from armory.logs import log
+from armory.utils.configuration import get_configured_path
 
 
 def main():
@@ -30,7 +30,7 @@ def main():
 
     ds_name = sys.argv[1]
 
-    dataset_dir = paths.HostPaths().dataset_dir
+    dataset_dir = get_configured_path("DATASET_DIR", "datasets")
     log.info("Preparing dataset (may take some time)...")
     ds = tfds.load(ds_name, data_dir=dataset_dir)
     assert len(ds) > 0

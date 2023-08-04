@@ -10,9 +10,8 @@ from typing import List, Union
 
 import requests
 
-from armory import paths
 from armory.logs import log
-from armory.utils.configuration import get_verify_ssl
+from armory.utils.configuration import get_configured_path, get_verify_ssl
 
 
 class ExternalRepoImport(contextlib.AbstractContextManager):
@@ -39,15 +38,14 @@ class ExternalRepoImport(contextlib.AbstractContextManager):
 
 
 class ExternalPipInstalledImport(contextlib.AbstractContextManager):
-    def __init__(self, package="", dockerimage=""):
+    def __init__(self, package=""):
         super().__init__()
-        error_message_lines = [
-            f"{package} is an external dependency.",
-            f"Please 'pip install {package}' in local environment",
-        ]
-        if dockerimage:
-            error_message_lines.append(f"    OR use docker image {dockerimage}")
-        self.error_message = "\n".join(error_message_lines)
+        self.error_message = "\n".join(
+            [
+                f"{package} is an external dependency.",
+                f"Please 'pip install {package}' in local environment",
+            ]
+        )
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None and issubclass(exc_type, ImportError):
@@ -103,7 +101,7 @@ def download_and_extract_repo(
     verify_ssl = get_verify_ssl()
 
     if external_repo_dir is None:
-        external_repo_dir = paths.HostPaths().external_repo_dir
+        external_repo_dir = get_configured_path("EXTERNAL_REPO_DIR", "external")
 
     os.makedirs(external_repo_dir, exist_ok=True)
     headers = {}
@@ -155,14 +153,14 @@ def download_and_extract_repo(
 
 
 def add_local_repo(local_repo_name: str) -> None:
-    local_repo_dir = paths.HostPaths().local_git_dir
+    local_repo_dir = get_configured_path("EXTERNAL_REPO_DIR", "external")
     path = os.path.join(local_repo_dir, local_repo_name)
     add_path(path, include_parent=True)
 
 
 def add_pythonpath(subpath: str, external_repo_dir: str = None) -> None:
     if external_repo_dir is None:
-        external_repo_dir = paths.HostPaths().external_repo_dir
+        external_repo_dir = get_configured_path("EXTERNAL_REPO_DIR", "external")
 
     path = os.path.join(external_repo_dir, subpath)
     add_path(path, include_parent=True)

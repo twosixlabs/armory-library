@@ -57,12 +57,18 @@ def evaluation_metric():
 
 
 @pytest.fixture
+def evaluation_sysconfig():
+    return charmory.evaluation.SysConfig(gpus=["all"], use_gpu=True)
+
+
+@pytest.fixture
 def evaluation(
     evaluation_model,
     evaluation_dataset,
     evaluation_scenario,
     evaluation_attack,
     evaluation_metric,
+    evaluation_sysconfig,
 ):
     return charmory.evaluation.Evaluation(
         name="test",
@@ -73,4 +79,5 @@ def evaluation(
         scenario=evaluation_scenario,
         attack=evaluation_attack,
         metric=evaluation_metric,
+        sysconfig=evaluation_sysconfig,
     )
