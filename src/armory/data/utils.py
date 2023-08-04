@@ -18,10 +18,9 @@ from botocore.exceptions import ClientError
 import requests
 from tqdm import tqdm
 
-from armory import paths
 from armory.data.progress_percentage import ProgressPercentage, ProgressPercentageUpload
 from armory.logs import is_progress, log
-from armory.utils.configuration import get_verify_ssl
+from armory.utils.configuration import get_configured_path, get_verify_ssl
 
 CHECKSUMS_DIRS = []
 
@@ -32,16 +31,24 @@ def add_checksums_dir(dir):
 
 
 def maybe_download_weights_from_s3(
-    weights_file: str, *, auto_expand_tars: bool = False
+    weights_file: str, *, auto_expand_tars: bool = False, saved_model_dir: str = None
 ) -> str:
     """
+    Download weights file from S3 if not already present in `saved_model_dir`.
 
-    :param weights_file:
-    :param auto_expand_tars:
-    :return:
+    :param
+        weights_file (str): name of weights file to download
+        auto_expand_tars (bool): if True, expand tar archives into a subdirectory
+        saved_model_dir (str): path to directory containing weights file
+
+    :return
+        filepath (str): path to downloaded weights file
     """
-    saved_model_dir = paths.HostPaths().saved_model_dir
+
     filepath = os.path.join(saved_model_dir, weights_file)
+
+    if saved_model_dir is None:
+        saved_model_dir = get_configured_path("SAVED_MODEL_DIR", "saved_models")
 
     if os.path.isfile(filepath):
         log.info(f"Using available {weights_file} in Armory `saved_model_dir`")
