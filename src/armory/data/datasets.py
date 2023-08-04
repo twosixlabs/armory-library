@@ -19,7 +19,6 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-from armory import paths
 from armory.data.carla_object_detection import carla_obj_det_train as codt  # noqa: F401
 from armory.data.carla_overhead_object_detection import (  # noqa: F401
     carla_over_obj_det_train as coodt,
@@ -38,6 +37,7 @@ from armory.data.utils import (
 )
 from armory.data.xview import xview as xv  # noqa: F401
 from armory.logs import log
+from armory.utils.configuration import get_configured_path
 
 os.environ["KMP_WARNINGS"] = "0"
 
@@ -452,8 +452,9 @@ def _generator_from_tfds(
         output batches are 1D np.arrays of objects
     lambda_map - if not None, mapping function to apply to dataset elements
     """
-    if not dataset_dir:
-        dataset_dir = paths.HostPaths().dataset_dir
+
+    if dataset_dir is None:
+        dataset_dir = get_configured_path("DATASET_DIR", "datasets")
 
     if cache_dataset:
         _cache_dataset(
@@ -1439,10 +1440,12 @@ def librispeech(
                 f"To use train_clean360 or train_other500 must use librispeech_full dataset."
             )
 
+    # FUTURE TODO: With the focus on visual(image/video) datasets, for the time being
+    #              we are not going to support the hack below for audio datasets. -CW
     # TODO: make less hacky by updating dataset to librispeech 2.1.0
     # Begin Hack
     # make symlink to ~/.armory/datasets/librispeech/plain_text/1.1.0 from ~/.armory/datasets/librispeech/2.1.0 (required for TFDS v4)
-    base = os.path.join(paths.HostPaths().dataset_dir, "librispeech")
+    base = os.path.join(dataset_dir, "librispeech")
     os.makedirs(base, exist_ok=True)
     src = os.path.join(base, "plain_text", "1.1.0")
     dst = os.path.join(base, "2.1.0")
