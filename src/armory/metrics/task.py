@@ -10,7 +10,6 @@ import numpy as np
 from tidecv import TIDE
 import tidecv.data
 
-from armory import paths
 from armory.data.adversarial.apricot_metadata import (
     ADV_PATCH_MAGIC_NUMBER_LABEL_ID,
     APRICOT_PATCHES,
@@ -22,6 +21,7 @@ from armory.metrics.common import (
     result_formatter,
     set_namespace,
 )
+from armory.utils.configuration import get_configured_path
 from armory.utils.external_repo import ExternalPipInstalledImport
 
 aggregate = MetricNameSpace()
@@ -135,12 +135,10 @@ class Entailment:
                 )
 
         if cache_dir is None:
-            cache_dir = os.path.join(paths.HostPaths().saved_model_dir, "huggingface")
+            _saved_model_dir = get_configured_path("SAVED_MODEL_DIR", "saved_models")
+            cache_dir = os.path.join(_saved_model_dir, "huggingface")
 
-        with ExternalPipInstalledImport(
-            package="transformers",
-            dockerimage="twosixarmory/pytorch-deepspeech",
-        ):
+        with ExternalPipInstalledImport(package="transformers"):
             from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)

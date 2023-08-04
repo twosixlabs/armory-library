@@ -16,7 +16,6 @@ classifiers = [
 
 dependencies = [
     "setuptools_scm",
-    "jsonschema",
     "loguru",
     "requests",
 
