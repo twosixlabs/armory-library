@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import sys
 import time
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from tqdm import tqdm
 
@@ -17,7 +17,6 @@ from armory.instrument import MetricsLogger, del_globals, get_hub, get_probe
 from armory.instrument.export import ExportMeter, PredictionMeter
 from armory.logs import log
 from armory.metrics import compute
-from armory.utils import config_loading
 import armory.version
 from charmory.evaluation import Evaluation
 
@@ -78,10 +77,9 @@ class Scenario(ABC):
         # Set up the dataset(s)
         self.test_dataset = self.evaluation.dataset.test_dataset
 
-        # Load the attack
-        # NOTE: This is somtimes called in the subclass constructor(super().__init__),
-        # and contains attributes that are used for exporting metrics. -CW
-        self.load_attack()
+        # Set up the attack
+        if not self.skip_attack:
+            assert self.evaluation.attack, "Evaluation does not contain an attack"
 
         # Load Metrics
         self.load_metrics()
@@ -143,72 +141,15 @@ class Scenario(ABC):
             self.evaluate_current(batch)
         self.hub.set_context(stage="finished")
 
-    def load_attack(self):
-        attack_config = self.evaluation.attack
-        attack_type = attack_config.type
-        if attack_type == "preloaded" and self.skip_misclassified:
-            raise ValueError("Cannot use skip_misclassified with preloaded dataset")
-
-        kwargs_val = attack_config.kwargs
-
-        if "summary_writer" in kwargs_val:
-            summary_writer_kwarg = attack_config.kwargs.get("summary_writer")
-            if isinstance(summary_writer_kwarg, str):
-                log.warning(
-                    f"Overriding 'summary_writer' attack kwarg {summary_writer_kwarg} with {self.scenario_output_dir}."
-                )
-            attack_config.kwargs[
-                "summary_writer"
-            ] = f"{self.scenario_output_dir}/tfevents_{self.time_stamp}"
-        if attack_type == "preloaded":
-            preloaded_split = kwargs_val.get("split", "adversarial")
-            self.test_dataset = config_loading.load_adversarial_dataset(
-                attack_config,
-                epochs=1,
-                split=preloaded_split,
-                num_batches=self.num_eval_batches,
-                shuffle_files=False,
-            )
-
-            targeted = False
-
-        else:
-            attack = config_loading.load_attack(attack_config, self.model)
-            self.attack = attack
-
-            targeted_val = attack_config.kwargs
-
-            targeted = targeted_val.get("targeted", False)
-            if targeted:
-                label_targeter = config_loading.load_label_targeter(
-                    attack_config.targeted_labels
-                )
-
-        use_label = bool(attack_config.use_label)
-        if targeted and use_label:
-            raise ValueError("Targeted attacks cannot have 'use_label'")
-
-        generate_kwargs = {}
-
-        self.attack_type = attack_type
-        self.targeted = targeted
-        if self.targeted:
-            self.label_targeter = label_targeter
-        self.use_label = use_label
-        self.generate_kwargs = generate_kwargs
-
     def load_metrics(self):
-        if not hasattr(self, "targeted"):
-            log.warning(
-                "Run 'load_attack' before 'load_metrics' if not just doing benign inference"
-            )
-
         metrics_config = self.evaluation.metric
         metrics_logger = MetricsLogger.from_config(
             metrics_config,
             include_benign=not self.skip_benign,
             include_adversarial=not self.skip_attack,
-            include_targeted=self.targeted,
+            include_targeted=(
+                self.evaluation.attack.targeted if self.evaluation.attack else False
+            ),
         )
         self.profiler = compute.profiler_from_config(metrics_config)
         self.metrics_logger = metrics_logger
@@ -266,37 +207,39 @@ class Scenario(ABC):
             )
 
     def run_attack(self, batch: Batch):
+        if TYPE_CHECKING:
+            assert self.evaluation.attack
+
         self.hub.set_context(stage="attack")
         x = batch.x
         y = batch.y
         y_pred = batch.y_pred
 
         with self.profiler.measure("Attack"):
+            # Don't generate the attack if the benign was already misclassified
             if self.skip_misclassified and batch.misclassified:
                 y_target = None
-
                 x_adv = x
-            elif self.attack_type == "preloaded":
-                if self.targeted:
-                    y, y_target = y
-                else:
-                    y_target = None
 
-                if len(x) == 2:
-                    x, x_adv = x
-                else:
-                    x_adv = x
             else:
-                if self.use_label:
-                    y_target = y
-                elif self.targeted:
-                    y_target = self.label_targeter.generate(y)
+                # If targeted, use the label targeter to generate the target label
+                if self.evaluation.attack.targeted:
+                    if TYPE_CHECKING:
+                        assert self.evaluation.attack.label_targeter
+                    y_target = self.evaluation.attack.label_targeter.generate(y)
                 else:
-                    y_target = None
+                    # If untargeted, use either the natural or benign labels
+                    # (when set to None, the ART attack handles the benign label)
+                    y_target = (
+                        y if self.evaluation.attack.use_label_for_untargeted else None
+                    )
 
-                x_adv = self.attack.generate(x=x, y=y_target, **self.generate_kwargs)
+                x_adv = self.evaluation.attack.attack.generate(
+                    x=x, y=y_target, **self.evaluation.attack.generate_kwargs
+                )
 
         self.hub.set_context(stage="adversarial")
+        # Don't evaluate the attack if the benign was already misclassified
         if self.skip_misclassified and batch.misclassified:
             y_pred_adv = y_pred
         else:
@@ -307,7 +250,7 @@ class Scenario(ABC):
             )
 
         self.probe.update(x_adv=x_adv, y_pred_adv=y_pred_adv)
-        if self.targeted:
+        if self.evaluation.attack.targeted:
             self.probe.update(y_target=y_target)
 
         batch.x_adv = x_adv

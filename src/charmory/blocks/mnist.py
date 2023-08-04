@@ -37,28 +37,29 @@ dataset = Dataset(
     ),
 )
 
+classifier = armory.baseline_models.keras.mnist.get_art_model(
+    model_kwargs={},
+    wrapper_kwargs={},
+    weights_path=None,
+)
+
 model = Model(
     name="keras mnist",
-    model=armory.baseline_models.keras.mnist.get_art_model(
-        model_kwargs={},
-        wrapper_kwargs={},
-        weights_path=None,
-    ),
+    model=classifier,
 )
 
 attack = Attack(
-    function=art.attacks.evasion.FastGradientMethod,
-    kwargs={
-        "batch_size": 1,
-        "eps": 0.2,
-        "eps_step": 0.1,
-        "minimal": False,
-        "num_random_init": 0,
-        "targeted": False,
-    },
-    knowledge="white",
-    use_label=True,
-    type=None,
+    name="fast gradient",
+    attack=art.attacks.evasion.FastGradientMethod(
+        classifier,
+        batch_size=1,
+        eps=0.2,
+        eps_step=0.1,
+        minimal=False,
+        num_random_init=0,
+        targeted=False,
+    ),
+    use_label_for_untargeted=True,
 )
 
 

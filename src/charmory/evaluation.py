@@ -4,9 +4,11 @@ import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional
 
+from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
 
 from armory.data.datasets import ArmoryDataGenerator
+from charmory.labels import LabelTargeter
 
 MethodName = Callable[
     ..., Any
@@ -15,15 +17,33 @@ MethodName = Callable[
 
 @dataclass
 class Attack:
-    function: MethodName
-    kwargs: Dict[str, Any]
-    knowledge: Literal["white", "black"]
-    use_label: bool = False
-    type: Optional[str] = None
-    generate_kwargs: Optional[Dict[str, Any]] = field(default_factory=dict)
-    sweep_params: Optional[Dict[str, Any]] = field(default_factory=dict)
-    targeted: Optional[bool] = False
-    targeted_labels: Optional[Dict[str, Any]] = field(default_factory=dict)
+    name: str
+    attack: EvasionAttack
+    generate_kwargs: Dict[str, Any] = field(default_factory=dict)
+    use_label_for_untargeted: bool = False
+    label_targeter: Optional[LabelTargeter] = None
+
+    def __post_init__(self):
+        assert isinstance(
+            self.attack, EvasionAttack
+        ), "Evaluation attack is not an instance of EvasionAttack"
+
+        if self.targeted:
+            assert isinstance(
+                self.label_targeter, LabelTargeter
+            ), "Evaluation attack's label_targeter is not an instance of LabelTargeter"
+            assert (
+                not self.use_label_for_untargeted
+            ), "Evaluation attack is targeted, use_label_for_targeted cannot be True"
+        else:
+            assert (
+                not self.label_targeter
+            ), "Evaluation attack is untargeted, cannot use a label_targeter"
+
+    @property
+    def targeted(self) -> bool:
+        """Whether the attack is targeted"""
+        return self.attack.targeted
 
 
 @dataclass
