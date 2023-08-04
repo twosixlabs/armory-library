@@ -65,7 +65,7 @@ class RoundRobinTargeter:
 
 
 class ManualTargeter:
-    def __init__(self, *, values, import_from=False, repeat=False, dtype=int):
+    def __init__(self, *, values, repeat=False, dtype=int):
         if not values:
             raise ValueError('"values" cannot be an empty list')
         self.values = values
@@ -130,7 +130,7 @@ class MatchedTranscriptLengthTargeter:
     If two labels are tied in length, then it pseudorandomly picks one.
     """
 
-    def __init__(self, *, transcripts, import_from=False):
+    def __init__(self, *, transcripts):
         if not transcripts:
             raise ValueError('"transcripts" cannot be None or an empty list')
         for t in transcripts:

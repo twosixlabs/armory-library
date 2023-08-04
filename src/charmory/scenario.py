@@ -17,7 +17,6 @@ from armory.instrument import MetricsLogger, del_globals, get_hub, get_probe
 from armory.instrument.export import ExportMeter, PredictionMeter
 from armory.logs import log
 from armory.metrics import compute
-from armory.paths import HostPaths
 import armory.version
 from charmory.evaluation import Evaluation
 
@@ -65,7 +64,10 @@ class Scenario(ABC):
         # Set export paths
         self.time_stamp = time.time()
         self.evaluation_id = str(self.time_stamp)
-        self.export_dir = f"{HostPaths().output_dir}/{self.evaluation_id}/outputs"
+
+        self.export_dir = (
+            f"{evaluation.sysconfig.paths['output_dir']}/{self.evaluation_id}/outputs"
+        )
         self.export_subdir = "saved_samples"
         self.results = None
 
