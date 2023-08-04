@@ -39,7 +39,6 @@ from armory.data.utils import (
 from armory.data.xview import xview as xv  # noqa: F401
 from armory.logs import log
 
-
 os.environ["KMP_WARNINGS"] = "0"
 
 CHECKSUMS_DIR = os.path.join(os.path.dirname(__file__), "url_checksums")
@@ -730,6 +729,7 @@ def canonical_variable_image_preprocess(context, batch):
 
     return batch
 
+
 mnist_context = ImageContext(x_shape=(28, 28, 1))
 cifar10_context = ImageContext(x_shape=(32, 32, 3))
 cifar100_context = ImageContext(x_shape=(32, 32, 3))
@@ -742,6 +742,7 @@ coco_context = ImageContext(x_shape=(None, None, 3))
 ucf101_context = VideoContext(x_shape=(None, None, None, 3), frame_rate=25)
 carla_obj_det_single_modal_context = ImageContext(x_shape=(960, 1280, 3))
 carla_obj_det_multimodal_context = ImageContext(x_shape=(960, 1280, 6))
+
 
 def mnist_canonical_preprocessing(batch):
     return canonical_image_preprocess(mnist_context, batch)

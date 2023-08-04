@@ -1,4 +1,3 @@
-
 """
 CNN model for 244x244x3 pokemon image classification
 """
@@ -9,9 +8,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
-
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class Net(nn.Module):
     """
@@ -40,8 +38,10 @@ class Net(nn.Module):
         output = F.log_softmax(x, dim=1)
         return output
 
+
 def make_pokemon_model(**kwargs) -> Net:
     return Net()
+
 
 def get_art_model(
     model_kwargs: dict, wrapper_kwargs: dict, weights_path: Optional[str] = None
@@ -64,7 +64,3 @@ def get_art_model(
         **wrapper_kwargs,
     )
     return wrapped_model
-
-
-
-
