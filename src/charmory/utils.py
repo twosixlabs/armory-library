@@ -216,3 +216,34 @@ class PILtoNumpy(object):
         assert isinstance(sample, PIL.Image.Image)
         np_image = np.array(sample)
         return np_image
+
+
+class PILtoNumpy_HuggingFace(object):
+    """
+    Custom torchvision transform a HuggingFace Dataset dictionary which
+    contains a PIL images and converts the PIL Image to a numpy array
+
+    Example::
+
+        transform=PILtoNumpy_HuggingFace()
+
+
+        train_dataset = load_jatic_dataset(
+            provider="huggingface",
+            dataset_name="keremberke/pokemon-classification",
+            task="image-classification",
+            name='full',
+            split="train"
+        )
+
+        train_dataset.set_transform(transform)
+    Args:
+        the __call__ method takes a sample of type dict "{"image": [...],"label": [...] }".
+        It converts the dict location "image" which is PIL Image to a numpy array
+    Returns:
+        the sample dict with converted PIL Image to numpy array.
+    """
+
+    def __call__(self, sample):
+        sample["image"] = [np.asarray(img) for img in sample["image"]]
+        return sample
