@@ -50,6 +50,7 @@ dependencies = [
     "tensorflow >= 2.11.0",
 
     # tracking
+    "fire",
     "mlflow",
 ]
 
@@ -61,6 +62,7 @@ Documentation = "https://armory.readthedocs.io/en/latest/"
 [project.scripts]
 armory = "charmory.example:main"
 armory-mlflow-server = "charmory.track:server"
+armory-mlflow-auth-client = "charmory.track:auth_client"
 
 
 # please see docs/getting_started.md#the-armory-flavors for how these
