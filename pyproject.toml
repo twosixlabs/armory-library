@@ -62,6 +62,7 @@ Documentation = "https://armory.readthedocs.io/en/latest/"
 [project.scripts]
 armory = "charmory.example:main"
 armory-mlflow-server = "charmory.track:server"
+armory-mlflow-client = "charmory.track:client"
 armory-mlflow-auth-client = "charmory.track:auth_client"
 
 
