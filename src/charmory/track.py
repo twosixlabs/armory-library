@@ -232,8 +232,14 @@ def server():
     mlflow.cli.server(args)
 
 
-def auth_client():
+def client():
     """Perform MLFlow client functions"""
+    client = mlflow.MlflowClient()
+    fire.Fire(client)
+
+
+def auth_client():
+    """Perform MLFlow auth client functions"""
     tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
     if not tracking_uri:
         print("Must set MLFLOW_TRACKING_URI environment variable")
