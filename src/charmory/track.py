@@ -6,8 +6,10 @@ from pathlib import Path
 import sys
 from typing import Callable, Mapping, Optional, Sequence, TypeVar, Union, overload
 
+import fire
 import mlflow
 import mlflow.cli
+import mlflow.server
 
 # This was only added to the builtin `typing` in Python 3.10,
 # so we have to use `typing_extensions` for 3.8 support
@@ -228,3 +230,13 @@ def server():
             args.extend(["--backend-store-uri", path.as_uri()])
 
     mlflow.cli.server(args)
+
+
+def auth_client():
+    """Perform MLFlow client functions"""
+    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
+    if not tracking_uri:
+        print("Must set MLFLOW_TRACKING_URI environment variable")
+        sys.exit(-1)
+    client = mlflow.server.get_app_client("basic-auth", tracking_uri=tracking_uri)
+    fire.Fire(client)
