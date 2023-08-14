@@ -6,7 +6,6 @@ from pathlib import Path
 import sys
 from typing import Callable, Mapping, Optional, Sequence, TypeVar, Union, overload
 
-import fire
 import mlflow
 import mlflow.cli
 import mlflow.server
@@ -230,19 +229,3 @@ def server():
             args.extend(["--backend-store-uri", path.as_uri()])
 
     mlflow.cli.server(args)
-
-
-def client():
-    """Perform MLFlow client functions"""
-    client = mlflow.MlflowClient()
-    fire.Fire(client)
-
-
-def auth_client():
-    """Perform MLFlow auth client functions"""
-    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
-    if not tracking_uri:
-        print("Must set MLFLOW_TRACKING_URI environment variable")
-        sys.exit(-1)
-    client = mlflow.server.get_app_client("basic-auth", tracking_uri=tracking_uri)
-    fire.Fire(client)
