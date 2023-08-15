@@ -10,6 +10,7 @@ from typing import Any, Optional
 
 import lightning.pytorch as pl
 
+from armory import metrics
 from armory.instrument import MetricsLogger, get_hub, get_probe
 from armory.instrument.export import ExportMeter, PredictionMeter
 from armory.metrics import compute
@@ -99,7 +100,19 @@ class BaseScenario(pl.LightningModule, ABC):
         self.hub.connect_meter(pred_meter, use_default_writers=False)
 
     def _run_benign(self, batch: Batch):
-        time.sleep(0.1)
+        self.hub.set_context(stage="benign")
+
+        batch.x.flags.writeable = False
+        with self.profiler.measure("Inference"):
+            batch.y_pred = self.evaluation.model.model.predict(
+                batch.x, **self.evaluation.model.predict_kwargs
+            )
+        self.probe.update(y_pred=batch.y_pred)
+
+        if self.skip_misclassified:
+            batch.misclassified = not any(
+                metrics.task.batch.categorical_accuracy(batch.y, batch.y_pred)
+            )
 
     def _run_attack(self, batch: Batch):
         time.sleep(0.15)
