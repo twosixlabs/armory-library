@@ -6,9 +6,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 import time
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import lightning.pytorch as pl
+import torch
 
 from armory import metrics
 from armory.instrument import MetricsLogger, get_hub, get_probe
@@ -114,8 +115,57 @@ class BaseScenario(pl.LightningModule, ABC):
                 metrics.task.batch.categorical_accuracy(batch.y, batch.y_pred)
             )
 
+    @torch.enable_grad()
     def _run_attack(self, batch: Batch):
-        time.sleep(0.15)
+        if TYPE_CHECKING:
+            assert self.evaluation.attack
+
+        self.hub.set_context(stage="attack")
+        x = batch.x
+        y = batch.y
+        y_pred = batch.y_pred
+
+        with self.profiler.measure("Attack"):
+            # Don't generate the attack if the benign was already misclassified
+            if self.skip_misclassified and batch.misclassified:
+                y_target = None
+                x_adv = x
+
+            else:
+                # If targeted, use the label targeter to generate the target label
+                if self.evaluation.attack.targeted:
+                    if TYPE_CHECKING:
+                        assert self.evaluation.attack.label_targeter
+                    y_target = self.evaluation.attack.label_targeter.generate(y)
+                else:
+                    # If untargeted, use either the natural or benign labels
+                    # (when set to None, the ART attack handles the benign label)
+                    y_target = (
+                        y if self.evaluation.attack.use_label_for_untargeted else None
+                    )
+
+                x_adv = self.evaluation.attack.attack.generate(
+                    x=x, y=y_target, **self.evaluation.attack.generate_kwargs
+                )
+
+        self.hub.set_context(stage="adversarial")
+        # Don't evaluate the attack if the benign was already misclassified
+        if self.skip_misclassified and batch.misclassified:
+            y_pred_adv = y_pred
+        else:
+            # Ensure that input sample isn't overwritten by model
+            x_adv.flags.writeable = False
+            y_pred_adv = self.evaluation.model.model.predict(
+                x_adv, **self.evaluation.model.predict_kwargs
+            )
+
+        self.probe.update(x_adv=x_adv, y_pred_adv=y_pred_adv)
+        if self.evaluation.attack.targeted:
+            self.probe.update(y_target=y_target)
+
+        batch.x_adv = x_adv
+        batch.y_target = y_target
+        batch.y_pred_adv = y_pred_adv
 
     ###
     # LightningModule method overrides
