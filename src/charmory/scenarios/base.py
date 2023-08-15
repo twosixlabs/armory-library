@@ -12,7 +12,7 @@ import lightning.pytorch as pl
 import torch
 
 from armory import metrics
-from armory.instrument import MetricsLogger, get_hub, get_probe
+from armory.instrument import MetricsLogger, del_globals, get_hub, get_probe
 from armory.instrument.export import ExportMeter, PredictionMeter
 from armory.metrics import compute
 from charmory.evaluation import Evaluation
@@ -197,11 +197,14 @@ class BaseScenario(pl.LightningModule, ABC):
         self.results = {}
         self.results.update(self.metric_results)
         self.results["compute"] = self.compute_results
+        del_globals()
+        self.hub.set_context(stage="finished")
 
     def test_dataloader(self):
         return self.evaluation.dataset.test_dataset
 
     def test_step(self, batch, batch_idx):
+        self.hub.set_context(stage="test_step")
         x, y = batch
         self.hub.set_context(batch=batch_idx)
         self.probe.update(i=batch_idx, x=x, y=y)
