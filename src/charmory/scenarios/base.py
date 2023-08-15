@@ -2,22 +2,37 @@
 Base Armory scenario Lightning module
 """
 
-from abc import ABC  # , abstractmethod
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pathlib import Path
 import time
 from typing import Any, Optional
 
 import lightning.pytorch as pl
 
+from armory.instrument import MetricsLogger, get_hub, get_probe
+from armory.instrument.export import ExportMeter, PredictionMeter
+from armory.metrics import compute
 from charmory.evaluation import Evaluation
 
 
 class BaseScenario(pl.LightningModule, ABC):
     """Base Armory scenario"""
 
-    def __init__(self, evaluation: Evaluation):
+    def __init__(
+        self,
+        evaluation: Evaluation,
+        export_batches: bool = False,
+        skip_benign: bool = False,
+        skip_attack: bool = False,
+        skip_misclassified: bool = False,
+    ):
         super().__init__()
         self.evaluation = evaluation
+        self.export_batches = export_batches
+        self.skip_benign = skip_benign
+        self.skip_attack = skip_attack
+        self.skip_misclassified = skip_misclassified
 
     ###
     # Inner classes
@@ -40,9 +55,48 @@ class BaseScenario(pl.LightningModule, ABC):
     # Methods required to be implemented by scenario-specific subclasses
     ###
 
+    @abstractmethod
+    def _load_sample_exporter(self, export_dir: str):
+        ...
+
     ###
     # Internal methods
     ###
+
+    def _load_metrics(self):
+        metrics_config = self.evaluation.metric
+        metrics_logger = MetricsLogger.from_config(
+            metrics_config,
+            include_benign=not self.skip_benign,
+            include_adversarial=not self.skip_attack,
+            include_targeted=(
+                self.evaluation.attack.targeted if self.evaluation.attack else False
+            ),
+        )
+        self.profiler = compute.profiler_from_config(metrics_config)
+        self.metrics_logger = metrics_logger
+
+    def _load_export_meters(self, num_export_batches: int, sample_exporter, export_dir):
+        for probe_value in ["x", "x_adv"]:
+            export_meter = ExportMeter(
+                f"{probe_value}_exporter",
+                sample_exporter,
+                f"scenario.{probe_value}",
+                max_batches=num_export_batches,
+            )
+            self.hub.connect_meter(export_meter, use_default_writers=False)
+            if self.skip_attack:
+                break
+
+        pred_meter = PredictionMeter(
+            "pred_dict_exporter",
+            export_dir,
+            y_probe="scenario.y",
+            y_pred_clean_probe="scenario.y_pred" if not self.skip_benign else None,
+            y_pred_adv_probe="scenario.y_pred_adv" if not self.skip_attack else None,
+            max_batches=num_export_batches,
+        )
+        self.hub.connect_meter(pred_meter, use_default_writers=False)
 
     def _run_benign(self, batch: Batch):
         time.sleep(0.1)
@@ -55,8 +109,24 @@ class BaseScenario(pl.LightningModule, ABC):
     ###
 
     def setup(self, stage):
-        # load metrics, meters, etc.
-        pass
+        self.probe = get_probe("scenario")
+        self.hub = get_hub()
+
+        self._load_metrics()
+
+        self.time_stamp = time.time()
+        self.evaluation_id = str(self.time_stamp)
+
+        num_export_batches = 0
+        sample_exporter = None
+        export_dir = None
+        if self.export_batches:
+            num_export_batches = len(self.evaluation.dataset.test_dataset)
+            export_dir = f"{self.evaluation.sysconfig.paths['output_dir']}/{self.evaluation_id}/outputs"
+            Path(export_dir).mkdir(parents=True, exist_ok=True)
+            sample_exporter = self._load_sample_exporter(export_dir)
+
+        self._load_export_meters(num_export_batches, sample_exporter, export_dir)
 
     def test_dataloader(self):
         return self.evaluation.dataset.test_dataset

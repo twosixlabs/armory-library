@@ -13,4 +13,5 @@ class ImageClassificationTask(Scenario):
 
 
 class ImageClassificationModule(BaseScenario):
-    pass
+    def _load_sample_exporter(self, export_dir):
+        return ImageClassificationExporter(export_dir)
