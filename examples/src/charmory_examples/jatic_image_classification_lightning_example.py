@@ -149,9 +149,9 @@ def main():
     ###
     # Lightning
     ###
-    module = ImageClassificationModule(evaluation, skip_attack=True)
+    module = ImageClassificationModule(evaluation)
 
-    trainer = pl.Trainer()
+    trainer = pl.Trainer(inference_mode=False)
     trainer.test(module)
 
     pprint(module.results)
