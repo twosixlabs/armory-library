@@ -1,4 +1,4 @@
-# from pprint import pprint
+from pprint import pprint
 
 import art.attacks.evasion
 from art.estimators.classification import PyTorchClassifier
@@ -149,10 +149,12 @@ def main():
     ###
     # Lightning
     ###
-    module = ImageClassificationModule(evaluation)
+    module = ImageClassificationModule(evaluation, skip_attack=True)
 
     trainer = pl.Trainer()
     trainer.test(module)
+
+    pprint(module.results)
 
 
 if __name__ == "__main__":

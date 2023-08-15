@@ -121,7 +121,7 @@ class BaseScenario(pl.LightningModule, ABC):
     # LightningModule method overrides
     ###
 
-    def setup(self, stage):
+    def on_test_start(self):
         self.probe = get_probe("scenario")
         self.hub = get_hub()
 
@@ -141,13 +141,22 @@ class BaseScenario(pl.LightningModule, ABC):
 
         self._load_export_meters(num_export_batches, sample_exporter, export_dir)
 
+    def on_test_end(self):
+        self.metric_results = self.metrics_logger.results()
+        self.compute_results = self.profiler.results()
+        self.results = {}
+        self.results.update(self.metric_results)
+        self.results["compute"] = self.compute_results
+
     def test_dataloader(self):
         return self.evaluation.dataset.test_dataset
 
     def test_step(self, batch, batch_idx):
         x, y = batch
+        self.hub.set_context(batch=batch_idx)
+        self.probe.update(i=batch_idx, x=x, y=y)
         curr_batch = self.Batch(i=batch_idx, x=x, y=y)
-        # if not self.skip_benign:
-        self._run_benign(curr_batch)
-        # if not self.skip_attack:
-        self._run_attack(curr_batch)
+        if not self.skip_benign:
+            self._run_benign(curr_batch)
+        if not self.skip_attack:
+            self._run_attack(curr_batch)
