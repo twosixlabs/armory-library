@@ -1,14 +1,16 @@
-from pprint import pprint
+# from pprint import pprint
 
 import art.attacks.evasion
 from art.estimators.classification import PyTorchClassifier
 import jatic_toolbox
+import lightning.pytorch as pl
 import numpy as np
 import torch.nn
 from transformers.image_utils import infer_channel_dimension_format
 
 from charmory.data import JaticVisionDatasetGenerator
-from charmory.engine import Engine
+
+# from charmory.engine import Engine
 from charmory.evaluation import (
     Attack,
     Dataset,
@@ -18,7 +20,10 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
-from charmory.scenarios.image_classification import ImageClassificationTask
+from charmory.scenarios.image_classification import (
+    ImageClassificationModule,
+    ImageClassificationTask,
+)
 from charmory.utils import (
     adapt_jatic_image_classification_model_for_art,
     create_jatic_image_classification_dataset_transform,
@@ -137,9 +142,17 @@ def main():
     ###
     # Engine
     ###
-    engine = Engine(evaluation)
-    results = engine.run()
-    pprint(results)
+    # engine = Engine(evaluation)
+    # results = engine.run()
+    # pprint(results)
+
+    ###
+    # Lightning
+    ###
+    module = ImageClassificationModule(evaluation)
+
+    trainer = pl.Trainer()
+    trainer.test(module)
 
 
 if __name__ == "__main__":
