@@ -7,8 +7,19 @@ import contextlib
 import io
 import pstats
 import time
+from typing import Mapping, Protocol, runtime_checkable
 
 from armory.logs import log
+
+
+@runtime_checkable
+class Profiler(Protocol):
+    @contextlib.contextmanager
+    def measure(self, name: str):
+        yield
+
+    def results(self) -> Mapping[str, float]:
+        ...
 
 
 class NullProfiler:
@@ -108,18 +119,3 @@ class DeterministicProfiler(NullProfiler):
             ] = average_time
             results[f"{name} profiler stats"] = entry["stats"]
         return results
-
-
-_PROFILERS = {
-    None: NullProfiler,
-    "basic": BasicProfiler,
-    "deterministic": DeterministicProfiler,
-}
-
-
-def profiler_from_config(metric):
-    profiler_type = metric.profiler_type.lower()
-    try:
-        return _PROFILERS[profiler_type]()
-    except KeyError:
-        raise KeyError(f"Profiler {profiler_type} is not in {tuple(_PROFILERS)}.")

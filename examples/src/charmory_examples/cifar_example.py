@@ -9,6 +9,7 @@ import art.attacks.evasion
 
 import armory.baseline_models.pytorch.cifar
 import armory.data.datasets
+from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.engine import Engine
 from charmory.evaluation import (
@@ -90,7 +91,7 @@ def main(argv: list = sys.argv[1:]):
     )
 
     metric = Metric(
-        profiler_type="basic",
+        profiler=BasicProfiler(),
         supported_metrics=["accuracy"],
         perturbation=["linf"],
         task=["categorical_accuracy"],
