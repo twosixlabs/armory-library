@@ -14,7 +14,6 @@ import torch
 from armory import metrics
 from armory.instrument import MetricsLogger, del_globals, get_hub, get_probe
 from armory.instrument.export import ExportMeter, PredictionMeter
-from armory.metrics import compute
 from charmory.evaluation import Evaluation
 
 
@@ -75,7 +74,6 @@ class BaseScenario(pl.LightningModule, ABC):
                 self.evaluation.attack.targeted if self.evaluation.attack else False
             ),
         )
-        self.profiler = compute.profiler_from_config(metrics_config)
         self.metrics_logger = metrics_logger
 
     def _load_export_meters(self, num_export_batches: int, sample_exporter, export_dir):
@@ -104,7 +102,7 @@ class BaseScenario(pl.LightningModule, ABC):
         self.hub.set_context(stage="benign")
 
         batch.x.flags.writeable = False
-        with self.profiler.measure("Inference"):
+        with self.evaluation.metric.profiler.measure("Inference"):
             batch.y_pred = self.evaluation.model.model.predict(
                 batch.x, **self.evaluation.model.predict_kwargs
             )
@@ -125,7 +123,7 @@ class BaseScenario(pl.LightningModule, ABC):
         y = batch.y
         y_pred = batch.y_pred
 
-        with self.profiler.measure("Attack"):
+        with self.evaluation.metric.profiler.measure("Attack"):
             # Don't generate the attack if the benign was already misclassified
             if self.skip_misclassified and batch.misclassified:
                 y_target = None
@@ -193,12 +191,12 @@ class BaseScenario(pl.LightningModule, ABC):
 
     def on_test_end(self):
         self.metric_results = self.metrics_logger.results()
-        self.compute_results = self.profiler.results()
+        self.compute_results = self.evaluation.metric.profiler.results()
         self.results = {}
         self.results.update(self.metric_results)
         self.results["compute"] = self.compute_results
-        del_globals()
         self.hub.set_context(stage="finished")
+        del_globals()
 
     def test_dataloader(self):
         return self.evaluation.dataset.test_dataset

@@ -69,7 +69,6 @@ scenario = Scenario(
 )
 
 metric = Metric(
-    profiler_type="basic",
     supported_metrics=["accuracy"],
     perturbation=["linf"],
     task=["categorical_accuracy"],

@@ -2,12 +2,13 @@
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
 
 from armory.data.datasets import ArmoryDataGenerator
+from armory.metrics.compute import NullProfiler, Profiler
 from charmory.labels import LabelTargeter
 
 MethodName = Callable[
@@ -64,12 +65,12 @@ class Dataset:
 
 @dataclass
 class Metric:
-    profiler_type: Literal["basic", "deterministic"]
     supported_metrics: List[str]
     perturbation: List[str]
     task: List[str]
     means: bool
     record_metric_per_sample: bool
+    profiler: Profiler = field(default_factory=NullProfiler)
 
 
 @dataclass
@@ -131,6 +132,16 @@ class SysConfig:
             config_path.mkdir(parents=True, exist_ok=True)
 
 
+def default_metric() -> Metric:
+    return Metric(
+        supported_metrics=[],
+        perturbation=[],
+        task=[],
+        means=False,
+        record_metric_per_sample=False,
+    )
+
+
 @dataclass
 class Evaluation:
     name: str
@@ -140,5 +151,5 @@ class Evaluation:
     dataset: Dataset
     author: Optional[str]
     attack: Optional[Attack] = None
-    metric: Optional[Metric] = None
+    metric: Metric = field(default_factory=default_metric)
     sysconfig: Optional[SysConfig] = None

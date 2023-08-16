@@ -8,9 +8,9 @@ import numpy as np
 import torch.nn
 from transformers.image_utils import infer_channel_dimension_format
 
-from charmory.data import JaticVisionDatasetGenerator
-
 # from charmory.engine import Engine
+from armory.metrics.compute import BasicProfiler
+from charmory.data import JaticVisionDatasetGenerator
 from charmory.evaluation import (
     Attack,
     Dataset,
@@ -114,7 +114,7 @@ def main():
     )
 
     eval_metric = Metric(
-        profiler_type="basic",
+        profiler=BasicProfiler(),
         supported_metrics=["accuracy"],
         perturbation=["linf"],
         task=["categorical_accuracy"],

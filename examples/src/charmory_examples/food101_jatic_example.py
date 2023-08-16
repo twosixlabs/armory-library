@@ -9,6 +9,7 @@ from torchvision import transforms as T
 
 import armory.baseline_models.pytorch.food101
 import armory.data.datasets
+from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import Engine
@@ -120,7 +121,7 @@ def main():
     )
 
     metric = Metric(
-        profiler_type="basic",
+        profiler=BasicProfiler(),
         supported_metrics=["accuracy"],
         perturbation=["linf"],
         task=["categorical_accuracy"],
