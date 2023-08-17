@@ -5,6 +5,7 @@ import lightning.pytorch as pl
 from armory.logs import log
 from charmory.evaluation import Evaluation
 from charmory.tasks.base import BaseEvaluationTask
+from charmory.track import track_metrics
 
 
 class Engine:
@@ -35,6 +36,8 @@ class Engine:
 
     def run(self):
         results = self.scenario.evaluate()
+        track_metrics(results["results"]["metrics"])
+
         return results
 
 
