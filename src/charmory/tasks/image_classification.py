@@ -3,13 +3,16 @@
 import torch
 import torchmetrics.classification
 
+from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.tasks.base import BaseEvaluationTask
 
 
 class ImageClassificationTask(BaseEvaluationTask):
     """Image classification evaluation task"""
 
-    def __init__(self, *args, num_classes: int, **kwargs):
+    def __init__(
+        self, *args, num_classes: int, perturbation_ord: float = torch.inf, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.benign_accuracy = torchmetrics.classification.Accuracy(
             task="multiclass", num_classes=num_classes
@@ -17,6 +20,7 @@ class ImageClassificationTask(BaseEvaluationTask):
         self.attack_accuracy = torchmetrics.classification.Accuracy(
             task="multiclass", num_classes=num_classes
         )
+        self.perturbation = PerturbationNormMetric(ord=perturbation_ord)
 
     def run_benign(self, batch: BaseEvaluationTask.Batch):
         super().run_benign(batch)
@@ -27,3 +31,6 @@ class ImageClassificationTask(BaseEvaluationTask):
         super().run_attack(batch)
         self.attack_accuracy(torch.tensor(batch.y_pred_adv), torch.tensor(batch.y))
         self.log("attack_accuracy", self.attack_accuracy)
+
+        self.perturbation(torch.tensor(batch.x), torch.tensor(batch.x_adv))
+        self.log("perturbation", self.perturbation)
