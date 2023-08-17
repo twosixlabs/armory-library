@@ -155,7 +155,7 @@ def main():
     ###
     # Lightning
     ###
-    task = ImageClassificationTask(evaluation)
+    task = ImageClassificationTask(evaluation, num_classes=12)
     engine = LightningEngine(task, limit_test_batches=5)
     engine.run()
 
