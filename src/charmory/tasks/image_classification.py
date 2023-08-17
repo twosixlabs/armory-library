@@ -1,7 +1,5 @@
 """Image classification evaluation task"""
 
-from pprint import pprint
-
 import torch
 import torchmetrics.classification
 
@@ -13,13 +11,19 @@ class ImageClassificationTask(BaseEvaluationTask):
 
     def __init__(self, *args, num_classes: int, **kwargs):
         super().__init__(*args, **kwargs)
-        self.accuracy = torchmetrics.classification.Accuracy(
+        self.benign_accuracy = torchmetrics.classification.Accuracy(
+            task="multiclass", num_classes=num_classes
+        )
+        self.attack_accuracy = torchmetrics.classification.Accuracy(
             task="multiclass", num_classes=num_classes
         )
 
     def run_benign(self, batch: BaseEvaluationTask.Batch):
         super().run_benign(batch)
-        self.accuracy(torch.tensor(batch.y_pred), torch.tensor(batch.y))
+        self.benign_accuracy(torch.tensor(batch.y_pred), torch.tensor(batch.y))
+        self.log("benign_accuracy", self.benign_accuracy)
 
-    def on_test_end(self):
-        pprint(self.accuracy.compute())
+    def run_attack(self, batch: BaseEvaluationTask.Batch):
+        super().run_attack(batch)
+        self.attack_accuracy(torch.tensor(batch.y_pred_adv), torch.tensor(batch.y))
+        self.log("attack_accuracy", self.attack_accuracy)

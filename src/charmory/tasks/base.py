@@ -12,7 +12,7 @@ import torch
 from charmory.evaluation import Evaluation
 
 
-class BaseEvaluationTask(ABC):
+class BaseEvaluationTask(pl.LightningModule, ABC):
     """Base Armory evaluation task"""
 
     def __init__(
@@ -21,6 +21,7 @@ class BaseEvaluationTask(ABC):
         skip_benign: bool = False,
         skip_attack: bool = False,
     ):
+        super().__init__()
         self.evaluation = evaluation
         self.skip_benign = skip_benign
         self.skip_attack = skip_attack
@@ -52,9 +53,6 @@ class BaseEvaluationTask(ABC):
     ###
     # Task execution methods
     ###
-
-    def on_test_start(self):
-        pass
 
     def run_benign(self, batch: Batch):
         """Perform benign evaluation"""
@@ -93,32 +91,19 @@ class BaseEvaluationTask(ABC):
             batch.x_adv, **self.evaluation.model.predict_kwargs
         )
 
-    def on_test_end(self):
-        pass
-
-
-class EvaluationTaskModule(pl.LightningModule):
-    """Lightning module to execute an Armory evaluation task"""
-
-    def __init__(self, task: BaseEvaluationTask):
-        super().__init__()
-        self.task = task
-
-    def on_test_start(self):
-        self.task.on_test_start()
-
-    def on_test_end(self):
-        self.task.on_test_end()
+    ###
+    # LightningModule method overrides
+    ###
 
     def test_dataloader(self):
-        return self.task.evaluation.dataset.test_dataset
+        return self.evaluation.dataset.test_dataset
 
     def test_step(self, batch, batch_idx):
         """Invokes task's benign and adversarial evaluations"""
         x, y = batch
-        curr_batch = self.task.Batch(i=batch_idx, x=x, y=y)
-        if not self.task.skip_benign:
-            self.task.run_benign(curr_batch)
-        if not self.task.skip_attack:
+        curr_batch = self.Batch(i=batch_idx, x=x, y=y)
+        if not self.skip_benign:
+            self.run_benign(curr_batch)
+        if not self.skip_attack:
             with torch.enable_grad():
-                self.task.run_attack(curr_batch)
+                self.run_attack(curr_batch)

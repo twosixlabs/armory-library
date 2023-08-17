@@ -4,7 +4,7 @@ import lightning.pytorch as pl
 
 from armory.logs import log
 from charmory.evaluation import Evaluation
-from charmory.tasks.base import BaseEvaluationTask, EvaluationTaskModule
+from charmory.tasks.base import BaseEvaluationTask
 
 
 class Engine:
@@ -45,10 +45,9 @@ class LightningEngine:
         limit_test_batches: Optional[Union[int, float]] = None,
     ):
         self.task = task
-        self.module = EvaluationTaskModule(task)
         self.trainer = pl.Trainer(
             inference_mode=False, limit_test_batches=limit_test_batches
         )
 
     def run(self):
-        self.trainer.test(self.module)
+        self.trainer.test(self.task)
