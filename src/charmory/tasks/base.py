@@ -43,15 +43,7 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         y_pred_adv: Optional[Any] = None
 
     ###
-    # Methods required to be implemented by task-specific subclasses
-    ###
-
-    ###
-    # Optional methods to be implemented by task-specific subclasses
-    ###
-
-    ###
-    # Task execution methods
+    # Task evaluation methods
     ###
 
     def run_benign(self, batch: Batch):
