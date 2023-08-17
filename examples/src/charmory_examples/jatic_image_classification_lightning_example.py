@@ -9,6 +9,7 @@ import torch.nn
 from transformers.image_utils import infer_channel_dimension_format
 
 # from charmory.engine import Engine
+from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 from charmory.data import JaticVisionDatasetGenerator
 from charmory.evaluation import (
@@ -115,11 +116,13 @@ def main():
 
     eval_metric = Metric(
         profiler=BasicProfiler(),
-        supported_metrics=["accuracy"],
-        perturbation=["linf"],
-        task=["categorical_accuracy"],
-        means=True,
-        record_metric_per_sample=False,
+        logger=MetricsLogger(
+            supported_metrics=["accuracy"],
+            perturbation=["linf"],
+            task=["categorical_accuracy"],
+            means=True,
+            record_metric_per_sample=False,
+        ),
     )
 
     eval_sysconfig = SysConfig(

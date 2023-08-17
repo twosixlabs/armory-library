@@ -8,6 +8,7 @@ from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
 
 from armory.data.datasets import ArmoryDataGenerator
+from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import NullProfiler, Profiler
 from charmory.labels import LabelTargeter
 
@@ -65,11 +66,7 @@ class Dataset:
 
 @dataclass
 class Metric:
-    supported_metrics: List[str]
-    perturbation: List[str]
-    task: List[str]
-    means: bool
-    record_metric_per_sample: bool
+    logger: MetricsLogger = field(default_factory=MetricsLogger)
     profiler: Profiler = field(default_factory=NullProfiler)
 
 
@@ -132,16 +129,6 @@ class SysConfig:
             config_path.mkdir(parents=True, exist_ok=True)
 
 
-def default_metric() -> Metric:
-    return Metric(
-        supported_metrics=[],
-        perturbation=[],
-        task=[],
-        means=False,
-        record_metric_per_sample=False,
-    )
-
-
 @dataclass
 class Evaluation:
     name: str
@@ -151,5 +138,5 @@ class Evaluation:
     dataset: Dataset
     author: Optional[str]
     attack: Optional[Attack] = None
-    metric: Metric = field(default_factory=default_metric)
+    metric: Metric = field(default_factory=Metric)
     sysconfig: Optional[SysConfig] = None
