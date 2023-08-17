@@ -3,29 +3,14 @@ from pprint import pprint
 import art.attacks.evasion
 from art.estimators.classification import PyTorchClassifier
 import jatic_toolbox
-
-# import lightning.pytorch as pl
 import numpy as np
 import torch.nn
 from transformers.image_utils import infer_channel_dimension_format
 
-from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import LightningEngine
-from charmory.evaluation import (  # Scenario,
-    Attack,
-    Dataset,
-    Evaluation,
-    Metric,
-    Model,
-    SysConfig,
-)
-
-# from charmory.scenarios.image_classification import (
-#     ImageClassificationModule,
-#     ImageClassificationTask,
-# )
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.utils import (
     adapt_jatic_image_classification_model_for_art,
@@ -111,20 +96,8 @@ def main():
         use_label_for_untargeted=True,
     )
 
-    # eval_scenario = Scenario(
-    #     function=ImageClassificationTask,
-    #     kwargs={},
-    # )
-
     eval_metric = Metric(
         profiler=BasicProfiler(),
-        logger=MetricsLogger(
-            supported_metrics=["accuracy"],
-            perturbation=["linf"],
-            task=["categorical_accuracy"],
-            means=True,
-            record_metric_per_sample=False,
-        ),
     )
 
     eval_sysconfig = SysConfig(
@@ -140,17 +113,9 @@ def main():
         model=eval_model,
         attack=eval_attack,
         scenario=None,
-        # scenario=eval_scenario,
         metric=eval_metric,
         sysconfig=eval_sysconfig,
     )
-
-    ###
-    # Engine
-    ###
-    # engine = Engine(evaluation)
-    # results = engine.run()
-    # pprint(results)
 
     ###
     # Lightning
@@ -160,12 +125,6 @@ def main():
     engine.run()
 
     pprint(eval_metric.profiler.results())
-    # module = ImageClassificationModule(evaluation)
-
-    # trainer = pl.Trainer(inference_mode=False)
-    # trainer.test(module)
-
-    # pprint(module.results)
 
 
 if __name__ == "__main__":
