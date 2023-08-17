@@ -60,30 +60,32 @@ class BaseEvaluationTask(ABC):
         """Perform benign evaluation"""
         # Ensure that input sample isn't overwritten by model
         batch.x.flags.writeable = False
-        batch.y_pred = self.evaluation.model.model.predict(
-            batch.x, **self.evaluation.model.predict_kwargs
-        )
+        with self.evaluation.metric.profiler.measure("Inference"):
+            batch.y_pred = self.evaluation.model.model.predict(
+                batch.x, **self.evaluation.model.predict_kwargs
+            )
 
     def run_attack(self, batch: Batch):
         """Perform adversarial evaluation"""
         if TYPE_CHECKING:
             assert self.evaluation.attack
 
-        # If targeted, use the label targeter to generate the target label
-        if self.evaluation.attack.targeted:
-            if TYPE_CHECKING:
-                assert self.evaluation.attack.label_targeter
-            batch.y_target = self.evaluation.attack.label_targeter.generate(batch.y)
-        else:
-            # If untargeted, use either the natural or benign labels
-            # (when set to None, the ART attack handles the benign label)
-            batch.y_target = (
-                batch.y if self.evaluation.attack.use_label_for_untargeted else None
-            )
+        with self.evaluation.metric.profiler.measure("Attack"):
+            # If targeted, use the label targeter to generate the target label
+            if self.evaluation.attack.targeted:
+                if TYPE_CHECKING:
+                    assert self.evaluation.attack.label_targeter
+                batch.y_target = self.evaluation.attack.label_targeter.generate(batch.y)
+            else:
+                # If untargeted, use either the natural or benign labels
+                # (when set to None, the ART attack handles the benign label)
+                batch.y_target = (
+                    batch.y if self.evaluation.attack.use_label_for_untargeted else None
+                )
 
-        batch.x_adv = self.evaluation.attack.attack.generate(
-            x=batch.x, y=batch.y_target, **self.evaluation.attack.generate_kwargs
-        )
+            batch.x_adv = self.evaluation.attack.attack.generate(
+                x=batch.x, y=batch.y_target, **self.evaluation.attack.generate_kwargs
+            )
 
         # Ensure that input sample isn't overwritten by model
         batch.x_adv.flags.writeable = False

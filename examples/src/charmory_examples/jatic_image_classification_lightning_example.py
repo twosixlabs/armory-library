@@ -1,4 +1,4 @@
-# from pprint import pprint
+from pprint import pprint
 
 import art.attacks.evasion
 from art.estimators.classification import PyTorchClassifier
@@ -158,6 +158,8 @@ def main():
     task = ImageClassificationTask(evaluation)
     engine = LightningEngine(task, limit_test_batches=5)
     engine.run()
+
+    pprint(eval_metric.profiler.results())
     # module = ImageClassificationModule(evaluation)
 
     # trainer = pl.Trainer(inference_mode=False)
