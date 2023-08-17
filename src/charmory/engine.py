@@ -1,5 +1,8 @@
+import lightning.pytorch as pl
+
 from armory.logs import log
 from charmory.evaluation import Evaluation
+from charmory.tasks.base import BaseEvaluationTask, EvaluationTaskModule
 
 
 class Engine:
@@ -31,3 +34,13 @@ class Engine:
     def run(self):
         results = self.scenario.evaluate()
         return results
+
+
+class LightningEngine:
+    def __init__(self, task: BaseEvaluationTask):
+        self.task = task
+        self.module = EvaluationTaskModule(task)
+        self.trainer = pl.Trainer(inference_mode=False)
+
+    def run(self):
+        self.trainer.test(self.module)
