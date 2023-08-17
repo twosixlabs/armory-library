@@ -9,6 +9,7 @@ from typing import Callable, Mapping, Optional, Sequence, TypeVar, Union, overlo
 import mlflow
 import mlflow.cli
 import mlflow.server
+import torch
 
 # This was only added to the builtin `typing` in Python 3.10,
 # so we have to use `typing_extensions` for 3.8 support
@@ -205,7 +206,7 @@ def track_evaluation(
     )
 
 
-def track_metrics(metrics: Mapping[str, Sequence[float]]):
+def track_metrics(metrics: Mapping[str, Union[float, Sequence[float], torch.Tensor]]):
     """
     Log the given metrics with MLFlow.
 
@@ -215,9 +216,14 @@ def track_metrics(metrics: Mapping[str, Sequence[float]]):
     if not mlflow.active_run():
         return
 
-    for key, values in metrics.items():
-        for value in values:
+    for key, value in metrics.items():
+        if isinstance(value, torch.Tensor):
+            mlflow.log_metric(key, value.item())
+        elif isinstance(value, float):
             mlflow.log_metric(key, value)
+        else:
+            for val in value:
+                mlflow.log_metric(key, val)
 
 
 def server():

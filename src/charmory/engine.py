@@ -54,7 +54,9 @@ class LightningEngine:
 
     def run(self):
         self.trainer.test(self.task)
-        return dict(
+        results = dict(
             compute=self.task.evaluation.metric.profiler.results(),
             metrics=self.trainer.callback_metrics,
         )
+        track_metrics(results["metrics"])
+        return results
