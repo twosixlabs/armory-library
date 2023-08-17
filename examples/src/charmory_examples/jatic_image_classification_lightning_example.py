@@ -156,7 +156,7 @@ def main():
     # Lightning
     ###
     task = ImageClassificationTask(evaluation)
-    engine = LightningEngine(task)
+    engine = LightningEngine(task, limit_test_batches=5)
     engine.run()
     # module = ImageClassificationModule(evaluation)
 

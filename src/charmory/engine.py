@@ -1,3 +1,5 @@
+from typing import Optional, Union
+
 import lightning.pytorch as pl
 
 from armory.logs import log
@@ -37,10 +39,16 @@ class Engine:
 
 
 class LightningEngine:
-    def __init__(self, task: BaseEvaluationTask):
+    def __init__(
+        self,
+        task: BaseEvaluationTask,
+        limit_test_batches: Optional[Union[int, float]] = None,
+    ):
         self.task = task
         self.module = EvaluationTaskModule(task)
-        self.trainer = pl.Trainer(inference_mode=False)
+        self.trainer = pl.Trainer(
+            inference_mode=False, limit_test_batches=limit_test_batches
+        )
 
     def run(self):
         self.trainer.test(self.module)
