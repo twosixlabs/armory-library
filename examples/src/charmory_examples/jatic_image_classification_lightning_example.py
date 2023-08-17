@@ -1,30 +1,32 @@
-from pprint import pprint
+# from pprint import pprint
 
 import art.attacks.evasion
 from art.estimators.classification import PyTorchClassifier
 import jatic_toolbox
-import lightning.pytorch as pl
+
+# import lightning.pytorch as pl
 import numpy as np
 import torch.nn
 from transformers.image_utils import infer_channel_dimension_format
 
-# from charmory.engine import Engine
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 from charmory.data import JaticVisionDatasetGenerator
-from charmory.evaluation import (
+from charmory.engine import LightningEngine
+from charmory.evaluation import (  # Scenario,
     Attack,
     Dataset,
     Evaluation,
     Metric,
     Model,
-    Scenario,
     SysConfig,
 )
-from charmory.scenarios.image_classification import (
-    ImageClassificationModule,
-    ImageClassificationTask,
-)
+
+# from charmory.scenarios.image_classification import (
+#     ImageClassificationModule,
+#     ImageClassificationTask,
+# )
+from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.utils import (
     adapt_jatic_image_classification_model_for_art,
     create_jatic_image_classification_dataset_transform,
@@ -109,10 +111,10 @@ def main():
         use_label_for_untargeted=True,
     )
 
-    eval_scenario = Scenario(
-        function=ImageClassificationTask,
-        kwargs={},
-    )
+    # eval_scenario = Scenario(
+    #     function=ImageClassificationTask,
+    #     kwargs={},
+    # )
 
     eval_metric = Metric(
         profiler=BasicProfiler(),
@@ -137,7 +139,8 @@ def main():
         dataset=eval_dataset,
         model=eval_model,
         attack=eval_attack,
-        scenario=eval_scenario,
+        scenario=None,
+        # scenario=eval_scenario,
         metric=eval_metric,
         sysconfig=eval_sysconfig,
     )
@@ -152,12 +155,15 @@ def main():
     ###
     # Lightning
     ###
-    module = ImageClassificationModule(evaluation)
+    task = ImageClassificationTask(evaluation)
+    engine = LightningEngine(task)
+    engine.run()
+    # module = ImageClassificationModule(evaluation)
 
-    trainer = pl.Trainer(inference_mode=False)
-    trainer.test(module)
+    # trainer = pl.Trainer(inference_mode=False)
+    # trainer.test(module)
 
-    pprint(module.results)
+    # pprint(module.results)
 
 
 if __name__ == "__main__":
