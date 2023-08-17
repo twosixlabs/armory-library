@@ -251,6 +251,7 @@ class Scenario(ABC):
     def finalize_results(self):
         self.metric_results = self.evaluation.metric.logger.results()
         self.compute_results = self.evaluation.metric.profiler.results()
-        self.results = {}
-        self.results.update(self.metric_results)
-        self.results["compute"] = self.compute_results
+        self.results = {
+            "metrics": self.metric_results,
+            "compute": self.compute_results,
+        }
