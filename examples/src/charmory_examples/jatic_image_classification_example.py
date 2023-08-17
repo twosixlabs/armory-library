@@ -40,7 +40,6 @@ from charmory.utils import (
     create_jatic_image_classification_dataset_transform,
 )
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 BATCH_SIZE = 16
 TRAINING_EPOCHS = 20
 
@@ -128,7 +127,6 @@ def load_huggingface_model():
         task="image-classification",
     )
     adapt_jatic_image_classification_model_for_art(model)
-    model.to(DEVICE)
 
     classifier = PyTorchClassifier(
         model,
@@ -153,7 +151,6 @@ def load_torchvision_model():
         task="image-classification",
     )
     adapt_jatic_image_classification_model_for_art(model)
-    model.to(DEVICE)
 
     classifier = PyTorchClassifier(
         model,
