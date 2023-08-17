@@ -39,7 +39,6 @@ from charmory.utils import (
     create_jatic_image_classification_dataset_transform,
 )
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NAME = "jatic_image_classification"
 DESCRIPTION = "ResNet-18 image classification on the CIFAR10 dataset"
 BATCH_SIZE = 16
@@ -129,7 +128,6 @@ def load_huggingface_model():
         task="image-classification",
     )
     adapt_jatic_image_classification_model_for_art(model)
-    model.to(DEVICE)
 
     classifier = track_init_params(PyTorchClassifier)(
         model,
@@ -154,7 +152,6 @@ def load_torchvision_model():
         task="image-classification",
     )
     adapt_jatic_image_classification_model_for_art(model)
-    model.to(DEVICE)
 
     classifier = track_init_params(PyTorchClassifier)(
         model,
