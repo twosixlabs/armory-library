@@ -118,13 +118,14 @@ def main():
     )
 
     ###
-    # Lightning
+    # Engine
     ###
+
     task = ImageClassificationTask(evaluation, num_classes=12)
     engine = LightningEngine(task, limit_test_batches=5)
-    engine.run()
+    results = engine.run()
 
-    pprint(eval_metric.profiler.results())
+    pprint(results)
 
 
 if __name__ == "__main__":
