@@ -4,7 +4,6 @@ import sys
 
 import art.attacks.evasion
 from jatic_toolbox import load_dataset as load_jatic_dataset
-import torch
 from torchvision import transforms as T
 
 import armory.baseline_models.pytorch.food101
@@ -26,7 +25,6 @@ from charmory.evaluation import (
 import charmory.scenarios.image_classification
 from charmory.utils import PILtoNumpy
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 BATCH_SIZE = 16
 TRAINING_EPOCHS = 1
 ROOT = "/home/rahul/cache"

@@ -8,7 +8,6 @@ import sys
 import art.attacks.evasion
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox import load_dataset as load_jatic_dataset
-import torch
 
 import armory.baseline_models.pytorch.pokemon
 from armory.instrument.config import MetricsLogger
@@ -30,7 +29,6 @@ from charmory.utils import PILtoNumpy_HuggingFace
 
 BATCH_SIZE = 16
 TRAINING_EPOCHS = 20
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # Loads Pokemon Classification HuggingFace Example

@@ -30,13 +30,15 @@ Will make the `armory` namespace available to your Python environment. In the op
 version, the installation name was "armory-testbed" which provided also provided
 the `armory` namespace.
 
+## Conda
+```bash
+conda env create -f environment.yaml -n charmory
+conda activate charmory
+```
+
+
 # Usage
 See the documentation [here](https://jatic.pages.jatic.net/twosix/armory/).
-
-# Examples
-## Patch Attack
-![Benign Image](docs/assets/patch_attack_example_benign.png)
-![Adversarial Image](docs/assets/patch_attack_example_adversarial.png)
 
 # Acknowledgment
 This material is based upon work supported by the Defense Advanced Research Projects
