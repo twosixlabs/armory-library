@@ -12,7 +12,7 @@ import lightning.pytorch as pl
 import torch
 
 from armory import metrics
-from armory.instrument import MetricsLogger, del_globals, get_hub, get_probe
+from armory.instrument import Probe
 from armory.instrument.export import ExportMeter, PredictionMeter
 from charmory.evaluation import Evaluation
 
@@ -34,6 +34,7 @@ class BaseScenario(pl.LightningModule, ABC):
         self.skip_benign = skip_benign
         self.skip_attack = skip_attack
         self.skip_misclassified = skip_misclassified
+        self.probe = Probe("scenario", evaluation.metric.logger.hub)
 
     ###
     # Inner classes
@@ -64,18 +65,6 @@ class BaseScenario(pl.LightningModule, ABC):
     # Internal methods
     ###
 
-    def _load_metrics(self):
-        metrics_config = self.evaluation.metric
-        metrics_logger = MetricsLogger.from_config(
-            metrics_config,
-            include_benign=not self.skip_benign,
-            include_adversarial=not self.skip_attack,
-            include_targeted=(
-                self.evaluation.attack.targeted if self.evaluation.attack else False
-            ),
-        )
-        self.metrics_logger = metrics_logger
-
     def _load_export_meters(self, num_export_batches: int, sample_exporter, export_dir):
         for probe_value in ["x", "x_adv"]:
             export_meter = ExportMeter(
@@ -84,7 +73,9 @@ class BaseScenario(pl.LightningModule, ABC):
                 f"scenario.{probe_value}",
                 max_batches=num_export_batches,
             )
-            self.hub.connect_meter(export_meter, use_default_writers=False)
+            self.evaluation.metric.logger.hub.connect_meter(
+                export_meter, use_default_writers=False
+            )
             if self.skip_attack:
                 break
 
@@ -96,10 +87,12 @@ class BaseScenario(pl.LightningModule, ABC):
             y_pred_adv_probe="scenario.y_pred_adv" if not self.skip_attack else None,
             max_batches=num_export_batches,
         )
-        self.hub.connect_meter(pred_meter, use_default_writers=False)
+        self.evaluation.metric.logger.hub.connect_meter(
+            pred_meter, use_default_writers=False
+        )
 
     def _run_benign(self, batch: Batch):
-        self.hub.set_context(stage="benign")
+        self.evaluation.metric.logger.hub.set_context(stage="benign")
 
         batch.x.flags.writeable = False
         with self.evaluation.metric.profiler.measure("Inference"):
@@ -118,7 +111,7 @@ class BaseScenario(pl.LightningModule, ABC):
         if TYPE_CHECKING:
             assert self.evaluation.attack
 
-        self.hub.set_context(stage="attack")
+        self.evaluation.metric.logger.hub.set_context(stage="attack")
         x = batch.x
         y = batch.y
         y_pred = batch.y_pred
@@ -146,7 +139,7 @@ class BaseScenario(pl.LightningModule, ABC):
                     x=x, y=y_target, **self.evaluation.attack.generate_kwargs
                 )
 
-        self.hub.set_context(stage="adversarial")
+        self.evaluation.metric.logger.hub.set_context(stage="adversarial")
         # Don't evaluate the attack if the benign was already misclassified
         if self.skip_misclassified and batch.misclassified:
             y_pred_adv = y_pred
@@ -170,11 +163,6 @@ class BaseScenario(pl.LightningModule, ABC):
     ###
 
     def on_test_start(self):
-        self.probe = get_probe("scenario")
-        self.hub = get_hub()
-
-        self._load_metrics()
-
         self.time_stamp = time.time()
         self.evaluation_id = str(self.time_stamp)
 
@@ -190,21 +178,20 @@ class BaseScenario(pl.LightningModule, ABC):
         self._load_export_meters(num_export_batches, sample_exporter, export_dir)
 
     def on_test_end(self):
-        self.metric_results = self.metrics_logger.results()
+        self.metric_results = self.evaluation.metric.logger.results()
         self.compute_results = self.evaluation.metric.profiler.results()
         self.results = {}
         self.results.update(self.metric_results)
         self.results["compute"] = self.compute_results
-        self.hub.set_context(stage="finished")
-        del_globals()
+        self.evaluation.metric.logger.hub.set_context(stage="finished")
 
     def test_dataloader(self):
         return self.evaluation.dataset.test_dataset
 
     def test_step(self, batch, batch_idx):
-        self.hub.set_context(stage="test_step")
+        self.evaluation.metric.logger.hub.set_context(stage="test_step")
         x, y = batch
-        self.hub.set_context(batch=batch_idx)
+        self.evaluation.metric.logger.hub.set_context(batch=batch_idx)
         self.probe.update(i=batch_idx, x=x, y=y)
         curr_batch = self.Batch(i=batch_idx, x=x, y=y)
         if not self.skip_benign:

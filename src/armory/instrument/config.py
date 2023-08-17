@@ -7,10 +7,10 @@ import numpy as np
 from armory import metrics
 from armory.instrument.instrument import (
     GlobalMeter,
+    Hub,
     Meter,
     ResultsLogWriter,
     ResultsWriter,
-    get_hub,
 )
 from armory.logs import log
 
@@ -45,6 +45,7 @@ class MetricsLogger:
         include_targeted - whether to include targeted task metrics
         max_record_size - maximum number of bytes in a record (for ResultsWriter)
         """
+        self.hub = Hub()
         self.means = means
         self.include_benign = include_benign
         self.include_adversarial = include_adversarial
@@ -70,7 +71,7 @@ class MetricsLogger:
         self.results_writer = ResultsWriter(
             sink=self._sink, max_record_size=max_record_size
         )
-        get_hub().connect_writer(self.results_writer, default=True)
+        self.hub.connect_writer(self.results_writer, default=True)
 
         self.metric_results = None
 
@@ -87,11 +88,10 @@ class MetricsLogger:
         return arg_list
 
     def connect(self, meters, writer=None):
-        hub = get_hub()
         for m in meters:
-            hub.connect_meter(m)
+            self.hub.connect_meter(m)
         if writer is not None:
-            hub.connect_writer(writer, meters=meters)
+            self.hub.connect_writer(writer, meters=meters)
 
     def add_perturbations(self):
         meters = perturbation_meters(
@@ -194,7 +194,7 @@ class MetricsLogger:
         self.metric_results = results_dict
 
     def results(self):
-        get_hub().close()
+        self.hub.close()
         if self.metric_results is None:
             log.warning("No metric results received from ResultsWriter")
             return {}
