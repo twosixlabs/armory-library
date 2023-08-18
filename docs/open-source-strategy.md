@@ -60,7 +60,7 @@ itself.
 ### Synchronization strategy
 
 When we bring JATIC Armory to Github we intend to synchronize the jatic.gitlab
-and github repositories as least nightly, put hopefully on every developer
+and github repositories at least nightly, put hopefully on every developer
 push to the repository.
 
 There is a mechanical concern that we will need to address: mirroring between
