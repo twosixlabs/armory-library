@@ -5,7 +5,7 @@ import lightning.pytorch as pl
 from armory.logs import log
 from charmory.evaluation import Evaluation
 from charmory.tasks.base import BaseEvaluationTask
-from charmory.track import track_metrics
+from charmory.track import lightning_logger, track_metrics
 
 
 class Engine:
@@ -49,14 +49,14 @@ class LightningEngine:
     ):
         self.task = task
         self.trainer = pl.Trainer(
-            inference_mode=False, limit_test_batches=limit_test_batches
+            inference_mode=False,
+            limit_test_batches=limit_test_batches,
+            logger=lightning_logger(),
         )
 
     def run(self):
         self.trainer.test(self.task)
-        results = dict(
+        return dict(
             compute=self.task.evaluation.metric.profiler.results(),
             metrics=self.trainer.callback_metrics,
         )
-        track_metrics(results["metrics"])
-        return results
