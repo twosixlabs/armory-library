@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 from typing import Callable, Mapping, Optional, Sequence, TypeVar, Union, overload
 
+import lightning.pytorch.loggers as pl_loggers
 import mlflow
 import mlflow.cli
 import mlflow.server
@@ -203,6 +204,16 @@ def track_evaluation(
     return mlflow.start_run(
         experiment_id=experiment_id,
         description=description,
+    )
+
+
+def lightning_logger():
+    active_run = mlflow.active_run()
+    if not active_run:
+        return None
+
+    return pl_loggers.MLFlowLogger(
+        run_id=active_run.info.run_id, tracking_uri=mlflow.get_tracking_uri()
     )
 
 
