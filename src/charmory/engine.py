@@ -55,7 +55,9 @@ class LightningEngine:
         )
 
     def run(self):
-        self.trainer.test(self.task)
+        self.trainer.test(
+            self.task, dataloaders=self.task.evaluation.dataset.test_dataset
+        )
         return dict(
             compute=self.task.evaluation.metric.profiler.results(),
             metrics=self.trainer.callback_metrics,
