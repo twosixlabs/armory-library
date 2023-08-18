@@ -7,7 +7,7 @@ rationale for releasing the JATIC development of Armory to open access.
 
 The GARD version of Armory application has been open-source since its inception at
 https://github.com/twosixlabs and a `pip` installable at
-https://pypi.org/project/armory-testbed/ GARD Armory is currently at version 0.18.2 and
+https://pypi.org/project/armory-testbed/. GARD Armory is currently at version 0.18.2 and
 will be supported through the duration of the GARD research program into 2024. Aside
 from bug fixes and minor point-releases, v0.18.x will likely be the last releases of
 GARD-Armory.
