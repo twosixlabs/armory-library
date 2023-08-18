@@ -100,7 +100,7 @@ class SysConfig:
         armory_home: The home directory for armory.
     """
 
-    gpus: List[str]
+    gpus: List[str] = field(default_factory=list)
     use_gpu: bool = False
     paths: Dict[str, Path] = field(init=False)
     armory_home: Path = Path(os.getenv("ARMORY_HOME", Path.home() / ".armory"))
@@ -139,4 +139,4 @@ class Evaluation:
     author: Optional[str]
     attack: Optional[Attack] = None
     metric: Metric = field(default_factory=Metric)
-    sysconfig: Optional[SysConfig] = None
+    sysconfig: SysConfig = field(default_factory=SysConfig)
