@@ -87,9 +87,6 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
     # LightningModule method overrides
     ###
 
-    def test_dataloader(self):
-        return self.evaluation.dataset.test_dataset
-
     def test_step(self, batch, batch_idx):
         """Invokes task's benign and adversarial evaluations"""
         x, y = batch
