@@ -100,7 +100,7 @@ our exclusive control since the first commit in 2019.
 ### Open source license
 
 Armory has been published, since its inception, under [The MIT
-License][https://opensource.org/license/mit/] and will continue to be so licensed.
+License](https://opensource.org/license/mit/) and will continue to be so licensed.
 
 ### Mechanics
 
