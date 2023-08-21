@@ -247,3 +247,37 @@ class PILtoNumpy_HuggingFace(object):
     def __call__(self, sample):
         sample["image"] = [np.asarray(img) for img in sample["image"]]
         return sample
+
+class PILtoNumpy_HuggingFace_Variable_Length(object):
+    """
+    Custom torchvision transform a HuggingFace Dataset dictionary which
+    contains a PIL images and converts the PIL Image to a numpy array 
+    with variable length images
+
+    Example::
+
+        transform=PILtoNumpy_HuggingFace()
+
+
+        train_dataset = load_jatic_dataset(
+            provider="huggingface",
+            dataset_name="keremberke/pokemon-classification",
+            task="image-classification",
+            name='full',
+            split="train"
+        )
+
+        train_dataset.set_transform(transform)
+    Args:
+        the __call__ method takes a sample of type dict "{"image": [...],"label": [...] }".
+        It converts the dict location "image" which is PIL Image to a numpy array with a set
+        new image size of 500 by 500 pixels
+    Returns:
+        the sample dict with converted PIL Image to numpy array.
+    """
+
+    def __call__(self, sample):
+        newsize = (500, 500)
+        sample["image"] = [img.resize(newsize) for img in sample["image"]]
+        sample["image"] = [np.asarray(img) for img in sample["image"]]
+        return sample
