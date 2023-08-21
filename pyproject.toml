@@ -49,6 +49,8 @@ dependencies = [
     "tf-models-official",
     "tensorflow >= 2.11.0",
 
+    # tracking
+    "mlflow",
 ]
 
 [project.urls]
@@ -58,6 +60,7 @@ Documentation = "https://armory.readthedocs.io/en/latest/"
 
 [project.scripts]
 armory = "charmory.example:main"
+armory-mlflow-server = "charmory.track:server"
 
 
 # please see docs/getting_started.md#the-armory-flavors for how these
@@ -75,8 +78,6 @@ developer = [
 ]
 
 documentation = ["mkdocs", "mkdocstrings", "mkdocs-exclude", "mkdocs-material"]
-
-tracking = ["mlflow"]
 
 extras = [
     # deepspeech
@@ -101,7 +102,6 @@ extras = [
 all = [
     "charmory[developer]",
     "charmory[documentation]",
-    "charmory[tracking]",
     # "charmory[extras]",
 ]
 
