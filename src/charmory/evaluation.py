@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional
 
 from art.attacks import EvasionAttack
+from art.data_generators import DataGenerator
 from art.estimators import BaseEstimator
 
-from armory.data.datasets import ArmoryDataGenerator
 from charmory.labels import LabelTargeter
 
 MethodName = Callable[
@@ -49,17 +49,17 @@ class Attack:
 @dataclass
 class Dataset:
     name: str
-    test_dataset: ArmoryDataGenerator
-    train_dataset: Optional[ArmoryDataGenerator] = None
+    test_dataset: DataGenerator
+    train_dataset: Optional[DataGenerator] = None
 
     def __post_init__(self):
         assert isinstance(
-            self.test_dataset, ArmoryDataGenerator
-        ), "Evaluation dataset's test_dataset is not an instance of ArmoryDataGenerator"
+            self.test_dataset, DataGenerator
+        ), "Evaluation dataset's test_dataset is not an instance of DataGenerator"
         if self.train_dataset is not None:
             assert isinstance(
-                self.train_dataset, ArmoryDataGenerator
-            ), "Evaluation dataset's train_dataset is not an instance of ArmoryDataGenerator"
+                self.train_dataset, DataGenerator
+            ), "Evaluation dataset's train_dataset is not an instance of DataGenerator"
 
 
 @dataclass
