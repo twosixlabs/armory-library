@@ -110,9 +110,12 @@ def main():
         ###
 
         task = ObjectDetectionTask(
-            evaluation, skip_attack=True, export_every_n_batches=1
+            evaluation,
+            skip_attack=True,
+            export_every_n_batches=5,
+            class_metrics=False,
         )
-        engine = LightningEngine(task, limit_test_batches=5)
+        engine = LightningEngine(task, limit_test_batches=80)
         results = engine.run()
 
     pprint(results)
