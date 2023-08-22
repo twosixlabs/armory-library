@@ -5,7 +5,7 @@ from art.estimators.object_detection import PyTorchFasterRCNN
 import jatic_toolbox
 
 from armory.metrics.compute import BasicProfiler
-from charmory.data import JaticVisionDatasetGenerator
+from charmory.data import JaticObjectDetectionDatasetGenerator
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.tasks.object_detection import ObjectDetectionTask
@@ -52,11 +52,10 @@ def main():
         )
         dataset.set_transform(transform)
 
-        generator = JaticVisionDatasetGenerator(
+        generator = JaticObjectDetectionDatasetGenerator(
             dataset=dataset,
             batch_size=1,  # have to use a batch size of 1 because of inhomogenous image sizes
             epochs=1,
-            label_key="objects",
         )
 
         ###
@@ -110,8 +109,10 @@ def main():
         # Engine
         ###
 
-        task = ObjectDetectionTask(evaluation, skip_attack=True)
-        engine = LightningEngine(task, limit_test_batches=80)
+        task = ObjectDetectionTask(
+            evaluation, skip_attack=True, export_every_n_batches=1
+        )
+        engine = LightningEngine(task, limit_test_batches=5)
         results = engine.run()
 
     pprint(results)
