@@ -11,7 +11,7 @@ from armory.art_experimental.attacks.carla_obj_det_utils import (
     log_to_linear,
     rgb_depth_to_linear,
 )
-from armory.instrument import get_hub, get_probe
+from armory.instrument import Hub, Probe
 from armory.instrument.export import (
     CocoBoxFormatMeter,
     ExportMeter,
@@ -140,7 +140,7 @@ def test_exporter(
             assert isinstance(i, PIL.Image.Image)
 
 
-hub = get_hub()
+hub = Hub()
 BATCH_SIZE = 2
 NUM_BATCHES = 2
 IMAGE_BATCH = np.random.rand(BATCH_SIZE, 32, 32, 3)
@@ -204,7 +204,7 @@ def test_export_meters(
     )
     is_incrementing = overwrite_mode == "increment"
     hub.connect_meter(export_meter, use_default_writers=False)
-    probe = get_probe("scenario")
+    probe = Probe("scenario", hub)
     for i in range(NUM_BATCHES):
         hub.set_context(batch=i)
         probe.update(x=x)
@@ -244,7 +244,7 @@ def test_prediction_meter(tmp_path):
     )
     hub.connect_meter(pred_meter_max_batch_1, use_default_writers=False)
 
-    probe = get_probe("scenario")
+    probe = Probe("scenario", hub)
     for i in range(NUM_BATCHES):
         hub.set_context(batch=i)
         probe.update(y=y, y_pred=y_pred, y_pred_adv=y_pred_adv)
@@ -287,7 +287,7 @@ def test_coco_box_format_meter(tmp_path):
     )
     hub.connect_meter(coco_box_format_meter_max_batch_1, use_default_writers=False)
 
-    probe = get_probe("scenario")
+    probe = Probe("scenario", hub)
     for i in range(NUM_BATCHES):
         hub.set_context(batch=i)
         probe.update(y=y, y_pred=y_pred, y_pred_adv=y_pred_adv)
