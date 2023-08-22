@@ -6,8 +6,6 @@ import torch
 import torchmetrics.detection
 
 from armory.instrument.export import ObjectDetectionExporter
-
-# from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.tasks.base import BaseEvaluationTask
 
 
@@ -80,14 +78,12 @@ class ObjectDetectionTask(BaseEvaluationTask):
     def __init__(
         self,
         *args,
-        # perturbation_ord: float = torch.inf,
         class_metrics: bool = False,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.benign_map = MAP(prefix="benign", class_metrics=class_metrics)
         self.attack_map = MAP(prefix="attack", class_metrics=class_metrics)
-        # self.perturbation = PerturbationNormMetric(ord=perturbation_ord)
         self.sample_exporter = ObjectDetectionExporter(self.export_dir)
 
     def export_batch(self, batch: BaseEvaluationTask.Batch):
@@ -116,9 +112,6 @@ class ObjectDetectionTask(BaseEvaluationTask):
         super().run_attack(batch)
         if batch.y_pred_adv is not None:
             self.attack_map.update(batch.y_pred_adv, batch.y)
-
-        # self.perturbation(torch.tensor(batch.x), torch.tensor(batch.x_adv))
-        # self.log("perturbation", self.perturbation)
 
     def on_test_epoch_end(self):
         if not self.skip_benign:
