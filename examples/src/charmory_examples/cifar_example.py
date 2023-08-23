@@ -65,14 +65,6 @@ def main(argv: list = sys.argv[1:]):
         model=classifier,
     )
 
-    defense = track_init_params(art.defences.preprocessor.JpegCompression)(
-        apply_fit=False,
-        apply_predict=True,
-        clip_values=(0.0, 1.0),
-        quality=50,
-    )
-    # apply_art_preprocessor_defense(model.model, defense)
-
     attack = Attack(
         name="PGD",
         attack=track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
@@ -124,7 +116,14 @@ def main(argv: list = sys.argv[1:]):
     # cifar_engine.train(nb_epochs=20)
     results = {"undefended": undefended_engine.run()}
 
+    defense = track_init_params(art.defences.preprocessor.JpegCompression)(
+        apply_fit=False,
+        apply_predict=True,
+        clip_values=(0.0, 1.0),
+        quality=50,
+    )
     apply_art_preprocessor_defense(model.model, defense)
+
     defended_engine = Engine(baseline)
     results["defended"] = defended_engine.run()
 
