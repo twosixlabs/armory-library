@@ -1,12 +1,15 @@
+import time
+
 from armory.logs import log
 from charmory.evaluation import Evaluation
-from charmory.track import track_metrics
+from charmory.track import track_evaluation, track_metrics, track_params_from
 
 
 class Engine:
     def __init__(self, evaluation: Evaluation):
         self.evaluation = evaluation
         self.scenario = evaluation.scenario.function(self.evaluation)
+        self._has_run = False
 
     def train(self, nb_epochs=1):
         """
@@ -30,7 +33,21 @@ class Engine:
         )
 
     def run(self):
-        results = self.scenario.evaluate()
-        track_metrics(results["results"]["metrics"])
+        if self._has_run:
+            raise RuntimeError(
+                "Evaluation engine has already been run. Create a new Engine "
+                "instance to perform a subsequent run."
+            )
+        self._has_run = True
 
-        return results
+        with track_evaluation(
+            name=self.evaluation.name, description=self.evaluation.description
+        ):
+            start = time.time()
+            track_params_from(self.evaluation)
+            print(f"Took {time.time() - start} to collect all params")
+            results = self.scenario.evaluate()
+            track_metrics(results["results"]["metrics"])
+            return {}
+
+            # return results
