@@ -1,5 +1,6 @@
 """Utilities to support experiment tracking within Armory."""
 
+from contextlib import contextmanager
 from functools import wraps
 import os
 from pathlib import Path
@@ -45,6 +46,20 @@ def track_param(key: str, value: Any):
             "key or start a new parameter context with `tracking_context`"
         )
     params[key] = value
+
+
+def reset_params():
+    params = _get_current_params()
+    params.clear()
+
+
+@contextmanager
+def tracking_context():
+    _params_stack.append({})
+    try:
+        yield
+    finally:
+        _params_stack.pop()
 
 
 @overload
