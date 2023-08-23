@@ -1,8 +1,6 @@
-import time
-
 from armory.logs import log
 from charmory.evaluation import Evaluation
-from charmory.track import track_evaluation, track_metrics, track_params_from
+from charmory.track import track_evaluation, track_metrics
 
 
 class Engine:
@@ -43,11 +41,7 @@ class Engine:
         with track_evaluation(
             name=self.evaluation.name, description=self.evaluation.description
         ):
-            start = time.time()
-            track_params_from(self.evaluation)
-            print(f"Took {time.time() - start} to collect all params")
             results = self.scenario.evaluate()
             track_metrics(results["results"]["metrics"])
-            return {}
 
-            # return results
+            return results
