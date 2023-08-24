@@ -28,19 +28,36 @@ from typing_extensions import ParamSpec
 
 from armory.logs import log
 
-P = ParamSpec("P")
-T = TypeVar("T")
-
+# Params are recorded globally in a stack of parameter stores, where the
+# first stack entry is the default, implicit parameter store. Creation of
+# subsequent parameter stores only occurs by using the `tracking_context`
+# context manager. Params are ways recorded in the top-most store in the
+# stack at the time of recording. This is modeled after the way MLFlow handles
+# nested calls to `start_run`.
 _params_stack: List[Dict[str, Any]] = []
 
 
 def _get_current_params() -> Dict[str, Any]:
+    """Get the parameters from the current tracking context"""
     if len(_params_stack) == 0:
         _params_stack.append({})
     return _params_stack[-1]
 
 
 def track_param(key: str, value: Any):
+    """
+    Record a parameter in the current tracking context to be logged with MLFlow.
+
+    Example::
+
+        from charmory.track import track_param
+
+        track_param("key", "value")
+
+    Args:
+        key: Parameter name (should be unique or will overwrite previous values)
+        value: Parameter value
+    """
     params = _get_current_params()
     if key in params:
         log.warning(
@@ -53,17 +70,40 @@ def track_param(key: str, value: Any):
 
 
 def reset_params():
+    """Clear all parameters in the current tracking context"""
     params = _get_current_params()
     params.clear()
 
 
 @contextmanager
 def tracking_context():
+    """
+    Create a new tracking context. Parameters recorded while the context is
+    active will be isolated from other contexts. Upon completion of the context,
+    all parameters will be cleared.
+
+    Example:
+
+        from charmory.track import tracking_context, track_param
+
+        with tracking_context():
+            track_param("key", "value1")
+
+        with tracking_context():
+            track_param("key", "value2")
+
+    Returns:
+        Context manager
+    """
     _params_stack.append({})
     try:
         yield
     finally:
         _params_stack.pop()
+
+
+P = ParamSpec("P")
+T = TypeVar("T")
 
 
 @overload
@@ -92,8 +132,8 @@ def track_params(
     ignore: Optional[Sequence[str]] = None,
 ):
     """
-    Create a decorator to log function keyword arguments as parameters with
-    MLFlow.
+    Create a decorator to record function keyword arguments as parameters in the
+    current tracking context to be logged with MLFlow.
 
     Example::
 
@@ -178,8 +218,8 @@ def track_init_params(
     ignore: Optional[Sequence[str]] = None,
 ):
     """
-    Create a decorator to log class dunder-init keyword arguments as parameters
-    with MLFlow.
+    Create a decorator to record class dunder-init keyword arguments as
+    parameters in the current tracking context to be logged with MLFlow.
 
     Example::
 
@@ -220,6 +260,8 @@ def track_evaluation(
 ):
     """
     Create a context manager for tracking an evaluation run with MLFlow.
+    Parameters that have been recorded in the current tracking context will be
+    logged with MLFlow.
 
     Example::
 
