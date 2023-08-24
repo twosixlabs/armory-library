@@ -24,9 +24,6 @@ import charmory.scenarios.image_classification
 from charmory.track import track_init_params, track_params
 from charmory.utils import apply_art_preprocessor_defense
 
-NAME = "cifar_baseline"
-DESCRIPTION = "Baseline cifar10 image classification"
-
 
 def main(argv: list = sys.argv[1:]):
     if len(argv) > 0:
@@ -65,6 +62,14 @@ def main(argv: list = sys.argv[1:]):
         model=classifier,
     )
 
+    defense = track_init_params(art.defences.preprocessor.JpegCompression)(
+        apply_fit=False,
+        apply_predict=True,
+        clip_values=(0.0, 1.0),
+        quality=50,
+    )
+    apply_art_preprocessor_defense(model.model, defense)
+
     attack = Attack(
         name="PGD",
         attack=track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
@@ -99,8 +104,8 @@ def main(argv: list = sys.argv[1:]):
     sysconfig = SysConfig(gpus=["all"], use_gpu=True)
 
     baseline = Evaluation(
-        name=NAME,
-        description=DESCRIPTION,
+        name="cifar_baseline",
+        description="Baseline cifar10 image classification",
         author="msw@example.com",
         dataset=dataset,
         model=model,
@@ -112,41 +117,9 @@ def main(argv: list = sys.argv[1:]):
 
     print(f"Starting Demo for {baseline.name}")
 
-    undefended_engine = Engine(baseline)
-    undefended_engine.train(nb_epochs=20)
-    print("Performing evaluation of undefended model")
-    results = {"undefended": undefended_engine.run()}
-
-    dataset.test_dataset = track_params(armory.data.datasets.cifar10)(
-        split="test",
-        epochs=1,
-        batch_size=64,
-        shuffle_files=False,
-    )
-
-    defense = track_init_params(art.defences.preprocessor.JpegCompression)(
-        apply_fit=False,
-        apply_predict=True,
-        clip_values=(0.0, 1.0),
-        quality=50,
-    )
-    apply_art_preprocessor_defense(model.model, defense)
-
-    attack.attack = track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
-        classifier,
-        batch_size=1,
-        eps=0.031,
-        eps_step=0.007,
-        max_iter=20,
-        num_random_init=1,
-        random_eps=False,
-        targeted=False,
-        verbose=False,
-    )
-
-    defended_engine = Engine(baseline)
-    print("Performing evaluation of defended model")
-    results["defended"] = defended_engine.run()
+    cifar_engine = Engine(baseline)
+    cifar_engine.train(nb_epochs=20)
+    results = cifar_engine.run()
 
     print("=" * 64)
     # print(json.dumps(baseline.asdict(), indent=4, sort_keys=True))
