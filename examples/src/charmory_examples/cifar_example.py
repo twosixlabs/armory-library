@@ -113,8 +113,16 @@ def main(argv: list = sys.argv[1:]):
     print(f"Starting Demo for {baseline.name}")
 
     undefended_engine = Engine(baseline)
-    # cifar_engine.train(nb_epochs=20)
+    undefended_engine.train(nb_epochs=20)
+    print("Performing evaluation of undefended model")
     results = {"undefended": undefended_engine.run()}
+
+    dataset.test_dataset = track_params(armory.data.datasets.cifar10)(
+        split="test",
+        epochs=1,
+        batch_size=64,
+        shuffle_files=False,
+    )
 
     defense = track_init_params(art.defences.preprocessor.JpegCompression)(
         apply_fit=False,
@@ -124,7 +132,20 @@ def main(argv: list = sys.argv[1:]):
     )
     apply_art_preprocessor_defense(model.model, defense)
 
+    attack.attack = track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
+        classifier,
+        batch_size=1,
+        eps=0.031,
+        eps_step=0.007,
+        max_iter=20,
+        num_random_init=1,
+        random_eps=False,
+        targeted=False,
+        verbose=False,
+    )
+
     defended_engine = Engine(baseline)
+    print("Performing evaluation of defended model")
     results["defended"] = defended_engine.run()
 
     print("=" * 64)
