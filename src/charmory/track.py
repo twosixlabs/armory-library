@@ -26,6 +26,8 @@ import mlflow.server
 # so we have to use `typing_extensions` for 3.8 support
 from typing_extensions import ParamSpec
 
+from armory.logs import log
+
 P = ParamSpec("P")
 T = TypeVar("T")
 
@@ -41,9 +43,11 @@ def _get_current_params() -> Dict[str, Any]:
 def track_param(key: str, value: Any):
     params = _get_current_params()
     if key in params:
-        raise KeyError(
-            f"Parameter {key} has already been logged. Use a unique parameter "
-            "key or start a new parameter context with `tracking_context`"
+        log.warning(
+            f"Parameter {key} has already been logged with value {params[key]}, "
+            f"and will be overwritten with value {value}. Use a unique parameter "
+            "key argument or start a new tracking context with `tracking_context` "
+            "to avoid this warning."
         )
     params[key] = value
 
@@ -120,14 +124,16 @@ def track_params(
 
             params = _get_current_params()
 
-            # MLFlow does not allow duplicate parameters, so check against prior
-            # params and adjust the prefix with a count if needed
-            count = 0
-            tmp = _prefix
-            while tmp in params:
-                count += 1
-                tmp = f"{_prefix}.{count}"
-            _prefix = tmp
+            if f"{_prefix}._func" in params:
+                log.warning(
+                    f"Parameters with prefix {_prefix} have already been logged and will "
+                    "be overwritten. Use a unique prefix or start a new tracking context "
+                    "with `tracking_context` to avoid this warning."
+                )
+                # Remove prior params with this prefix
+                for key in list(params.keys()):
+                    if key.startswith(f"{_prefix}."):
+                        params.pop(key)
 
             params[f"{_prefix}._func"] = f"{func.__module__}.{func.__qualname__}"
 
