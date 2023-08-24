@@ -1,6 +1,7 @@
 """Utilities to support experiment tracking within Armory."""
 
 from contextlib import contextmanager
+from copy import deepcopy
 from functools import wraps
 import os
 from pathlib import Path
@@ -76,7 +77,7 @@ def reset_params():
 
 
 @contextmanager
-def tracking_context():
+def tracking_context(nested: bool = False):
     """
     Create a new tracking context. Parameters recorded while the context is
     active will be isolated from other contexts. Upon completion of the context,
@@ -92,10 +93,17 @@ def tracking_context():
         with tracking_context():
             track_param("key", "value2")
 
+    Args:
+        nested: Copy parameters from the current context into the new
+            tracking context
+
     Returns:
         Context manager
     """
-    _params_stack.append({})
+    new_context = {}
+    if nested:
+        new_context = deepcopy(_get_current_params())
+    _params_stack.append(new_context)
     try:
         yield
     finally:
