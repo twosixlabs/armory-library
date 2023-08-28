@@ -75,6 +75,7 @@ developer = [
     "flake8",
     "bandit[toml]",   # code scanning
     "pre-commit",
+    "ipywidgets",
 ]
 
 documentation = ["mkdocs", "mkdocstrings", "mkdocs-exclude", "mkdocs-material"]
