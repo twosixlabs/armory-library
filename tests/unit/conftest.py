@@ -46,14 +46,7 @@ def evaluation_attack():
 
 @pytest.fixture
 def evaluation_metric():
-    return charmory.evaluation.Metric(
-        profiler_type="basic",
-        supported_metrics=[],
-        perturbation=[],
-        task=[],
-        means=False,
-        record_metric_per_sample=False,
-    )
+    return charmory.evaluation.Metric()
 
 
 @pytest.fixture

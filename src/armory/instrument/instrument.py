@@ -12,7 +12,8 @@ Example:
     Code:
         # in model
         from armory import instrument
-        probe = instrument.get_probe("model")
+        hub = instrument.Hub()
+        probe = instrument.Probe("model", hub)
         ...
         x_post = model_preprocessor(x)
         probe.update(lambda x: x.detach().cpu().numpy(), x_post=x_post)
@@ -24,7 +25,6 @@ Example:
         from armory import instrument
         from armory import metrics
         meter = instrument.Meter("l2_dist_postprocess", metrics.l2, "model.x_post[benign]", "model.x_post[adversarial]")
-        hub = instrument.get_hub()
         hub.connect_meter(meter)
         hub.connect_writer(instrument.PrintWriter())
 """
@@ -48,8 +48,6 @@ _HUB = None
 class Probe:
     """
     Probes are used to capture values and route them to the provided sink.
-        If probes are constructed via the global `get_probe(...)` method,
-            the sink provided will be the global hub from `get_hub()`
 
     Example:
         >>> from armory.instrument import Probe, MockSink
@@ -243,7 +241,6 @@ class Hub:
 
     `connect_meter` ands `connect_writer` are used for connecting Meter and Writer
     probes are connected via setting their sink argument to the Hub
-        By default, probes are connected to the hub accessible via the global method `get_hub`
 
     `record` pushes a single record to the default writers
         This is useful if only a single measurement is needed for something
@@ -829,40 +826,3 @@ class ResultsWriter(Writer):
         if self.sink is not None:
             raise ValueError("output only kept if sink is None")
         return self.output
-
-
-# GLOBAL CONTEXT METHODS #
-
-
-def get_hub():
-    """
-    Get the global hub and context object for the measurement procedure
-    """
-    global _HUB
-    if _HUB is None:
-        _HUB = Hub()
-    return _HUB
-
-
-def get_probe(name: str = ""):
-    """
-    Get a probe with specified name, creating it if needed
-    """
-    if name not in _PROBES:
-        probe = Probe(name, sink=get_hub())
-        _PROBES[name] = probe
-    return _PROBES[name]
-
-
-def del_globals():
-    """
-    Remove hub and probes from global context
-        Subsequent calls to `get_hub` and `get_probe` will return new objects
-        Must also delete local references and close objects as needed
-
-    NOTE: primarily intended for creating clean contexts for testing
-    """
-    global _PROBES
-    global _HUB
-    _PROBES = {}
-    _HUB = None

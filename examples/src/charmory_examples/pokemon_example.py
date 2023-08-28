@@ -10,6 +10,8 @@ from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox import load_dataset as load_jatic_dataset
 
 import armory.baseline_models.pytorch.pokemon
+from armory.instrument.config import MetricsLogger
+from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import Engine
@@ -119,12 +121,14 @@ def main(argv: list = sys.argv[1:]):
     )
 
     metric = Metric(
-        profiler_type="basic",
-        supported_metrics=["accuracy"],
-        perturbation=["linf"],
-        task=["categorical_accuracy"],
-        means=True,
-        record_metric_per_sample=False,
+        profiler=BasicProfiler(),
+        logger=MetricsLogger(
+            supported_metrics=["accuracy"],
+            perturbation=["linf"],
+            task=["categorical_accuracy"],
+            means=True,
+            record_metric_per_sample=False,
+        ),
     )
 
     sysconfig = SysConfig(gpus=["all"], use_gpu=True)

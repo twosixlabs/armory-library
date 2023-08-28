@@ -21,6 +21,7 @@ dependencies = [
 
     # engine
     "adversarial-robustness-toolbox == 1.14.0",
+    "lightning",
     "Pillow",                                   # Data dependencies
     "boto3",                                    # Needed for armory.data.utils
     "botocore",                                 # Needed for armory.data.utils
@@ -88,7 +89,6 @@ extras = [
     "librosa",
     "google-cloud-storage",
     "transformers",
-    "pytorch-lightning < 1.5.0",
 
     # datasets
     # Handle issue with tensorflow-datasets 4.9.0 not installing correctly

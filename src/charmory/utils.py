@@ -54,6 +54,19 @@ def adapt_jatic_image_classification_model_for_art(model):
     model.forward = patched_forward
 
 
+def adapt_jatic_object_detection_model_for_art(model):
+    orig_forward = model.forward
+
+    def patched_forward(data, *args):
+        result = orig_forward(data)
+        predictions = []
+        for item in zip(result.boxes, result.labels, result.scores):
+            predictions.append(dict(boxes=item[0], labels=item[1], scores=item[2]))
+        return predictions
+
+    model.forward = patched_forward
+
+
 def apply_art_postprocessor_defense(estimator: BaseEstimator, defense: Postprocessor):
     """
     Applies the given postprocessor defense to the model, handling the presence
