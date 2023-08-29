@@ -2,12 +2,14 @@
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from art.attacks import EvasionAttack
 from art.data_generators import DataGenerator
 from art.estimators import BaseEstimator
 
+from armory.instrument.config import MetricsLogger
+from armory.metrics.compute import NullProfiler, Profiler
 from charmory.labels import LabelTargeter
 
 MethodName = Callable[
@@ -64,12 +66,8 @@ class Dataset:
 
 @dataclass
 class Metric:
-    profiler_type: Literal["basic", "deterministic"]
-    supported_metrics: List[str]
-    perturbation: List[str]
-    task: List[str]
-    means: bool
-    record_metric_per_sample: bool
+    logger: MetricsLogger = field(default_factory=MetricsLogger)
+    profiler: Profiler = field(default_factory=NullProfiler)
 
 
 @dataclass
@@ -102,7 +100,7 @@ class SysConfig:
         armory_home: The home directory for armory.
     """
 
-    gpus: List[str]
+    gpus: List[str] = field(default_factory=list)
     use_gpu: bool = False
     paths: Dict[str, Path] = field(init=False)
     armory_home: Path = Path(os.getenv("ARMORY_HOME", Path.home() / ".armory"))
@@ -140,5 +138,5 @@ class Evaluation:
     dataset: Dataset
     author: Optional[str]
     attack: Optional[Attack] = None
-    metric: Optional[Metric] = None
-    sysconfig: Optional[SysConfig] = None
+    metric: Metric = field(default_factory=Metric)
+    sysconfig: SysConfig = field(default_factory=SysConfig)

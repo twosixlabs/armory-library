@@ -3,6 +3,7 @@ import art.attacks.evasion
 
 import armory.baseline_models.keras.mnist
 import armory.data.datasets
+from armory.instrument.config import MetricsLogger
 from charmory.evaluation import (
     Attack,
     Dataset,
@@ -69,12 +70,13 @@ scenario = Scenario(
 )
 
 metric = Metric(
-    profiler_type="basic",
-    supported_metrics=["accuracy"],
-    perturbation=["linf"],
-    task=["categorical_accuracy"],
-    means=True,
-    record_metric_per_sample=False,
+    logger=MetricsLogger(
+        supported_metrics=["accuracy"],
+        perturbation=["linf"],
+        task=["categorical_accuracy"],
+        means=True,
+        record_metric_per_sample=False,
+    ),
 )
 
 sysconfig = SysConfig(gpus=["all"], use_gpu=True)

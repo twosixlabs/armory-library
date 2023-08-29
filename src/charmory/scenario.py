@@ -13,10 +13,9 @@ from tqdm import tqdm
 
 import armory
 from armory import metrics
-from armory.instrument import MetricsLogger, del_globals, get_hub, get_probe
+from armory.instrument import Probe
 from armory.instrument.export import ExportMeter, PredictionMeter
 from armory.logs import log
-from armory.metrics import compute
 import armory.version
 from charmory.evaluation import Evaluation
 
@@ -51,8 +50,7 @@ class Scenario(ABC):
         skip_misclassified: bool = False,
     ):
         # Set up instrumentation
-        self.probe = get_probe("scenario")
-        self.hub = get_hub()
+        self.probe = Probe("scenario", evaluation.metric.logger.hub)
 
         self.check_run = check_run
         self.evaluation = evaluation
@@ -81,9 +79,6 @@ class Scenario(ABC):
         if not self.skip_attack:
             assert self.evaluation.attack, "Evaluation does not contain an attack"
 
-        # Load Metrics
-        self.load_metrics()
-
         # Load Export Meters
         self.num_export_batches = 0
         if self.evaluation.scenario.export_batches:
@@ -104,7 +99,6 @@ class Scenario(ABC):
             self.evaluate_all()
             self.finalize_results()
             log.debug("Clearing global instrumentation variables")
-            del_globals()
         except Exception as e:
             if str(e) == "assignment destination is read-only":
                 log.exception(
@@ -139,20 +133,7 @@ class Scenario(ABC):
         for _ in tqdm(range(len(self.test_dataset)), desc="Evaluation"):
             batch = self.next(batch)
             self.evaluate_current(batch)
-        self.hub.set_context(stage="finished")
-
-    def load_metrics(self):
-        metrics_config = self.evaluation.metric
-        metrics_logger = MetricsLogger.from_config(
-            metrics_config,
-            include_benign=not self.skip_benign,
-            include_adversarial=not self.skip_attack,
-            include_targeted=(
-                self.evaluation.attack.targeted if self.evaluation.attack else False
-            ),
-        )
-        self.profiler = compute.profiler_from_config(metrics_config)
-        self.metrics_logger = metrics_logger
+        self.evaluation.metric.logger.hub.set_context(stage="finished")
 
     def load_export_meters(self, num_export_batches: int, sample_exporter):
         # The export_samples field was deprecated in Armory 0.15.0. Please use scenario.export_batches instead.
@@ -163,7 +144,9 @@ class Scenario(ABC):
                 f"scenario.{probe_value}",
                 max_batches=num_export_batches,
             )
-            self.hub.connect_meter(export_meter, use_default_writers=False)
+            self.evaluation.metric.logger.hub.connect_meter(
+                export_meter, use_default_writers=False
+            )
             if self.skip_attack:
                 break
 
@@ -175,7 +158,9 @@ class Scenario(ABC):
             y_pred_adv_probe="scenario.y_pred_adv" if not self.skip_attack else None,
             max_batches=num_export_batches,
         )
-        self.hub.connect_meter(pred_meter, use_default_writers=False)
+        self.evaluation.metric.logger.hub.connect_meter(
+            pred_meter, use_default_writers=False
+        )
 
     @abstractmethod
     def _load_sample_exporter(self):
@@ -184,18 +169,18 @@ class Scenario(ABC):
         )
 
     def next(self, prev: Optional[Batch]):
-        self.hub.set_context(stage="next")
+        self.evaluation.metric.logger.hub.set_context(stage="next")
         x, y = next(self.test_dataset)
         i = prev.i + 1 if prev else 0
-        self.hub.set_context(batch=i)
+        self.evaluation.metric.logger.hub.set_context(batch=i)
         self.probe.update(i=i, x=x, y=y)
         return self.Batch(i=i, x=x, y=y)
 
     def run_benign(self, batch: Batch):
-        self.hub.set_context(stage="benign")
+        self.evaluation.metric.logger.hub.set_context(stage="benign")
 
         batch.x.flags.writeable = False
-        with self.profiler.measure("Inference"):
+        with self.evaluation.metric.profiler.measure("Inference"):
             batch.y_pred = self.model.predict(
                 batch.x, **self.evaluation.model.predict_kwargs
             )
@@ -210,12 +195,12 @@ class Scenario(ABC):
         if TYPE_CHECKING:
             assert self.evaluation.attack
 
-        self.hub.set_context(stage="attack")
+        self.evaluation.metric.logger.hub.set_context(stage="attack")
         x = batch.x
         y = batch.y
         y_pred = batch.y_pred
 
-        with self.profiler.measure("Attack"):
+        with self.evaluation.metric.profiler.measure("Attack"):
             # Don't generate the attack if the benign was already misclassified
             if self.skip_misclassified and batch.misclassified:
                 y_target = None
@@ -238,7 +223,7 @@ class Scenario(ABC):
                     x=x, y=y_target, **self.evaluation.attack.generate_kwargs
                 )
 
-        self.hub.set_context(stage="adversarial")
+        self.evaluation.metric.logger.hub.set_context(stage="adversarial")
         # Don't evaluate the attack if the benign was already misclassified
         if self.skip_misclassified and batch.misclassified:
             y_pred_adv = y_pred
@@ -264,8 +249,8 @@ class Scenario(ABC):
             self.run_attack(batch)
 
     def finalize_results(self):
-        self.metric_results = self.metrics_logger.results()
-        self.compute_results = self.profiler.results()
+        self.metric_results = self.evaluation.metric.logger.results()
+        self.compute_results = self.evaluation.metric.profiler.results()
         self.results = {
             "metrics": self.metric_results,
             "compute": self.compute_results,
