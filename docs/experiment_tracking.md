@@ -3,37 +3,16 @@
 Armory provides integration with [MLFlow] to provide tracking of runs (i.e.,
 evaluations) within an experiment.
 
-Tracking with MLFlow is optional, and must be explicitly enabled.
-
 ## Usage
 
-### Enabling Tracking
-
-To enable logging with MLFlow, you must execute the evaluation within a
-`charmory.track.track_evaluation` context. All logging of parameters and metrics
-must occur while the context is active.
-
-```python
-from charmory.track import track_evaluation
-
-with track_evaluation(name="...", description="..."):
-    # Load datasets, models, attacks, defenses, etc.
-    engine = Engine(evaluation)
-    engine.run()
-```
-
-### Logging Metrics
-
-When tracking is active, `Engine.run` will automatically log all results of the
-evaluation as metrics in MLFlow.
-
-Additional metrics may be logged manually using the [`mlflow.log_metric`]
-function.
+The primary interface is the `track_params` and `track_init_params` function
+decorators. The Armory `Engine` automatically handles the creating and closing
+of the MLFlow run session.
 
 ### Logging Parameters
 
-To automatically log keyword arguments to any function as parameters, decorate
-the function with `charmory.track.track_params`.
+To automatically record keyword arguments to any function as parameters,
+decorate the function with `charmory.track.track_params`.
 
 ```python
 from charmory.track import track_params
@@ -52,7 +31,7 @@ wrap the function with `track_params` before calling it.
 model = track_params(load_model)(name=..., batch_size=...)
 ```
 
-To automatically log keyword arguments to a class initializer as parameters,
+To automatically record keyword arguments to a class initializer as parameters,
 decorate the class with `charmory.track.track_init_params`.
 
 ```python
@@ -73,14 +52,97 @@ wrap the class with `track_init_params` before creating an instance of it.
 dataset = track_init_params(TheDataset)(batch_size=...)
 ```
 
-Additional parameters may be logged manually using the [`mlflow.log_param`]
-function.
+Additional parameters may be recorded manually using the
+`charmory.track.track_param` function before the evaluation is run.
 
-## Logging Artifacts
+```python
+from charmory.track import track_param
+
+track_param("batch_size", 16)
+engine = Engine(evaluation)
+engine.run()
+```
+
+### Logging Metrics
+
+`Engine.run` will automatically log all results of the evaluation as metrics
+in MLFlow.
+
+Additional metrics may be logged manually by resuming the MLFlow session after
+the evaluation has been run and calling [`mlflow.log_metric`].
+
+```python
+import mlflow
+
+engine = Engine(evaluation)
+engine.run()
+with mlflow.start_run(run_id=engine.run_id):
+    mlflow.log_metric("custom_metric", 42)
+```
+
+### Logging Artifacts
 
 Currently, Armory does not automaically log any artifacts with MLFlow. However,
-you may log artifacts manually using the [`mlflow.log_artifact`] or
-[`mlflow.log_artifacts`] functions after the evaluation has been run.
+you may log artifacts manually by resuming the MLFlow session after the
+evaulation has been run and calling [`mlflow.log_artifact`] or
+[`mlflow.log_artifacts`].
+
+```python
+import mlflow
+
+engine = Engine(evaluation)
+engine.run()
+with mlflow.start_run(run_id=engine.run_id):
+    mlflow.log_artifacts("path/to/artifacts")
+```
+
+### Tracking Contexts
+
+By default, all tracked parameters are recorded in a global context. When
+multiple evaluations are executed in a single process, one should take care
+with the parameters being recorded.
+
+When a parameter is recorded that had already has a recorded value, the newer
+value will overwrite the old value. When the `track_params` or
+`track_init_params` decorators are used, all old values with the parameter
+prefix are removed.
+
+```python
+from charmory.track import track_params
+
+model = track_params(load_model)(name="a", extra=True)
+
+# The parameter `load_model.name` is overwritten, `load_model.extra` is removed
+model = track_params(load_model)(name="b")
+```
+
+Parameters can be manually cleared using the `reset_params` function.
+
+```python
+from charmory.track import reset_params, track_param
+
+track_param("key", "value")
+
+reset_params()
+```
+
+Alternatively, the `tracking_context` context manager will create a scoped
+session for recording of parameters.
+
+```python
+from charmory.track import tracking_context, track_param
+
+track_param("global", "value")
+
+with tracking_context():
+    # `global` parameter will not be recorded within this context
+    track_param("parent", "value")
+
+    with tracking_context(nested=True):
+        track_param("child", "value")
+        # This context contains both `parent` and `child` params, while the
+        # outer context still only has `parent`
+```
 
 ## Tracking Server
 
@@ -121,6 +183,5 @@ You may also store your credentials
 
 [MLFlow]: (https://mlflow.org/docs/latest/tracking.html)
 [`mlflow.log_metric`]: (https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_metric)
-[`mlflow.log_param`]: (https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_param)
 [`mlflow.log_artifact`]: (https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_artifact)
 [`mlflow.log_artifacts`]: (https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_artifacts)
