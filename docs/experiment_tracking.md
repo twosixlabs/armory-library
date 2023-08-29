@@ -5,7 +5,9 @@ evaluations) within an experiment.
 
 ## Usage
 
-The primary interface
+The primary interface is the `track_params` and `track_init_params` function
+decorators. The Armory `Engine` automatically handles the creating and closing
+of the MLFlow run session.
 
 ### Logging Parameters
 
