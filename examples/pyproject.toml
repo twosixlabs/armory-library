@@ -18,7 +18,7 @@ classifiers = [
 
 dependencies = [
     "charmory @ {root:uri}/../",
-    "pytorch-lightning"
+    "lightning"
 ]
 
 [project.scripts]
