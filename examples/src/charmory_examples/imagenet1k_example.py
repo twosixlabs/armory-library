@@ -11,8 +11,6 @@ from jatic_toolbox import load_dataset as load_jatic_dataset
 
 from armory.baseline_models.pytorch.imagenet1k import get_art_model
 import armory.version
-
-from charmory.track import  track_init_params
 from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import Engine
 from charmory.evaluation import (
@@ -25,6 +23,7 @@ from charmory.evaluation import (
     SysConfig,
 )
 import charmory.scenarios.image_classification
+from charmory.track import track_init_params
 from charmory.utils import PILtoNumpy_HuggingFace_Variable_Length
 
 BATCH_SIZE = 16
@@ -35,14 +34,13 @@ TRAINING_EPOCHS = 1
 
 
 def load_huggingface_dataset():
-
     transform = PILtoNumpy_HuggingFace_Variable_Length()
     train_dataset = load_jatic_dataset(
         provider="huggingface",
         dataset_name="imagenet-1k",
         task="image-classification",
         split="train",
-        use_auth_token=True
+        use_auth_token=True,
     )
 
     train_dataset.set_transform(transform)
@@ -59,8 +57,7 @@ def load_huggingface_dataset():
         dataset_name="imagenet-1k",
         task="image-classification",
         split="test",
-        use_auth_token=True
-        
+        use_auth_token=True,
     )
     test_dataset.set_transform(transform)
     test_dataset_generator = JaticVisionDatasetGenerator(
@@ -70,6 +67,7 @@ def load_huggingface_dataset():
         size=512,  # Use a subset just for demo purposes
     )
     return train_dataset_generator, test_dataset_generator
+
 
 def main(argv: list = sys.argv[1:]):
     if len(argv) > 0:
@@ -85,24 +83,20 @@ def main(argv: list = sys.argv[1:]):
         wrapper_kwargs={},
         weights_path=None,
     )
-    
+
     model = Model(
         name="ImageNet1k",
         model=image_net_model,
     )
 
-    
     train_dataset, test_dataset = load_huggingface_dataset()
     dataset = Dataset(
         name="imagenet", train_dataset=train_dataset, test_dataset=test_dataset
     )
 
-
-
     ###
     # The rest of this file was directly copied from the existing cifar example
     ###
-
 
     attack = Attack(
         name="PGD",
@@ -172,7 +166,6 @@ def main(argv: list = sys.argv[1:]):
     print("=" * 64)
     print("Imagenet 1k Experiment Complete!")
     return 0
-
 
 
 if __name__ == "__main__":
