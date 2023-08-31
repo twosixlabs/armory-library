@@ -1,10 +1,23 @@
 """Utilities to support experiment tracking within Armory."""
 
+from contextlib import contextmanager
+from copy import deepcopy
 from functools import wraps
 import os
 from pathlib import Path
 import sys
-from typing import Callable, Mapping, Optional, Sequence, TypeVar, Union, overload
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import lightning.pytorch.loggers as pl_loggers
 import mlflow
@@ -15,6 +28,89 @@ import torch
 # This was only added to the builtin `typing` in Python 3.10,
 # so we have to use `typing_extensions` for 3.8 support
 from typing_extensions import ParamSpec
+
+from armory.logs import log
+
+# Params are recorded globally in a stack of parameter stores, where the
+# first stack entry is the default, implicit parameter store. Creation of
+# subsequent parameter stores only occurs by using the `tracking_context`
+# context manager. Params are ways recorded in the top-most store in the
+# stack at the time of recording. This is modeled after the way MLFlow handles
+# nested calls to `start_run`.
+_params_stack: List[Dict[str, Any]] = []
+
+
+def _get_current_params() -> Dict[str, Any]:
+    """Get the parameters from the current tracking context"""
+    if len(_params_stack) == 0:
+        _params_stack.append({})
+    return _params_stack[-1]
+
+
+def track_param(key: str, value: Any):
+    """
+    Record a parameter in the current tracking context to be logged with MLFlow.
+
+    Example::
+
+        from charmory.track import track_param
+
+        track_param("key", "value")
+
+    Args:
+        key: Parameter name (should be unique or will overwrite previous values)
+        value: Parameter value
+    """
+    params = _get_current_params()
+    if key in params:
+        log.warning(
+            f"Parameter {key} has already been logged with value {params[key]}, "
+            f"and will be overwritten with value {value}. Use a unique parameter "
+            "key argument or start a new tracking context with `tracking_context` "
+            "to avoid this warning."
+        )
+    params[key] = value
+
+
+def reset_params():
+    """Clear all parameters in the current tracking context"""
+    params = _get_current_params()
+    params.clear()
+
+
+@contextmanager
+def tracking_context(nested: bool = False):
+    """
+    Create a new tracking context. Parameters recorded while the context is
+    active will be isolated from other contexts. Upon completion of the context,
+    all parameters will be cleared.
+
+    Example:
+
+        from charmory.track import tracking_context, track_param
+
+        with tracking_context():
+            track_param("key", "value1")
+
+        with tracking_context():
+            track_param("key", "value2")
+
+    Args:
+        nested: Copy parameters from the current context into the new
+            tracking context
+
+    Returns:
+        Context manager
+    """
+    new_context = {}
+    if nested:
+        new_context = deepcopy(_get_current_params())
+    _params_stack.append(new_context)
+    try:
+        yield
+    finally:
+        _params_stack.pop()
+
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -46,8 +142,8 @@ def track_params(
     ignore: Optional[Sequence[str]] = None,
 ):
     """
-    Create a decorator to log function keyword arguments as parameters with
-    MLFlow.
+    Create a decorator to record function keyword arguments as parameters in the
+    current tracking context to be logged with MLFlow.
 
     Example::
 
@@ -74,29 +170,27 @@ def track_params(
     def _decorator(func: Callable[P, T]) -> Callable[P, T]:
         @wraps(func)
         def _wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-            active_run = mlflow.active_run()
-            if active_run:
-                _prefix = prefix if prefix else func.__name__
+            _prefix = prefix if prefix else func.__name__
 
-                # MLFlow does not allow duplicates, so check the active
-                # run and adjust the prefix if needed
-                count = 0
-                param = _prefix
-                while param in active_run.data.params:
-                    count += 1
-                    param = f"{_prefix}.{count}"
-                if count:
-                    _prefix = f"{_prefix}.{count}"
-                active_run.data.params[_prefix] = True
+            params = _get_current_params()
 
-                mlflow.log_param(
-                    f"{_prefix}._func", f"{func.__module__}.{func.__qualname__}"
+            if f"{_prefix}._func" in params:
+                log.warning(
+                    f"Parameters with prefix {_prefix} have already been logged and will "
+                    "be overwritten. Use a unique prefix or start a new tracking context "
+                    "with `tracking_context` to avoid this warning."
                 )
+                # Remove prior params with this prefix
+                for key in list(params.keys()):
+                    if key.startswith(f"{_prefix}."):
+                        params.pop(key)
 
-                for key, val in kwargs.items():
-                    if ignore and key in ignore:
-                        continue
-                    mlflow.log_param(f"{_prefix}.{key}", val)
+            params[f"{_prefix}._func"] = f"{func.__module__}.{func.__qualname__}"
+
+            for key, val in kwargs.items():
+                if ignore and key in ignore:
+                    continue
+                params[f"{_prefix}.{key}"] = val
 
             return func(*args, **kwargs)
 
@@ -134,8 +228,8 @@ def track_init_params(
     ignore: Optional[Sequence[str]] = None,
 ):
     """
-    Create a decorator to log class dunder-init keyword arguments as parameters
-    with MLFlow.
+    Create a decorator to record class dunder-init keyword arguments as
+    parameters in the current tracking context to be logged with MLFlow.
 
     Example::
 
@@ -176,6 +270,8 @@ def track_evaluation(
 ):
     """
     Create a context manager for tracking an evaluation run with MLFlow.
+    Parameters that have been recorded in the current tracking context will be
+    logged with MLFlow.
 
     Example::
 
@@ -201,10 +297,14 @@ def track_evaluation(
     else:
         experiment_id = mlflow.create_experiment(name)
 
-    return mlflow.start_run(
+    run = mlflow.start_run(
         experiment_id=experiment_id,
         description=description,
     )
+
+    mlflow.log_params(_get_current_params())
+
+    return run
 
 
 def lightning_logger():
