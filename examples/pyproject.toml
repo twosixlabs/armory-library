@@ -17,6 +17,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "albumentations",
     "charmory @ {root:uri}/../",
     "pytorch-lightning"
 ]
