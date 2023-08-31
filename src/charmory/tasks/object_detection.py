@@ -1,7 +1,5 @@
 """Object detection evaluation task"""
 
-from pprint import pprint
-
 import torch
 import torchmetrics.detection
 
@@ -39,7 +37,6 @@ class MAP(torchmetrics.detection.MeanAveragePrecision):
             {
                 "boxes": torch.FloatTensor(target["boxes"]),
                 "labels": torch.IntTensor(target["labels"]),
-                "area": torch.FloatTensor(target["area"]),
             }
             for target in targets
         ]
@@ -49,7 +46,6 @@ class MAP(torchmetrics.detection.MeanAveragePrecision):
         Convert torchmetrics results to Lightning-compatible metrics
         """
         metrics = {f"{self.prefix}_{k}": v for k, v in super().compute().items()}
-        pprint(metrics)
         metrics.pop(f"{self.prefix}_classes")
         maps_per_class = metrics.pop(f"{self.prefix}_map_per_class")
         if self.class_metrics and maps_per_class is not None:
