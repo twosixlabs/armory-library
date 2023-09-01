@@ -1,18 +1,10 @@
 """Image classification evaluation task"""
 
-import numpy as np
 import torch
 import torchmetrics.classification
 
-from armory.instrument.export import ImageClassificationExporter
 from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.tasks.base import BaseEvaluationTask
-
-
-def transpose_to_channels_last(data: np.ndarray) -> np.ndarray:
-    if len(data.shape) == 3 and data.shape[0] in (1, 3, 4):
-        return np.transpose(data, (1, 2, 0))
-    return data
 
 
 class ImageClassificationTask(BaseEvaluationTask):
@@ -33,7 +25,6 @@ class ImageClassificationTask(BaseEvaluationTask):
             task="multiclass", num_classes=num_classes
         )
         self.perturbation = PerturbationNormMetric(ord=perturbation_ord)
-        self.sample_exporter = ImageClassificationExporter(self.export_dir)
 
     def export_batch(self, batch: BaseEvaluationTask.Batch):
         self._export("x", batch.x, batch.i)
@@ -43,13 +34,8 @@ class ImageClassificationTask(BaseEvaluationTask):
     def _export(self, name, batch_data, batch_idx):
         batch_size = batch_data.shape[0]
         for sample_idx in range(batch_size):
-            basename = f"batch_{batch_idx}_ex_{sample_idx}_{name}"
-            self.sample_exporter.export(batch_data[sample_idx], basename)
-            self.logger.experiment.log_image(
-                self.logger.run_id,
-                transpose_to_channels_last(batch_data[sample_idx]),
-                f"{basename}.png",
-            )
+            filename = f"batch_{batch_idx}_ex_{sample_idx}_{name}.png"
+            self.exporter.log_image(batch_data[sample_idx], filename)
 
     def run_benign(self, batch: BaseEvaluationTask.Batch):
         super().run_benign(batch)
