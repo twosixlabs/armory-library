@@ -3,7 +3,7 @@
 import torch
 import torchmetrics.detection
 
-from armory.instrument.export import ObjectDetectionExporter
+from charmory.export import draw_boxes_on_image
 from charmory.tasks.base import BaseEvaluationTask
 
 
@@ -75,29 +75,32 @@ class ObjectDetectionTask(BaseEvaluationTask):
         self,
         *args,
         class_metrics: bool = False,
+        export_score_threshold: float = 0.5,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.benign_map = MAP(prefix="benign", class_metrics=class_metrics)
         self.attack_map = MAP(prefix="attack", class_metrics=class_metrics)
-        self.sample_exporter = ObjectDetectionExporter(self.export_dir)
+        self.export_score_threshold = export_score_threshold
 
     def export_batch(self, batch: BaseEvaluationTask.Batch):
         self._export("benign", batch.x, batch.y, batch.y_pred, batch.i)
         if batch.x_adv is not None:
             self._export("attack", batch.x_adv, batch.y, batch.y_pred_adv, batch.i)
 
-    def _export(self, name, images, boxes, preds, batch_idx):
+    def _export(self, name, images, truth, preds, batch_idx):
         batch_size = images.shape[0]
         for sample_idx in range(batch_size):
-            basename = f"batch_{batch_idx}_ex_{sample_idx}_{name}"
-            self.sample_exporter.export(
-                x_i=images[sample_idx],
-                basename=basename,
-                with_boxes=boxes is not None or preds is not None,
-                y=boxes[sample_idx] if boxes else None,
-                y_pred=preds[sample_idx] if preds else None,
+            boxes_above_threshold = preds[sample_idx]["boxes"][
+                preds[sample_idx]["scores"] > self.export_score_threshold
+            ]
+            with_boxes = draw_boxes_on_image(
+                image=images[sample_idx],
+                ground_truth_boxes=truth[sample_idx]["boxes"],
+                pred_boxes=boxes_above_threshold,
             )
+            filename = f"batch_{batch_idx}_ex_{sample_idx}_{name}.png"
+            self.exporter.log_image(with_boxes, filename)
 
     def run_benign(self, batch: BaseEvaluationTask.Batch):
         super().run_benign(batch)
