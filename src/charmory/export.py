@@ -98,8 +98,37 @@ class MlflowExporter(Exporter):
 def draw_boxes_on_image(
     image: npt.NDArray[np.number],
     ground_truth_boxes: Optional[np.ndarray] = None,
+    ground_truth_color: str = "red",
+    ground_truth_width: int = 2,
     pred_boxes: Optional[np.ndarray] = None,
-) -> np.ndarray:
+    pred_color: str = "white",
+    pred_width: int = 2,
+) -> npt.NDArray[np.uint8]:
+    """
+    Draw bounding boxes for ground truth objects and predicted objects on top of
+    an image sample.
+
+    Ground truth bounding boxes will be drawn first, then the predicted bounding
+    boxes.
+
+    Args:
+        image: Numpy array of image data. May be of shape (C, H, W) or (H, W, C).
+            If array type is not uint8, all values will be clipped between 0.0
+            and 1.0 then scaled to a uint8 between 0 and 255.
+        ground_truth_boxes: Optional array of shape (N, 4) containing ground truth
+            bounding boxes in (xmin, ymin, xmax, ymax) format.
+        ground_truth_color: Color to use for ground truth bounding boxes. Color can
+            be represented as PIL strings (e.g., "red").
+        ground_truth_width: Width of ground truth bounding boxes.
+        pred_boxes: Optional array of shape (N, 4) containing predicted
+            bounding boxes in (xmin, ymin, xmax, ymax) format.
+        pred_color: Color to use for predicted bounding boxes. Color can
+            be represented as PIL strings (e.g., "red").
+        pred_width: Width of ground truth bounding boxes.
+
+    Return:
+        Numpy uint8 array of (C, H, W) image with bounding boxes data
+    """
     if image.shape[-1] in (1, 3, 6):  # Convert from (H, W, C) to (C, H, W)
         image = image.transpose(2, 0, 1)
 
@@ -112,16 +141,16 @@ def draw_boxes_on_image(
         with_boxes = draw_bounding_boxes(
             image=with_boxes,
             boxes=torch.as_tensor(ground_truth_boxes),
-            colors="red",
-            width=2,
+            colors=ground_truth_color,
+            width=ground_truth_width,
         )
 
     if pred_boxes is not None:
         with_boxes = draw_bounding_boxes(
             image=with_boxes,
             boxes=torch.as_tensor(pred_boxes),
-            colors="white",
-            width=2,
+            colors=pred_color,
+            width=pred_width,
         )
 
     return with_boxes.numpy()
