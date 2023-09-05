@@ -4,13 +4,14 @@ Sample exporting utilities
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
-from PIL.Image import Image
 from mlflow.client import MlflowClient
 import numpy as np
+import numpy.typing as npt
 import torch
 from torchvision.utils import draw_bounding_boxes
 
 if TYPE_CHECKING:
+    import PIL.Image
     import matplotlib.figure
     import pandas
     import plotly.graph_objects
@@ -19,7 +20,9 @@ if TYPE_CHECKING:
 class Exporter:
     """No-op exporter"""
 
-    def log_image(self, image: Union[np.ndarray, Image], artifact_path: str):
+    def log_image(
+        self, image: Union[np.ndarray, "PIL.Image.Image"], artifact_path: str
+    ):
         pass
 
     def log_artifact(self, local_path: str, artifact_path: Optional[str] = None):
@@ -56,7 +59,9 @@ class MlflowExporter(Exporter):
         self.client = client
         self.run_id = run_id
 
-    def log_image(self, image: Union[np.ndarray, Image], artifact_path: str):
+    def log_image(
+        self, image: Union[np.ndarray, "PIL.Image.Image"], artifact_path: str
+    ):
         # Make sure image data has channel last
         if (
             isinstance(image, np.ndarray)
@@ -91,7 +96,7 @@ class MlflowExporter(Exporter):
 
 
 def draw_boxes_on_image(
-    image: np.ndarray,
+    image: npt.NDArray[np.number],
     ground_truth_boxes: Optional[np.ndarray] = None,
     pred_boxes: Optional[np.ndarray] = None,
 ) -> np.ndarray:
@@ -99,7 +104,7 @@ def draw_boxes_on_image(
         image = image.transpose(2, 0, 1)
 
     if image.dtype != np.uint8:  # Convert/scale to uint8
-        image = np.uint8(np.round(np.clip(image, 0.0, 1.0) * 255.0))
+        image = np.round(np.clip(image, 0.0, 1.0) * 255.0).astype(np.uint8)
 
     with_boxes = torch.as_tensor(image)
 
