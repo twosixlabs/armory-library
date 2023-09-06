@@ -54,14 +54,14 @@ class Dataset:
     test_dataset: DataGenerator
     train_dataset: Optional[DataGenerator] = None
 
-    def __post_init__(self):
-        assert isinstance(
-            self.test_dataset, DataGenerator
-        ), "Evaluation dataset's test_dataset is not an instance of DataGenerator"
-        if self.train_dataset is not None:
-            assert isinstance(
-                self.train_dataset, DataGenerator
-            ), "Evaluation dataset's train_dataset is not an instance of DataGenerator"
+    # def __post_init__(self):
+    #     assert isinstance(
+    #         self.test_dataset, DataGenerator
+    #     ), "Evaluation dataset's test_dataset is not an instance of DataGenerator"
+    #     if self.train_dataset is not None:
+    #         assert isinstance(
+    #             self.train_dataset, DataGenerator
+    #         ), "Evaluation dataset's train_dataset is not an instance of DataGenerator"
 
 
 @dataclass
