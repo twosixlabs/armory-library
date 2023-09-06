@@ -19,7 +19,7 @@ classifiers = [
 dependencies = [
     "albumentations",
     "charmory @ {root:uri}/../",
-    "lightning"
+    "lightning[pytorch-extra]"
 ]
 
 [project.scripts]

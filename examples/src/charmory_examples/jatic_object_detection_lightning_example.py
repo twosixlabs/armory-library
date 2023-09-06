@@ -5,6 +5,7 @@ import albumentations as A
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchFasterRCNN
 import jatic_toolbox
+from lightning.pytorch.cli import LightningCLI
 import numpy as np
 
 from armory.art_experimental.attacks.patch import AttackWrapper
@@ -20,7 +21,7 @@ from charmory.utils import (
 )
 
 
-def main():
+def create_evaluation_task(export_every_n_batches: int = 5) -> ObjectDetectionTask:
     ###
     # Model
     ###
@@ -151,17 +152,22 @@ def main():
         sysconfig=eval_sysconfig,
     )
 
-    ###
-    # Engine
-    ###
-
     task = ObjectDetectionTask(
         evaluation,
-        export_every_n_batches=5,
+        export_every_n_batches=export_every_n_batches,
         class_metrics=False,
     )
-    engine = LightningEngine(task, limit_test_batches=10)
-    results = engine.run()
+    return task
+
+
+def main():
+    cli = LightningCLI(
+        create_evaluation_task,
+        trainer_class=LightningEngine,
+        trainer_defaults=dict(limit_test_batches=80),
+        run=False,
+    )
+    results = cli.trainer.test(cli.model)
 
     pprint(results)
 
