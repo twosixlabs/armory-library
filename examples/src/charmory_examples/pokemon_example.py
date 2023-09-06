@@ -24,18 +24,23 @@ from charmory.evaluation import (
 )
 import charmory.scenarios.image_classification
 from charmory.utils import PILtoNumpy_HuggingFace
+from charmory.track import track_params, track_init_params
+from charmory.experimental.scenario_execution import execute_scenario
+
 
 BATCH_SIZE = 16
 TRAINING_EPOCHS = 20
 
 
 # Loads Pokemon Classification HuggingFace Example
+Input_Args = ()
+
 
 
 def load_huggingface_dataset():
     transform = PILtoNumpy_HuggingFace()
 
-    train_dataset = load_jatic_dataset(
+    train_dataset = track_params(load_jatic_dataset)(
         provider="huggingface",
         dataset_name="keremberke/pokemon-classification",
         task="image-classification",
@@ -51,7 +56,7 @@ def load_huggingface_dataset():
         epochs=TRAINING_EPOCHS,
         shuffle=True,
     )
-    test_dataset = load_jatic_dataset(
+    test_dataset = track_params(load_jatic_dataset)(
         provider="huggingface",
         dataset_name="keremberke/pokemon-classification",
         task="image-classification",
@@ -97,20 +102,19 @@ def main(argv: list = sys.argv[1:]):
     ###
 
     attack = Attack(
-        function=art.attacks.evasion.ProjectedGradientDescent,
-        kwargs={
-            "batch_size": 1,
-            "eps": 0.031,
-            "eps_step": 0.007,
-            "max_iter": 20,
-            "num_random_init": 1,
-            "random_eps": False,
-            "targeted": False,
-            "verbose": False,
-        },
-        knowledge="white",
-        use_label=True,
-        type=None,
+        name="PGD",
+        attack=track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
+            pokemon_model,
+            batch_size=3,
+            eps=0.031,
+            eps_step=0.007,
+            max_iter=20,
+            num_random_init=1,
+            random_eps=False,
+            targeted=False,
+            verbose=False,
+        ),
+        use_label_for_untargeted=True,
     )
 
     scenario = Scenario(
@@ -137,25 +141,11 @@ def main(argv: list = sys.argv[1:]):
         model=model,
         attack=attack,
         scenario=scenario,
-        defense=None,
         metric=metric,
         sysconfig=sysconfig,
     )
 
-    print(f"Starting Demo for {baseline.name}")
-
-    pokemon_engine = Engine(baseline)
-    pokemon_engine.train(nb_epochs=TRAINING_EPOCHS)
-    results = pokemon_engine.run()
-
-    print("=" * 64)
-    pprint(baseline)
-    print("-" * 64)
-    print(
-        json.dumps(
-            results, default=lambda o: "<not serializable>", indent=4, sort_keys=True
-        )
-    )
+    execute_scenario(baseline, TRAINING_EPOCHS)
 
     print("=" * 64)
     print(dataset.train_dataset)
