@@ -33,6 +33,7 @@ from charmory.evaluation import (
     SysConfig,
 )
 import charmory.scenarios.image_classification
+from charmory.experimental.scenario_execution import execute_scenario
 from charmory.track import track_evaluation, track_init_params, track_params
 from charmory.utils import (
     adapt_jatic_image_classification_model_for_art,
@@ -266,9 +267,7 @@ def main():
 
         print(f"Starting Demo for {baseline.name}")
 
-        cifar_engine = Engine(baseline)
-        cifar_engine.train(nb_epochs=TRAINING_EPOCHS)
-        results = cifar_engine.run()
+        execute_scenario(baseline, TRAINING_EPOCHS)
 
     print("=" * 64)
     pprint(baseline)
