@@ -56,5 +56,25 @@ Python's pdb is a built-in module that provides a simple but effective interacti
 
 - **Multi-Cursor Selection**: Hold `Alt` and click in different places in your code to create multiple cursors, allowing you to edit multiple lines at the same time.
 
+## Cache Filling Up
+May run into issue if using multiple datasets where the cache in wsl fills up quickly. Even after deleting inside of Ubuntu windows doesn't reclaim the space.
+1. **First Step** Delete all unnecessary files in your wsl distro that are taking up too much space.
+2. **Second Step** Open Control Panel -> Programs -> turn on windows features on and off -> select following  
+        - Hyper-V  
+        - Windows Hypervisor Platform
+
+3.  **Third Step** Do a System Reboot
+4.  **Fourth Step** Open Powershell as an administer and do the following 2 commands:
+    ```console
+    wsl –shutdown
+    Optimize-VHD -Path “C:\Users\Christopher Honaker\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu_79rhkp1fndgsc\ext4.vhdx” -Mode Full
+    ```
+    (you may need to find the exact location of your ext4.vhdx file and run the same command in that location)
+5. **Fifth Step** This should shrink your ubuntu partition and windows should reclaim the unused memory. 
+     You can check  the ubuntu data storage with 
+     ```console
+     df -h
+     ``` 
+
 
 Don't hesitate to ask for help if you're stuck on a difficult bug!
