@@ -17,12 +17,12 @@ def test_engine_train_raises_when_missing_train_dataset(evaluation):
         engine.train()
 
 
-def test_engine_train_invokes_model(data_generator, evaluation_model, evaluation):
-    evaluation.dataset.train_dataset = data_generator
+def test_engine_train_invokes_model(data_loader, evaluation_model, evaluation):
+    evaluation.dataset.train_dataset = data_loader
     evaluation_model.fit_generator = Mock()
     evaluation.model.model = evaluation_model
     engine = Engine(evaluation)
     engine.train()
-    evaluation_model.fit_generator.assert_called_with(data_generator, nb_epochs=1)
+    evaluation_model.fit_generator.assert_called_with(data_loader, nb_epochs=1)
     engine.train(nb_epochs=20)
-    evaluation_model.fit_generator.assert_called_with(data_generator, nb_epochs=20)
+    evaluation_model.fit_generator.assert_called_with(data_loader, nb_epochs=20)
