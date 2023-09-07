@@ -8,9 +8,7 @@ from art.estimators.object_detection import PyTorchFasterRCNN
 from datasets import load_dataset
 import jatic_toolbox
 from jatic_toolbox import __version__ as jatic_version
-from jatic_toolbox.interop.huggingface import (
-    HuggingFaceObjectDetectionDataset,
-)
+from jatic_toolbox.interop.huggingface import HuggingFaceObjectDetectionDataset
 import numpy as np
 
 from armory.art_experimental.attacks.patch import AttackWrapper
