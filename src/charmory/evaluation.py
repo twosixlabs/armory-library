@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from art.attacks import EvasionAttack
-from art.data_generators import DataGenerator
 from art.estimators import BaseEstimator
+from torch.utils.data.dataloader import DataLoader
 
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import NullProfiler, Profiler
@@ -51,17 +51,17 @@ class Attack:
 @dataclass
 class Dataset:
     name: str
-    test_dataset: DataGenerator
-    train_dataset: Optional[DataGenerator] = None
+    test_dataset: DataLoader
+    train_dataset: Optional[DataLoader] = None
 
-    # def __post_init__(self):
-    #     assert isinstance(
-    #         self.test_dataset, DataGenerator
-    #     ), "Evaluation dataset's test_dataset is not an instance of DataGenerator"
-    #     if self.train_dataset is not None:
-    #         assert isinstance(
-    #             self.train_dataset, DataGenerator
-    #         ), "Evaluation dataset's train_dataset is not an instance of DataGenerator"
+    def __post_init__(self):
+        assert isinstance(
+            self.test_dataset, DataLoader
+        ), "Evaluation dataset's test_dataset is not an instance of DataLoader"
+        if self.train_dataset is not None:
+            assert isinstance(
+                self.train_dataset, DataLoader
+            ), "Evaluation dataset's train_dataset is not an instance of DataLoader"
 
 
 @dataclass
