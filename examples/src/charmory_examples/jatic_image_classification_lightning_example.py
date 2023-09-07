@@ -3,7 +3,6 @@ from pprint import pprint
 import art.attacks.evasion
 from art.estimators.classification import PyTorchClassifier
 import jatic_toolbox
-from lightning.pytorch.cli import LightningCLI
 import numpy as np
 import torch.nn
 from transformers.image_utils import infer_channel_dimension_format
@@ -20,9 +19,7 @@ from charmory.utils import (
 )
 
 
-def create_evaluation_task(
-    batch_size: int = 16, export_every_n_batches: int = 5
-) -> ImageClassificationTask:
+def main():
     ###
     # Model
     ###
@@ -67,7 +64,7 @@ def create_evaluation_task(
 
     generator = JaticVisionDataLoader(
         dataset=dataset,
-        batch_size=batch_size,
+        batch_size=16,
     )
 
     ###
@@ -120,20 +117,13 @@ def create_evaluation_task(
         sysconfig=eval_sysconfig,
     )
 
-    task = ImageClassificationTask(
-        evaluation, num_classes=12, export_every_n_batches=export_every_n_batches
-    )
-    return task
+    ###
+    # Engine
+    ###
 
-
-def main():
-    cli = LightningCLI(
-        create_evaluation_task,
-        trainer_class=LightningEngine,
-        trainer_defaults=dict(limit_test_batches=5),
-        run=False,
-    )
-    results = cli.trainer.test(cli.model)
+    task = ImageClassificationTask(evaluation, num_classes=12, export_every_n_batches=5)
+    engine = LightningEngine(task, limit_test_batches=5)
+    results = engine.run()
 
     pprint(results)
 

@@ -52,35 +52,35 @@ class Engine:
             return results
 
 
-class LightningEngine(pl.Trainer):
+class LightningEngine:
     def __init__(
         self,
+        task: BaseEvaluationTask,
         limit_test_batches: Optional[Union[int, float]] = None,
-        num_nodes: int = 1,
-        strategy: str = "auto",
     ):
-        super().__init__(
+        self.task = task
+        self.active_run = track_evaluation(
+            name=self.task.evaluation.name, description=self.task.evaluation.description
+        )
+        self.trainer = pl.Trainer(
             inference_mode=False,
             limit_test_batches=limit_test_batches,
             logger=lightning_logger(),
-            num_nodes=num_nodes,
-            strategy=strategy,
         )
         self.run_id: Optional[str] = None
 
-    def test(self, task: BaseEvaluationTask):
+    def run(self):
         if self.run_id:
             raise RuntimeError(
                 "Evaluation engine has already been run. Create a new LightningEngine "
                 "instance to perform a subsequent run."
             )
 
-        active_run = track_evaluation(
-            name=task.evaluation.name, description=task.evaluation.description
+        self.run_id = self.active_run.info.run_id
+        self.trainer.test(
+            self.task, dataloaders=self.task.evaluation.dataset.test_dataset
         )
-        self.run_id = active_run.info.run_id
-        return super().test(task, dataloaders=task.evaluation.dataset.test_dataset)
-        # return dict(
-        #     compute=self.task.evaluation.metric.profiler.results(),
-        #     metrics=self.trainer.callback_metrics,
-        # )
+        return dict(
+            compute=self.task.evaluation.metric.profiler.results(),
+            metrics=self.trainer.callback_metrics,
+        )
