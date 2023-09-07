@@ -67,7 +67,7 @@ def test_run_attack_when_skip_misclassified_enabled(evaluation):
     evaluation.attack.attack.generate = MagicMock()
 
     scenario = TestScenario(evaluation, skip_misclassified=True)
-    scenario.hub.set_context(batch=0)
+    evaluation.metric.logger.hub.set_context(batch=0)
     scenario.run_attack(batch)
 
     evaluation.model.model.predict.assert_not_called()
@@ -97,7 +97,7 @@ def test_run_attack_when_targeted(evaluation):
     evaluation.attack.attack.generate = MagicMock(return_value=x_adv)
 
     scenario = TestScenario(evaluation)
-    scenario.hub.set_context(batch=0)
+    evaluation.metric.logger.hub.set_context(batch=0)
     scenario.run_attack(batch)
 
     evaluation.attack.label_targeter.generate.assert_called_with(batch.y)
@@ -123,7 +123,7 @@ def test_run_attack_when_targeted_and_using_benign_labels(evaluation):
     evaluation.attack.attack.generate = MagicMock(return_value=x_adv)
 
     scenario = TestScenario(evaluation)
-    scenario.hub.set_context(batch=0)
+    evaluation.metric.logger.hub.set_context(batch=0)
     scenario.run_attack(batch)
 
     evaluation.attack.attack.generate.assert_called_with(x=batch.x, y=None)
@@ -150,7 +150,7 @@ def test_run_attack_when_untargeted_and_using_natural_labels(evaluation):
     evaluation.attack.attack.generate = MagicMock(return_value=x_adv)
 
     scenario = TestScenario(evaluation)
-    scenario.hub.set_context(batch=0)
+    evaluation.metric.logger.hub.set_context(batch=0)
     scenario.run_attack(batch)
 
     evaluation.attack.attack.generate.assert_called_with(x=batch.x, y=batch.y)

@@ -86,6 +86,9 @@ class ImageClassificationExporter(SampleExporter):
         if x.min() < 0.0 or x.max() > 1.0:
             log.warning("Image out of expected range. Clipping to [0, 1].")
 
+        if x.shape[0] in (1, 3, 6):  # Convert from (C, H, W) to (H, W, C)
+            x = x.transpose(1, 2, 0)
+
         # Export benign image x_i
         if x.shape[-1] == 1:
             mode = "L"

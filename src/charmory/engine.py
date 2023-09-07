@@ -1,12 +1,18 @@
+from typing import Optional, Union
+
+import lightning.pytorch as pl
+
 from armory.logs import log
 from charmory.evaluation import Evaluation
-from charmory.track import track_metrics
+from charmory.tasks.base import BaseEvaluationTask
+from charmory.track import lightning_logger, track_evaluation, track_metrics
 
 
 class Engine:
     def __init__(self, evaluation: Evaluation):
         self.evaluation = evaluation
         self.scenario = evaluation.scenario.function(self.evaluation)
+        self.run_id: Optional[str] = None
 
     def train(self, nb_epochs=1):
         """
@@ -30,7 +36,51 @@ class Engine:
         )
 
     def run(self):
-        results = self.scenario.evaluate()
-        track_metrics(results["results"]["metrics"])
+        if self.run_id:
+            raise RuntimeError(
+                "Evaluation engine has already been run. Create a new Engine "
+                "instance to perform a subsequent run."
+            )
 
-        return results
+        with track_evaluation(
+            name=self.evaluation.name, description=self.evaluation.description
+        ) as active_run:
+            self.run_id = active_run.info.run_id
+            results = self.scenario.evaluate()
+            track_metrics(results["results"]["metrics"])
+
+            return results
+
+
+class LightningEngine:
+    def __init__(
+        self,
+        task: BaseEvaluationTask,
+        limit_test_batches: Optional[Union[int, float]] = None,
+    ):
+        self.task = task
+        self.active_run = track_evaluation(
+            name=self.task.evaluation.name, description=self.task.evaluation.description
+        )
+        self.trainer = pl.Trainer(
+            inference_mode=False,
+            limit_test_batches=limit_test_batches,
+            logger=lightning_logger(),
+        )
+        self.run_id: Optional[str] = None
+
+    def run(self):
+        if self.run_id:
+            raise RuntimeError(
+                "Evaluation engine has already been run. Create a new LightningEngine "
+                "instance to perform a subsequent run."
+            )
+
+        self.run_id = self.active_run.info.run_id
+        self.trainer.test(
+            self.task, dataloaders=self.task.evaluation.dataset.test_dataset
+        )
+        return dict(
+            compute=self.task.evaluation.metric.profiler.results(),
+            metrics=self.trainer.callback_metrics,
+        )
