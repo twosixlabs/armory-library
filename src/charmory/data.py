@@ -39,6 +39,17 @@ def _collate_image_classification(image_key, label_key):
     return collate
 
 
+def _collate_object_detection(image_key, objects_key):
+    """Create a collate function that works with object detection samples"""
+
+    def collate(batch):
+        x = np.asarray([sample[image_key] for sample in batch])
+        y = [sample[objects_key] for sample in batch]
+        return x, y
+
+    return collate
+
+
 @track_init_params()
 class JaticVisionDatasetGenerator(ArmoryDataGenerator):
     """
@@ -65,6 +76,43 @@ class JaticVisionDatasetGenerator(ArmoryDataGenerator):
                     batch_size=batch_size,
                     shuffle=shuffle,
                     collate_fn=_collate_image_classification(image_key, label_key),
+                )
+            ),
+            size=size or len(dataset),
+            batch_size=batch_size,
+            epochs=epochs,
+            preprocessing_fn=preprocessing_fn,
+            label_preprocessing_fn=label_preprocessing_fn,
+            context=context,
+        )
+
+
+@track_init_params()
+class JaticObjectDetectionDatasetGenerator(ArmoryDataGenerator):
+    """
+    Data generator for a JATIC object detection dataset.
+    """
+
+    def __init__(
+        self,
+        dataset,
+        epochs: int,
+        batch_size=1,
+        shuffle=False,
+        image_key="image",
+        objects_key="objects",
+        preprocessing_fn=None,
+        label_preprocessing_fn=None,
+        context=None,
+        size=None,
+    ):
+        super().__init__(
+            generator=_DataLoaderGenerator(
+                DataLoader(
+                    dataset=dataset,
+                    batch_size=batch_size,
+                    shuffle=shuffle,
+                    collate_fn=_collate_object_detection(image_key, objects_key),
                 )
             ),
             size=size or len(dataset),

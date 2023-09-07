@@ -1,8 +1,7 @@
 """
 Example programmatic entrypoint for scenario execution
 """
-import json
-from pprint import pprint
+
 import sys
 
 import art.attacks.evasion
@@ -10,9 +9,10 @@ from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox import load_dataset as load_jatic_dataset
 
 import armory.baseline_models.pytorch.pokemon
+from armory.instrument.config import MetricsLogger
+from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import JaticVisionDatasetGenerator
-from charmory.engine import Engine
 from charmory.evaluation import (
     Attack,
     Dataset,
@@ -22,11 +22,10 @@ from charmory.evaluation import (
     Scenario,
     SysConfig,
 )
-import charmory.scenarios.image_classification
-from charmory.utils import PILtoNumpy_HuggingFace
-from charmory.track import track_params, track_init_params
 from charmory.experimental.scenario_execution import execute_scenario
-
+import charmory.scenarios.image_classification
+from charmory.track import track_init_params, track_params
+from charmory.utils import PILtoNumpy_HuggingFace
 
 BATCH_SIZE = 16
 TRAINING_EPOCHS = 20
@@ -34,7 +33,6 @@ TRAINING_EPOCHS = 20
 
 # Loads Pokemon Classification HuggingFace Example
 Input_Args = ()
-
 
 
 def load_huggingface_dataset():
@@ -123,12 +121,14 @@ def main(argv: list = sys.argv[1:]):
     )
 
     metric = Metric(
-        profiler_type="basic",
-        supported_metrics=["accuracy"],
-        perturbation=["linf"],
-        task=["categorical_accuracy"],
-        means=True,
-        record_metric_per_sample=False,
+        profiler=BasicProfiler(),
+        logger=MetricsLogger(
+            supported_metrics=["accuracy"],
+            perturbation=["linf"],
+            task=["categorical_accuracy"],
+            means=True,
+            record_metric_per_sample=False,
+        ),
     )
 
     sysconfig = SysConfig(gpus=["all"], use_gpu=True)

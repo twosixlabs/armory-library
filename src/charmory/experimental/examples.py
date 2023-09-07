@@ -1,6 +1,8 @@
 import math
 import random
+
 from matplotlib import pyplot as plt
+
 
 def show_samples(dataset, samples=3, n_col=3):
     """shows random selections from dataset with `samples` distinct labels"""
@@ -13,7 +15,6 @@ def show_samples(dataset, samples=3, n_col=3):
         if label not in chosen_labels:
             chosen.append(choice)
             chosen_labels.add(label)
-
 
     n_row = math.ceil(samples / n_col)
     _, axs = plt.subplots(n_row, n_col)

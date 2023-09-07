@@ -2,8 +2,6 @@
 Test cases for compute metrics
 """
 
-import pytest
-
 from armory.metrics import compute
 
 # pytestmark = pytest.mark.unit
@@ -73,35 +71,3 @@ def test_deterministic(caplog):
         assert "Ordered by: cumulative time" in value
         assert "ncalls  tottime  percall  cumtime  percall" in value
         assert value.count("\n") > 5
-
-
-def test_profiler_class_and_profiler_from_config():
-    metrics_config = {
-        "means": True,
-        "perturbation": "linf",
-        "record_metric_per_sample": False,
-        "task": ["categorical_accuracy"],
-    }
-
-    assert compute.profiler_class() is compute.NullProfiler
-    assert isinstance(
-        compute.profiler_from_config(metrics_config), compute.NullProfiler
-    )
-
-    for name, Profiler in [
-        (None, compute.NullProfiler),
-        ("basic", compute.BasicProfiler),
-        ("Basic", compute.BasicProfiler),
-        ("deterministic", compute.DeterministicProfiler),
-        ("Deterministic", compute.DeterministicProfiler),
-    ]:
-        assert compute.profiler_class(name=name) is Profiler
-        metrics_config["profiler_type"] = name
-        assert isinstance(compute.profiler_from_config(metrics_config), Profiler)
-
-    name = "not a profiler name"
-    with pytest.raises(KeyError):
-        compute.profiler_class(name)
-    with pytest.raises(KeyError):
-        metrics_config["profiler_type"] = name
-        compute.profiler_from_config(metrics_config)
