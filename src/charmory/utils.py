@@ -55,14 +55,8 @@ def adapt_jatic_image_classification_model_for_art(model):
 
 
 def adapt_jatic_object_detection_model_for_art(model):
-    orig_forward = model.forward
-
-    def patched_forward(data, *args):
-        result = orig_forward(data)
-        predictions = []
-        for item in zip(result.boxes, result.labels, result.scores):
-            predictions.append(dict(boxes=item[0], labels=item[1], scores=item[2]))
-        return predictions
+    def patched_forward(images, targets=None):
+        return model._model(images, targets)
 
     model.forward = patched_forward
 
