@@ -1,3 +1,4 @@
+import argparse
 from pprint import pprint
 
 import art.attacks.evasion
@@ -19,7 +20,30 @@ from charmory.utils import (
 )
 
 
-def main():
+def get_cli_args():
+    parser = argparse.ArgumentParser(
+        description="Run food classification example using models and datasets from the JATIC toolbox",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--batch-size",
+        default=16,
+        type=int,
+    )
+    parser.add_argument(
+        "--export-every-n-batches",
+        default=5,
+        type=int,
+    )
+    parser.add_argument(
+        "--num-batches",
+        default=5,
+        type=int,
+    )
+    return parser.parse_args()
+
+
+def main(args):
     ###
     # Model
     ###
@@ -64,7 +88,7 @@ def main():
 
     generator = JaticVisionDataLoader(
         dataset=dataset,
-        batch_size=16,
+        batch_size=args.batch_size,
     )
 
     ###
@@ -121,12 +145,14 @@ def main():
     # Engine
     ###
 
-    task = ImageClassificationTask(evaluation, num_classes=12, export_every_n_batches=5)
-    engine = LightningEngine(task, limit_test_batches=5)
+    task = ImageClassificationTask(
+        evaluation, num_classes=12, export_every_n_batches=args.export_every_n_batches
+    )
+    engine = LightningEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()
 
     pprint(results)
 
 
 if __name__ == "__main__":
-    main()
+    main(get_cli_args())
