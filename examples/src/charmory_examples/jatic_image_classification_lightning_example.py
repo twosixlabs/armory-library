@@ -1,5 +1,3 @@
-from pprint import pprint
-
 import art.attacks.evasion
 from art.estimators.classification import PyTorchClassifier
 import jatic_toolbox
@@ -9,8 +7,8 @@ from transformers.image_utils import infer_channel_dimension_format
 
 from armory.metrics.compute import BasicProfiler
 from charmory.data import JaticVisionDatasetGenerator
-from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.experimental.lightning_execution import execute_lightning
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import (
@@ -123,10 +121,12 @@ def main():
     ###
 
     task = ImageClassificationTask(evaluation, num_classes=12, export_every_n_batches=5)
-    engine = LightningEngine(task, limit_test_batches=5)
-    results = engine.run()
+    results = execute_lightning(task, limit_test_batches=5)
 
-    pprint(results)
+    print(results)
+
+    print("JATIC Experiment Complete!")
+    return 0
 
 
 if __name__ == "__main__":

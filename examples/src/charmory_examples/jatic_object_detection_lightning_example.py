@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from PIL import Image
 import albumentations as A
 import art.attacks.evasion
@@ -10,8 +8,8 @@ import numpy as np
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
 from charmory.data import JaticObjectDetectionDatasetGenerator
-from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.experimental.lightning_execution import execute_lightning, print_outputs
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import (
@@ -160,10 +158,12 @@ def main():
         export_every_n_batches=5,
         class_metrics=False,
     )
-    engine = LightningEngine(task, limit_test_batches=10)
-    results = engine.run()
 
-    pprint(results)
+    results = execute_lightning(task, limit_test_batches=10)
+    print_outputs(dataset, model, results)
+
+    print("JATIC Experiment Complete!")
+    return 0
 
 
 if __name__ == "__main__":
