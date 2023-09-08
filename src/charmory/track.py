@@ -19,7 +19,6 @@ from typing import (
     overload,
 )
 
-import lightning.pytorch.loggers as pl_loggers
 import mlflow
 import mlflow.cli
 import mlflow.server
@@ -40,7 +39,7 @@ from armory.logs import log
 _params_stack: List[Dict[str, Any]] = []
 
 
-def _get_current_params() -> Dict[str, Any]:
+def get_current_params() -> Dict[str, Any]:
     """Get the parameters from the current tracking context"""
     if len(_params_stack) == 0:
         _params_stack.append({})
@@ -61,7 +60,7 @@ def track_param(key: str, value: Any):
         key: Parameter name (should be unique or will overwrite previous values)
         value: Parameter value
     """
-    params = _get_current_params()
+    params = get_current_params()
     if key in params:
         log.warning(
             f"Parameter {key} has already been logged with value {params[key]}, "
@@ -74,7 +73,7 @@ def track_param(key: str, value: Any):
 
 def reset_params():
     """Clear all parameters in the current tracking context"""
-    params = _get_current_params()
+    params = get_current_params()
     params.clear()
 
 
@@ -104,7 +103,7 @@ def tracking_context(nested: bool = False):
     """
     new_context = {}
     if nested:
-        new_context = deepcopy(_get_current_params())
+        new_context = deepcopy(get_current_params())
     _params_stack.append(new_context)
     try:
         yield
@@ -172,7 +171,7 @@ def track_params(
         def _wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             _prefix = prefix if prefix else func.__name__
 
-            params = _get_current_params()
+            params = get_current_params()
 
             if f"{_prefix}._func" in params:
                 log.warning(
@@ -265,6 +264,26 @@ def track_init_params(
         return _decorator(_cls)
 
 
+def init_tracking_uri(armory_home: Path) -> str:
+    """
+    Initialize the MLFlow tracking URI.
+
+    If the MLFLOW_TRACKING_URI environment variable is set, no change is made
+    to the default tracking URI. Otherwise, the `mlruns` directory under the
+    given armory home path will be set as the tracking URI.
+
+    Args:
+        armory_home: Path to armory home directory
+
+    Return:
+        Current MLFlow tracking URI
+    """
+    if not os.environ.get("MLFLOW_TRACKING_URI"):
+        uri = armory_home / "mlruns"
+        mlflow.set_tracking_uri(uri)
+    return mlflow.get_tracking_uri()
+
+
 def track_evaluation(
     name: str, description: Optional[str] = None, uri: Optional[Union[str, Path]] = None
 ):
@@ -302,19 +321,9 @@ def track_evaluation(
         description=description,
     )
 
-    mlflow.log_params(_get_current_params())
+    mlflow.log_params(get_current_params())
 
     return run
-
-
-def lightning_logger():
-    active_run = mlflow.active_run()
-    if not active_run:
-        return None
-
-    return pl_loggers.MLFlowLogger(
-        run_id=active_run.info.run_id, tracking_uri=mlflow.get_tracking_uri()
-    )
 
 
 def track_metrics(metrics: Mapping[str, Union[float, Sequence[float], torch.Tensor]]):
