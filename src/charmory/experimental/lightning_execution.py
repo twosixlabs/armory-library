@@ -1,12 +1,13 @@
 from charmory.engine import LightningEngine
 
 
-def execute_lightning(task,limit_test_batches):
-    # Runs basic Lightning Engine example 
+def execute_lightning(task, limit_test_batches):
+    # Runs basic Lightning Engine example
 
     engine = LightningEngine(task, limit_test_batches)
     results = engine.run()
     return results
+
 
 def print_outputs(dataset, model, results):
     print("=" * 64)
