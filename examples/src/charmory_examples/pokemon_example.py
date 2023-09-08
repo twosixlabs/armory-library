@@ -13,17 +13,9 @@ from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import JaticVisionDatasetGenerator
-from charmory.evaluation import (
-    Attack,
-    Dataset,
-    Evaluation,
-    Metric,
-    Model,
-    Scenario,
-    SysConfig,
-)
-from charmory.experimental.scenario_execution import execute_scenario
-import charmory.scenarios.image_classification
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.experimental.lightning_execution import execute_lightning, print_outputs
+from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import PILtoNumpy_HuggingFace
 
@@ -32,7 +24,6 @@ TRAINING_EPOCHS = 20
 
 
 # Loads Pokemon Classification HuggingFace Example
-Input_Args = ()
 
 
 def load_huggingface_dataset():
@@ -115,11 +106,6 @@ def main(argv: list = sys.argv[1:]):
         use_label_for_untargeted=True,
     )
 
-    scenario = Scenario(
-        function=charmory.scenarios.image_classification.ImageClassificationTask,
-        kwargs={},
-    )
-
     metric = Metric(
         profiler=BasicProfiler(),
         logger=MetricsLogger(
@@ -133,27 +119,25 @@ def main(argv: list = sys.argv[1:]):
 
     sysconfig = SysConfig(gpus=["all"], use_gpu=True)
 
-    baseline = Evaluation(
+    evaluation = Evaluation(
         name="pokemon",
         description="Baseline Pokemon image classification",
         author="msw@example.com",
         dataset=dataset,
         model=model,
         attack=attack,
-        scenario=scenario,
+        scenario=None,
         metric=metric,
         sysconfig=sysconfig,
     )
 
-    execute_scenario(baseline, TRAINING_EPOCHS)
+    task = ImageClassificationTask(
+        evaluation, num_classes=150, export_every_n_batches=5
+    )
+    results = execute_lightning(task, TRAINING_EPOCHS)
 
-    print("=" * 64)
-    print(dataset.train_dataset)
-    print(dataset.test_dataset)
-    print("-" * 64)
-    print(model)
+    print_outputs(dataset, model, results)
 
-    print("=" * 64)
     print("Pokemon Experiment Complete!")
     return 0
 

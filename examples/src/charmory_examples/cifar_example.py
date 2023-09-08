@@ -1,8 +1,6 @@
 """
 Example programmatic entrypoint for scenario execution
 """
-import json
-from pprint import pprint
 import sys
 
 import art.attacks.evasion
@@ -12,17 +10,9 @@ import armory.data.datasets
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.engine import Engine
-from charmory.evaluation import (
-    Attack,
-    Dataset,
-    Evaluation,
-    Metric,
-    Model,
-    Scenario,
-    SysConfig,
-)
-import charmory.scenarios.image_classification
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.experimental.lightning_execution import execute_lightning, print_outputs
+from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import apply_art_preprocessor_defense
 
@@ -88,12 +78,6 @@ def main(argv: list = sys.argv[1:]):
         use_label_for_untargeted=True,
     )
 
-    scenario = Scenario(
-        function=charmory.scenarios.image_classification.ImageClassificationTask,
-        kwargs={},
-        export_batches=True,
-    )
-
     metric = Metric(
         profiler=BasicProfiler(),
         logger=MetricsLogger(
@@ -107,36 +91,23 @@ def main(argv: list = sys.argv[1:]):
 
     sysconfig = SysConfig(gpus=["all"], use_gpu=True)
 
-    baseline = Evaluation(
+    evaluation = Evaluation(
         name="cifar_baseline",
         description="Baseline cifar10 image classification",
         author="msw@example.com",
         dataset=dataset,
         model=model,
         attack=attack,
-        scenario=scenario,
+        scenario=None,
         metric=metric,
         sysconfig=sysconfig,
     )
 
-    print(f"Starting Demo for {baseline.name}")
+    task = ImageClassificationTask(evaluation, num_classes=10, export_every_n_batches=5)
 
-    cifar_engine = Engine(baseline)
-    cifar_engine.train(nb_epochs=20)
-    results = cifar_engine.run()
+    results = execute_lightning(task, limit_test_batches=5)
+    print_outputs(dataset, model, results)
 
-    print("=" * 64)
-    # print(json.dumps(baseline.asdict(), indent=4, sort_keys=True))
-    # Have altered the json formatted printing in favor for a pprint as the new Evaluation objects contain nonseriabalizable fields which create issues
-    pprint(baseline)
-    print("-" * 64)
-    print(
-        json.dumps(
-            results, default=lambda o: "<not serializable>", indent=4, sort_keys=True
-        )
-    )
-
-    print("=" * 64)
     print("CIFAR10 Experiment Complete!")
     return 0
 
