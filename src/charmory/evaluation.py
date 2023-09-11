@@ -98,6 +98,7 @@ class SysConfig:
         use_gpu: A boolean indicating whether to use a GPU.
         armory_home: The home directory for armory.
     """
+
     gpus: List[str] = field(default_factory=list)
     use_gpu: bool = False
     armory_home: Path = Path(os.getenv("ARMORY_HOME", Path.home() / ".armory"))
