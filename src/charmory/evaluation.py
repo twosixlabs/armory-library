@@ -117,7 +117,6 @@ class SysConfig:
             "dataset_dir": self.armory_home / "datasets",
             "saved_model_dir": self.armory_home / "saved_models",
             "output_dir": self.armory_home / "outputs",
-            "external_repo_dir": self.armory_home / "tmp" / "external",
         }
 
     def _create_directories_and_update_env_vars(self):
