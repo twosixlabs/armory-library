@@ -30,6 +30,7 @@ Example:
 """
 
 import json
+import os
 from typing import Callable
 
 try:
@@ -257,7 +258,10 @@ class Hub:
         self.default_writers = []
         self.closed = False
         self.export_subdir = "saved_samples"
-        self._set_output_dir(get_configured_path("OUTPUT_DIR", "outputs"))
+
+        _cache_dir = get_configured_path("ARMORY_HOME")
+        outputs_path = os.path.join(_cache_dir, "outputs")
+        self._set_output_dir(outputs_path)
 
     def _set_output_dir(self, name):
         self.output_dir = name

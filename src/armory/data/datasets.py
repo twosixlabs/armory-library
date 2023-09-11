@@ -454,7 +454,8 @@ def _generator_from_tfds(
     """
 
     if dataset_dir is None:
-        dataset_dir = get_configured_path("DATASET_DIR", "datasets")
+        cache_path = get_configured_path("ARMORY_HOME")
+        dataset_dir = os.path.join(cache_path, "datasets")
 
     if cache_dataset:
         _cache_dataset(
