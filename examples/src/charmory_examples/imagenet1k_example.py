@@ -6,10 +6,13 @@ from pprint import pprint
 import sys
 
 import art.attacks.evasion
+from art.estimators.classification import PyTorchClassifier
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox import load_dataset as load_jatic_dataset
+from jatic_toolbox import load_model as load_jatic_model
+import torch
+import torch.nn as nn
 
-from armory.baseline_models.pytorch.imagenet1k import get_art_model
 import armory.version
 from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import Engine
@@ -23,8 +26,11 @@ from charmory.evaluation import (
     SysConfig,
 )
 import charmory.scenarios.image_classification
-from charmory.track import track_init_params
-from charmory.utils import PILtoNumpy_HuggingFace_Variable_Length
+from charmory.track import track_init_params, track_params
+from charmory.utils import (
+    PILtoNumpy_HuggingFace_Variable_Length,
+    adapt_jatic_image_classification_model_for_art,
+)
 
 BATCH_SIZE = 16
 TRAINING_EPOCHS = 1
@@ -34,7 +40,7 @@ TRAINING_EPOCHS = 1
 
 
 def load_huggingface_dataset():
-    transform = PILtoNumpy_HuggingFace_Variable_Length()
+    transform = PILtoNumpy_HuggingFace_Variable_Length(size=(500, 500))
     train_dataset = load_jatic_dataset(
         provider="huggingface",
         dataset_name="imagenet-1k",
@@ -69,6 +75,28 @@ def load_huggingface_dataset():
     return train_dataset_generator, test_dataset_generator
 
 
+def load_torchvision_model():
+    print("Loading torchvision model from jatic_toolbox")
+    model = track_params(load_jatic_model)(
+        provider="torchvision",
+        model_name="resnet34",
+        task="image-classification",
+    )
+    adapt_jatic_image_classification_model_for_art(model)
+
+    classifier = track_init_params(PyTorchClassifier)(
+        model,
+        loss=nn.CrossEntropyLoss(),
+        optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
+        input_shape=(224, 224, 3),
+        channels_first=False,
+        nb_classes=1000,
+        clip_values=(0.0, 1.0),
+    )
+
+    return classifier
+
+
 def main(argv: list = sys.argv[1:]):
     if len(argv) > 0:
         if "--version" in argv:
@@ -78,12 +106,7 @@ def main(argv: list = sys.argv[1:]):
 
     print("Armory: Example Programmatic Entrypoint for Scenario Execution")
 
-    image_net_model = get_art_model(
-        model_kwargs={},
-        wrapper_kwargs={},
-        weights_path=None,
-    )
-
+    image_net_model = load_torchvision_model()
     model = Model(
         name="ImageNet1k",
         model=image_net_model,
