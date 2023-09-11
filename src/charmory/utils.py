@@ -277,15 +277,15 @@ class PILtoNumpy_HuggingFace_Variable_Length(object):
         the sample dict with converted PIL Image to numpy array.
     """
 
-    def __call__(self, sample):
-        newsize = (500, 500)
+    def __init__(self, size=(500, 500)):
+        self.size = size
 
-        sample["image"] = [img.resize(newsize) for img in sample["image"]]
+    def __call__(self, sample):
+        sample["image"] = [img.resize(self.size) for img in sample["image"]]
         sample["image"] = [np.asarray(img) for img in sample["image"]]
-        if len(sample["image"][0].shape) == 3:
-            sample["image"] = [img.transpose(2, 0, 1) for img in sample["image"]]
-        else:
+        if len(sample["image"][0].shape) != 3:
+            # Convert from black/white to RGB
             sample["image"] = [np.dstack((img, img, img)) for img in sample["image"]]
-            sample["image"] = [img.transpose(2, 0, 1) for img in sample["image"]]
+        sample["image"] = [img.transpose(2, 0, 1) for img in sample["image"]]
 
         return sample
