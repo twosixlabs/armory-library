@@ -48,7 +48,8 @@ def maybe_download_weights_from_s3(
     filepath = os.path.join(saved_model_dir, weights_file)
 
     if saved_model_dir is None:
-        saved_model_dir = get_configured_path("SAVED_MODEL_DIR", "saved_models")
+        cache_path = get_configured_path("ARMORY_HOME")
+        saved_model_dir = os.path.join(cache_path, "saved_models")
 
     if os.path.isfile(filepath):
         log.info(f"Using available {weights_file} in Armory `saved_model_dir`")
