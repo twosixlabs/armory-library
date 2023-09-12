@@ -7,8 +7,8 @@ import os
 from pathlib import Path
 
 
-def get_configured_path(env_var: str) -> str:
-    env_var_value = os.getenv(env_var)
+def get_armory_home() -> str:
+    env_var_value = os.getenv("ARMORY_HOME")
 
     if env_var_value is None:
         env_var_value = str(Path.home() / ".armory")

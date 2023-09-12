@@ -23,7 +23,7 @@ from armory.metrics.common import (
     result_formatter,
     set_namespace,
 )
-from armory.utils.configuration import get_configured_path
+from armory.utils.configuration import get_armory_home
 
 aggregate = MetricNameSpace()
 population = MetricNameSpace()
@@ -136,8 +136,8 @@ class Entailment:
                 )
 
         if cache_dir is None:
-            _saved_model_dir = get_configured_path("SAVED_MODEL_DIR", "saved_models")
-            cache_dir = os.path.join(_saved_model_dir, "huggingface")
+            _saved_model_dir = get_armory_home()
+            cache_dir = os.path.join(_saved_model_dir, "saved_models", "huggingface")
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
         self.model = AutoModelForSequenceClassification.from_pretrained(

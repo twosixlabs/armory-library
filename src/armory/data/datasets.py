@@ -37,7 +37,7 @@ from armory.data.utils import (
 )
 from armory.data.xview import xview as xv  # noqa: F401
 from armory.logs import log
-from armory.utils.configuration import get_configured_path
+from armory.utils.configuration import get_armory_home
 
 os.environ["KMP_WARNINGS"] = "0"
 
@@ -454,8 +454,8 @@ def _generator_from_tfds(
     """
 
     if dataset_dir is None:
-        cache_path = get_configured_path("ARMORY_HOME")
-        dataset_dir = os.path.join(cache_path, "datasets")
+        _cache_path = get_armory_home()
+        dataset_dir = os.path.join(_cache_path, "datasets")
 
     if cache_dataset:
         _cache_dataset(
