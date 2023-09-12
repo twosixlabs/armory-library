@@ -52,6 +52,9 @@ dependencies = [
 
     # tracking
     "mlflow",
+
+    # metrics
+    "transformers",
 ]
 
 [project.urls]
