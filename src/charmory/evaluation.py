@@ -96,37 +96,25 @@ class SysConfig:
     Attributes:
         gpus: A list of GPU devices.
         use_gpu: A boolean indicating whether to use a GPU.
-        paths: A dictionary of paths for system directories.
         armory_home: The home directory for armory.
     """
 
     gpus: List[str] = field(default_factory=list)
     use_gpu: bool = False
-    paths: Dict[str, Path] = field(init=False)
     armory_home: Path = Path(os.getenv("ARMORY_HOME", Path.home() / ".armory"))
+    # When using torchvision the user must specify a directory to download the dataset into.
+    dataset_cache: Path = Path(
+        os.getenv(
+            "ARMORY_DATASET_CACHE", Path.home() / ".cache" / "armory" / "dataset_cache"
+        )
+    )
 
     def __post_init__(self):
-        self._initialize_paths()
-        self._create_directories_and_update_env_vars()
+        self.armory_home.mkdir(parents=True, exist_ok=True)
+        self.dataset_cache.mkdir(parents=True, exist_ok=True)
 
-    def _initialize_paths(self):
-        """Construct the paths for each directory. Some of these are old keys used in armory version <= 0.19.0
-        and will be deprecated in the future. Please use `armory_home` instead."""
-        self.paths = {
-            "armory_home": self.armory_home,
-            "dataset_dir": self.armory_home / "datasets",
-            "saved_model_dir": self.armory_home / "saved_models",
-            "output_dir": self.armory_home / "outputs",
-            "external_repo_dir": self.armory_home / "tmp" / "external",
-        }
-
-    def _create_directories_and_update_env_vars(self):
-        """Create directories if they do not exist and update environment variables."""
-        for key, config_path in self.paths.items():
-            # Set environment variable
-            os.environ[key.upper()] = str(config_path)
-            # Create directory if it does not exist
-            config_path.mkdir(parents=True, exist_ok=True)
+        os.environ["ARMORY_HOME"] = self.armory_home.as_posix()
+        os.environ["ARMORY_DATASET_CACHE"] = self.dataset_cache.as_posix()
 
 
 @dataclass
