@@ -172,7 +172,6 @@ def main(argv: list = sys.argv[1:]):
 
     task = ObjectDetectionTask(
         evaluation,
-        skip_attack=True,
         export_every_n_batches=5,
         class_metrics=False,
     )
