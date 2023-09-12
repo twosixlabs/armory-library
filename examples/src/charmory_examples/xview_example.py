@@ -126,7 +126,7 @@ def main(argv: list = sys.argv[1:]):
         test_dataset=test_dataset_generator,
     )
     eval_model = Model(
-        name="XVIEW",
+        name="fasterrcnn-resnet-50",
         model=detector,
     )
 
