@@ -8,9 +8,11 @@ import time
 from typing import TYPE_CHECKING, Any, Optional
 
 import lightning.pytorch as pl
+from lightning.pytorch.loggers import MLFlowLogger
 import torch
 
 from charmory.evaluation import Evaluation
+from charmory.export import Exporter, MlflowExporter
 
 
 class BaseEvaluationTask(pl.LightningModule, ABC):
@@ -32,6 +34,7 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
             f"{evaluation.sysconfig.paths['output_dir']}/{self.evaluation_id}"
         )
         self.export_every_n_batches = export_every_n_batches
+        self._exporter: Optional[Exporter] = None
 
     ###
     # Inner classes
@@ -48,6 +51,20 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         y_target: Optional[Any] = None
         x_adv: Optional[Any] = None
         y_pred_adv: Optional[Any] = None
+
+    ###
+    # Properties
+    ###
+
+    @property
+    def exporter(self) -> Exporter:
+        if self._exporter is None:
+            logger = self.logger
+            if isinstance(logger, MLFlowLogger):
+                self._exporter = MlflowExporter(logger.experiment, logger.run_id)
+            else:
+                self._exporter = Exporter()
+        return self._exporter
 
     ###
     # Internal methods
