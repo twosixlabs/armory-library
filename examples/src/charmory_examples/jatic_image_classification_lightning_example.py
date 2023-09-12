@@ -1,3 +1,5 @@
+from pprint import pprint
+
 import art.attacks.evasion
 from art.estimators.classification import PyTorchClassifier
 import jatic_toolbox
@@ -123,7 +125,7 @@ def main():
     task = ImageClassificationTask(evaluation, num_classes=12, export_every_n_batches=5)
     results = execute_lightning(task, limit_test_batches=5)
 
-    print(results)
+    pprint(results)
 
     print("JATIC Experiment Complete!")
     return 0
