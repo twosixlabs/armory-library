@@ -30,9 +30,6 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         self.skip_benign = skip_benign
         self.skip_attack = skip_attack
         self.evaluation_id = str(time.time())
-        self.export_dir = (
-            f"{evaluation.sysconfig.paths['output_dir']}/{self.evaluation_id}"
-        )
         self.export_every_n_batches = export_every_n_batches
         self._exporter: Optional[Exporter] = None
 
