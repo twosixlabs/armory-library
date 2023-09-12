@@ -4,7 +4,6 @@ Base Armory evaluation task
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-import time
 from typing import TYPE_CHECKING, Any, Optional
 
 import lightning.pytorch as pl
@@ -29,7 +28,6 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         self.evaluation = evaluation
         self.skip_benign = skip_benign
         self.skip_attack = skip_attack
-        self.evaluation_id = str(time.time())
         self.export_every_n_batches = export_every_n_batches
         self._exporter: Optional[Exporter] = None
 
