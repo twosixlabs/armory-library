@@ -41,7 +41,10 @@ class JaticImageClassificationDataset(ArmoryDataset):
     """Dataset wrapper with a pre-applied adapter for JATIC image classification datasets"""
 
     def __init__(
-        self, dataset: Dataset, image_key: str = "image", label_key: str = "label"
+        self,
+        dataset: "jatic_toolbox.protocols.VisionDataset",
+        image_key: str = "image",
+        label_key: str = "label",
     ):
         super().__init__(dataset, self._adapt)
         self._image_key = image_key
@@ -65,7 +68,7 @@ class ArmoryDataLoader(DataLoader):
 
     @staticmethod
     def _collate(batch):
-        x, y = list(zip(*batch))
+        x, y = zip(*batch)
         return np.asarray(x), np.asarray(y)
 
 
