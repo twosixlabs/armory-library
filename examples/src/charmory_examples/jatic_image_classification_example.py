@@ -38,7 +38,7 @@ import charmory.scenarios.image_classification
 from charmory.track import track_init_params, track_params
 from charmory.utils import (
     adapt_jatic_image_classification_model_for_art,
-    create_jatic_image_classification_dataset_transform,
+    create_jatic_dataset_transform,
 )
 
 BATCH_SIZE = 16
@@ -139,7 +139,7 @@ def load_huggingface_model():
         clip_values=(0.0, 1.0),
     )
 
-    transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
+    transform = create_jatic_dataset_transform(model.preprocessor)
 
     return classifier, transform
 
@@ -163,7 +163,7 @@ def load_torchvision_model():
         clip_values=(0.0, 1.0),
     )
 
-    transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
+    transform = create_jatic_dataset_transform(model.preprocessor)
 
     return classifier, transform
 

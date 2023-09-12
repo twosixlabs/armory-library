@@ -17,7 +17,7 @@ from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import (
     adapt_jatic_object_detection_model_for_art,
-    create_jatic_image_classification_dataset_transform,
+    create_jatic_dataset_transform,
 )
 
 
@@ -80,9 +80,7 @@ def main(args):
     dataset._dataset = dataset._dataset.filter(filter)
     print(f"Dataset length after filtering: {len(dataset)}")
 
-    model_transform = create_jatic_image_classification_dataset_transform(
-        model.preprocessor
-    )
+    model_transform = create_jatic_dataset_transform(model.preprocessor)
 
     img_transforms = A.Compose(
         [

@@ -115,16 +115,14 @@ def apply_art_preprocessor_defense(estimator: BaseEstimator, defense: Preprocess
     estimator.set_params(preprocessing_defences=defenses)
 
 
-def create_jatic_image_classification_dataset_transform(
-    preprocessor, image_key="image"
-):
+def create_jatic_dataset_transform(preprocessor, image_key="image"):
     """
-    Create a transform function that can be applied to JATIC-wrapped image
-    classification datasets using the preprocessor from a JATIC-wrapped model.
+    Create a transform function that can be applied to JATIC-wrapped datasets
+    using the preprocessor from a JATIC-wrapped model.
 
     Example::
 
-        from charmory.utils import create_jatic_image_classification_dataset_transform
+        from charmory.utils import create_jatic_dataset_transform
         from jatic_toolbox import load_dataset, load_model
 
         model = load_model(
@@ -132,7 +130,7 @@ def create_jatic_image_classification_dataset_transform(
             model_name="microsoft/resnet-18",
             task="image-classification",
         )
-        transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
+        transform = create_jatic_dataset_transform(model.preprocessor)
 
         dataset = load_dataset(
             provider="huggingface",
@@ -155,10 +153,6 @@ def create_jatic_image_classification_dataset_transform(
 
     def transform(sample):
         transformed = deepcopy(sample)
-        # temporary hack because the JATIC-toolbox HuggingFace model
-        # wrapper doesn't work with non-sequence data
-        # TODO remove the else-block when JATIC-toolbox updates the HuggingFace
-        # model wrapper to support non-sequence data in the preprocessor
         if isinstance(sample[image_key], Sequence):
             transformed[image_key] = [
                 img.numpy() for img in preprocessor(sample[image_key])["image"]
