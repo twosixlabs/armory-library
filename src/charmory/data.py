@@ -2,16 +2,71 @@
 
 # This could get merged with armory.data.datasets
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Tuple
 
 import numpy as np
 from torch.utils.data.dataloader import DataLoader
+from torch.utils.data.dataset import Dataset
 
 if TYPE_CHECKING:
     import jatic_toolbox.protocols
 
 from armory.data.datasets import ArmoryDataGenerator
 from charmory.track import track_init_params
+
+DatasetOutputAdapter = Callable[..., Tuple[np.ndarray, np.ndarray]]
+"""
+An adapter for dataset samples. The output must be a tuple of sample data and
+label data.
+"""
+
+
+class ArmoryDataset(Dataset):
+    """Wrapper around a dataset to apply an adapter to all samples obtained from the dataset"""
+
+    def __init__(self, dataset: Dataset, adapter: DatasetOutputAdapter):
+        self._dataset = dataset
+        self._adapter = adapter
+
+    def __len__(self):
+        return len(self._dataset)  # type: ignore
+        # type: ignore because PyTorch omits __len__ in the definition of the
+        # Dataset base class for a particular reason (see pytorch/torch/utils/data/sampler.py)
+
+    def __getitem__(self, index) -> Tuple[np.ndarray, np.ndarray]:
+        return self._adapter(self._dataset[index])
+
+
+class JaticImageClassificationDataset(ArmoryDataset):
+    """Dataset wrapper with a pre-applied adapter for JATIC image classification datasets"""
+
+    def __init__(
+        self, dataset: Dataset, image_key: str = "image", label_key: str = "label"
+    ):
+        super().__init__(dataset, self._adapt)
+        self._image_key = image_key
+        self._label_key = label_key
+
+    def _adapt(self, sample) -> Tuple[np.ndarray, np.ndarray]:
+        x = np.asarray(sample[self._image_key])
+        y = sample[self._label_key]
+        return x, y
+
+
+class ArmoryDataLoader(DataLoader):
+    """
+    Customization of the PyTorch DataLoader to produce numpy arrays instead of
+    Tensors, as required by ART
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.pop("collate_fn", None)
+        super().__init__(*args, collate_fn=self._collate, **kwargs)
+
+    @staticmethod
+    def _collate(batch):
+        x, y = list(zip(*batch))
+        return np.asarray(x), np.asarray(y)
 
 
 class _DataLoaderGenerator:
