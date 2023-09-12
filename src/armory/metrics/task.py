@@ -9,6 +9,8 @@ import os
 import numpy as np
 from tidecv import TIDE
 import tidecv.data
+import torch
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from armory.data.adversarial.apricot_metadata import (
     ADV_PATCH_MAGIC_NUMBER_LABEL_ID,
@@ -21,8 +23,7 @@ from armory.metrics.common import (
     result_formatter,
     set_namespace,
 )
-from armory.utils.configuration import get_configured_path
-from armory.utils.external_repo import ExternalPipInstalledImport
+from armory.utils.configuration import get_armory_home
 
 aggregate = MetricNameSpace()
 population = MetricNameSpace()
@@ -135,11 +136,8 @@ class Entailment:
                 )
 
         if cache_dir is None:
-            _saved_model_dir = get_configured_path("SAVED_MODEL_DIR", "saved_models")
-            cache_dir = os.path.join(_saved_model_dir, "huggingface")
-
-        with ExternalPipInstalledImport(package="transformers"):
-            from transformers import AutoModelForSequenceClassification, AutoTokenizer
+            _saved_model_dir = get_armory_home()
+            cache_dir = os.path.join(_saved_model_dir, "saved_models", "huggingface")
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
         self.model = AutoModelForSequenceClassification.from_pretrained(
@@ -156,9 +154,9 @@ class Entailment:
         )
 
     def __call__(self, y, y_pred):
-        import torch
-
-        # In Armory, y is stored as byte strings, and y_pred is stored as strings
+        """
+        In Armory, y is stored as byte strings, and y_pred is stored as strings
+        """
         y = np.array(
             [y_i.decode("utf-8") if isinstance(y_i, bytes) else y_i for y_i in y]
         )
