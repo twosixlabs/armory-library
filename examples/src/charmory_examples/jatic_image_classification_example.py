@@ -201,7 +201,7 @@ def main():
     )
 
     model = Model(
-        name="ResNet-18",
+        name="BEiT-finetuned",
         model=loaded_model,
     )
 
