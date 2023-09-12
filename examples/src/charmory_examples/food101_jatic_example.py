@@ -19,14 +19,7 @@ from charmory.utils import PILtoNumpy
 BATCH_SIZE = 16
 TRAINING_EPOCHS = 1
 
-
-def join_string(list_string):
-    new_string = "/".join(list_string)
-    return new_string
-
-
-path = str(pathlib.Path().resolve()).split("/")[:3]
-ROOT = join_string(path) + "/cache"
+ROOT = str((pathlib.Path() / "cache").resolve())
 
 
 def load_torchvision_dataset(root_path):
