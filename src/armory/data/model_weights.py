@@ -5,7 +5,7 @@ import os
 
 from armory.data.utils import _read_validate_scenario_config, download_file_from_s3
 from armory.logs import log
-from armory.utils.configuration import get_configured_path
+from armory.utils.configuration import get_armory_home
 
 
 def download_all(download_config, scenario):
@@ -25,8 +25,8 @@ def _download_weights(weights_file, force_download=False):
     if not weights_file:
         return
 
-    saved_model_dir = get_configured_path("SAVED_MODEL_DIR", "saved_models")
-    filepath = os.path.join(saved_model_dir, weights_file)
+    saved_model_dir = get_armory_home()
+    filepath = os.path.join(saved_model_dir, "saved_models", weights_file)
 
     if os.path.isfile(filepath) and not force_download:
         log.info(f"Model weights file {filepath} found, skipping.")

@@ -77,7 +77,6 @@ import numpy as np
 import requests
 
 from armory.docker.management import ManagementInstance
-from armory.utils.external_repo import download_and_extract_repos
 from armory.logs import log
 # ...
 ```
