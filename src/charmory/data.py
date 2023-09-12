@@ -114,31 +114,6 @@ def _collate_object_detection(image_key, objects_key):
 
 
 @track_init_params()
-class JaticVisionDataLoader(DataLoader):
-    """
-    Data loader for a JATIC image classification dataset.
-    """
-
-    def __init__(
-        self,
-        dataset: "jatic_toolbox.protocols.VisionDataset",
-        batch_size: int = 1,
-        shuffle: bool = False,
-        image_key: str = "image",
-        label_key: str = "label",
-        **kwargs,
-    ):
-        kwargs.pop("collate_fn", None)
-        super().__init__(
-            dataset=dataset,
-            batch_size=batch_size,
-            shuffle=shuffle,
-            collate_fn=_collate_image_classification(image_key, label_key),
-            **kwargs,
-        )
-
-
-@track_init_params()
 class JaticObjectDetectionDataLoader(DataLoader):
     """
     Data loader for a JATIC object detection dataset.
