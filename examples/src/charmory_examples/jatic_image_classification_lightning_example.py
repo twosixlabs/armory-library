@@ -12,12 +12,10 @@ from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.model import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
-from charmory.utils import (
-    adapt_jatic_image_classification_model_for_art,
-    create_jatic_dataset_transform,
-)
+from charmory.utils import create_jatic_dataset_transform
 
 
 def get_cli_args():
@@ -52,10 +50,9 @@ def main(args):
         model_name="Kaludi/food-category-classification-v2.0",
         task="image-classification",
     )
-    adapt_jatic_image_classification_model_for_art(model)
 
     classifier = track_init_params(PyTorchClassifier)(
-        model,
+        JaticImageClassificationModel(model),
         loss=torch.nn.CrossEntropyLoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
         input_shape=(224, 224, 3),
