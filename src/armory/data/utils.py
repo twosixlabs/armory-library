@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 from armory.data.progress_percentage import ProgressPercentage, ProgressPercentageUpload
 from armory.logs import is_progress, log
-from armory.utils.configuration import get_configured_path, get_verify_ssl
+from armory.utils.configuration import get_armory_home, get_verify_ssl
 
 CHECKSUMS_DIRS = []
 
@@ -48,8 +48,8 @@ def maybe_download_weights_from_s3(
     filepath = os.path.join(saved_model_dir, weights_file)
 
     if saved_model_dir is None:
-        cache_path = get_configured_path("ARMORY_HOME")
-        saved_model_dir = os.path.join(cache_path, "saved_models")
+        _cache_path = get_armory_home()
+        saved_model_dir = os.path.join(_cache_path, "saved_models")
 
     if os.path.isfile(filepath):
         log.info(f"Using available {weights_file} in Armory `saved_model_dir`")

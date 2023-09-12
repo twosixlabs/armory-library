@@ -40,7 +40,7 @@ except ImportError:
     json_utils = None
 
 from armory import log
-from armory.utils.configuration import get_configured_path
+from armory.utils.configuration import get_armory_home
 
 _PROBES = {}
 _HUB = None
@@ -259,7 +259,7 @@ class Hub:
         self.closed = False
         self.export_subdir = "saved_samples"
 
-        _cache_dir = get_configured_path("ARMORY_HOME")
+        _cache_dir = get_armory_home()
         outputs_path = os.path.join(_cache_dir, "outputs")
         self._set_output_dir(outputs_path)
 
