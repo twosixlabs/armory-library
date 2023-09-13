@@ -1,4 +1,4 @@
-import pathlib
+import os
 import sys
 
 import art.attacks.evasion
@@ -9,17 +9,19 @@ import armory.baseline_models.pytorch.food101
 import armory.data.datasets
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
+from armory.utils.configuration import get_armory_home
 import armory.version
 from charmory.data import JaticVisionDatasetGenerator
+from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
-from charmory.experimental.lightning_execution import execute_lightning, print_outputs
+from charmory.experimental.example_results import print_outputs
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.utils import PILtoNumpy
 
 BATCH_SIZE = 16
 TRAINING_EPOCHS = 1
 
-ROOT = str((pathlib.Path() / "cache").resolve())
+ROOT = os.path.join(get_armory_home(), "datasets")
 
 
 def load_torchvision_dataset(root_path):
@@ -135,7 +137,8 @@ def main():
         evaluation, num_classes=101, export_every_n_batches=5
     )
 
-    results = execute_lightning(task, limit_test_batches=5)
+    engine = LightningEngine(task, limit_test_batches=5)
+    results = engine.run()
     print_outputs(dataset, model, results)
 
     print("JATIC Experiment Complete!")
