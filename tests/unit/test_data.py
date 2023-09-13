@@ -32,10 +32,12 @@ def test_ArmoryDataset_with_custom_adapter(raw_dataset):
     assert_array_equal(y, np.array([4]), strict=True)
 
 
-def test_JaticImageClassificationDataset(raw_dataset):
-    dataset = JaticImageClassificationDataset(
-        raw_dataset, image_key="data", label_key="target"
-    )
+def test_JaticImageClassificationDataset():
+    raw_dataset = [
+        {"image": [1, 2, 3], "label": 4},
+        {"image": [5, 6, 7], "label": 8},
+    ]
+    dataset = JaticImageClassificationDataset(raw_dataset)
     assert len(dataset) == 2
 
     x, y = dataset[1]

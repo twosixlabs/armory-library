@@ -36,7 +36,7 @@ class ArmoryDataset(Dataset):
 
 
 class MapSampleDataset(ArmoryDataset):
-    """Dataset wrapper for datasets with map-like samples"""
+    """Dataset wrapper with a pre-applied adapter to adapt map-like samples to tuples"""
 
     def __init__(
         self,
@@ -60,10 +60,8 @@ class JaticImageClassificationDataset(MapSampleDataset):
     def __init__(
         self,
         dataset: "jatic_toolbox.protocols.VisionDataset",
-        image_key: str = "image",
-        label_key: str = "label",
     ):
-        super().__init__(dataset, image_key, label_key)
+        super().__init__(dataset, x_key="image", y_key="label")
 
 
 class JaticObjectDetectionDataset(MapSampleDataset):
@@ -72,10 +70,8 @@ class JaticObjectDetectionDataset(MapSampleDataset):
     def __init__(
         self,
         dataset: "jatic_toolbox.protocols.ObjectDetectionDataset",
-        image_key: str = "image",
-        objects_key: str = "objects",
     ):
-        super().__init__(dataset, image_key, objects_key)
+        super().__init__(dataset, x_key="image", y_key="objects")
 
 
 class ArmoryDataLoader(DataLoader):
