@@ -1,5 +1,6 @@
 from pprint import pprint
 
+
 def print_outputs(dataset, model, results):
     print("=" * 64)
     pprint(dataset.train_dataset)
