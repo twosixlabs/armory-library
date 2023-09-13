@@ -24,7 +24,7 @@ from charmory.utils import (
     create_jatic_image_classification_dataset_transform,
 )
 
-BATCH_SIZE = 16
+BATCH_SIZE = 4
 TRAINING_EPOCHS = 20
 import torch
 
