@@ -2,7 +2,7 @@
 
 # This could get merged with armory.data.datasets
 
-from typing import TYPE_CHECKING, Callable, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Tuple
 
 import numpy as np
 from torch.utils.data.dataloader import DataLoader
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 from armory.data.datasets import ArmoryDataGenerator
 from charmory.track import track_init_params
 
-DatasetOutputAdapter = Callable[..., Tuple[np.ndarray, np.ndarray]]
+DatasetOutputAdapter = Callable[..., Tuple[Any, Any]]
 """
 An adapter for dataset samples. The output must be a tuple of sample data and
 label data.
@@ -31,11 +31,30 @@ class ArmoryDataset(Dataset):
     def __len__(self):
         return len(self._dataset)
 
-    def __getitem__(self, index) -> Tuple[np.ndarray, np.ndarray]:
+    def __getitem__(self, index):
         return self._adapter(self._dataset[index])
 
 
-class JaticImageClassificationDataset(ArmoryDataset):
+class MapSampleDataset(ArmoryDataset):
+    """Dataset wrapper for datasets with map-like samples"""
+
+    def __init__(
+        self,
+        dataset,
+        x_key: str,
+        y_key: str,
+    ):
+        super().__init__(dataset, self._adapt)
+        self._x_key = x_key
+        self._y_key = y_key
+
+    def _adapt(self, sample):
+        x = sample[self._x_key]
+        y = sample[self._y_key]
+        return x, y
+
+
+class JaticImageClassificationDataset(MapSampleDataset):
     """Dataset wrapper with a pre-applied adapter for JATIC image classification datasets"""
 
     def __init__(
@@ -44,14 +63,19 @@ class JaticImageClassificationDataset(ArmoryDataset):
         image_key: str = "image",
         label_key: str = "label",
     ):
-        super().__init__(dataset, self._adapt)
-        self._image_key = image_key
-        self._label_key = label_key
+        super().__init__(dataset, image_key, label_key)
 
-    def _adapt(self, sample) -> Tuple[np.ndarray, np.ndarray]:
-        x = np.asarray(sample[self._image_key])
-        y = np.asarray(sample[self._label_key])
-        return x, y
+
+class JaticObjectDetectionDataset(MapSampleDataset):
+    """Dataset wrapper with a pre-applied adapter for JATIC image classification datasets"""
+
+    def __init__(
+        self,
+        dataset: "jatic_toolbox.protocols.ObjectDetectionDataset",
+        image_key: str = "image",
+        objects_key: str = "objects",
+    ):
+        super().__init__(dataset, image_key, objects_key)
 
 
 class ArmoryDataLoader(DataLoader):
