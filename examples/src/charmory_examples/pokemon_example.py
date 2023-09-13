@@ -13,8 +13,9 @@ from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import JaticVisionDatasetGenerator
+from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
-from charmory.experimental.lightning_execution import execute_lightning, print_outputs
+from charmory.experimental.example_results import print_outputs
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import PILtoNumpy_HuggingFace
@@ -134,7 +135,8 @@ def main(argv: list = sys.argv[1:]):
     task = ImageClassificationTask(
         evaluation, num_classes=150, export_every_n_batches=5
     )
-    results = execute_lightning(task, TRAINING_EPOCHS)
+    engine = LightningEngine(task, limit_test_batches=5)
+    results = engine.run()
 
     print_outputs(dataset, model, results)
 
