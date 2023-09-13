@@ -24,14 +24,12 @@ label data.
 class ArmoryDataset(Dataset):
     """Wrapper around a dataset to apply an adapter to all samples obtained from the dataset"""
 
-    def __init__(self, dataset: Dataset, adapter: DatasetOutputAdapter):
+    def __init__(self, dataset, adapter: DatasetOutputAdapter):
         self._dataset = dataset
         self._adapter = adapter
 
     def __len__(self):
-        return len(self._dataset)  # type: ignore
-        # type: ignore because PyTorch omits __len__ in the definition of the
-        # Dataset base class for a particular reason (see pytorch/torch/utils/data/sampler.py)
+        return len(self._dataset)
 
     def __getitem__(self, index) -> Tuple[np.ndarray, np.ndarray]:
         return self._adapter(self._dataset[index])
@@ -52,7 +50,7 @@ class JaticImageClassificationDataset(ArmoryDataset):
 
     def _adapt(self, sample) -> Tuple[np.ndarray, np.ndarray]:
         x = np.asarray(sample[self._image_key])
-        y = sample[self._label_key]
+        y = np.asarray(sample[self._label_key])
         return x, y
 
 
