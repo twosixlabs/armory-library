@@ -7,7 +7,7 @@ import torch.nn as nn
 if TYPE_CHECKING:
     import jatic_toolbox.protocols
 
-Args = Tuple[Any]
+Args = Tuple[Any, ...]
 Kwargs = Dict[str, Any]
 ModelInputAdapter = Callable[..., Tuple[Args, Kwargs]]
 """
