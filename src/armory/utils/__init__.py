@@ -2,4 +2,4 @@
 ARMORY Utilities
 """
 
-from armory.utils import configuration, external_repo, printing
+from armory.utils import configuration, printing
