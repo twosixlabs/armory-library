@@ -10,6 +10,7 @@ import jatic_toolbox
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox.interop.huggingface import HuggingFaceObjectDetectionDataset
 import numpy as np
+from armory.baseline_models.pytorch.carla_single_modality_object_detection_frcnn import get_art_model
 
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
@@ -22,6 +23,7 @@ from charmory.track import track_init_params, track_params
 from charmory.utils import (
     adapt_jatic_object_detection_model_for_art,
     create_jatic_image_classification_dataset_transform,
+    apply_art_preprocessor_defense
 )
 
 BATCH_SIZE = 4
@@ -55,21 +57,29 @@ def main(argv: list = sys.argv[1:]):
     ###
     # Model
     ###
-    model = track_params(jatic_toolbox.load_model)(
+    model_1 = track_params(jatic_toolbox.load_model)(
         provider="torchvision",
         model_name="fasterrcnn_resnet50_fpn",
         task="object-detection",
     )
-    adapt_jatic_object_detection_model_for_art(model)
+    adapt_jatic_object_detection_model_for_art(model_1)
+    detector, model = get_art_model(
+        model_kwargs = {"num_classes": 63},
+        wrapper_kwargs = {},
+        weights_path = "/home/chris/armory/examples/src/charmory_examples/xview_model_state_dict_epoch_99_loss_0p67",
+        )
+    #adapt_jatic_object_detection_model_for_art(model)
 
-    detector = track_init_params(PyTorchFasterRCNN)(
-        model,
-        channels_first=True,
-        clip_values=(0.0, 1.0),
-    )
+    #detector = track_init_params(PyTorchFasterRCNN)(
+     #   model,
+     #   channels_first=True,
+     #   clip_values=(0.0, 1.0),
+    #)
+    #apply_art_preprocessor_defense(model, model_1.processor)
     model_transform = create_jatic_image_classification_dataset_transform(
-        model.preprocessor
+        model_1.preprocessor
     )
+    
 
     train_dataset, test_dataset = load_huggingface_dataset()
 
