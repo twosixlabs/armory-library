@@ -13,6 +13,7 @@ from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader, JaticObjectDetectionDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.model import JaticObjectDetectionModel
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import (
@@ -56,7 +57,7 @@ def main(args):
     adapt_jatic_object_detection_model_for_art(model)
 
     detector = track_init_params(PyTorchFasterRCNN)(
-        model,
+        JaticObjectDetectionModel(model),
         channels_first=True,
         clip_values=(0.0, 1.0),
     )
