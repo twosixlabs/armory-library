@@ -16,10 +16,7 @@ from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysC
 from charmory.model import JaticObjectDetectionModel
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
-from charmory.utils import (
-    adapt_jatic_object_detection_model_for_art,
-    create_jatic_dataset_transform,
-)
+from charmory.utils import create_jatic_dataset_transform
 
 
 def get_cli_args():
@@ -54,7 +51,12 @@ def main(args):
         model_name="fasterrcnn_resnet50_fpn",
         task="object-detection",
     )
-    adapt_jatic_object_detection_model_for_art(model)
+
+    # Bypass JATIC model wrapper to allow targeted adversarial attacks
+    def hack(*args, **kwargs):
+        return model._model(*args, **kwargs)
+
+    model.forward = hack
 
     detector = track_init_params(PyTorchFasterRCNN)(
         JaticObjectDetectionModel(model),
