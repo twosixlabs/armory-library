@@ -1,4 +1,3 @@
-import os
 import sys
 
 import art.attacks.evasion
@@ -9,7 +8,6 @@ import armory.baseline_models.pytorch.food101
 import armory.data.datasets
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
-from armory.utils.configuration import get_armory_home
 import armory.version
 from charmory.data import JaticVisionDatasetGenerator
 from charmory.engine import LightningEngine
@@ -21,17 +19,15 @@ from charmory.utils import PILtoNumpy
 BATCH_SIZE = 16
 TRAINING_EPOCHS = 1
 
-ROOT = os.path.join(get_armory_home(), "datasets")
 
-
-def load_torchvision_dataset(root_path):
+def load_torchvision_dataset(sysconfig: SysConfig):
     print("Loading torchvision dataset from jatic_toolbox")
     train_dataset = load_jatic_dataset(
         provider="torchvision",
         dataset_name="Food101",
         task="image-classification",
         split="train",
-        root=root_path,
+        root=sysconfig.dataset_cache,
         download=True,
         transform=T.Compose(
             [
@@ -51,7 +47,7 @@ def load_torchvision_dataset(root_path):
         dataset_name="Food101",
         task="image-classification",
         split="test",
-        root=root_path,
+        root=sysconfig.dataset_cache,
         download=True,
         transform=T.Compose(
             [
@@ -71,7 +67,8 @@ def load_torchvision_dataset(root_path):
 
 
 def main():
-    train_dataset, test_dataset = load_torchvision_dataset(ROOT)
+    sysconfig = SysConfig()
+    train_dataset, test_dataset = load_torchvision_dataset(sysconfig)
 
     dataset = Dataset(
         name="Food101",
@@ -118,8 +115,6 @@ def main():
             record_metric_per_sample=False,
         ),
     )
-
-    sysconfig = SysConfig(gpus=["all"], use_gpu=True)
 
     evaluation = Evaluation(
         name="food101_baseline",
