@@ -10,12 +10,11 @@ from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox.interop.huggingface import HuggingFaceObjectDetectionDataset
 from jatic_toolbox.interop.torchvision import TorchVisionObjectDetector
 import numpy as np
+import torch
+from torchvision import models
 from torchvision.transforms._presets import ObjectDetection
 
 from armory.art_experimental.attacks.patch import AttackWrapper
-from armory.baseline_models.pytorch.carla_single_modality_object_detection_frcnn import (
-    get_art_model,
-)
 from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import JaticObjectDetectionDatasetGenerator
@@ -27,8 +26,7 @@ from charmory.utils import (
     adapt_jatic_object_detection_model_for_art,
     create_jatic_image_classification_dataset_transform,
 )
-from torchvision import models
-import torch
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 BATCH_SIZE = 1
@@ -63,17 +61,19 @@ def main(argv: list = sys.argv[1:]):
     ###
     # Model
     ###
-    model = models.detection.fasterrcnn_resnet50_fpn(pretrained = False, num_classes= 63)
+    model = models.detection.fasterrcnn_resnet50_fpn(pretrained=False, num_classes=63)
     model.to(DEVICE)
-    checkpoint = torch.load("/home/chris/armory/examples/src/charmory_examples/xview_model_state_dict_epoch_99_loss_0p67" \
-                            , map_location=DEVICE)
+    checkpoint = torch.load(
+        "/home/chris/armory/examples/src/charmory_examples/xview_model_state_dict_epoch_99_loss_0p67",
+        map_location=DEVICE,
+    )
     model.load_state_dict(checkpoint)
 
-    '''_, model = get_art_model(
+    """_, model = get_art_model(
         model_kwargs={"num_classes": 63},
         wrapper_kwargs={},
         weights_path="/home/chris/armory/examples/src/charmory_examples/xview_model_state_dict_epoch_99_loss_0p67",
-    )'''
+    )"""
 
     model = TorchVisionObjectDetector(
         model=model, processor=ObjectDetection(), labels=None
