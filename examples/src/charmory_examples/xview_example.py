@@ -6,31 +6,34 @@ import albumentations as A
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchFasterRCNN
 from datasets import load_dataset
-import jatic_toolbox
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox.interop.huggingface import HuggingFaceObjectDetectionDataset
+from jatic_toolbox.interop.torchvision import TorchVisionObjectDetector
 import numpy as np
-from armory.baseline_models.pytorch.carla_single_modality_object_detection_frcnn import get_art_model
+from torchvision.transforms._presets import ObjectDetection
 
 from armory.art_experimental.attacks.patch import AttackWrapper
+from armory.baseline_models.pytorch.carla_single_modality_object_detection_frcnn import (
+    get_art_model,
+)
 from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import JaticObjectDetectionDatasetGenerator
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.tasks.object_detection import ObjectDetectionTask
-from charmory.track import track_init_params, track_params
+from charmory.track import track_init_params
 from charmory.utils import (
     adapt_jatic_object_detection_model_for_art,
     create_jatic_image_classification_dataset_transform,
-    apply_art_preprocessor_defense
 )
 
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 TRAINING_EPOCHS = 20
 import torch
 
 torch.set_float32_matmul_precision("high")
+import armory.data.datasets
 
 
 def load_huggingface_dataset():
@@ -57,38 +60,36 @@ def main(argv: list = sys.argv[1:]):
     ###
     # Model
     ###
-    model_1 = track_params(jatic_toolbox.load_model)(
-        provider="torchvision",
-        model_name="fasterrcnn_resnet50_fpn",
-        task="object-detection",
+    # model = TorchVisionObjectDetector.from_pretrained("/home/chris/armory/examples/src/charmory_examples/xview_model.pt")
+
+    _, model = get_art_model(
+        model_kwargs={"num_classes": 63},
+        wrapper_kwargs={},
+        weights_path="/home/chris/armory/examples/src/charmory_examples/xview_model_state_dict_epoch_99_loss_0p67",
     )
-    adapt_jatic_object_detection_model_for_art(model_1)
-    detector, model = get_art_model(
-        model_kwargs = {"num_classes": 63},
-        wrapper_kwargs = {},
-        weights_path = "/home/chris/armory/examples/src/charmory_examples/xview_model_state_dict_epoch_99_loss_0p67",
-        )
-    #adapt_jatic_object_detection_model_for_art(model)
 
-    #detector = track_init_params(PyTorchFasterRCNN)(
-     #   model,
-     #   channels_first=True,
-     #   clip_values=(0.0, 1.0),
-    #)
-    #apply_art_preprocessor_defense(model, model_1.processor)
-    model_transform = create_jatic_image_classification_dataset_transform(
-        model_1.preprocessor
+    model = TorchVisionObjectDetector(
+        model=model, processor=ObjectDetection(), labels=None
     )
-    
-
-    train_dataset, test_dataset = load_huggingface_dataset()
-
+    adapt_jatic_object_detection_model_for_art(model)
+    detector = track_init_params(PyTorchFasterRCNN)(
+        model,
+        channels_first=True,
+        clip_values=(0.0, 1.0),
+    )
+    _, test_dataset = load_huggingface_dataset()
+    """test_dataset=track_params(armory.data.datasets.xview)(
+            split="test",
+            epochs=20,
+            batch_size=64,
+            shuffle_files=True,
+        )"""
     img_transforms = A.Compose(
         [
-            A.LongestMaxSize(max_size=500),
+            A.LongestMaxSize(max_size=300),
             A.PadIfNeeded(
-                min_height=500,
-                min_width=500,
+                min_height=300,
+                min_width=300,
                 border_mode=0,
                 value=(0, 0, 0),
             ),
@@ -97,6 +98,10 @@ def main(argv: list = sys.argv[1:]):
             format="pascal_voc",
             label_fields=["labels"],
         ),
+    )
+    # model_transform = ObjectDetection()
+    model_transform = create_jatic_image_classification_dataset_transform(
+        model.preprocessor
     )
 
     def transform(sample):
@@ -117,14 +122,8 @@ def main(argv: list = sys.argv[1:]):
         transformed = model_transform(transformed)
         return transformed
 
-    train_dataset.set_transform(transform)
     test_dataset.set_transform(transform)
 
-    train_dataset_generator = JaticObjectDetectionDatasetGenerator(
-        dataset=train_dataset,
-        batch_size=BATCH_SIZE,
-        epochs=4,
-    )
     test_dataset_generator = JaticObjectDetectionDatasetGenerator(
         dataset=test_dataset,
         batch_size=BATCH_SIZE,
@@ -132,7 +131,7 @@ def main(argv: list = sys.argv[1:]):
     )
     eval_dataset = Dataset(
         name="XVIEW",
-        train_dataset=train_dataset_generator,
+        # train_dataset=train_dataset_generator,
         test_dataset=test_dataset_generator,
     )
     eval_model = Model(
@@ -182,10 +181,10 @@ def main(argv: list = sys.argv[1:]):
 
     task = ObjectDetectionTask(
         evaluation,
-        export_every_n_batches=5,
+        export_every_n_batches=2,
         class_metrics=False,
     )
-    engine = LightningEngine(task, limit_test_batches=10)
+    engine = LightningEngine(task, limit_test_batches=5)
     results = engine.run()
 
     pprint(results)
