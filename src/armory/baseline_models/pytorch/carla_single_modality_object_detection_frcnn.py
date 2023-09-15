@@ -43,4 +43,4 @@ def get_art_model(
         channels_first=False,
         **wrapper_kwargs,
     )
-    return wrapped_model, model
+    return wrapped_model

@@ -27,6 +27,9 @@ from charmory.utils import (
     adapt_jatic_object_detection_model_for_art,
     create_jatic_image_classification_dataset_transform,
 )
+from torchvision import models
+import torch
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 BATCH_SIZE = 1
 TRAINING_EPOCHS = 20
@@ -60,13 +63,17 @@ def main(argv: list = sys.argv[1:]):
     ###
     # Model
     ###
-    # model = TorchVisionObjectDetector.from_pretrained("/home/chris/armory/examples/src/charmory_examples/xview_model.pt")
+    model = models.detection.fasterrcnn_resnet50_fpn(pretrained = False, num_classes= 63)
+    model.to(DEVICE)
+    checkpoint = torch.load("/home/chris/armory/examples/src/charmory_examples/xview_model_state_dict_epoch_99_loss_0p67" \
+                            , map_location=DEVICE)
+    model.load_state_dict(checkpoint)
 
-    _, model = get_art_model(
+    '''_, model = get_art_model(
         model_kwargs={"num_classes": 63},
         wrapper_kwargs={},
         weights_path="/home/chris/armory/examples/src/charmory_examples/xview_model_state_dict_epoch_99_loss_0p67",
-    )
+    )'''
 
     model = TorchVisionObjectDetector(
         model=model, processor=ObjectDetection(), labels=None
