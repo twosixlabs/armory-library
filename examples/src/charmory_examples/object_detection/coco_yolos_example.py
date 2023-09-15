@@ -151,7 +151,7 @@ def main(args):
             )
         transformed = model_transform(transformed)
         for obj in transformed["objects"]:
-            if len(obj.get("bbox", [])) > 1:
+            if len(obj.get("bbox", [])) > 0:
                 obj["bbox"] = box_convert(
                     torch.tensor(obj["bbox"]), "xywh", "xyxy"
                 ).numpy()
