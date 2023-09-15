@@ -63,17 +63,37 @@ def main(args):
 
     image_processor = AutoImageProcessor.from_pretrained("hustvl/yolos-tiny")
 
+    def model_preadapter(*args, **kwargs):
+        # Prediction targets need a `class_labels` property rather than the
+        # `labels` property that's being passed in
+        if len(args) > 1:
+            targets = args[1]
+            for target in targets:
+                target["class_labels"] = target["labels"]
+        return args, kwargs
+
     def model_postadapter(output):
+        # The model is put in training mode during attack generation, and
+        # we need to return the loss components instead of the predictions
+        if output.loss_dict is not None:
+            return output.loss_dict
+
         result = image_processor.post_process_object_detection(
             output, target_sizes=[(512, 512) for _ in range(len(output.pred_boxes))]
         )
         return result
 
     detector = track_init_params(PyTorchObjectDetector)(
-        ArmoryModel(model, postadapter=model_postadapter),
+        ArmoryModel(model, preadapter=model_preadapter, postadapter=model_postadapter),
         channels_first=True,
-        input_shape=(3, 400, 400),
+        input_shape=(3, 512, 512),
         clip_values=(0.0, 1.0),
+        attack_losses=(
+            "cardinality_error",
+            "loss_bbox",
+            "loss_ce",
+            "loss_giou",
+        ),
     )
 
     ###
@@ -198,7 +218,6 @@ def main(args):
 
     task = ObjectDetectionTask(
         evaluation,
-        skip_attack=True,
         export_every_n_batches=args.export_every_n_batches,
         class_metrics=False,
     )
