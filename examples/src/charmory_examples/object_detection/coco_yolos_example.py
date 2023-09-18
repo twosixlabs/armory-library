@@ -178,8 +178,11 @@ def main(args):
 
     patch = track_init_params(art.attacks.evasion.RobustDPatch)(
         detector,
-        patch_shape=(3, 32, 32),
+        patch_shape=(3, 50, 50),
+        patch_location=(231, 231),  # middle of 512x512
         batch_size=1,
+        sample_size=10,
+        learning_rate=0.01,
         max_iter=20,
         targeted=False,
         verbose=False,
