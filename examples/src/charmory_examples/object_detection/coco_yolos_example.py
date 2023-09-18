@@ -1,13 +1,14 @@
 import argparse
 from pprint import pprint
 
-from PIL import Image
+# from PIL import Image
 import albumentations as A
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchObjectDetector
 import jatic_toolbox
 import numpy as np
 import torch
+import torch.nn as nn
 from torchvision.ops import box_convert
 from transformers import AutoImageProcessor
 
@@ -19,7 +20,8 @@ from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysC
 from charmory.model import ArmoryModel
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
-from charmory.utils import create_jatic_dataset_transform
+
+# from charmory.utils import create_jatic_dataset_transform
 
 
 def get_cli_args():
@@ -63,14 +65,24 @@ def main(args):
 
     image_processor = AutoImageProcessor.from_pretrained("hustvl/yolos-tiny")
 
-    def model_preadapter(*args, **kwargs):
-        # Prediction targets need a `class_labels` property rather than the
-        # `labels` property that's being passed in
-        if len(args) > 1:
-            targets = args[1]
-            for target in targets:
-                target["class_labels"] = target["labels"]
-        return args, kwargs
+    class ModelPreadapter(nn.Module):
+        def forward(self, *args, **kwargs):
+            # Prediction targets need a `class_labels` property rather than the
+            # `labels` property that's being passed in
+            if len(args) > 1:
+                targets = args[1]
+                for target in targets:
+                    target["class_labels"] = target["labels"]
+            print("=== preadapter ===")
+            pprint(args[0].shape)
+            print(f"min = {torch.min(args[0])}")
+            print(f"max = {torch.max(args[0])}")
+            images = image_processor(
+                images=args[0], do_resize=False, return_tensors="pt"
+            )["pixel_values"].to(args[0].device)
+            pprint(images.shape)
+            # images = np.array([image_processor(image) for image in args[0]])
+            return (images,) + args[1:], kwargs
 
     def model_postadapter(output):
         # The model is put in training mode during attack generation, and
@@ -84,7 +96,7 @@ def main(args):
         return result
 
     detector = track_init_params(PyTorchObjectDetector)(
-        ArmoryModel(model, preadapter=model_preadapter, postadapter=model_postadapter),
+        ArmoryModel(model, preadapter=ModelPreadapter(), postadapter=model_postadapter),
         channels_first=True,
         input_shape=(3, 512, 512),
         clip_values=(0.0, 1.0),
@@ -116,7 +128,7 @@ def main(args):
     dataset._dataset = dataset._dataset.filter(filter)
     print(f"Dataset length after filtering: {len(dataset)}")
 
-    model_transform = create_jatic_dataset_transform(model.preprocessor)
+    # model_transform = create_jatic_dataset_transform(model.preprocessor)
 
     img_transforms = A.Compose(
         [
@@ -142,14 +154,17 @@ def main(args):
                 bboxes=sample["objects"][i]["bbox"],
                 labels=sample["objects"][i]["label"],
             )
-            transformed["image"].append(Image.fromarray(transformed_img["image"]))
+            # transformed["image"].append(Image.fromarray(transformed_img["image"]))
+            transformed["image"].append(
+                transformed_img["image"].astype(np.float32).transpose(2, 0, 1)
+            )
             transformed["objects"].append(
                 dict(
                     bbox=transformed_img["bboxes"],
                     label=transformed_img["labels"],
                 )
             )
-        transformed = model_transform(transformed)
+        # transformed = model_transform(transformed)
         for obj in transformed["objects"]:
             if len(obj.get("bbox", [])) > 0:
                 obj["bbox"] = box_convert(
