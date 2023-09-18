@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from transformers.image_utils import infer_channel_dimension_format
 
-from charmory.data import JaticVisionDatasetGenerator
+from charmory.data import JaticVisionDataLoader
 from charmory.engine import Engine
 from charmory.evaluation import (
     Attack,
@@ -75,10 +75,9 @@ def make_evaluation_from_scratch(epsilon: float) -> Evaluation:
     transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
     dataset.set_transform(transform)
 
-    generator = JaticVisionDatasetGenerator(
+    generator = JaticVisionDataLoader(
         dataset=dataset,
         batch_size=16,
-        epochs=1,
     )
 
     eval_dataset = Dataset(

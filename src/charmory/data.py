@@ -10,27 +10,7 @@ from torch.utils.data.dataloader import DataLoader
 if TYPE_CHECKING:
     import jatic_toolbox.protocols
 
-from armory.data.datasets import ArmoryDataGenerator
 from charmory.track import track_init_params
-
-
-class _DataLoaderGenerator:
-    """
-    Iterable wrapper around a pytorch data loader to enable infinite iteration (required by ART)
-    """
-
-    def __init__(self, loader):
-        self.loader = loader
-        self.iterator = iter(self.loader)
-
-    def __next__(self):
-        try:
-            batch = next(self.iterator)
-        except StopIteration:
-            # Reset when we reach the end of the iterator/epoch
-            self.iterator = iter(self.loader)
-            batch = next(self.iterator)
-        return batch
 
 
 def _collate_image_classification(image_key, label_key):
@@ -102,78 +82,4 @@ class JaticObjectDetectionDataLoader(DataLoader):
             shuffle=shuffle,
             collate_fn=_collate_object_detection(image_key, objects_key),
             **kwargs,
-        )
-
-
-@track_init_params()
-class JaticVisionDatasetGenerator(ArmoryDataGenerator):
-    """
-    Data generator for a JATIC image classification dataset.
-    """
-
-    def __init__(
-        self,
-        dataset,
-        epochs: int,
-        batch_size=1,
-        shuffle=False,
-        image_key="image",
-        label_key="label",
-        preprocessing_fn=None,
-        label_preprocessing_fn=None,
-        context=None,
-        size=None,
-    ):
-        super().__init__(
-            generator=_DataLoaderGenerator(
-                DataLoader(
-                    dataset=dataset,
-                    batch_size=batch_size,
-                    shuffle=shuffle,
-                    collate_fn=_collate_image_classification(image_key, label_key),
-                )
-            ),
-            size=size or len(dataset),
-            batch_size=batch_size,
-            epochs=epochs,
-            preprocessing_fn=preprocessing_fn,
-            label_preprocessing_fn=label_preprocessing_fn,
-            context=context,
-        )
-
-
-@track_init_params()
-class JaticObjectDetectionDatasetGenerator(ArmoryDataGenerator):
-    """
-    Data generator for a JATIC object detection dataset.
-    """
-
-    def __init__(
-        self,
-        dataset,
-        epochs: int,
-        batch_size=1,
-        shuffle=False,
-        image_key="image",
-        objects_key="objects",
-        preprocessing_fn=None,
-        label_preprocessing_fn=None,
-        context=None,
-        size=None,
-    ):
-        super().__init__(
-            generator=_DataLoaderGenerator(
-                DataLoader(
-                    dataset=dataset,
-                    batch_size=batch_size,
-                    shuffle=shuffle,
-                    collate_fn=_collate_object_detection(image_key, objects_key),
-                )
-            ),
-            size=size or len(dataset),
-            batch_size=batch_size,
-            epochs=epochs,
-            preprocessing_fn=preprocessing_fn,
-            label_preprocessing_fn=label_preprocessing_fn,
-            context=context,
         )
