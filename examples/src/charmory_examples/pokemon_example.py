@@ -127,7 +127,6 @@ def main(argv: list = sys.argv[1:]):
         dataset=dataset,
         model=model,
         attack=attack,
-        scenario=None,
         metric=metric,
         sysconfig=sysconfig,
     )
