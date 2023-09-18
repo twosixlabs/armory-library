@@ -153,6 +153,9 @@ def main(args):
 
     pprint(results)
 
+    print("JATIC Experiment Complete!")
+    return 0
+
 
 if __name__ == "__main__":
     main(get_cli_args())
