@@ -12,7 +12,7 @@ from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
-from charmory.model import JaticImageClassificationModel
+from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import create_jatic_dataset_transform

@@ -4,7 +4,8 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 
-from charmory.model import ArmoryModel, JaticImageClassificationModel
+from charmory.model import ArmoryModel
+from charmory.model.image_classification import JaticImageClassificationModel
 
 pytestmark = pytest.mark.unit
 
