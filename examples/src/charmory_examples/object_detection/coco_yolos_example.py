@@ -8,7 +8,6 @@ import jatic_toolbox
 import numpy as np
 import torch
 from torchvision.ops import box_convert
-import torchvision.transforms
 from transformers import AutoImageProcessor
 
 from armory.art_experimental.attacks.patch import AttackWrapper
@@ -16,7 +15,7 @@ from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader, JaticObjectDetectionDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
-from charmory.model import ArmoryModel
+from charmory.model.object_detection import YolosTransformer
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
 
@@ -55,42 +54,13 @@ def main(batch_size, export_every_n_batches, num_batches):
         task="object-detection",
     )
 
-    # Bypass JATIC model wrapper to allow targeted adversarial attacks
-    def hack(*args, **kwargs):
-        return model.model(*args, **kwargs)
-
-    model.forward = hack
-
     image_processor = AutoImageProcessor.from_pretrained("hustvl/yolos-tiny")
-    normalize = torchvision.transforms.Normalize(
-        (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
-    )
 
-    def model_preadapter(*args, **kwargs):
-        # Prediction targets need a `class_labels` property rather than the
-        # `labels` property that's being passed in
-        if len(args) > 1:
-            targets = args[1]
-            for target in targets:
-                target["class_labels"] = target["labels"]
-
-        images = normalize(args[0])
-
-        return (images,) + args[1:], kwargs
-
-    def model_postadapter(output):
-        # The model is put in training mode during attack generation, and
-        # we need to return the loss components instead of the predictions
-        if output.loss_dict is not None:
-            return output.loss_dict
-
-        result = image_processor.post_process_object_detection(
-            output, target_sizes=[(512, 512) for _ in range(len(output.pred_boxes))]
-        )
-        return result
+    # Wrap the original HuggingFace model, not the JATIC wrapper
+    transformer = YolosTransformer(model.model, image_processor)
 
     detector = track_init_params(PyTorchObjectDetector)(
-        ArmoryModel(model, preadapter=model_preadapter, postadapter=model_postadapter),
+        transformer,
         channels_first=True,
         input_shape=(3, 512, 512),
         clip_values=(0.0, 1.0),
