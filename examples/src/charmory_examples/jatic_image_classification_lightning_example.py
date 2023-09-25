@@ -136,7 +136,6 @@ def main(args):
         dataset=eval_dataset,
         model=eval_model,
         attack=eval_attack,
-        scenario=None,
         metric=eval_metric,
         sysconfig=eval_sysconfig,
     )

@@ -120,7 +120,6 @@ def main():
         dataset=dataset,
         model=model,
         attack=attack,
-        scenario=None,
         metric=metric,
         sysconfig=sysconfig,
     )
