@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
@@ -11,10 +11,6 @@ from torch.utils.data.dataloader import DataLoader
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import NullProfiler, Profiler
 from charmory.labels import LabelTargeter
-
-MethodName = Callable[
-    ..., Any
-]  # reference to a python method e.g. "armory.attacks.weakest"
 
 
 @dataclass
@@ -83,13 +79,6 @@ class Model:
 
 
 @dataclass
-class Scenario:
-    function: MethodName
-    kwargs: Dict[str, Any]
-    export_batches: Optional[bool] = False
-
-
-@dataclass
 class SysConfig:
     """Class for handling system configurations.
 
@@ -122,7 +111,6 @@ class Evaluation:
     name: str
     description: str
     model: Model
-    scenario: Scenario
     dataset: Dataset
     author: Optional[str]
     attack: Optional[Attack] = None
