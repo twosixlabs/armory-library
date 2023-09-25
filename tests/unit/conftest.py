@@ -6,7 +6,6 @@ import pytest
 
 from armory.data.datasets import ArmoryDataGenerator
 import charmory.evaluation
-from charmory.scenario import Scenario
 
 
 @pytest.fixture
@@ -31,13 +30,6 @@ def evaluation_dataset(data_generator):
 
 
 @pytest.fixture
-def evaluation_scenario():
-    return charmory.evaluation.Scenario(
-        function=lambda _: MagicMock(spec=Scenario), kwargs={}
-    )
-
-
-@pytest.fixture
 def evaluation_attack():
     attack = MagicMock(spec=EvasionAttack)
     attack.targeted = False
@@ -58,7 +50,6 @@ def evaluation_sysconfig():
 def evaluation(
     evaluation_model,
     evaluation_dataset,
-    evaluation_scenario,
     evaluation_attack,
     evaluation_metric,
     evaluation_sysconfig,
@@ -69,7 +60,6 @@ def evaluation(
         author=None,
         model=evaluation_model,
         dataset=evaluation_dataset,
-        scenario=evaluation_scenario,
         attack=evaluation_attack,
         metric=evaluation_metric,
         sysconfig=evaluation_sysconfig,
