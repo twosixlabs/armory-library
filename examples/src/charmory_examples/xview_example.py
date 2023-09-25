@@ -13,6 +13,7 @@ import numpy as np
 import torch
 from torchvision import models
 from torchvision.transforms._presets import ObjectDetection
+import torchvision.transforms as T
 
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
@@ -69,11 +70,6 @@ def main(argv: list = sys.argv[1:]):
     )
     model.load_state_dict(checkpoint)
 
-    """_, model = get_art_model(
-        model_kwargs={"num_classes": 63},
-        wrapper_kwargs={},
-        weights_path="/home/chris/armory/examples/src/charmory_examples/xview_model_state_dict_epoch_99_loss_0p67",
-    )"""
 
     model = TorchVisionObjectDetector(
         model=model, processor=ObjectDetection(), labels=None
@@ -85,28 +81,35 @@ def main(argv: list = sys.argv[1:]):
         clip_values=(0.0, 1.0),
     )
     _, test_dataset = load_huggingface_dataset()
-    """test_dataset=track_params(armory.data.datasets.xview)(
-            split="test",
-            epochs=20,
-            batch_size=64,
-            shuffle_files=True,
-        )"""
+
     img_transforms = A.Compose(
         [
-            A.LongestMaxSize(max_size=300),
+            A.LongestMaxSize(max_size=3000),
             A.PadIfNeeded(
-                min_height=300,
-                min_width=300,
+                min_height=3000,
+                min_width=3000,
                 border_mode=0,
                 value=(0, 0, 0),
             ),
+            
         ],
         bbox_params=A.BboxParams(
             format="pascal_voc",
             label_fields=["labels"],
         ),
     )
-    # model_transform = ObjectDetection()
+    '''    img_transforms1 = A.Compose(
+        [
+            T.Resize((960, 1280)), 
+            T.ToTensor()
+            
+            
+        ],
+        bbox_params=A.BboxParams(
+            format="pascal_voc",
+            label_fields=["labels"],
+        ),
+    )'''
     model_transform = create_jatic_image_classification_dataset_transform(
         model.preprocessor
     )
@@ -128,7 +131,26 @@ def main(argv: list = sys.argv[1:]):
             )
         transformed = model_transform(transformed)
         return transformed
-
+    
+    '''def transform2(sample):
+        transformed = dict(image=[], objects=[])
+        for i in range(len(sample["image"])):
+            transformed_img2 = img_transforms1(
+                image=np.asarray(sample["image"][i]),
+                bboxes=sample["objects"][i]["bbox"],
+                labels=sample["objects"][i]["category"],
+            )
+            transformed["image"].append(Image.fromarray(transformed_img2["image"]))
+            transformed["objects"].append(
+                dict(
+                    bbox=transformed_img2["bboxes"],
+                    category=transformed_img2["labels"],
+                )
+            )
+        transformed = model_transform(transformed)
+        return transformed'''
+    
+    #transform1 = T.Compose([T.Resize((960, 1280)), T.ToTensor()])
     test_dataset.set_transform(transform)
 
     test_dataset_generator = JaticObjectDetectionDatasetGenerator(
@@ -142,7 +164,7 @@ def main(argv: list = sys.argv[1:]):
         test_dataset=test_dataset_generator,
     )
     eval_model = Model(
-        name="fasterrcnn-resnet-50",
+        name="xview-trained-fasterrcnn-resnet-50",
         model=detector,
     )
 
@@ -191,7 +213,7 @@ def main(argv: list = sys.argv[1:]):
         export_every_n_batches=2,
         class_metrics=False,
     )
-    engine = LightningEngine(task, limit_test_batches=5)
+    engine = LightningEngine(task, limit_test_batches=10)
     results = engine.run()
 
     pprint(results)
