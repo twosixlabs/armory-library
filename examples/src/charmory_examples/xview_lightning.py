@@ -10,7 +10,7 @@ import torch
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #DEVICE = 'cpu'
-BATCH_SIZE = 1
+BATCH_SIZE = 24
 import torch
 import datasets
 
@@ -420,11 +420,13 @@ class EfficientDetModel(LightningModule):
 
 
 from pytorch_lightning import Trainer
+find_unused_parameters = True 
 trainer = Trainer(max_epochs=1,
     accelerator="auto",
     devices="auto",
     strategy="auto",
-    num_sanity_val_steps=0
+    num_sanity_val_steps=0, 
+    
     )
 
 model_eff = EfficientDetModel()
