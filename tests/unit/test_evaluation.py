@@ -101,7 +101,6 @@ def test_attack_init_raises_when_untargeted_and_label_targeter_provided():
 def test_evaluation_init(
     evaluation_model,
     evaluation_dataset,
-    evaluation_scenario,
     evaluation_attack,
     evaluation_metric,
 ):
@@ -111,7 +110,6 @@ def test_evaluation_init(
         author=None,
         model=evaluation_model,
         dataset=evaluation_dataset,
-        scenario=evaluation_scenario,
         attack=evaluation_attack,
         metric=evaluation_metric,
     )

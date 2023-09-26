@@ -132,7 +132,6 @@ def main(args):
         dataset=eval_dataset,
         model=eval_model,
         attack=eval_attack,
-        scenario=None,
         metric=eval_metric,
         sysconfig=eval_sysconfig,
     )
@@ -148,6 +147,9 @@ def main(args):
     results = engine.run()
 
     pprint(results)
+
+    print("JATIC Experiment Complete!")
+    return 0
 
 
 if __name__ == "__main__":

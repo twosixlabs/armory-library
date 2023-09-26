@@ -14,7 +14,7 @@ import numpy as np
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import JaticObjectDetectionDatasetGenerator
+from charmory.data import JaticObjectDetectionDataLoader
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.tasks.object_detection import ObjectDetectionTask
@@ -110,15 +110,13 @@ def main(argv: list = sys.argv[1:]):
     train_dataset.set_transform(transform)
     test_dataset.set_transform(transform)
 
-    train_dataset_generator = JaticObjectDetectionDatasetGenerator(
+    train_dataset_generator = JaticObjectDetectionDataLoader(
         dataset=train_dataset,
         batch_size=BATCH_SIZE,
-        epochs=4,
     )
-    test_dataset_generator = JaticObjectDetectionDatasetGenerator(
+    test_dataset_generator = JaticObjectDetectionDataLoader(
         dataset=test_dataset,
         batch_size=BATCH_SIZE,
-        epochs=1,
     )
     eval_dataset = Dataset(
         name="XVIEW",
@@ -161,7 +159,6 @@ def main(argv: list = sys.argv[1:]):
         dataset=eval_dataset,
         model=eval_model,
         attack=eval_attack,
-        scenario=None,
         metric=eval_metric,
         sysconfig=eval_sysconfig,
     )

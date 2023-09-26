@@ -1,8 +1,7 @@
 """
 Example programmatic entrypoint for scenario execution
 """
-import json
-from pprint import pprint
+
 import sys
 
 import art.attacks.evasion
@@ -13,22 +12,15 @@ import armory.baseline_models.pytorch.pokemon
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import JaticVisionDatasetGenerator
-from charmory.engine import Engine
-from charmory.evaluation import (
-    Attack,
-    Dataset,
-    Evaluation,
-    Metric,
-    Model,
-    Scenario,
-    SysConfig,
-)
-import charmory.scenarios.image_classification
+from charmory.data import JaticVisionDataLoader
+from charmory.engine import LightningEngine
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.experimental.example_results import print_outputs
+from charmory.tasks.image_classification import ImageClassificationTask
+from charmory.track import track_init_params, track_params
 from charmory.utils import PILtoNumpy_HuggingFace
 
 BATCH_SIZE = 16
-TRAINING_EPOCHS = 20
 
 
 # Loads Pokemon Classification HuggingFace Example
@@ -37,7 +29,7 @@ TRAINING_EPOCHS = 20
 def load_huggingface_dataset():
     transform = PILtoNumpy_HuggingFace()
 
-    train_dataset = load_jatic_dataset(
+    train_dataset = track_params(load_jatic_dataset)(
         provider="huggingface",
         dataset_name="keremberke/pokemon-classification",
         task="image-classification",
@@ -47,13 +39,12 @@ def load_huggingface_dataset():
 
     train_dataset.set_transform(transform)
 
-    train_dataset_generator = JaticVisionDatasetGenerator(
+    train_dataset_generator = JaticVisionDataLoader(
         dataset=train_dataset,
         batch_size=BATCH_SIZE,
-        epochs=TRAINING_EPOCHS,
         shuffle=True,
     )
-    test_dataset = load_jatic_dataset(
+    test_dataset = track_params(load_jatic_dataset)(
         provider="huggingface",
         dataset_name="keremberke/pokemon-classification",
         task="image-classification",
@@ -61,10 +52,9 @@ def load_huggingface_dataset():
         split="test",
     )
     test_dataset.set_transform(transform)
-    test_dataset_generator = JaticVisionDatasetGenerator(
+    test_dataset_generator = JaticVisionDataLoader(
         dataset=test_dataset,
         batch_size=BATCH_SIZE,
-        epochs=1,
     )
     return train_dataset_generator, test_dataset_generator
 
@@ -99,25 +89,19 @@ def main(argv: list = sys.argv[1:]):
     ###
 
     attack = Attack(
-        function=art.attacks.evasion.ProjectedGradientDescent,
-        kwargs={
-            "batch_size": 1,
-            "eps": 0.031,
-            "eps_step": 0.007,
-            "max_iter": 20,
-            "num_random_init": 1,
-            "random_eps": False,
-            "targeted": False,
-            "verbose": False,
-        },
-        knowledge="white",
-        use_label=True,
-        type=None,
-    )
-
-    scenario = Scenario(
-        function=charmory.scenarios.image_classification.ImageClassificationTask,
-        kwargs={},
+        name="PGD",
+        attack=track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
+            pokemon_model,
+            batch_size=3,
+            eps=0.031,
+            eps_step=0.007,
+            max_iter=20,
+            num_random_init=1,
+            random_eps=False,
+            targeted=False,
+            verbose=False,
+        ),
+        use_label_for_untargeted=True,
     )
 
     metric = Metric(
@@ -133,41 +117,25 @@ def main(argv: list = sys.argv[1:]):
 
     sysconfig = SysConfig(gpus=["all"], use_gpu=True)
 
-    baseline = Evaluation(
+    evaluation = Evaluation(
         name="pokemon",
         description="Baseline Pokemon image classification",
         author="msw@example.com",
         dataset=dataset,
         model=model,
         attack=attack,
-        scenario=scenario,
-        defense=None,
         metric=metric,
         sysconfig=sysconfig,
     )
 
-    print(f"Starting Demo for {baseline.name}")
-
-    pokemon_engine = Engine(baseline)
-    pokemon_engine.train(nb_epochs=TRAINING_EPOCHS)
-    results = pokemon_engine.run()
-
-    print("=" * 64)
-    pprint(baseline)
-    print("-" * 64)
-    print(
-        json.dumps(
-            results, default=lambda o: "<not serializable>", indent=4, sort_keys=True
-        )
+    task = ImageClassificationTask(
+        evaluation, num_classes=150, export_every_n_batches=5
     )
+    engine = LightningEngine(task, limit_test_batches=5)
+    results = engine.run()
 
-    print("=" * 64)
-    print(dataset.train_dataset)
-    print(dataset.test_dataset)
-    print("-" * 64)
-    print(model)
+    print_outputs(dataset, model, results)
 
-    print("=" * 64)
     print("Pokemon Experiment Complete!")
     return 0
 
