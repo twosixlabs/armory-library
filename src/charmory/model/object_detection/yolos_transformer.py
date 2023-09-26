@@ -9,6 +9,11 @@ from charmory.model import ArmoryModel
 
 
 class YolosTransformer(ArmoryModel):
+    """
+    Model wrapper with pre-applied input and output adapters for HuggingFace
+    transformer YOLOS models
+    """
+
     def __init__(
         self,
         model: "YolosModel",
