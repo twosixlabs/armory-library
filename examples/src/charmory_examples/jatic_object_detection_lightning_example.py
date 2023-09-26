@@ -1,3 +1,5 @@
+import argparse
+
 from PIL import Image
 import albumentations as A
 import art.attacks.evasion
@@ -7,7 +9,7 @@ import numpy as np
 
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
-from charmory.data import JaticObjectDetectionDatasetGenerator
+from charmory.data import JaticObjectDetectionDataLoader
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.experimental.example_results import print_outputs
@@ -19,7 +21,30 @@ from charmory.utils import (
 )
 
 
-def main():
+def get_cli_args():
+    parser = argparse.ArgumentParser(
+        description="Run COCO object detection example using models and datasets from the JATIC toolbox",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--batch-size",
+        default=4,
+        type=int,
+    )
+    parser.add_argument(
+        "--export-every-n-batches",
+        default=5,
+        type=int,
+    )
+    parser.add_argument(
+        "--num-batches",
+        default=20,
+        type=int,
+    )
+    return parser.parse_args()
+
+
+def main(args):
     ###
     # Model
     ###
@@ -95,10 +120,9 @@ def main():
 
     dataset.set_transform(transform)
 
-    generator = JaticObjectDetectionDatasetGenerator(
+    generator = JaticObjectDetectionDataLoader(
         dataset=dataset,
-        batch_size=4,
-        epochs=1,
+        batch_size=args.batch_size,
     )
 
     ###
@@ -155,11 +179,10 @@ def main():
 
     task = ObjectDetectionTask(
         evaluation,
-        export_every_n_batches=5,
+        export_every_n_batches=args.export_every_n_batches,
         class_metrics=False,
     )
-
-    engine = LightningEngine(task, limit_test_batches=10)
+    engine = LightningEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()
     print_outputs(dataset, model, results)
 
@@ -168,4 +191,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(get_cli_args())
