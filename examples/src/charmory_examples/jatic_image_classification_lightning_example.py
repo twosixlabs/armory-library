@@ -1,3 +1,4 @@
+import argparse
 from pprint import pprint
 
 import art.attacks.evasion
@@ -8,7 +9,7 @@ import torch.nn
 from transformers.image_utils import infer_channel_dimension_format
 
 from armory.metrics.compute import BasicProfiler
-from charmory.data import JaticVisionDatasetGenerator
+from charmory.data import JaticVisionDataLoader
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.tasks.image_classification import ImageClassificationTask
@@ -19,7 +20,30 @@ from charmory.utils import (
 )
 
 
-def main():
+def get_cli_args():
+    parser = argparse.ArgumentParser(
+        description="Run food classification example using models and datasets from the JATIC toolbox",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--batch-size",
+        default=16,
+        type=int,
+    )
+    parser.add_argument(
+        "--export-every-n-batches",
+        default=5,
+        type=int,
+    )
+    parser.add_argument(
+        "--num-batches",
+        default=5,
+        type=int,
+    )
+    return parser.parse_args()
+
+
+def main(args):
     ###
     # Model
     ###
@@ -62,10 +86,9 @@ def main():
     transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
     dataset.set_transform(transform)
 
-    generator = JaticVisionDatasetGenerator(
+    generator = JaticVisionDataLoader(
         dataset=dataset,
-        batch_size=16,
-        epochs=1,
+        batch_size=args.batch_size,
     )
 
     ###
@@ -121,8 +144,10 @@ def main():
     # Engine
     ###
 
-    task = ImageClassificationTask(evaluation, num_classes=12, export_every_n_batches=5)
-    engine = LightningEngine(task, limit_test_batches=5)
+    task = ImageClassificationTask(
+        evaluation, num_classes=12, export_every_n_batches=args.export_every_n_batches
+    )
+    engine = LightningEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()
 
     pprint(results)
@@ -132,4 +157,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(get_cli_args())

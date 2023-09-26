@@ -10,7 +10,7 @@ from transformers.image_utils import infer_channel_dimension_format
 
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
-from charmory.data import JaticVisionDatasetGenerator
+from charmory.data import JaticVisionDataLoader
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.tasks.image_classification import ImageClassificationTask
@@ -69,10 +69,9 @@ def make_evaluation_from_scratch(epsilon: float) -> Evaluation:
     transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
     dataset.set_transform(transform)
 
-    generator = JaticVisionDatasetGenerator(
+    generator = JaticVisionDataLoader(
         dataset=dataset,
         batch_size=16,
-        epochs=1,
     )
 
     eval_dataset = Dataset(
