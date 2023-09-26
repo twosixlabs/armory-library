@@ -8,7 +8,7 @@ import jatic_toolbox
 import numpy as np
 import torch
 from torchvision.ops import box_convert
-from transformers import AutoImageProcessor
+from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
@@ -48,16 +48,12 @@ def main(batch_size, export_every_n_batches, num_batches):
     ###
     # Model
     ###
-    model = track_params(jatic_toolbox.load_model)(
-        provider="huggingface",
-        model_name="hustvl/yolos-tiny",
-        task="object-detection",
+    model = track_params(AutoModelForObjectDetection.from_pretrained)(
+        pretrained_model_name_or_path="hustvl/yolos-tiny"
     )
-
     image_processor = AutoImageProcessor.from_pretrained("hustvl/yolos-tiny")
 
-    # Wrap the original HuggingFace model, not the JATIC wrapper
-    transformer = YolosTransformer(model.model, image_processor)
+    transformer = YolosTransformer(model, image_processor)
 
     detector = track_init_params(PyTorchObjectDetector)(
         transformer,
@@ -180,13 +176,12 @@ def main(batch_size, export_every_n_batches, num_batches):
     )
 
     evaluation = Evaluation(
-        name="coco-yolo-object-detection",
+        name="coco-yolos-object-detection",
         description="COCO object detection using YOLO from HuggingFace",
         author="",
         dataset=eval_dataset,
         model=eval_model,
         attack=eval_attack,
-        scenario=None,
         metric=eval_metric,
         sysconfig=eval_sysconfig,
     )
