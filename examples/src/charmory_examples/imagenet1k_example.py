@@ -14,7 +14,7 @@ import torch.nn as nn
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import JaticVisionDataLoader
+from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.experimental.example_results import print_outputs
@@ -43,8 +43,8 @@ def load_huggingface_dataset():
 
     train_dataset.set_transform(transform)
 
-    train_dataset_generator = JaticVisionDataLoader(
-        dataset=train_dataset,
+    train_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(train_dataset),
         batch_size=BATCH_SIZE,
         shuffle=True,
     )
@@ -56,11 +56,11 @@ def load_huggingface_dataset():
         use_auth_token=True,
     )
     test_dataset.set_transform(transform)
-    test_dataset_generator = JaticVisionDataLoader(
-        dataset=test_dataset,
+    test_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(test_dataset),
         batch_size=BATCH_SIZE,
     )
-    return train_dataset_generator, test_dataset_generator
+    return train_dataloader, test_dataloader
 
 
 def load_torchvision_model():

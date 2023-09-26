@@ -10,14 +10,14 @@ from transformers.image_utils import infer_channel_dimension_format
 
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
-from charmory.data import JaticVisionDataLoader
+from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_evaluation, track_init_params, track_params
 from charmory.utils import (
     adapt_jatic_image_classification_model_for_art,
-    create_jatic_image_classification_dataset_transform,
+    create_jatic_dataset_transform,
 )
 
 NAME = "jatic-food-category-classification"
@@ -66,11 +66,11 @@ def make_evaluation_from_scratch(epsilon: float) -> Evaluation:
     dataset._dataset = dataset._dataset.filter(filter)
     print(f"Dataset length after filtering: {len(dataset)}")
 
-    transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
+    transform = create_jatic_dataset_transform(model.preprocessor)
     dataset.set_transform(transform)
 
-    generator = JaticVisionDataLoader(
-        dataset=dataset,
+    generator = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(dataset),
         batch_size=16,
     )
 
