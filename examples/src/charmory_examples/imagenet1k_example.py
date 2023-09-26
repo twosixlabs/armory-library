@@ -18,12 +18,10 @@ from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.experimental.example_results import print_outputs
+from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
-from charmory.utils import (
-    PILtoNumpy_HuggingFace_Variable_Length,
-    adapt_jatic_image_classification_model_for_art,
-)
+from charmory.utils import PILtoNumpy_HuggingFace_Variable_Length
 
 BATCH_SIZE = 16
 
@@ -70,10 +68,9 @@ def load_torchvision_model():
         model_name="resnet34",
         task="image-classification",
     )
-    adapt_jatic_image_classification_model_for_art(model)
 
     classifier = track_init_params(PyTorchClassifier)(
-        model,
+        JaticImageClassificationModel(model),
         loss=nn.CrossEntropyLoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
         input_shape=(224, 224, 3),
