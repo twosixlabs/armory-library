@@ -10,57 +10,6 @@ from art.estimators import BaseEstimator
 import numpy as np
 
 
-def adapt_jatic_image_classification_model_for_art(model):
-    """
-    Adapts the given JATIC-wrapped image classification model so that it is
-    compatible with the adversarial robustness toolkit (ART).
-
-    JATIC-wrapped models return a structured object as their output. However,
-    ART expects all models to return the predicted values as a tensor. We make
-    the model compatible by monkey-patching the `forward` method to return the
-    predicted values from the structured return object.
-
-    Example::
-
-        from art.estimators.classification import PyTorchClassifier
-        from charmory.utils import adapt_jatic_image_classification_model_for_art
-        from jatic_toolbox import load_model
-
-        model = load_model(
-            provider="huggingface",
-            model_name="microsoft/resnet-18",
-            task="image-classification",
-        )
-        adapt_jatic_image_classification_model_for_art(model)
-        classifier = PyTorchClassifier(model, ...)
-
-    Args:
-        model: JATIC-wrapped image classification model
-    """
-
-    orig_forward = model.forward
-
-    def patched_forward(data):
-        result = orig_forward(data)
-        # temporary hack because the HuggingFace and TorchVision
-        # JATIC-toolbox wrappers return different types
-        # TODO remove the try/except when JATIC-toolbox updates the
-        # return type for TorchVision models
-        try:
-            return result.probs
-        except AttributeError:
-            return result.logits
-
-    model.forward = patched_forward
-
-
-def adapt_jatic_object_detection_model_for_art(model):
-    def patched_forward(images, targets=None):
-        return model._model(images, targets)
-
-    model.forward = patched_forward
-
-
 def apply_art_postprocessor_defense(estimator: BaseEstimator, defense: Postprocessor):
     """
     Applies the given postprocessor defense to the model, handling the presence
