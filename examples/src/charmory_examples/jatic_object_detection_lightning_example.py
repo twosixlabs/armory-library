@@ -1,5 +1,4 @@
 import argparse
-from pprint import pprint
 
 from PIL import Image
 import albumentations as A
@@ -13,6 +12,7 @@ from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader, JaticObjectDetectionDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.experimental.example_results import print_outputs
 from charmory.model.object_detection import JaticObjectDetectionModel
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
@@ -169,7 +169,6 @@ def main(args):
         dataset=eval_dataset,
         model=eval_model,
         attack=eval_attack,
-        scenario=None,
         metric=eval_metric,
         sysconfig=eval_sysconfig,
     )
@@ -185,8 +184,10 @@ def main(args):
     )
     engine = LightningEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()
+    print_outputs(dataset, model, results)
 
-    pprint(results)
+    print("JATIC Experiment Complete!")
+    return 0
 
 
 if __name__ == "__main__":

@@ -42,7 +42,7 @@ define ExecuteTests
 	echo "🤞 Executing tests... Good luck! 🌈"
 
 	echo "🤞 Mock end-to-end test..."
-	charmory
+	python ${PROJECT_DIR}/src/charmory_examples/jatic_image_classification_example.py
 endef
 
 
