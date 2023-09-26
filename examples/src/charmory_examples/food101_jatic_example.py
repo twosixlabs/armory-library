@@ -9,7 +9,7 @@ import armory.data.datasets
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import JaticVisionDataLoader
+from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.experimental.example_results import print_outputs
@@ -35,8 +35,8 @@ def load_torchvision_dataset(sysconfig: SysConfig):
             ]
         ),
     )
-    train_dataset_generator = JaticVisionDataLoader(
-        dataset=train_dataset,
+    train_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(train_dataset),
         batch_size=BATCH_SIZE,
         shuffle=True,
     )
@@ -54,13 +54,13 @@ def load_torchvision_dataset(sysconfig: SysConfig):
             ]
         ),
     )
-    test_dataset_generator = JaticVisionDataLoader(
-        dataset=test_dataset,
+    test_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(test_dataset),
         batch_size=BATCH_SIZE,
         shuffle=False,
     )
 
-    return train_dataset_generator, test_dataset_generator
+    return train_dataloader, test_dataloader
 
 
 def main():

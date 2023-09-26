@@ -21,7 +21,7 @@ from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import (
     adapt_jatic_object_detection_model_for_art,
-    create_jatic_image_classification_dataset_transform,
+    create_jatic_dataset_transform,
 )
 
 BATCH_SIZE = 4
@@ -67,9 +67,7 @@ def main(argv: list = sys.argv[1:]):
         channels_first=True,
         clip_values=(0.0, 1.0),
     )
-    model_transform = create_jatic_image_classification_dataset_transform(
-        model.preprocessor
-    )
+    model_transform = create_jatic_dataset_transform(model.preprocessor)
 
     train_dataset, test_dataset = load_huggingface_dataset()
 
