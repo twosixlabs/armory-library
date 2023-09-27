@@ -6,7 +6,7 @@ import torch
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #DEVICE = 'cpu'
-BATCH_SIZE = 1
+BATCH_SIZE = 8
 import torch
 
 torch.set_float32_matmul_precision("high")
@@ -119,11 +119,11 @@ def collate_fn(batch):
     return tuple(zip(*batch))
 def get_train_transform():
     return A.Compose([
-        #A.Flip(0.5),
-        #A.RandomRotate90(0.5),
-        #A.MotionBlur(p=0.2),
-        #A.MedianBlur(blur_limit=3, p=0.1),
-        #A.Blur(blur_limit=3, p=0.1),
+        A.Flip(0.5),
+        A.RandomRotate90(0.5),
+        A.MotionBlur(p=0.2),
+        A.MedianBlur(blur_limit=3, p=0.1),
+        A.Blur(blur_limit=3, p=0.1),
         ToTensorV2(p=1.0),
     ], bbox_params={
         'format': 'pascal_voc',
@@ -315,7 +315,7 @@ def validate(valid_data_loader, model):
 
 
 import time
-NUM_EPOCHS= 5
+NUM_EPOCHS= 10
 # get the model parameters
 params = [p for p in model.parameters() if p.requires_grad]
 # define the optimizer
