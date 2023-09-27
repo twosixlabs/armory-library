@@ -146,7 +146,10 @@ from torchvision.ops.boxes import masks_to_boxes
 import PIL
 from torchvision.transforms.v2 import functional as F
 import cv2
-
+from torch.nn import CrossEntropyLoss
+from torch.nn import MSELoss
+classLossFunc = CrossEntropyLoss()
+bboxLossFunc = MSELoss()
 
 class xview(torch.utils.data.Dataset):
     def __init__(self,dataset, width, height,  transforms=None):
@@ -263,7 +266,7 @@ def train(train_data_loader, model):
     
      # initialize tqdm progress bar
     prog_bar = tqdm(train_data_loader, total=len(train_data_loader))
-    
+    model.train()
     for i, data in enumerate(prog_bar):
         optimizer.zero_grad()
         
@@ -292,7 +295,7 @@ def validate(valid_data_loader, model):
     
     # initialize tqdm progress bar
     prog_bar = tqdm(valid_data_loader, total=len(valid_data_loader))
-    
+    #model.eval()
     for i, data in enumerate(prog_bar):
         images, targets = data
         
@@ -312,7 +315,7 @@ def validate(valid_data_loader, model):
 
 
 import time
-NUM_EPOCHS= 100
+NUM_EPOCHS= 5
 # get the model parameters
 params = [p for p in model.parameters() if p.requires_grad]
 # define the optimizer
