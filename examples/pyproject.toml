@@ -38,6 +38,9 @@ jatic = [
     "transformers",
 ]
 
+demo = ["pandas", "sklearn", "plotly", "numpy", "matplotlib", "seaborn"]
+
+
 all = [
     "armory-examples[armory]",
     "armory-examples[developer]",
