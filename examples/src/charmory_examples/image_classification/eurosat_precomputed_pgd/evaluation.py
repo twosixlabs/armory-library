@@ -1,10 +1,13 @@
 """Definition for the EuroSAT classification evaluation"""
 
 import argparse
+from copy import deepcopy
 
+import albumentations as A
 from art.attacks.evasion import ProjectedGradientDescent
 from art.estimators.classification import PyTorchClassifier
 import jatic_toolbox
+import numpy as np
 import torch.nn as nn
 
 from armory.metrics.compute import BasicProfiler
@@ -115,7 +118,30 @@ def _load_dataset(transform, batch_size: int):
         task="image-classification",
         split="test",
     )
-    dataset.set_transform(transform)
+
+    transforms = A.Compose(
+        [
+            A.LongestMaxSize(max_size=224),
+            A.PadIfNeeded(
+                min_height=224,
+                min_width=224,
+                border_mode=0,
+                value=(0, 0, 0),
+            ),
+            A.ToFloat(max_value=255),  # Scale to [0, 1]
+        ],
+    )
+
+    def transform_func(sample):
+        transformed = deepcopy(sample)
+        for i in range(len(sample["image"])):
+            transformed["image"] = [
+                transforms(image=np.asarray(image))["image"].transpose(2, 0, 1)
+                for image in sample["image"]
+            ]
+        return transformed
+
+    dataset.set_transform(transform_func)
 
     dataloader = ArmoryDataLoader(
         JaticImageClassificationDataset(dataset), batch_size=batch_size
