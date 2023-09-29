@@ -16,7 +16,6 @@ from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
-from charmory.utils import create_jatic_dataset_transform
 
 _MODELS = {
     "convnext": "mrm8488/convnext-tiny-finetuned-eurosat",
@@ -106,12 +105,10 @@ def _load_model(name: str):
         model=classifier,
     )
 
-    transform = create_jatic_dataset_transform(model.preprocessor)
-
-    return eval_model, classifier, transform
+    return eval_model, classifier
 
 
-def _load_dataset(transform, batch_size: int):
+def _load_dataset(batch_size: int):
     dataset = track_params(jatic_toolbox.load_dataset)(
         provider="huggingface",
         dataset_name="tanganke/EuroSAT",
@@ -183,8 +180,8 @@ def _get_attack_kwargs(**kwargs):
 def create_attack_evaluation_task(
     model_name: str, batch_size: int, **kwargs
 ) -> ImageClassificationTask:
-    model, classifier, transform = _load_model(_MODELS[model_name])
-    dataset = _load_dataset(transform=transform, batch_size=batch_size)
+    model, classifier = _load_model(_MODELS[model_name])
+    dataset = _load_dataset(batch_size=batch_size)
     attack = _create_attack(classifier, **_get_attack_kwargs(**kwargs))
 
     evaluation = Evaluation(
@@ -209,8 +206,8 @@ def create_attack_evaluation_task(
 def create_pregenerated_evaluation_task(
     model_name: str, batch_size: int
 ) -> ImageClassificationTask:
-    model, _, transform = _load_model(_MODELS[model_name])
-    dataset = _load_dataset(transform=transform, batch_size=batch_size)
+    model, _ = _load_model(_MODELS[model_name])
+    dataset = _load_dataset(batch_size=batch_size)
 
     evaluation = Evaluation(
         name=f"eurosat-{model_name}-precomputed-pgd",
