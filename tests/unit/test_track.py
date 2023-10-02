@@ -21,6 +21,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture(autouse=True)
 def reset_params():
+    track.reset_params()
     yield
     track.reset_params()
 
