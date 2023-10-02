@@ -9,15 +9,13 @@ import torch.nn
 from transformers.image_utils import infer_channel_dimension_format
 
 from armory.metrics.compute import BasicProfiler
-from charmory.data import JaticVisionDataLoader
+from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
-from charmory.utils import (
-    adapt_jatic_image_classification_model_for_art,
-    create_jatic_image_classification_dataset_transform,
-)
+from charmory.utils import create_jatic_dataset_transform
 
 
 def get_cli_args():
@@ -52,10 +50,9 @@ def main(args):
         model_name="Kaludi/food-category-classification-v2.0",
         task="image-classification",
     )
-    adapt_jatic_image_classification_model_for_art(model)
 
     classifier = track_init_params(PyTorchClassifier)(
-        model,
+        JaticImageClassificationModel(model),
         loss=torch.nn.CrossEntropyLoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
         input_shape=(224, 224, 3),
@@ -83,12 +80,11 @@ def main(args):
 
     dataset._dataset = dataset._dataset.filter(filter)
 
-    transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
+    transform = create_jatic_dataset_transform(model.preprocessor)
     dataset.set_transform(transform)
 
-    generator = JaticVisionDataLoader(
-        dataset=dataset,
-        batch_size=args.batch_size,
+    dataloader = ArmoryDataLoader(
+        JaticImageClassificationDataset(dataset), batch_size=args.batch_size
     )
 
     ###
@@ -96,7 +92,7 @@ def main(args):
     ###
     eval_dataset = Dataset(
         name="food-category-classification",
-        test_dataset=generator,
+        test_dataset=dataloader,
     )
 
     eval_model = Model(

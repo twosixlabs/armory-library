@@ -21,16 +21,14 @@ import armory.data.datasets
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import JaticVisionDataLoader
+from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.experimental.example_results import print_outputs
+from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
-from charmory.utils import (
-    adapt_jatic_image_classification_model_for_art,
-    create_jatic_image_classification_dataset_transform,
-)
+from charmory.utils import create_jatic_dataset_transform
 
 BATCH_SIZE = 16
 
@@ -45,8 +43,8 @@ def load_huggingface_dataset(transform):
         split="train",
     )
     train_dataset.set_transform(transform)
-    train_dataset_generator = JaticVisionDataLoader(
-        dataset=train_dataset,
+    train_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(train_dataset),
         batch_size=BATCH_SIZE,
         shuffle=True,
     )
@@ -58,13 +56,13 @@ def load_huggingface_dataset(transform):
         split="test",
     )
     test_dataset.set_transform(transform)
-    test_dataset_generator = JaticVisionDataLoader(
-        dataset=test_dataset,
+    test_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(test_dataset),
         batch_size=BATCH_SIZE,
         shuffle=False,
     )
 
-    return train_dataset_generator, test_dataset_generator
+    return train_dataloader, test_dataloader
 
 
 def load_torchvision_dataset(transform):
@@ -78,8 +76,8 @@ def load_torchvision_dataset(transform):
         download=True,
     )
     train_dataset.set_transform(transform)
-    train_dataset_generator = JaticVisionDataLoader(
-        dataset=train_dataset,
+    train_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(train_dataset),
         batch_size=BATCH_SIZE,
         shuffle=True,
     )
@@ -93,13 +91,13 @@ def load_torchvision_dataset(transform):
         download=True,
     )
     test_dataset.set_transform(transform)
-    test_dataset_generator = JaticVisionDataLoader(
-        dataset=test_dataset,
+    test_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(test_dataset),
         batch_size=BATCH_SIZE,
         shuffle=False,
     )
 
-    return train_dataset_generator, test_dataset_generator
+    return train_dataloader, test_dataloader
 
 
 def load_huggingface_model():
@@ -109,10 +107,9 @@ def load_huggingface_model():
         model_name="jadohu/BEiT-finetuned",
         task="image-classification",
     )
-    adapt_jatic_image_classification_model_for_art(model)
 
     classifier = track_init_params(PyTorchClassifier)(
-        model,
+        JaticImageClassificationModel(model),
         loss=nn.CrossEntropyLoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
         input_shape=(224, 224, 3),
@@ -121,7 +118,7 @@ def load_huggingface_model():
         clip_values=(0.0, 1.0),
     )
 
-    transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
+    transform = create_jatic_dataset_transform(model.preprocessor)
 
     return classifier, transform
 
@@ -133,10 +130,9 @@ def load_torchvision_model():
         model_name="resnet18",
         task="image-classification",
     )
-    adapt_jatic_image_classification_model_for_art(model)
 
     classifier = track_init_params(PyTorchClassifier)(
-        model,
+        JaticImageClassificationModel(model),
         loss=nn.CrossEntropyLoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
         input_shape=(224, 224, 3),
@@ -145,7 +141,7 @@ def load_torchvision_model():
         clip_values=(0.0, 1.0),
     )
 
-    transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
+    transform = create_jatic_dataset_transform(model.preprocessor)
 
     return classifier, transform
 

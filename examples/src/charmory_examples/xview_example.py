@@ -14,17 +14,15 @@ import numpy as np
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import JaticObjectDetectionDataLoader
+from charmory.data import ArmoryDataLoader, JaticObjectDetectionDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.model.object_detection import JaticObjectDetectionModel
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
-from charmory.utils import (
-    adapt_jatic_object_detection_model_for_art,
-    create_jatic_image_classification_dataset_transform,
-)
+from charmory.utils import create_jatic_dataset_transform
 
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 TRAINING_EPOCHS = 20
 import torch
 
@@ -60,16 +58,16 @@ def main(argv: list = sys.argv[1:]):
         model_name="fasterrcnn_resnet50_fpn",
         task="object-detection",
     )
-    adapt_jatic_object_detection_model_for_art(model)
+
+    # Bypass JATIC model wrapper to allow targeted adversarial attacks
+    model.forward = model._model.forward
 
     detector = track_init_params(PyTorchFasterRCNN)(
-        model,
+        JaticObjectDetectionModel(model),
         channels_first=True,
         clip_values=(0.0, 1.0),
     )
-    model_transform = create_jatic_image_classification_dataset_transform(
-        model.preprocessor
-    )
+    model_transform = create_jatic_dataset_transform(model.preprocessor)
 
     train_dataset, test_dataset = load_huggingface_dataset()
 
@@ -110,18 +108,18 @@ def main(argv: list = sys.argv[1:]):
     train_dataset.set_transform(transform)
     test_dataset.set_transform(transform)
 
-    train_dataset_generator = JaticObjectDetectionDataLoader(
-        dataset=train_dataset,
+    train_dataloader = ArmoryDataLoader(
+        JaticObjectDetectionDataset(train_dataset),
         batch_size=BATCH_SIZE,
     )
-    test_dataset_generator = JaticObjectDetectionDataLoader(
-        dataset=test_dataset,
+    test_dataloader = ArmoryDataLoader(
+        JaticObjectDetectionDataset(test_dataset),
         batch_size=BATCH_SIZE,
     )
     eval_dataset = Dataset(
         name="XVIEW",
-        train_dataset=train_dataset_generator,
-        test_dataset=test_dataset_generator,
+        train_dataset=train_dataloader,
+        test_dataset=test_dataloader,
     )
     eval_model = Model(
         name="fasterrcnn-resnet-50",
