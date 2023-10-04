@@ -3,6 +3,10 @@
 import datasets
 
 # import torch.nn as nn
+import evaluate
+import numpy as np
+
+# from torchmetrics.classification import Accuracy
 from torchvision.transforms import Compose, Normalize, RandomResizedCrop, ToTensor
 from transformers import (  # BeitImageProcessor,
     AutoImageProcessor,
@@ -29,7 +33,7 @@ CHECKPOINT = "google/vit-base-patch16-224-in21k"
 
 
 if __name__ == "__main__":
-    dataset = datasets.load_dataset("honaker/eurosat_dataset", split="train[:200]")
+    dataset = datasets.load_dataset("honaker/eurosat_dataset", split="train[:2000]")
     assert isinstance(dataset, datasets.Dataset)
     dataset = dataset.train_test_split(test_size=0.2)
 
@@ -63,6 +67,14 @@ if __name__ == "__main__":
     )
     # model = Finetuned(model)
 
+    metric = evaluate.load("accuracy")
+
+    # metric = Accuracy(task="multiclass", num_classes=len(label2id))
+    def compute_metrics(eval_pred):
+        logits, labels = eval_pred
+        predictions = np.argmax(logits, axis=-1)
+        return metric.compute(predictions=predictions, references=labels)
+
     training_args = TrainingArguments(
         output_dir="finetuned_eurosat",
         remove_unused_columns=False,
@@ -72,10 +84,10 @@ if __name__ == "__main__":
         per_device_train_batch_size=2,
         gradient_accumulation_steps=4,
         per_device_eval_batch_size=2,
-        num_train_epochs=1,
+        num_train_epochs=10,
         warmup_ratio=0.1,
         logging_steps=10,
-        load_best_model_at_end=False,
+        load_best_model_at_end=True,
         push_to_hub=False,
     )
 
@@ -86,5 +98,7 @@ if __name__ == "__main__":
         train_dataset=dataset["train"],
         eval_dataset=dataset["test"],
         tokenizer=processor,
+        compute_metrics=compute_metrics,
     )
     trainer.train()
+    trainer.save_model("finetuned_eurosat_final")
