@@ -18,31 +18,42 @@ def test_model_init_raises_on_invalid_model():
 
 
 def test_dataset_init_raises_on_invalid_test_dataset():
-    with pytest.raises(AssertionError, match=r"test_dataset.*instance of"):
-        evaluation.Dataset(name="bad test dataset", test_dataset=42)  # type: ignore
+    with pytest.raises(AssertionError, match=r"test_dataloader.*instance of"):
+        evaluation.Dataset(
+            name="bad test dataset",
+            test_dataloader=42,  # type: ignore
+            x_key="data",
+            y_key="target",
+        )
 
 
 def test_dataset_init_raises_on_invalid_train_dataset(data_loader):
-    with pytest.raises(AssertionError, match=r"train_dataset.*instance of"):
+    with pytest.raises(AssertionError, match=r"train_dataloader.*instance of"):
         evaluation.Dataset(
             name="bad train dataset",
-            test_dataset=data_loader,
-            train_dataset=42,  # type: ignore
+            test_dataloader=data_loader,
+            train_dataloader=42,  # type: ignore
+            x_key="data",
+            y_key="target",
         )
 
 
 def test_dataset_init_when_no_train_dataset(data_loader):
     evaluation.Dataset(
         name="bad train dataset",
-        test_dataset=data_loader,
+        test_dataloader=data_loader,
+        x_key="data",
+        y_key="target",
     )
 
 
 def test_dataset_init_when_train_dataset(data_loader):
     evaluation.Dataset(
         name="bad train dataset",
-        test_dataset=data_loader,
-        train_dataset=data_loader,
+        test_dataloader=data_loader,
+        train_dataloader=data_loader,
+        x_key="data",
+        y_key="target",
     )
 
 

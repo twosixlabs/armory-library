@@ -4,7 +4,7 @@ Base Armory evaluation task
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Mapping, Optional
 
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
@@ -40,12 +40,21 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         """Batch being evaluated during each step of the evaluation task"""
 
         i: int
-        x: Any
-        y: Any
+        data: Mapping[str, Any]
+        x_key: str
+        y_key: str
         y_pred: Optional[Any] = None
         y_target: Optional[Any] = None
         x_adv: Optional[Any] = None
         y_pred_adv: Optional[Any] = None
+
+        @property
+        def x(self):
+            return self.data[self.x_key]
+
+        @property
+        def y(self):
+            return self.data[self.y_key]
 
     ###
     # Properties
@@ -125,8 +134,12 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
 
     def test_step(self, batch, batch_idx):
         """Invokes task's benign and adversarial evaluations"""
-        x, y = batch
-        curr_batch = self.Batch(i=batch_idx, x=x, y=y)
+        curr_batch = self.Batch(
+            i=batch_idx,
+            data=batch,
+            x_key=self.evaluation.dataset.x_key,
+            y_key=self.evaluation.dataset.y_key,
+        )
         if not self.skip_benign:
             self.run_benign(curr_batch)
         if not self.skip_attack:

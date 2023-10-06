@@ -43,7 +43,7 @@ class LightningEngine:
 
         self._log_params()
         self.trainer.test(
-            self.task, dataloaders=self.task.evaluation.dataset.test_dataset
+            self.task, dataloaders=self.task.evaluation.dataset.test_dataloader
         )
         return dict(
             compute=self.task.evaluation.metric.profiler.results(),

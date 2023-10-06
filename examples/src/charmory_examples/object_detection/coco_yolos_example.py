@@ -12,7 +12,7 @@ from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
-from charmory.data import ArmoryDataLoader, JaticObjectDetectionDataset
+from charmory.data import ArmoryDataLoader
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.model.object_detection import YolosTransformer
@@ -131,16 +131,16 @@ def main(batch_size, export_every_n_batches, num_batches):
 
     dataset.set_transform(transform)
 
-    dataloader = ArmoryDataLoader(
-        JaticObjectDetectionDataset(dataset), batch_size=batch_size
-    )
+    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
 
     ###
     # Evaluation
     ###
     eval_dataset = Dataset(
         name="coco",
-        test_dataset=dataloader,
+        test_dataloader=dataloader,
+        x_key="image",
+        y_key="objects",
     )
 
     eval_model = Model(
