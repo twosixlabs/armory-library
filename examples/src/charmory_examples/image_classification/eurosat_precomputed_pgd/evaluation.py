@@ -2,6 +2,7 @@
 
 import argparse
 from copy import deepcopy
+import os
 
 import albumentations as A
 from art.attacks.evasion import ProjectedGradientDescent
@@ -18,6 +19,7 @@ from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 
 _MODELS = {
+    "untrained": f"{os.path.dirname(__file__)}/finetuned_eurosat_final/",
     "convnext": "mrm8488/convnext-tiny-finetuned-eurosat",
     "swin": "nielsr/swin-tiny-patch4-window7-224-finetuned-eurosat",
     "vit": "nielsr/vit-finetuned-eurosat-kornia",
@@ -177,22 +179,34 @@ def _get_attack_kwargs(**kwargs):
     return attack_kwargs
 
 
-def create_attack_evaluation_task(
-    model_name: str, batch_size: int, **kwargs
-) -> ImageClassificationTask:
+def create_evaluation(
+    model_name: str, batch_size: int, with_attack: bool, **kwargs
+) -> Evaluation:
     model, classifier = _load_model(_MODELS[model_name])
     dataset = _load_dataset(batch_size=batch_size)
-    attack = _create_attack(classifier, **_get_attack_kwargs(**kwargs))
+    attack = (
+        _create_attack(classifier, **_get_attack_kwargs(**kwargs))
+        if with_attack
+        else None
+    )
 
     evaluation = Evaluation(
         name=f"eurosat-{model_name}-pgd-generation",
+        # name=f"eurosat-{model_name}-precomputed-pgd",
         description=f"EuroSAT classification using {model_name} model with PGD attack generation",
+        # description=f"EuroSAT classification using {model_name} model with precomputed PGD attack",
         author="TwoSix",
         attack=attack,
         dataset=dataset,
         metric=_create_metric(),
         model=model,
     )
+
+    return evaluation
+
+
+def create_attack_evaluation_task(**kwargs) -> ImageClassificationTask:
+    evaluation = create_evaluation(with_attack=True, **kwargs)
 
     task = ImageClassificationTask(
         evaluation,
@@ -203,20 +217,8 @@ def create_attack_evaluation_task(
     return task
 
 
-def create_pregenerated_evaluation_task(
-    model_name: str, batch_size: int
-) -> ImageClassificationTask:
-    model, _ = _load_model(_MODELS[model_name])
-    dataset = _load_dataset(batch_size=batch_size)
-
-    evaluation = Evaluation(
-        name=f"eurosat-{model_name}-precomputed-pgd",
-        description=f"EuroSAT classification using {model_name} model with precomputed PGD attack",
-        author="TwoSix",
-        dataset=dataset,
-        metric=_create_metric(),
-        model=model,
-    )
+def create_pregenerated_evaluation_task(**kwargs) -> ImageClassificationTask:
+    evaluation = create_evaluation(with_attack=False, **kwargs)
 
     task = ImageClassificationTask(
         evaluation,
