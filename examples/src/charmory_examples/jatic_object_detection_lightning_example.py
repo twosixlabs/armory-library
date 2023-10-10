@@ -10,7 +10,7 @@ import numpy as np
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader, JaticObjectDetectionDataset
-from charmory.engine import LightningEngine
+from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.experimental.example_results import print_outputs
 from charmory.model.object_detection import JaticObjectDetectionModel
@@ -182,7 +182,7 @@ def main(args):
         export_every_n_batches=args.export_every_n_batches,
         class_metrics=False,
     )
-    engine = LightningEngine(task, limit_test_batches=args.num_batches)
+    engine = EvaluationEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()
     print_outputs(dataset, model, results)
 

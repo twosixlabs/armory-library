@@ -5,11 +5,11 @@ from charmory_examples.image_classification.eurosat_precomputed_pgd.evaluation i
     get_cli_args,
 )
 
-from charmory.engine import LightningEngine
+from charmory.engine import EvaluationEngine
 
 if __name__ == "__main__":
     args = get_cli_args(with_attack=True)
     task = create_attack_evaluation_task(**vars(args))
-    engine = LightningEngine(task, limit_test_batches=args.num_batches)
+    engine = EvaluationEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()
     pprint(results)

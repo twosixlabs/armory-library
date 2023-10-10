@@ -13,7 +13,7 @@ from transformers import AutoImageProcessor, AutoModelForObjectDetection
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
-from charmory.engine import LightningEngine
+from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.model.object_detection import YolosTransformer
 from charmory.tasks.object_detection import ObjectDetectionTask
@@ -195,7 +195,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         export_every_n_batches=export_every_n_batches,
         class_metrics=False,
     )
-    engine = LightningEngine(task, limit_test_batches=num_batches)
+    engine = EvaluationEngine(task, limit_test_batches=num_batches)
     results = engine.run()
 
     pprint(results)

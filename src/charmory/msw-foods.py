@@ -12,7 +12,7 @@ from transformers.image_utils import infer_channel_dimension_format
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
-from charmory.engine import LightningEngine
+from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
@@ -129,7 +129,7 @@ for epsilon in [x / 1000.0 for x in range(10, 40, 5)]:
     with track_evaluation("msw-food-3", "epsilon 0.010 to 0.040"):
         evaluation = make_evaluation_from_scratch(epsilon=epsilon)
         task = ImageClassificationTask(evaluation, num_classes=12)
-        engine = LightningEngine(task)
+        engine = EvaluationEngine(task)
         results = engine.run()
         print(f"Completed evaluation run with {epsilon=}")
         pprint(results)

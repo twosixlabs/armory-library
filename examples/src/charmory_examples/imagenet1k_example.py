@@ -15,7 +15,7 @@ from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
-from charmory.engine import LightningEngine
+from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.experimental.example_results import print_outputs
 from charmory.model.image_classification import JaticImageClassificationModel
@@ -150,7 +150,7 @@ def main(argv: list = sys.argv[1:]):
         evaluation, num_classes=1000, export_every_n_batches=5
     )
 
-    engine = LightningEngine(task, limit_test_batches=5)
+    engine = EvaluationEngine(task, limit_test_batches=5)
     results = engine.run()
     print_outputs(dataset, model, results)
 
