@@ -9,6 +9,7 @@ from art.attacks.evasion import ProjectedGradientDescent
 from art.estimators.classification import PyTorchClassifier
 import jatic_toolbox
 import numpy as np
+import torch
 import torch.nn as nn
 
 from armory.metrics.compute import BasicProfiler
@@ -96,6 +97,7 @@ def _load_model(name: str):
     classifier = track_init_params(PyTorchClassifier)(
         JaticImageClassificationModel(model),
         loss=nn.CrossEntropyLoss(),
+        optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
         input_shape=(224, 224, 3),
         channels_first=False,
         nb_classes=10,
