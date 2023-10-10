@@ -12,7 +12,7 @@ import numpy as np
 import torch.nn as nn
 
 from armory.metrics.compute import BasicProfiler
-from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
+from charmory.data import ArmoryDataLoader
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
@@ -142,13 +142,13 @@ def _load_dataset(batch_size: int):
 
     dataset.set_transform(transform_func)
 
-    dataloader = ArmoryDataLoader(
-        JaticImageClassificationDataset(dataset), batch_size=batch_size
-    )
+    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
 
     eval_dataset = Dataset(
         name="EuroSAT",
-        test_dataset=dataloader,
+        x_key="image",
+        y_key="label",
+        test_dataloader=dataloader,
     )
 
     return eval_dataset
