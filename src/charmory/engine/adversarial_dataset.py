@@ -14,14 +14,30 @@ dictionary of column names to values for a single sample.
 
 
 class AdversarialDatasetEngine:
+    """
+    Armory engine to create adversarial datasets. An adversarial dataset has
+    an adversarial attack already applied to every sample in the dataset.
+    """
+
     def __init__(
         self,
         evaluation: Evaluation,
-        output_dir: str,
+        output_dir: Optional[str] = None,
         adapter: Optional[SampleAdapter] = None,
         features: Optional[datasets.Features] = None,
         num_batches: Optional[int] = None,
     ):
+        """
+        Initializes the engine.
+
+        Args:
+            evaluation: Armory evaluation from which to generate the dataset
+            output_dir: Optional, directory to which to write the generated dataset
+            adapter: Optional, adapter to perform additional modifications to samples
+            features: Optional, dataset features
+            num_batches: Optional, number of batches from the original dataset to
+                attack and include in the generated dataset
+        """
         self.evaluation = evaluation
         self.output_dir = output_dir
         self.features = features
@@ -30,16 +46,29 @@ class AdversarialDatasetEngine:
         )
         self.num_batches = num_batches
 
-    def generate(self) -> None:
+    @staticmethod
+    def _default_adapter(sample: Mapping[str, Any]):
+        # do nothing
+        return sample
+
+    def generate(self) -> datasets.Dataset:
         """Create the adversarial dataset"""
         dataset = datasets.Dataset.from_generator(
             self._generator, features=self.features
         )
         assert isinstance(dataset, datasets.Dataset)
 
-        dataset.to_parquet(self.output_dir)
+        if self.output_dir is not None:
+            dsdict = datasets.DatasetDict({"test": dataset})
+            dsdict.save_to_disk(self.output_dir)
+
+        return dataset
 
     def _generator(self):
+        """
+        Iterates over every batch in the source dataset, applies the adversarial
+        attack, and yields the pre-attacked samples.
+        """
         if TYPE_CHECKING:
             assert self.evaluation.attack
 
@@ -68,11 +97,6 @@ class AdversarialDatasetEngine:
             batch_idx += 1
             if self.num_batches is not None and batch_idx >= self.num_batches:
                 return
-
-    @staticmethod
-    def _default_adapter(sample: Mapping[str, Any]):
-        # do nothing
-        return sample
 
     def __getstate__(self):
         """
