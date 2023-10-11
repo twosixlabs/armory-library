@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional
 import datasets
 
 from charmory.evaluation import Evaluation
+from charmory.track import get_current_params
 
 SampleAdapter = Callable[[Mapping[str, Any]], Mapping[str, Any]]
 """
@@ -72,3 +73,13 @@ class AdversarialDatasetEngine:
     def _default_adapter(sample: Mapping[str, Any]):
         # do nothing
         return sample
+
+    def __getstate__(self):
+        """
+        Return the mapping of tracked params from the evaluation as the engine
+        state for pickling. We do this because `datasets` relies on the hashed
+        pickled state of the generator (this class, because it is a bounded method)
+        to determine the cache of the dataset. Thus, we want a reproducible,
+        deterministic state in contrast to the default behavior for Python objects.
+        """
+        return get_current_params()
