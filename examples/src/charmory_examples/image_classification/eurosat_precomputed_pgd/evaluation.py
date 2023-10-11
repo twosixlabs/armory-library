@@ -3,11 +3,14 @@
 import argparse
 from copy import deepcopy
 import os
+from typing import Optional
 
 import albumentations as A
 from art.attacks.evasion import ProjectedGradientDescent
 from art.estimators.classification import PyTorchClassifier
+import datasets
 import jatic_toolbox
+from jatic_toolbox.interop.huggingface import HuggingFaceVisionDataset
 import numpy as np
 import torch
 import torch.nn as nn
@@ -37,6 +40,11 @@ def get_cli_args(with_attack: bool):
         "model_name",
         choices=_MODELS.keys(),
     )
+    if not with_attack:
+        parser.add_argument(
+            "dataset_path",
+            type=str,
+        )
     parser.add_argument(
         "--batch-size",
         default=4,
@@ -45,6 +53,11 @@ def get_cli_args(with_attack: bool):
     parser.add_argument(
         "--num-batches",
         default=20,
+        type=int,
+    )
+    parser.add_argument(
+        "--export-every-n-batches",
+        default=5,
         type=int,
     )
 
@@ -112,13 +125,19 @@ def _load_model(name: str):
     return eval_model, classifier
 
 
-def _load_dataset(batch_size: int):
-    dataset = track_params(jatic_toolbox.load_dataset)(
-        provider="huggingface",
-        dataset_name="tanganke/EuroSAT",
-        task="image-classification",
-        split="test",
-    )
+def _load_dataset(batch_size: int, dataset_path: Optional[str] = None):
+    if dataset_path is not None:
+        ds = track_params(datasets.load_from_disk)(dataset_path=dataset_path)
+        if isinstance(ds, datasets.DatasetDict):
+            ds = ds["test"]
+        dataset = HuggingFaceVisionDataset(ds)
+    else:
+        dataset = track_params(jatic_toolbox.load_dataset)(
+            provider="huggingface",
+            dataset_name="tanganke/EuroSAT",
+            task="image-classification",
+            split="test",
+        )
 
     transforms = A.Compose(
         [
@@ -182,21 +201,25 @@ def _get_attack_kwargs(**kwargs):
 
 
 def create_evaluation(
-    model_name: str, batch_size: int, with_attack: bool, **kwargs
+    model_name: str,
+    batch_size: int,
+    with_attack: bool,
+    dataset_path: Optional[str] = None,
+    **kwargs,
 ) -> Evaluation:
     model, classifier = _load_model(_MODELS[model_name])
-    dataset = _load_dataset(batch_size=batch_size)
+    dataset = _load_dataset(batch_size=batch_size, dataset_path=dataset_path)
     attack = (
         _create_attack(classifier, **_get_attack_kwargs(**kwargs))
         if with_attack
         else None
     )
 
+    attack_type = "generated" if with_attack else "precomputed"
+
     evaluation = Evaluation(
-        name=f"eurosat-{model_name}-pgd-generation",
-        # name=f"eurosat-{model_name}-precomputed-pgd",
-        description=f"EuroSAT classification using {model_name} model with PGD attack generation",
-        # description=f"EuroSAT classification using {model_name} model with precomputed PGD attack",
+        name=f"eurosat-{model_name}-{attack_type}-pgd",
+        description=f"EuroSAT classification using {model_name} model with {attack_type} PGD attack",
         author="TwoSix",
         attack=attack,
         dataset=dataset,
@@ -207,26 +230,16 @@ def create_evaluation(
     return evaluation
 
 
-def create_attack_evaluation_task(**kwargs) -> ImageClassificationTask:
-    evaluation = create_evaluation(with_attack=True, **kwargs)
+def create_evaluation_task(
+    export_every_n_batches: int, with_attack: bool, **kwargs
+) -> ImageClassificationTask:
+    evaluation = create_evaluation(with_attack=with_attack, **kwargs)
 
     task = ImageClassificationTask(
         evaluation,
         num_classes=10,
-        export_every_n_batches=1,  # Export all batches
-    )
-
-    return task
-
-
-def create_pregenerated_evaluation_task(**kwargs) -> ImageClassificationTask:
-    evaluation = create_evaluation(with_attack=False, **kwargs)
-
-    task = ImageClassificationTask(
-        evaluation,
-        num_classes=10,
-        export_every_n_batches=0,
-        skip_attack=True,
+        export_every_n_batches=export_every_n_batches,
+        skip_attack=not with_attack,
     )
 
     return task
