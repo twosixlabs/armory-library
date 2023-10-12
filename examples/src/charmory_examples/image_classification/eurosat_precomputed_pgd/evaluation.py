@@ -52,7 +52,7 @@ def get_cli_args(with_attack: bool):
     )
     parser.add_argument(
         "--num-batches",
-        default=20,
+        default=None,
         type=int,
     )
     parser.add_argument(
