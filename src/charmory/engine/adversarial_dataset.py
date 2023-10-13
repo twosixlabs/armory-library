@@ -17,6 +17,21 @@ class AdversarialDatasetEngine:
     """
     Armory engine to create adversarial datasets. An adversarial dataset has
     an adversarial attack already applied to every sample in the dataset.
+
+    Example:
+
+        from charmory.engine import AdversarialDatasetEngine
+
+        # assuming `evaluation` has been defined using `charmory.evaluation` classes
+        engine = AdversarialDatasetEngine(
+            evaluation,
+            output_dir="dataset_output_dir",
+        )
+        engine.generate()
+
+        # to load the generated dataset...
+        import datasets
+        ds = datasets.load_from_disk("dataset_output_dir")
     """
 
     def __init__(
