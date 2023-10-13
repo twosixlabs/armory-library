@@ -1,9 +1,10 @@
 """Armory engine to create adversarial datasets"""
-from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional
+from typing import Any, Callable, Mapping, Optional
 
 import datasets
+import numpy as np
 
-from charmory.evaluation import Evaluation
+from charmory.tasks.base import BaseEvaluationTask
 from charmory.track import get_current_params
 
 SampleAdapter = Callable[[Mapping[str, Any]], Mapping[str, Any]]
@@ -22,9 +23,9 @@ class AdversarialDatasetEngine:
 
         from charmory.engine import AdversarialDatasetEngine
 
-        # assuming `evaluation` has been defined using `charmory.evaluation` classes
+        # assuming `task` has been defined using a `charmory.tasks` class
         engine = AdversarialDatasetEngine(
-            evaluation,
+            task,
             output_dir="dataset_output_dir",
         )
         engine.generate()
@@ -36,7 +37,7 @@ class AdversarialDatasetEngine:
 
     def __init__(
         self,
-        evaluation: Evaluation,
+        task: BaseEvaluationTask,
         output_dir: Optional[str] = None,
         adapter: Optional[SampleAdapter] = None,
         features: Optional[datasets.Features] = None,
@@ -53,7 +54,7 @@ class AdversarialDatasetEngine:
             num_batches: Optional, number of batches from the original dataset to
                 attack and include in the generated dataset
         """
-        self.evaluation = evaluation
+        self.task = task
         self.output_dir = output_dir
         self.features = features
         self.adapter: SampleAdapter = (
@@ -84,29 +85,15 @@ class AdversarialDatasetEngine:
         Iterates over every batch in the source dataset, applies the adversarial
         attack, and yields the pre-attacked samples.
         """
-        if TYPE_CHECKING:
-            assert self.evaluation.attack
-
         batch_idx = 0
-        for batch in iter(self.evaluation.dataset.test_dataloader):
-            x = batch[self.evaluation.dataset.x_key]
-            y = batch[self.evaluation.dataset.y_key]
-            if self.evaluation.attack.targeted:
-                if TYPE_CHECKING:
-                    assert self.evaluation.attack.label_targeter
-                y_target = self.evaluation.attack.label_targeter.generate(y)
-            else:
-                y_target = (
-                    y if self.evaluation.attack.use_label_for_untargeted else None
-                )
+        for ds_batch in iter(self.task.evaluation.dataset.test_dataloader):
+            task_batch = self.task.create_batch(ds_batch, batch_idx)
+            self.task.apply_attack(task_batch)
+            assert isinstance(task_batch.x_adv, np.ndarray)
 
-            x_adv = self.evaluation.attack.attack.generate(
-                x=x, y=y_target, **self.evaluation.attack.generate_kwargs
-            )
-
-            for idx in range(len(x)):
-                sample = {key: val[idx] for key, val in batch.items()}
-                sample[self.evaluation.dataset.x_key] = x_adv[idx]
+            for idx in range(len(task_batch.x_adv)):
+                sample = {key: val[idx] for key, val in ds_batch.items()}
+                sample[self.task.evaluation.dataset.x_key] = task_batch.x_adv[idx]
                 yield self.adapter(sample)
 
             batch_idx += 1

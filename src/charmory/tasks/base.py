@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Mapping, Optional
 
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
+import numpy as np
 import torch
 
 from charmory.evaluation import Evaluation
@@ -91,6 +92,14 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
     # Task evaluation methods
     ###
 
+    def create_batch(self, batch, batch_idx):
+        return self.Batch(
+            i=batch_idx,
+            data=batch,
+            x_key=self.evaluation.dataset.x_key,
+            y_key=self.evaluation.dataset.y_key,
+        )
+
     def run_benign(self, batch: Batch):
         """Perform benign evaluation"""
         # Ensure that input sample isn't overwritten by model
@@ -102,6 +111,17 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
 
     def run_attack(self, batch: Batch):
         """Perform adversarial evaluation"""
+        self.apply_attack(batch)
+        assert isinstance(batch.x_adv, np.ndarray)
+
+        # Ensure that input sample isn't overwritten by model
+        batch.x_adv.flags.writeable = False
+        batch.y_pred_adv = self.evaluation.model.model.predict(
+            batch.x_adv, **self.evaluation.model.predict_kwargs
+        )
+
+    def apply_attack(self, batch: Batch):
+        """Apply attack to batch"""
         if TYPE_CHECKING:
             assert self.evaluation.attack
 
@@ -122,24 +142,13 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
                 x=batch.x, y=batch.y_target, **self.evaluation.attack.generate_kwargs
             )
 
-        # Ensure that input sample isn't overwritten by model
-        batch.x_adv.flags.writeable = False
-        batch.y_pred_adv = self.evaluation.model.model.predict(
-            batch.x_adv, **self.evaluation.model.predict_kwargs
-        )
-
     ###
     # LightningModule method overrides
     ###
 
     def test_step(self, batch, batch_idx):
         """Invokes task's benign and adversarial evaluations"""
-        curr_batch = self.Batch(
-            i=batch_idx,
-            data=batch,
-            x_key=self.evaluation.dataset.x_key,
-            y_key=self.evaluation.dataset.y_key,
-        )
+        curr_batch = self.create_batch(batch, batch_idx)
         if not self.skip_benign:
             self.run_benign(curr_batch)
         if not self.skip_attack:
