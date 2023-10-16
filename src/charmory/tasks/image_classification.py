@@ -38,17 +38,21 @@ class ImageClassificationTask(BaseEvaluationTask):
             filename = f"batch_{batch_idx}_ex_{sample_idx}_{name}.png"
             self.exporter.log_image(batch_data[sample_idx], filename)
 
+    @staticmethod
+    def _from_list(maybe_list, idx):
+        return maybe_list[idx] if maybe_list is not None else None
+
     def _export_targets(self, batch):
-        self.exporter.log_dict(
-            dictionary=dict(
-                i=batch.i,
-                y=batch.y,
-                y_pred=batch.y_pred,
-                y_target=batch.y_target,
-                y_pred_adv=batch.y_pred_adv,
-            ),
-            artifact_file=f"batch_{batch.i}_targets.txt",
-        )
+        for sample_idx in range(batch.x.shape[0]):
+            self.exporter.log_dict(
+                dictionary=dict(
+                    y=batch.y[sample_idx],
+                    y_pred=self._from_list(batch.y_pred, sample_idx),
+                    y_target=self._from_list(batch.y_target, sample_idx),
+                    y_pred_adv=self._from_list(batch.y_pred_adv, sample_idx),
+                ),
+                artifact_file=f"batch_{batch.i}_ex_{sample_idx}_targets.txt",
+            )
 
     def run_benign(self, batch: BaseEvaluationTask.Batch):
         super().run_benign(batch)

@@ -111,6 +111,10 @@ def _serialize(obj: dict) -> dict:
 
 
 def _serialize(obj):
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.floating):
+        return float(obj)
     if isinstance(obj, np.ndarray):
         return [_serialize(i) for i in obj.tolist()]
     if isinstance(obj, list):
