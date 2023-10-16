@@ -1,5 +1,6 @@
 """Object detection evaluation task"""
 
+import numpy as np
 import torch
 import torchmetrics.detection
 
@@ -84,11 +85,14 @@ class ObjectDetectionTask(BaseEvaluationTask):
         self.export_score_threshold = export_score_threshold
 
     def export_batch(self, batch: BaseEvaluationTask.Batch):
-        self._export("benign", batch.x, batch.y, batch.y_pred, batch.i)
+        self._export_image("benign", batch.x, batch.y, batch.y_pred, batch.i)
         if batch.x_adv is not None:
-            self._export("attack", batch.x_adv, batch.y, batch.y_pred_adv, batch.i)
+            self._export_image(
+                "attack", batch.x_adv, batch.y, batch.y_pred_adv, batch.i
+            )
+        self._export_targets(batch)
 
-    def _export(self, name, images, truth, preds, batch_idx):
+    def _export_image(self, name, images, truth, preds, batch_idx):
         batch_size = images.shape[0]
         for sample_idx in range(batch_size):
             boxes_above_threshold = preds[sample_idx]["boxes"][
@@ -101,6 +105,29 @@ class ObjectDetectionTask(BaseEvaluationTask):
             )
             filename = f"batch_{batch_idx}_ex_{sample_idx}_{name}.png"
             self.exporter.log_image(with_boxes, filename)
+
+    @classmethod
+    def _serialize(cls, obj):
+        if isinstance(obj, np.ndarray):
+            return [cls._serialize(i) for i in obj.tolist()]
+        if isinstance(obj, list):
+            return [cls._serialize(i) for i in obj]
+        if isinstance(obj, dict):
+            return {k: cls._serialize(v) for k, v in obj.items()}
+        return obj
+
+    def _export_targets(self, batch):
+        targets = dict(
+            i=batch.i,
+            y=self._serialize(batch.y),
+            y_pred=self._serialize(batch.y_pred),
+            y_target=self._serialize(batch.y_target),
+            y_pred_adv=self._serialize(batch.y_pred_adv),
+        )
+        self.exporter.log_dict(
+            dictionary=targets,
+            artifact_file=f"batch_{batch.i}_targets.txt",
+        )
 
     def run_benign(self, batch: BaseEvaluationTask.Batch):
         super().run_benign(batch)
