@@ -2,7 +2,7 @@
 Sample exporting utilities
 """
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union, overload
 
 from mlflow.client import MlflowClient
 import numpy as np
@@ -78,7 +78,7 @@ class MlflowExporter(Exporter):
         self.client.log_text(self.run_id, text, artifact_file)
 
     def log_dict(self, dictionary: Dict[str, Any], artifact_file: str):
-        self.client.log_dict(self.run_id, dictionary, artifact_file)
+        self.client.log_dict(self.run_id, _serialize(dictionary), artifact_file)
 
     def log_figure(
         self,
@@ -93,6 +93,31 @@ class MlflowExporter(Exporter):
         artifact_file: str,
     ):
         self.client.log_table(self.run_id, data, artifact_file)
+
+
+@overload
+def _serialize(obj: npt.NDArray[Any]) -> list:
+    ...
+
+
+@overload
+def _serialize(obj: list) -> list:
+    ...
+
+
+@overload
+def _serialize(obj: dict) -> dict:
+    ...
+
+
+def _serialize(obj):
+    if isinstance(obj, np.ndarray):
+        return [_serialize(i) for i in obj.tolist()]
+    if isinstance(obj, list):
+        return [_serialize(i) for i in obj]
+    if isinstance(obj, dict):
+        return {k: _serialize(v) for k, v in obj.items()}
+    return obj
 
 
 def draw_boxes_on_image(
