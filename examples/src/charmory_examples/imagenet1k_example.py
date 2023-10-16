@@ -11,10 +11,9 @@ from jatic_toolbox import load_model as load_jatic_model
 import torch
 import torch.nn as nn
 
-from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
+from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.experimental.example_results import print_outputs
@@ -42,7 +41,7 @@ def load_huggingface_dataset():
     train_dataset.set_transform(transform)
 
     train_dataloader = ArmoryDataLoader(
-        dataset=JaticImageClassificationDataset(train_dataset),
+        dataset=train_dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
     )
@@ -55,7 +54,7 @@ def load_huggingface_dataset():
     )
     test_dataset.set_transform(transform)
     test_dataloader = ArmoryDataLoader(
-        dataset=JaticImageClassificationDataset(test_dataset),
+        dataset=test_dataset,
         batch_size=BATCH_SIZE,
     )
     return train_dataloader, test_dataloader
@@ -99,7 +98,11 @@ def main(argv: list = sys.argv[1:]):
 
     train_dataset, test_dataset = load_huggingface_dataset()
     dataset = Dataset(
-        name="imagenet", train_dataset=train_dataset, test_dataset=test_dataset
+        name="imagenet",
+        x_key="image",
+        y_key="label",
+        train_dataloader=train_dataset,
+        test_dataloader=test_dataset,
     )
 
     ###
@@ -124,13 +127,6 @@ def main(argv: list = sys.argv[1:]):
 
     metric = Metric(
         profiler=BasicProfiler(),
-        logger=MetricsLogger(
-            supported_metrics=["accuracy"],
-            perturbation=["linf"],
-            task=["categorical_accuracy"],
-            means=True,
-            record_metric_per_sample=False,
-        ),
     )
 
     sysconfig = SysConfig(gpus=["all"], use_gpu=True)

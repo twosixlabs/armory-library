@@ -21,6 +21,17 @@ repos:
       - id: flake8
         args:
           - "--config=./tools/flake8.cfg"
+  # Python typing
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.6.0
+    hooks:
+      - id: mypy
+        # When charmory code passes mypy, add this pattern to the list below
+        # src/charmory/.*
+        files: |
+          (?x)^(
+            examples/src/.*
+          )$
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:

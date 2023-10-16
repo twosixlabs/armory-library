@@ -8,7 +8,6 @@ from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
 from torch.utils.data.dataloader import DataLoader
 
-from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import NullProfiler, Profiler
 from charmory.labels import LabelTargeter
 
@@ -64,7 +63,6 @@ class Dataset:
 
 @dataclass
 class Metric:
-    logger: MetricsLogger = field(default_factory=MetricsLogger)
     profiler: Profiler = field(default_factory=NullProfiler)
 
 

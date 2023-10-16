@@ -8,9 +8,8 @@ import numpy as np
 import torch
 from transformers.image_utils import infer_channel_dimension_format
 
-from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
-from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
+from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.model.image_classification import JaticImageClassificationModel
@@ -66,13 +65,15 @@ def make_evaluation_from_scratch(epsilon: float) -> Evaluation:
     dataset.set_transform(transform)
 
     generator = ArmoryDataLoader(
-        dataset=JaticImageClassificationDataset(dataset),
+        dataset=dataset,
         batch_size=16,
     )
 
     eval_dataset = Dataset(
         name="food-category-classification",
-        test_dataset=generator,
+        x_key="image",
+        y_key="label",
+        test_dataloader=generator,
     )
 
     eval_model = Model(
@@ -98,13 +99,6 @@ def make_evaluation_from_scratch(epsilon: float) -> Evaluation:
 
     eval_metric = Metric(
         profiler=BasicProfiler(),
-        logger=MetricsLogger(
-            supported_metrics=["accuracy"],
-            perturbation=["linf"],
-            task=["categorical_accuracy"],
-            means=True,
-            record_metric_per_sample=False,
-        ),
     )
 
     eval_sysconfig = SysConfig(

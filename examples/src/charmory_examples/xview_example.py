@@ -14,7 +14,7 @@ import numpy as np
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import ArmoryDataLoader, JaticObjectDetectionDataset
+from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.model.object_detection import JaticObjectDetectionModel
@@ -109,17 +109,19 @@ def main(argv: list = sys.argv[1:]):
     test_dataset.set_transform(transform)
 
     train_dataloader = ArmoryDataLoader(
-        JaticObjectDetectionDataset(train_dataset),
+        train_dataset,
         batch_size=BATCH_SIZE,
     )
     test_dataloader = ArmoryDataLoader(
-        JaticObjectDetectionDataset(test_dataset),
+        test_dataset,
         batch_size=BATCH_SIZE,
     )
     eval_dataset = Dataset(
         name="XVIEW",
-        train_dataset=train_dataloader,
-        test_dataset=test_dataloader,
+        x_key="image",
+        y_key="label",
+        train_dataloader=train_dataloader,
+        test_dataloader=test_dataloader,
     )
     eval_model = Model(
         name="fasterrcnn-resnet-50",

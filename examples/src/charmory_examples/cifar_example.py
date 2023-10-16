@@ -7,7 +7,6 @@ import art.attacks.evasion
 
 import armory.baseline_models.pytorch.cifar
 import armory.data.datasets
-from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.engine import EvaluationEngine
@@ -28,13 +27,15 @@ def main(argv: list = sys.argv[1:]):
 
     dataset = Dataset(
         name="CIFAR10",
-        train_dataset=track_params(armory.data.datasets.cifar10)(
+        x_key="image",
+        y_key="label",
+        train_dataloader=track_params(armory.data.datasets.cifar10)(
             split="train",
             epochs=20,
             batch_size=64,
             shuffle_files=True,
         ),
-        test_dataset=track_params(armory.data.datasets.cifar10)(
+        test_dataloader=track_params(armory.data.datasets.cifar10)(
             split="test",
             epochs=1,
             batch_size=64,
@@ -81,13 +82,6 @@ def main(argv: list = sys.argv[1:]):
 
     metric = Metric(
         profiler=BasicProfiler(),
-        logger=MetricsLogger(
-            supported_metrics=["accuracy"],
-            perturbation=["linf"],
-            task=["categorical_accuracy"],
-            means=True,
-            record_metric_per_sample=False,
-        ),
     )
 
     sysconfig = SysConfig(gpus=["all"], use_gpu=True)
