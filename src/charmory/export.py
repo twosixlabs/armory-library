@@ -2,7 +2,7 @@
 Sample exporting utilities
 """
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union, overload
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from mlflow.client import MlflowClient
 import numpy as np
@@ -93,21 +93,6 @@ class MlflowExporter(Exporter):
         artifact_file: str,
     ):
         self.client.log_table(self.run_id, data, artifact_file)
-
-
-@overload
-def _serialize(obj: npt.NDArray[Any]) -> list:
-    ...
-
-
-@overload
-def _serialize(obj: list) -> list:
-    ...
-
-
-@overload
-def _serialize(obj: dict) -> dict:
-    ...
 
 
 def _serialize(obj):

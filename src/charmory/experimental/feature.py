@@ -8,5 +8,6 @@ def a_little_teapot(n: int) -> str:
 def kookaburra() -> str:
     import inspect
 
-    function_name = inspect.currentframe().f_code.co_name
+    frame = inspect.currentframe()
+    function_name = frame.f_code.co_name if frame is not None else ""
     return f"{function_name} sits in the old gum tree"

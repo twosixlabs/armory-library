@@ -10,6 +10,7 @@ import shutil
 import string
 import subprocess
 import tarfile
+from typing import Optional
 
 import boto3
 from botocore import UNSIGNED
@@ -31,7 +32,10 @@ def add_checksums_dir(dir):
 
 
 def maybe_download_weights_from_s3(
-    weights_file: str, *, auto_expand_tars: bool = False, saved_model_dir: str = None
+    weights_file: str,
+    *,
+    auto_expand_tars: bool = False,
+    saved_model_dir: Optional[str] = None,
 ) -> str:
     """
     Download weights file from S3 if not already present in `saved_model_dir`.
@@ -45,7 +49,10 @@ def maybe_download_weights_from_s3(
         filepath (str): path to downloaded weights file
     """
 
-    filepath = os.path.join(saved_model_dir, weights_file)
+    if saved_model_dir is not None:
+        filepath = os.path.join(saved_model_dir, weights_file)
+    else:
+        filepath = weights_file
 
     if saved_model_dir is None:
         _cache_path = get_armory_home()

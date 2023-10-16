@@ -26,11 +26,23 @@ repos:
     rev: v1.6.0
     hooks:
       - id: mypy
-        # When charmory code passes mypy, add this pattern to the list below
-        # src/charmory/.*
+        additional_dependencies: [types-requests]
         files: |
           (?x)^(
+            src/charmory/.*|
             examples/src/.*
+          )$
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.7.0
+    hooks:
+      - id: nbqa-mypy
+        additional_dependencies: [mypy, types-requests]
+        args: ["--ignore-missing-imports"]
+        files: |
+          (?x)^(
+            src/charmory/.*|
+            tutorials/notebooks/.*|
+            examples/notebooks/.*
           )$
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
