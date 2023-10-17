@@ -40,6 +40,7 @@ jatic = [
     "datasets",
     "huggingface_hub",
     "transformers",
+    "yolov5",
 ]
 
 all = [
