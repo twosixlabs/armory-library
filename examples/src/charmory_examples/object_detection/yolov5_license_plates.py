@@ -9,6 +9,7 @@ import numpy as np
 import torch
 from torchvision.ops import box_convert
 import yolov5
+from yolov5.utils.loss import ComputeLoss
 
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
@@ -42,6 +43,20 @@ def get_cli_args():
     return parser.parse_args()
 
 
+class Yolo(torch.nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+        self.compute_loss = ComputeLoss(self.model.model.model)
+
+    def forward(self, x, targets=None):
+        if self.training:
+            outputs = self.model.model.model(x)
+            loss, _ = self.compute_loss(outputs, targets)
+            return dict(loss_total=loss)
+        return self.model(x)
+
+
 @track_params
 def load_model(
     model_path="keremberke/yolov5m-license-plate",
@@ -58,7 +73,7 @@ def load_model(
     model.agnostic = agnostic
     model.multi_label = multi_label
     model.max_det = max_det
-    return model
+    return Yolo(model)
 
 
 def create_transform():
@@ -104,7 +119,6 @@ def create_transform():
                 obj["boxes"] = box_convert(
                     torch.tensor(obj["boxes"]), "xywh", "xyxy"
                 ).numpy()
-        pprint(dict(a=sample["objects"], b=transformed["objects"]))
         return transformed
 
     return transform
@@ -118,6 +132,9 @@ def main(batch_size, export_every_n_batches, num_batches):
     model = load_model()
     detector = track_init_params(PyTorchYolo)(
         model,
+        input_shape=(3, 512, 512),
+        clip_values=(0, 1),
+        attack_losses=("loss_total",),
     )
 
     ###
@@ -129,7 +146,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         split="test",
     )
     dataset.set_transform(create_transform())
-    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
+    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     ###
     # Attack
@@ -138,7 +155,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         detector,
         patch_shape=(3, 50, 50),
         patch_location=(231, 231),  # middle of 512x512
-        batch_size=1,
+        batch_size=batch_size,
         sample_size=10,
         learning_rate=0.01,
         max_iter=20,
@@ -178,7 +195,6 @@ def main(batch_size, export_every_n_batches, num_batches):
     task = ObjectDetectionTask(
         evaluation,
         export_every_n_batches=export_every_n_batches,
-        skip_attack=True,
     )
     engine = EvaluationEngine(task, limit_test_batches=num_batches)
 
