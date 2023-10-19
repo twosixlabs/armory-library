@@ -52,7 +52,7 @@ jobs:
       - name: Upload Scan Results
         uses: actions/upload-artifact@v3
         with:
-          name: bandit_scan.txt
+          name: armory-library-bandit
           path: bandit_scan.txt
           retention-days: 1
 
