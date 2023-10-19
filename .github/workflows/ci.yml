@@ -49,6 +49,13 @@ jobs:
       - name: Scan
         run: make scan
 
+      - name: Upload Scan Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: bandit
+          path: bandit_scan.txt
+          retention-days: 1
+
 
   unit-tests:
     name: 🧪 Unit Tests
@@ -68,6 +75,7 @@ jobs:
 
       - name: Test
         run: make test
+
 
   generate-docs:
     name: 📖 Generate Docs
@@ -90,6 +98,14 @@ jobs:
       - name: Generate
         run: make docs
 
+      - name: Upload Docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs
+          path: public
+          retention-days: 1
+
+
   build:
     name: 🔨 Build
     runs-on: ubuntu-latest
@@ -110,3 +126,10 @@ jobs:
 
       - name: Build
         run: make build
+
+      - name: Upload Wheel
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheel
+          path: dist/*.whl
+          retention-days: 7
