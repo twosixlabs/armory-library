@@ -6,8 +6,8 @@ evaluations) within an experiment.
 ## Usage
 
 The primary interface is the `track_params` and `track_init_params` function
-decorators. The Armory `Engine` automatically handles the creating and closing
-of the MLFlow run session.
+decorators. The Armory `LightningEngine` automatically handles the creating and
+closing of the MLFlow run session.
 
 ### Logging Parameters
 
@@ -59,14 +59,14 @@ Additional parameters may be recorded manually using the
 from charmory.track import track_param
 
 track_param("batch_size", 16)
-engine = Engine(evaluation)
+engine = LightningEngine(task)
 engine.run()
 ```
 
 ### Logging Metrics
 
-`Engine.run` will automatically log all results of the evaluation as metrics
-in MLFlow.
+`LightningEngine.run` will automatically log all results of the evaluation as
+metrics in MLFlow.
 
 Additional metrics may be logged manually by resuming the MLFlow session after
 the evaluation has been run and calling [`mlflow.log_metric`].
@@ -74,7 +74,7 @@ the evaluation has been run and calling [`mlflow.log_metric`].
 ```python
 import mlflow
 
-engine = Engine(evaluation)
+engine = LightningEngine(task)
 engine.run()
 with mlflow.start_run(run_id=engine.run_id):
     mlflow.log_metric("custom_metric", 42)
@@ -90,7 +90,7 @@ evaulation has been run and calling [`mlflow.log_artifact`] or
 ```python
 import mlflow
 
-engine = Engine(evaluation)
+engine = LightningEngine(task)
 engine.run()
 with mlflow.start_run(run_id=engine.run_id):
     mlflow.log_artifacts("path/to/artifacts")

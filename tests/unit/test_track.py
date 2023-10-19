@@ -21,6 +21,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture(autouse=True)
 def reset_params():
+    track.reset_params()
     yield
     track.reset_params()
 
@@ -50,9 +51,9 @@ def test_tracking_context_isolates_parameters():
 
     with track.tracking_context():
         track.track_param("key", "child")
-        assert track._get_current_params() == {"key": "child"}
+        assert track.get_current_params() == {"key": "child"}
 
-    assert track._get_current_params() == {"key": "global"}
+    assert track.get_current_params() == {"key": "global"}
 
 
 def test_tracking_context_when_nested():
@@ -60,7 +61,7 @@ def test_tracking_context_when_nested():
 
     with track.tracking_context(nested=True):
         track.track_param("key2", "child")
-        assert track._get_current_params() == {"key1": "global", "key2": "child"}
+        assert track.get_current_params() == {"key1": "global", "key2": "child"}
 
 
 ###
@@ -75,7 +76,7 @@ def test_track_params_when_inline():
 
     track.track_params(func)(a="hello world", b=42)
 
-    params = track._get_current_params()
+    params = track.get_current_params()
     params.pop("func._func")
     assert params == {"func.a": "hello world", "func.b": 42}
 
@@ -88,7 +89,7 @@ def test_track_params_when_decorator():
 
     funct(a=314159, b="hi")
 
-    params = track._get_current_params()
+    params = track.get_current_params()
     params.pop("funct._func")
     assert params == {"funct.a": 314159, "funct.b": "hi"}
 
@@ -101,7 +102,7 @@ def test_track_params_with_prefix():
 
     func(a="jenny", b=8675309)
 
-    params = track._get_current_params()
+    params = track.get_current_params()
     params.pop("the_func._func")
     assert params == {"the_func.a": "jenny", "the_func.b": 8675309}
 
@@ -114,7 +115,7 @@ def test_track_params_with_ignore():
 
     track.track_params(func, ignore=["c"])("arg", b=7, c="kwarg")
 
-    params = track._get_current_params()
+    params = track.get_current_params()
     params.pop("func._func")
     assert params == {"func.b": 7}
 
@@ -131,7 +132,7 @@ def test_track_params_when_multiple_calls():
 
     mock.assert_has_calls([call(name="John Doe"), call(name="Jane Doe")])
 
-    params = track._get_current_params()
+    params = track.get_current_params()
     params.pop("func._func")
     assert params == {"func.name": "Jane Doe"}
 
@@ -149,7 +150,7 @@ def test_track_init_params_when_inline():
 
     track.track_init_params(TestClass)(a="hello world", b=42)
 
-    params = track._get_current_params()
+    params = track.get_current_params()
     params.pop("TestClass._func")
     assert params == {"TestClass.a": "hello world", "TestClass.b": 42}
 
@@ -163,7 +164,7 @@ def test_track_init_params_when_decorator():
 
     ClassType(a=314159, b="hi")
 
-    params = track._get_current_params()
+    params = track.get_current_params()
     params.pop("ClassType._func")
     assert params == {"ClassType.a": 314159, "ClassType.b": "hi"}
 
@@ -177,7 +178,7 @@ def test_track_init_params_with_prefix():
 
     TestClass(a="jenny", b=8675309)
 
-    params = track._get_current_params()
+    params = track.get_current_params()
     params.pop("the_class._func")
     assert params == {"the_class.a": "jenny", "the_class.b": 8675309}
 
@@ -191,7 +192,7 @@ def test_track_init_params_with_ignore():
 
     track.track_init_params(TestClass, ignore=["c"])("arg", b=7, c="kwarg")
 
-    params = track._get_current_params()
+    params = track.get_current_params()
     params.pop("TestClass._func")
     assert params == {"TestClass.b": 7}
 
@@ -209,7 +210,7 @@ def test_track_init_params_when_multiple_calls():
 
     mock.assert_has_calls([call(name="John Doe"), call(name="Jane Doe")])
 
-    params = track._get_current_params()
+    params = track.get_current_params()
     params.pop("TestClass._func")
     assert params == {"TestClass.name": "Jane Doe"}
 

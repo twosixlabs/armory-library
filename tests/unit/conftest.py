@@ -3,10 +3,9 @@ from unittest.mock import MagicMock
 from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
 import pytest
+from torch.utils.data.dataloader import DataLoader
 
-from armory.data.datasets import ArmoryDataGenerator
 import charmory.evaluation
-from charmory.scenario import Scenario
 
 
 @pytest.fixture
@@ -18,22 +17,15 @@ def evaluation_model():
 
 
 @pytest.fixture
-def data_generator():
-    return MagicMock(spec=ArmoryDataGenerator)
+def data_loader():
+    return MagicMock(spec=DataLoader)
 
 
 @pytest.fixture
-def evaluation_dataset(data_generator):
+def evaluation_dataset(data_loader):
     return charmory.evaluation.Dataset(
         name="test",
-        test_dataset=data_generator,
-    )
-
-
-@pytest.fixture
-def evaluation_scenario():
-    return charmory.evaluation.Scenario(
-        function=lambda _: MagicMock(spec=Scenario), kwargs={}
+        test_dataset=data_loader,
     )
 
 
@@ -58,7 +50,6 @@ def evaluation_sysconfig():
 def evaluation(
     evaluation_model,
     evaluation_dataset,
-    evaluation_scenario,
     evaluation_attack,
     evaluation_metric,
     evaluation_sysconfig,
@@ -69,7 +60,6 @@ def evaluation(
         author=None,
         model=evaluation_model,
         dataset=evaluation_dataset,
-        scenario=evaluation_scenario,
         attack=evaluation_attack,
         metric=evaluation_metric,
         sysconfig=evaluation_sysconfig,

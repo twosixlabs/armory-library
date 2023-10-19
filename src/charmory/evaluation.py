@@ -2,19 +2,15 @@
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from art.attacks import EvasionAttack
-from art.data_generators import DataGenerator
 from art.estimators import BaseEstimator
+from torch.utils.data.dataloader import DataLoader
 
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import NullProfiler, Profiler
 from charmory.labels import LabelTargeter
-
-MethodName = Callable[
-    ..., Any
-]  # reference to a python method e.g. "armory.attacks.weakest"
 
 
 @dataclass
@@ -51,17 +47,17 @@ class Attack:
 @dataclass
 class Dataset:
     name: str
-    test_dataset: DataGenerator
-    train_dataset: Optional[DataGenerator] = None
+    test_dataset: DataLoader
+    train_dataset: Optional[DataLoader] = None
 
     def __post_init__(self):
         assert isinstance(
-            self.test_dataset, DataGenerator
-        ), "Evaluation dataset's test_dataset is not an instance of DataGenerator"
+            self.test_dataset, DataLoader
+        ), "Evaluation dataset's test_dataset is not an instance of DataLoader"
         if self.train_dataset is not None:
             assert isinstance(
-                self.train_dataset, DataGenerator
-            ), "Evaluation dataset's train_dataset is not an instance of DataGenerator"
+                self.train_dataset, DataLoader
+            ), "Evaluation dataset's train_dataset is not an instance of DataLoader"
 
 
 @dataclass
@@ -80,13 +76,6 @@ class Model:
         assert isinstance(
             self.model, BaseEstimator
         ), "Evaluation model is not an instance of BaseEstimator"
-
-
-@dataclass
-class Scenario:
-    function: MethodName
-    kwargs: Dict[str, Any]
-    export_batches: Optional[bool] = False
 
 
 @dataclass
@@ -122,7 +111,6 @@ class Evaluation:
     name: str
     description: str
     model: Model
-    scenario: Scenario
     dataset: Dataset
     author: Optional[str]
     attack: Optional[Attack] = None

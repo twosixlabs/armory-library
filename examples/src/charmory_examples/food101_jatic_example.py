@@ -1,5 +1,3 @@
-import json
-from pprint import pprint
 import sys
 
 import art.attacks.evasion
@@ -11,33 +9,24 @@ import armory.data.datasets
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import JaticVisionDatasetGenerator
-from charmory.engine import Engine
-from charmory.evaluation import (
-    Attack,
-    Dataset,
-    Evaluation,
-    Metric,
-    Model,
-    Scenario,
-    SysConfig,
-)
-import charmory.scenarios.image_classification
+from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
+from charmory.engine import LightningEngine
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.experimental.example_results import print_outputs
+from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.utils import PILtoNumpy
 
 BATCH_SIZE = 16
-TRAINING_EPOCHS = 1
-ROOT = "/home/rahul/cache"
 
 
-def load_torchvision_dataset(root_path):
+def load_torchvision_dataset(sysconfig: SysConfig):
     print("Loading torchvision dataset from jatic_toolbox")
     train_dataset = load_jatic_dataset(
         provider="torchvision",
         dataset_name="Food101",
         task="image-classification",
         split="train",
-        root=root_path,
+        root=sysconfig.dataset_cache,
         download=True,
         transform=T.Compose(
             [
@@ -46,10 +35,9 @@ def load_torchvision_dataset(root_path):
             ]
         ),
     )
-    train_dataset_generator = JaticVisionDatasetGenerator(
-        dataset=train_dataset,
+    train_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(train_dataset),
         batch_size=BATCH_SIZE,
-        epochs=TRAINING_EPOCHS,
         shuffle=True,
     )
     test_dataset = load_jatic_dataset(
@@ -57,7 +45,7 @@ def load_torchvision_dataset(root_path):
         dataset_name="Food101",
         task="image-classification",
         split="test",
-        root=root_path,
+        root=sysconfig.dataset_cache,
         download=True,
         transform=T.Compose(
             [
@@ -66,18 +54,18 @@ def load_torchvision_dataset(root_path):
             ]
         ),
     )
-    test_dataset_generator = JaticVisionDatasetGenerator(
-        dataset=test_dataset,
+    test_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(test_dataset),
         batch_size=BATCH_SIZE,
-        epochs=1,
         shuffle=False,
     )
 
-    return train_dataset_generator, test_dataset_generator
+    return train_dataloader, test_dataloader
 
 
 def main():
-    train_dataset, test_dataset = load_torchvision_dataset(ROOT)
+    sysconfig = SysConfig()
+    train_dataset, test_dataset = load_torchvision_dataset(sysconfig)
 
     dataset = Dataset(
         name="Food101",
@@ -114,11 +102,6 @@ def main():
         use_label_for_untargeted=True,
     )
 
-    scenario = Scenario(
-        function=charmory.scenarios.image_classification.ImageClassificationTask,
-        kwargs={},
-    )
-
     metric = Metric(
         profiler=BasicProfiler(),
         logger=MetricsLogger(
@@ -130,42 +113,25 @@ def main():
         ),
     )
 
-    sysconfig = SysConfig(gpus=["all"], use_gpu=True)
-
-    baseline = Evaluation(
+    evaluation = Evaluation(
         name="food101_baseline",
         description="Baseline food101 image classification",
         author="msw@example.com",
         dataset=dataset,
         model=model,
         attack=attack,
-        scenario=scenario,
         metric=metric,
         sysconfig=sysconfig,
     )
 
-    print(f"Starting Demo for {baseline.name}")
-
-    food_engine = Engine(baseline)
-    food_engine.train(nb_epochs=TRAINING_EPOCHS)
-    results = food_engine.run()
-
-    print("=" * 64)
-    pprint(baseline)
-    print("-" * 64)
-    print(
-        json.dumps(
-            results, default=lambda o: "<not serializable>", indent=4, sort_keys=True
-        )
+    task = ImageClassificationTask(
+        evaluation, num_classes=101, export_every_n_batches=5
     )
 
-    print("=" * 64)
-    print(dataset.train_dataset)
-    print(dataset.test_dataset)
-    print("-" * 64)
-    print(model)
+    engine = LightningEngine(task, limit_test_batches=5)
+    results = engine.run()
+    print_outputs(dataset, model, results)
 
-    print("=" * 64)
     print("JATIC Experiment Complete!")
     return 0
 

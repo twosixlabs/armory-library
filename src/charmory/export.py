@@ -133,11 +133,13 @@ def draw_boxes_on_image(
         image = image.transpose(2, 0, 1)
 
     if image.dtype != np.uint8:  # Convert/scale to uint8
-        image = np.round(np.clip(image, 0.0, 1.0) * 255.0).astype(np.uint8)
+        if np.max(image) <= 1:
+            image = np.round(np.clip(image, 0.0, 1.0) * 255.0)
+        image = image.astype(np.uint8)
 
     with_boxes = torch.as_tensor(image)
 
-    if ground_truth_boxes is not None:
+    if ground_truth_boxes is not None and len(ground_truth_boxes) > 0:
         with_boxes = draw_bounding_boxes(
             image=with_boxes,
             boxes=torch.as_tensor(ground_truth_boxes),
@@ -145,7 +147,7 @@ def draw_boxes_on_image(
             width=ground_truth_width,
         )
 
-    if pred_boxes is not None:
+    if pred_boxes is not None and len(pred_boxes) > 1:
         with_boxes = draw_bounding_boxes(
             image=with_boxes,
             boxes=torch.as_tensor(pred_boxes),

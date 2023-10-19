@@ -22,27 +22,27 @@ def test_dataset_init_raises_on_invalid_test_dataset():
         evaluation.Dataset(name="bad test dataset", test_dataset=42)  # type: ignore
 
 
-def test_dataset_init_raises_on_invalid_train_dataset(data_generator):
+def test_dataset_init_raises_on_invalid_train_dataset(data_loader):
     with pytest.raises(AssertionError, match=r"train_dataset.*instance of"):
         evaluation.Dataset(
             name="bad train dataset",
-            test_dataset=data_generator,
+            test_dataset=data_loader,
             train_dataset=42,  # type: ignore
         )
 
 
-def test_dataset_init_when_no_train_dataset(data_generator):
+def test_dataset_init_when_no_train_dataset(data_loader):
     evaluation.Dataset(
         name="bad train dataset",
-        test_dataset=data_generator,
+        test_dataset=data_loader,
     )
 
 
-def test_dataset_init_when_train_dataset(data_generator):
+def test_dataset_init_when_train_dataset(data_loader):
     evaluation.Dataset(
         name="bad train dataset",
-        test_dataset=data_generator,
-        train_dataset=data_generator,
+        test_dataset=data_loader,
+        train_dataset=data_loader,
     )
 
 
@@ -101,7 +101,6 @@ def test_attack_init_raises_when_untargeted_and_label_targeter_provided():
 def test_evaluation_init(
     evaluation_model,
     evaluation_dataset,
-    evaluation_scenario,
     evaluation_attack,
     evaluation_metric,
 ):
@@ -111,7 +110,6 @@ def test_evaluation_init(
         author=None,
         model=evaluation_model,
         dataset=evaluation_dataset,
-        scenario=evaluation_scenario,
         attack=evaluation_attack,
         metric=evaluation_metric,
     )

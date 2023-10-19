@@ -1,3 +1,4 @@
+import argparse
 from pprint import pprint
 
 import art.attacks.evasion
@@ -8,18 +9,39 @@ import torch.nn
 from transformers.image_utils import infer_channel_dimension_format
 
 from armory.metrics.compute import BasicProfiler
-from charmory.data import JaticVisionDatasetGenerator
+from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
-from charmory.utils import (
-    adapt_jatic_image_classification_model_for_art,
-    create_jatic_image_classification_dataset_transform,
-)
+from charmory.utils import create_jatic_dataset_transform
 
 
-def main():
+def get_cli_args():
+    parser = argparse.ArgumentParser(
+        description="Run food classification example using models and datasets from the JATIC toolbox",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--batch-size",
+        default=16,
+        type=int,
+    )
+    parser.add_argument(
+        "--export-every-n-batches",
+        default=5,
+        type=int,
+    )
+    parser.add_argument(
+        "--num-batches",
+        default=5,
+        type=int,
+    )
+    return parser.parse_args()
+
+
+def main(args):
     ###
     # Model
     ###
@@ -28,10 +50,9 @@ def main():
         model_name="Kaludi/food-category-classification-v2.0",
         task="image-classification",
     )
-    adapt_jatic_image_classification_model_for_art(model)
 
     classifier = track_init_params(PyTorchClassifier)(
-        model,
+        JaticImageClassificationModel(model),
         loss=torch.nn.CrossEntropyLoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
         input_shape=(224, 224, 3),
@@ -59,13 +80,11 @@ def main():
 
     dataset._dataset = dataset._dataset.filter(filter)
 
-    transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
+    transform = create_jatic_dataset_transform(model.preprocessor)
     dataset.set_transform(transform)
 
-    generator = JaticVisionDatasetGenerator(
-        dataset=dataset,
-        batch_size=16,
-        epochs=1,
+    dataloader = ArmoryDataLoader(
+        JaticImageClassificationDataset(dataset), batch_size=args.batch_size
     )
 
     ###
@@ -73,7 +92,7 @@ def main():
     ###
     eval_dataset = Dataset(
         name="food-category-classification",
-        test_dataset=generator,
+        test_dataset=dataloader,
     )
 
     eval_model = Model(
@@ -113,7 +132,6 @@ def main():
         dataset=eval_dataset,
         model=eval_model,
         attack=eval_attack,
-        scenario=None,
         metric=eval_metric,
         sysconfig=eval_sysconfig,
     )
@@ -122,12 +140,17 @@ def main():
     # Engine
     ###
 
-    task = ImageClassificationTask(evaluation, num_classes=12, export_every_n_batches=5)
-    engine = LightningEngine(task, limit_test_batches=5)
+    task = ImageClassificationTask(
+        evaluation, num_classes=12, export_every_n_batches=args.export_every_n_batches
+    )
+    engine = LightningEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()
 
     pprint(results)
 
+    print("JATIC Experiment Complete!")
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    main(get_cli_args())

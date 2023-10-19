@@ -11,24 +11,22 @@ from jatic_toolbox.interop.huggingface import HuggingFaceObjectDetectionDataset
 from jatic_toolbox.interop.torchvision import TorchVisionObjectDetector
 import numpy as np
 import torch
-from torchvision import models
 from torchvision.transforms._presets import ObjectDetection
-import torchvision.transforms as T
 
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import JaticObjectDetectionDatasetGenerator
+from charmory.data import ArmoryDataLoader, JaticObjectDetectionDataset
 from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.model.object_detection import JaticObjectDetectionModel
 from charmory.tasks.object_detection import ObjectDetectionTask
-from charmory.track import track_init_params
-from charmory.utils import (
-    adapt_jatic_object_detection_model_for_art,
-    create_jatic_image_classification_dataset_transform,
-)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+from charmory.track import track_init_params
+from charmory.utils import create_jatic_dataset_transform
 
 BATCH_SIZE = 1
 TRAINING_EPOCHS = 20
@@ -39,9 +37,9 @@ import armory.data.datasets
 
 
 def load_huggingface_dataset():
-    train_data = load_dataset("Honaker/xview_dataset", split="train")
+    train_data = load_dataset("Honaker/xview_dataset_subset", split="train")
 
-    new_dataset = train_data.train_test_split(test_size=0.2, seed=1)
+    new_dataset = train_data.train_test_split(test_size=0.4, seed=3)
     train_dataset, test_dataset = new_dataset["train"], new_dataset["test"]
 
     train_dataset, test_dataset = HuggingFaceObjectDetectionDataset(
@@ -62,56 +60,40 @@ def main(argv: list = sys.argv[1:]):
     ###
     # Model
     ###
-    model = models.detection.fasterrcnn_resnet50_fpn(pretrained=False, num_classes=63)
-    model.to(DEVICE)
-    checkpoint = torch.load(
-        "/home/chris/armory/examples/src/charmory_examples/xview_model_state_dict_epoch_99_loss_0p67",
-        map_location=DEVICE,
+    model = torch.load(
+        "/home/chris/armory/examples/src/charmory_examples/fasterrcnn_mobilenet_v3_2"
     )
-    model.load_state_dict(checkpoint)
-
+    model.to(DEVICE)
 
     model = TorchVisionObjectDetector(
         model=model, processor=ObjectDetection(), labels=None
     )
-    adapt_jatic_object_detection_model_for_art(model)
+    model.forward = model._model.forward
+
     detector = track_init_params(PyTorchFasterRCNN)(
-        model,
+        JaticObjectDetectionModel(model),
         channels_first=True,
         clip_values=(0.0, 1.0),
     )
-    _, test_dataset = load_huggingface_dataset()
+
+    model_transform = create_jatic_dataset_transform(model.preprocessor)
+
+    train_dataset, test_dataset = load_huggingface_dataset()
 
     img_transforms = A.Compose(
         [
-            A.LongestMaxSize(max_size=3000),
+            A.LongestMaxSize(max_size=500),
             A.PadIfNeeded(
-                min_height=3000,
-                min_width=3000,
+                min_height=500,
+                min_width=500,
                 border_mode=0,
                 value=(0, 0, 0),
             ),
-            
         ],
         bbox_params=A.BboxParams(
             format="pascal_voc",
             label_fields=["labels"],
         ),
-    )
-    '''    img_transforms1 = A.Compose(
-        [
-            T.Resize((960, 1280)), 
-            T.ToTensor()
-            
-            
-        ],
-        bbox_params=A.BboxParams(
-            format="pascal_voc",
-            label_fields=["labels"],
-        ),
-    )'''
-    model_transform = create_jatic_image_classification_dataset_transform(
-        model.preprocessor
     )
 
     def transform(sample):
@@ -131,37 +113,21 @@ def main(argv: list = sys.argv[1:]):
             )
         transformed = model_transform(transformed)
         return transformed
-    
-    '''def transform2(sample):
-        transformed = dict(image=[], objects=[])
-        for i in range(len(sample["image"])):
-            transformed_img2 = img_transforms1(
-                image=np.asarray(sample["image"][i]),
-                bboxes=sample["objects"][i]["bbox"],
-                labels=sample["objects"][i]["category"],
-            )
-            transformed["image"].append(Image.fromarray(transformed_img2["image"]))
-            transformed["objects"].append(
-                dict(
-                    bbox=transformed_img2["bboxes"],
-                    category=transformed_img2["labels"],
-                )
-            )
-        transformed = model_transform(transformed)
-        return transformed'''
-    
-    #transform1 = T.Compose([T.Resize((960, 1280)), T.ToTensor()])
+
     test_dataset.set_transform(transform)
 
-    test_dataset_generator = JaticObjectDetectionDatasetGenerator(
-        dataset=test_dataset,
+    train_dataloader = ArmoryDataLoader(
+        JaticObjectDetectionDataset(train_dataset),
         batch_size=BATCH_SIZE,
-        epochs=1,
+    )
+    test_dataloader = ArmoryDataLoader(
+        JaticObjectDetectionDataset(test_dataset),
+        batch_size=BATCH_SIZE,
     )
     eval_dataset = Dataset(
         name="XVIEW",
-        # train_dataset=train_dataset_generator,
-        test_dataset=test_dataset_generator,
+        train_dataset=train_dataloader,
+        test_dataset=test_dataloader,
     )
     eval_model = Model(
         name="xview-trained-fasterrcnn-resnet-50",
@@ -199,7 +165,6 @@ def main(argv: list = sys.argv[1:]):
         dataset=eval_dataset,
         model=eval_model,
         attack=eval_attack,
-        scenario=None,
         metric=eval_metric,
         sysconfig=eval_sysconfig,
     )

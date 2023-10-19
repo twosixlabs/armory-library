@@ -6,8 +6,6 @@ interoperability between dataset and model providers. This file is NOT
 a good example of using the JATIC toolbox or Armory.
 """
 import argparse
-import json
-from pprint import pprint
 import sys
 
 import art.attacks.evasion
@@ -23,26 +21,16 @@ import armory.data.datasets
 from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import JaticVisionDatasetGenerator
-from charmory.engine import Engine
-from charmory.evaluation import (
-    Attack,
-    Dataset,
-    Evaluation,
-    Metric,
-    Model,
-    Scenario,
-    SysConfig,
-)
-import charmory.scenarios.image_classification
+from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
+from charmory.engine import LightningEngine
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.experimental.example_results import print_outputs
+from charmory.model.image_classification import JaticImageClassificationModel
+from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
-from charmory.utils import (
-    adapt_jatic_image_classification_model_for_art,
-    create_jatic_image_classification_dataset_transform,
-)
+from charmory.utils import create_jatic_dataset_transform
 
 BATCH_SIZE = 16
-TRAINING_EPOCHS = 20
 
 
 def load_huggingface_dataset(transform):
@@ -55,12 +43,10 @@ def load_huggingface_dataset(transform):
         split="train",
     )
     train_dataset.set_transform(transform)
-    train_dataset_generator = JaticVisionDatasetGenerator(
-        dataset=train_dataset,
+    train_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(train_dataset),
         batch_size=BATCH_SIZE,
-        epochs=TRAINING_EPOCHS,
         shuffle=True,
-        size=512,  # Use a subset just for demo purposes
     )
 
     test_dataset = track_params(load_jatic_dataset)(
@@ -70,15 +56,13 @@ def load_huggingface_dataset(transform):
         split="test",
     )
     test_dataset.set_transform(transform)
-    test_dataset_generator = JaticVisionDatasetGenerator(
-        dataset=test_dataset,
+    test_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(test_dataset),
         batch_size=BATCH_SIZE,
-        epochs=1,
         shuffle=False,
-        size=512,  # Use a subset just for demo purposes
     )
 
-    return train_dataset_generator, test_dataset_generator
+    return train_dataloader, test_dataloader
 
 
 def load_torchvision_dataset(transform):
@@ -92,12 +76,10 @@ def load_torchvision_dataset(transform):
         download=True,
     )
     train_dataset.set_transform(transform)
-    train_dataset_generator = JaticVisionDatasetGenerator(
-        dataset=train_dataset,
+    train_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(train_dataset),
         batch_size=BATCH_SIZE,
-        epochs=TRAINING_EPOCHS,
         shuffle=True,
-        size=512,  # Use a subset just for demo purposes
     )
 
     test_dataset = track_params(load_jatic_dataset)(
@@ -109,28 +91,25 @@ def load_torchvision_dataset(transform):
         download=True,
     )
     test_dataset.set_transform(transform)
-    test_dataset_generator = JaticVisionDatasetGenerator(
-        dataset=test_dataset,
+    test_dataloader = ArmoryDataLoader(
+        dataset=JaticImageClassificationDataset(test_dataset),
         batch_size=BATCH_SIZE,
-        epochs=1,
         shuffle=False,
-        size=512,  # Use a subset just for demo purposes
     )
 
-    return train_dataset_generator, test_dataset_generator
+    return train_dataloader, test_dataloader
 
 
 def load_huggingface_model():
     print("Loading HuggingFace model from jatic_toolbox")
     model = track_params(load_jatic_model)(
         provider="huggingface",
-        model_name="microsoft/resnet-18",
+        model_name="jadohu/BEiT-finetuned",
         task="image-classification",
     )
-    adapt_jatic_image_classification_model_for_art(model)
 
     classifier = track_init_params(PyTorchClassifier)(
-        model,
+        JaticImageClassificationModel(model),
         loss=nn.CrossEntropyLoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
         input_shape=(224, 224, 3),
@@ -139,7 +118,7 @@ def load_huggingface_model():
         clip_values=(0.0, 1.0),
     )
 
-    transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
+    transform = create_jatic_dataset_transform(model.preprocessor)
 
     return classifier, transform
 
@@ -151,10 +130,9 @@ def load_torchvision_model():
         model_name="resnet18",
         task="image-classification",
     )
-    adapt_jatic_image_classification_model_for_art(model)
 
     classifier = track_init_params(PyTorchClassifier)(
-        model,
+        JaticImageClassificationModel(model),
         loss=nn.CrossEntropyLoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
         input_shape=(224, 224, 3),
@@ -163,7 +141,7 @@ def load_torchvision_model():
         clip_values=(0.0, 1.0),
     )
 
-    transform = create_jatic_image_classification_dataset_transform(model.preprocessor)
+    transform = create_jatic_dataset_transform(model.preprocessor)
 
     return classifier, transform
 
@@ -211,7 +189,7 @@ def main():
     )
 
     model = Model(
-        name="ResNet-18",
+        name="BEiT-finetuned",
         model=loaded_model,
     )
 
@@ -235,11 +213,6 @@ def main():
         use_label_for_untargeted=True,
     )
 
-    scenario = Scenario(
-        function=charmory.scenarios.image_classification.ImageClassificationTask,
-        kwargs={},
-    )
-
     metric = Metric(
         profiler=BasicProfiler(),
         logger=MetricsLogger(
@@ -253,34 +226,23 @@ def main():
 
     sysconfig = SysConfig(gpus=["all"], use_gpu=True)
 
-    baseline = Evaluation(
-        name="jatic_image_classification",
-        description="ResNet-18 image classification on the CIFAR10 dataset",
+    evaluation = Evaluation(
+        name="CIFAR10-classification",
+        description="Baseline cifar10 image classification",
         author="msw@example.com",
         dataset=dataset,
         model=model,
         attack=attack,
-        scenario=scenario,
         metric=metric,
         sysconfig=sysconfig,
     )
 
-    print(f"Starting Demo for {baseline.name}")
+    task = ImageClassificationTask(evaluation, num_classes=10, export_every_n_batches=5)
 
-    cifar_engine = Engine(baseline)
-    cifar_engine.train(nb_epochs=TRAINING_EPOCHS)
-    results = cifar_engine.run()
+    engine = LightningEngine(task, limit_test_batches=5)
+    results = engine.run()
+    print_outputs(dataset, model, results)
 
-    print("=" * 64)
-    pprint(baseline)
-    print("-" * 64)
-    print(
-        json.dumps(
-            results, default=lambda o: "<not serializable>", indent=4, sort_keys=True
-        )
-    )
-
-    print("=" * 64)
     print("JATIC Experiment Complete!")
     return 0
 
