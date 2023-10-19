@@ -1,5 +1,5 @@
 ---
-name: 🐛📦 Build & Test
+name: 🚧 Build & Test
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ on:
 
 jobs:
   code-linting:
-    name: 📡 Code Linting
+    name: 🧹 Code Linting
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,7 +31,7 @@ jobs:
 
 
   static-analysis:
-    name: 🚧 Static Analysis
+    name: 🔍 Static Analysis
     runs-on: ubuntu-latest
     needs: code-linting
     steps:
