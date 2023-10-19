@@ -195,6 +195,8 @@ def main(batch_size, export_every_n_batches, num_batches):
     task = ObjectDetectionTask(
         evaluation,
         export_every_n_batches=export_every_n_batches,
+        iou_threshold=0.45,
+        score_threshold=0.25,
     )
     engine = EvaluationEngine(task, limit_test_batches=num_batches)
 

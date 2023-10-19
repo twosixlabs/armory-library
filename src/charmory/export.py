@@ -161,7 +161,7 @@ def draw_boxes_on_image(
             width=ground_truth_width,
         )
 
-    if pred_boxes is not None and len(pred_boxes) > 1:
+    if pred_boxes is not None and len(pred_boxes) > 0:
         with_boxes = draw_bounding_boxes(
             image=with_boxes,
             boxes=torch.as_tensor(pred_boxes),
