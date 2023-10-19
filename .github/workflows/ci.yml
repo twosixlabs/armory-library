@@ -23,19 +23,90 @@ jobs:
         with:
           python-version: 3.8
 
-      - name: Install Armory
-        run: pip3 install --no-compile --editable '.[developer]'
-
       - name: Install pre-commit
         run: pip3 install pre-commit
 
       - name: Lint
         run: make lint
 
-#   static-analysis:
 
-#   unit-tests:
+  static-analysis:
+    name: 🚧 Static Analysis
+    runs-on: ubuntu-latest
+    needs: code-linting
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
-#   generate-docs:
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
 
-#   build:
+      - name: Install tools
+        run: pip3 install bandit mypy
+
+      - name: Scan
+        run: make scan
+
+
+  unit-tests:
+    name: 🧪 Unit Tests
+    runs-on: ubuntu-latest
+    needs: code-linting
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+
+      - name: Install
+        run: make install
+
+      - name: Test
+        run: make test
+
+  generate-docs:
+    name: 📖 Generate Docs
+    runs-on: ubuntu-latest
+    needs:
+      - code-linting
+      - unit-tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+
+      - name: Install tools
+        run: pip install mkdocs mkdocstrings mkdocs-exclude mkdocs-material
+
+      - name: Generate
+        run: make docs
+
+  build:
+    name: 🔨 Build
+    runs-on: ubuntu-latest
+    needs:
+      - code-linting
+      - unit-tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+
+      - name: Install
+        run: make install
+
+      - name: Build
+        run: make build
