@@ -24,7 +24,6 @@ from charmory.tasks.object_detection import ObjectDetectionTask
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
 from charmory.track import track_init_params
 from charmory.utils import create_jatic_dataset_transform
 
