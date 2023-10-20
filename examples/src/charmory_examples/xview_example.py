@@ -1,11 +1,13 @@
+from pathlib import Path
 from pprint import pprint
 import sys
-import boto3
-import botocore
+
 from PIL import Image
 import albumentations as A
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchFasterRCNN
+import boto3
+import botocore
 from datasets import load_dataset
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox.interop.huggingface import HuggingFaceObjectDetectionDataset
@@ -22,8 +24,6 @@ from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.model.object_detection import JaticObjectDetectionModel
 from charmory.tasks.object_detection import ObjectDetectionTask
-from pathlib import Path
-import torch
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,8 +32,8 @@ from charmory.utils import create_jatic_dataset_transform
 
 BATCH_SIZE = 1
 TRAINING_EPOCHS = 20
-BUCKET_NAME = 'armory-library-data' 
-KEY = 'fasterrcnn_mobilenet_v3_2' 
+BUCKET_NAME = "armory-library-data"
+KEY = "fasterrcnn_mobilenet_v3_2"
 
 
 torch.set_float32_matmul_precision("high")
@@ -64,19 +64,18 @@ def main(argv: list = sys.argv[1:]):
     ###
     # Model
     ###
-    s3 = boto3.resource('s3')
+    s3 = boto3.resource("s3")
     try:
-        s3.Bucket(BUCKET_NAME).download_file(KEY, str(Path.cwd())+'fasterrcnn_mobilenet_v3_2')
+        s3.Bucket(BUCKET_NAME).download_file(
+            KEY, str(Path.cwd()) + "fasterrcnn_mobilenet_v3_2"
+        )
     except botocore.exceptions.ClientError as e:
-        if e.response['Error']['Code'] == "404":
+        if e.response["Error"]["Code"] == "404":
             print("The object does not exist.")
         else:
             raise
 
-    
-    model = torch.load(
-         str(Path.cwd())+'fasterrcnn_mobilenet_v3_2'
-    )
+    model = torch.load(str(Path.cwd()) + "fasterrcnn_mobilenet_v3_2")
     model.to(DEVICE)
 
     model = TorchVisionObjectDetector(
