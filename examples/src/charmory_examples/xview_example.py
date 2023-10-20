@@ -22,6 +22,8 @@ from charmory.engine import LightningEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.model.object_detection import JaticObjectDetectionModel
 from charmory.tasks.object_detection import ObjectDetectionTask
+from pathlib import Path
+import torch
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,7 +34,7 @@ BATCH_SIZE = 1
 TRAINING_EPOCHS = 20
 BUCKET_NAME = 'armory-library-data' 
 KEY = 'fasterrcnn_mobilenet_v3_2' 
-import torch
+
 
 torch.set_float32_matmul_precision("high")
 import armory.data.datasets
@@ -64,7 +66,7 @@ def main(argv: list = sys.argv[1:]):
     ###
     s3 = boto3.resource('s3')
     try:
-        s3.Bucket(BUCKET_NAME).download_file(KEY, 'my_local_image.jpg')
+        s3.Bucket(BUCKET_NAME).download_file(KEY, str(Path.cwd())+'fasterrcnn_mobilenet_v3_2')
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == "404":
             print("The object does not exist.")
@@ -73,7 +75,7 @@ def main(argv: list = sys.argv[1:]):
 
     
     model = torch.load(
-        "/home/chris/armory/examples/src/charmory_examples/fasterrcnn_mobilenet_v3_2"
+         str(Path.cwd())+'fasterrcnn_mobilenet_v3_2'
     )
     model.to(DEVICE)
 
