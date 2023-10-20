@@ -20,7 +20,10 @@ dependencies = []
 charmory = "charmory_examples.cifar_example:main"
 
 [project.optional-dependencies]
-armory = ["albumentations", "armory-library @ {root:uri}/../", "lightning"]
+armory = [
+    "albumentations",
+    "armory-library @ {root:uri}/../",
+]
 
 developer = [
     "hatch",  # build tool
@@ -30,22 +33,23 @@ developer = [
     "flake8",
 ]
 
-jatic = [
-    "jatic_toolbox @ git+ssh://git@gitlab.jatic.net/jatic/cdao/jatic-toolbox.git@v0.2.0rc1",
-    # HuggingFace
+huggingface = [
     "datasets",
     "huggingface_hub",
     "transformers",
     "yolov5",
 ]
 
-demo = ["pandas", "sklearn", "plotly", "numpy", "matplotlib", "seaborn"]
+jatic = [
+    "jatic_toolbox @ git+ssh://git@gitlab.jatic.net/jatic/cdao/jatic-toolbox.git@v0.2.0rc1",
+]
 
+demo = ["pandas", "sklearn", "plotly", "numpy", "matplotlib", "seaborn"]
 
 all = [
     "armory-examples[armory]",
     "armory-examples[developer]",
-    "armory-examples[jatic]",
+    "armory-examples[huggingface]",
 ]
 
 [build-system]
