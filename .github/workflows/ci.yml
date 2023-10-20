@@ -101,7 +101,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install
-        run: cd examples && make install
+        run: cd examples && pip install --no-compile --editable .[armory,huggingface]
 
       - name: Test
         run: cd examples && python ${{ matrix.script }}

@@ -37,11 +37,14 @@ huggingface = [
     "datasets",
     "huggingface_hub",
     "transformers",
-    "yolov5",
 ]
 
 jatic = [
     "jatic_toolbox @ git+ssh://git@gitlab.jatic.net/jatic/cdao/jatic-toolbox.git@v0.2.0rc1",
+]
+
+yolo = [
+    "yolov5",
 ]
 
 demo = ["pandas", "sklearn", "plotly", "numpy", "matplotlib", "seaborn"]
@@ -50,6 +53,8 @@ all = [
     "armory-examples[armory]",
     "armory-examples[developer]",
     "armory-examples[huggingface]",
+    "armory-examples[jatic]",
+    "armory-examples[yolo]",
 ]
 
 [build-system]
