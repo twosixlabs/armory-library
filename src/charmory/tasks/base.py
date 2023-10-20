@@ -4,10 +4,11 @@ Base Armory evaluation task
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional
 
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
+import numpy as np
 import torch
 
 from charmory.evaluation import Evaluation
@@ -45,12 +46,21 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         """Batch being evaluated during each step of the evaluation task"""
 
         i: int
-        x: Any
-        y: Any
+        data: Mapping[str, Any]
+        x_key: str
+        y_key: str
         y_pred: Optional[Any] = None
         y_target: Optional[Any] = None
         x_adv: Optional[Any] = None
         y_pred_adv: Optional[Any] = None
+
+        @property
+        def x(self):
+            return self.data[self.x_key]
+
+        @property
+        def y(self):
+            return self.data[self.y_key]
 
     ###
     # Properties
@@ -87,6 +97,14 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
     # Task evaluation methods
     ###
 
+    def create_batch(self, batch, batch_idx):
+        return self.Batch(
+            i=batch_idx,
+            data=batch,
+            x_key=self.evaluation.dataset.x_key,
+            y_key=self.evaluation.dataset.y_key,
+        )
+
     def run_benign(self, batch: Batch):
         """Perform benign evaluation"""
         # Ensure that input sample isn't overwritten by model
@@ -98,6 +116,17 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
 
     def run_attack(self, batch: Batch):
         """Perform adversarial evaluation"""
+        self.apply_attack(batch)
+        assert isinstance(batch.x_adv, np.ndarray)
+
+        # Ensure that input sample isn't overwritten by model
+        batch.x_adv.flags.writeable = False
+        batch.y_pred_adv = self.evaluation.model.model.predict(
+            batch.x_adv, **self.evaluation.model.predict_kwargs
+        )
+
+    def apply_attack(self, batch: Batch):
+        """Apply attack to batch"""
         if TYPE_CHECKING:
             assert self.evaluation.attack
 
@@ -118,20 +147,13 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
                 x=batch.x, y=batch.y_target, **self.evaluation.attack.generate_kwargs
             )
 
-        # Ensure that input sample isn't overwritten by model
-        batch.x_adv.flags.writeable = False
-        batch.y_pred_adv = self.evaluation.model.model.predict(
-            batch.x_adv, **self.evaluation.model.predict_kwargs
-        )
-
     ###
     # LightningModule method overrides
     ###
 
     def test_step(self, batch, batch_idx):
         """Invokes task's benign and adversarial evaluations"""
-        x, y = batch
-        curr_batch = self.Batch(i=batch_idx, x=x, y=y)
+        curr_batch = self.create_batch(batch, batch_idx)
         if not self.skip_benign:
             self.run_benign(curr_batch)
         if not self.skip_attack:

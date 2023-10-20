@@ -242,11 +242,11 @@ def set_tensorflow_cpp_loglevel(level: str):
         "TRACE": "0",
     }
     if level:
-        os.environ["TF_CPP_MIN_LOG_LEVEL"] = level_map.get(level.upper())
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = level_map.get(level.upper(), "")
 
 
 logging.basicConfig(handlers=[InterceptHandler()], level=0)
-set_tensorflow_cpp_loglevel(filters.get("tensorflow_cpp"))
+set_tensorflow_cpp_loglevel(str(filters.get("tensorflow_cpp", "WARNING")))
 
 if __name__ == "__main__":
     update_filters(["armory:INFO", "art:INFO"])

@@ -255,7 +255,7 @@ def track_init_params(
 
     def _decorator(cls: T) -> T:
         _prefix = prefix if prefix else getattr(cls, "__name__", "")
-        cls.__init__ = track_params(prefix=_prefix, ignore=ignore)(cls.__init__)
+        cls.__init__ = track_params(prefix=_prefix, ignore=ignore)(cls.__init__)  # type: ignore
         return cls
 
     if _cls is None:

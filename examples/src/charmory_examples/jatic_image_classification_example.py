@@ -18,11 +18,10 @@ import torch.nn as nn
 
 import armory.baseline_models.pytorch.resnet18
 import armory.data.datasets
-from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
-from charmory.engine import LightningEngine
+from charmory.data import ArmoryDataLoader
+from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
 from charmory.experimental.example_results import print_outputs
 from charmory.model.image_classification import JaticImageClassificationModel
@@ -44,7 +43,7 @@ def load_huggingface_dataset(transform):
     )
     train_dataset.set_transform(transform)
     train_dataloader = ArmoryDataLoader(
-        dataset=JaticImageClassificationDataset(train_dataset),
+        dataset=train_dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
     )
@@ -57,7 +56,7 @@ def load_huggingface_dataset(transform):
     )
     test_dataset.set_transform(transform)
     test_dataloader = ArmoryDataLoader(
-        dataset=JaticImageClassificationDataset(test_dataset),
+        dataset=test_dataset,
         batch_size=BATCH_SIZE,
         shuffle=False,
     )
@@ -77,7 +76,7 @@ def load_torchvision_dataset(transform):
     )
     train_dataset.set_transform(transform)
     train_dataloader = ArmoryDataLoader(
-        dataset=JaticImageClassificationDataset(train_dataset),
+        dataset=train_dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
     )
@@ -92,7 +91,7 @@ def load_torchvision_dataset(transform):
     )
     test_dataset.set_transform(transform)
     test_dataloader = ArmoryDataLoader(
-        dataset=JaticImageClassificationDataset(test_dataset),
+        dataset=test_dataset,
         batch_size=BATCH_SIZE,
         shuffle=False,
     )
@@ -184,8 +183,10 @@ def main():
 
     dataset = Dataset(
         name="CIFAR10",
-        train_dataset=train_dataset,
-        test_dataset=test_dataset,
+        x_key="image",
+        y_key="label",
+        train_dataloader=train_dataset,
+        test_dataloader=test_dataset,
     )
 
     model = Model(
@@ -215,13 +216,6 @@ def main():
 
     metric = Metric(
         profiler=BasicProfiler(),
-        logger=MetricsLogger(
-            supported_metrics=["accuracy"],
-            perturbation=["linf"],
-            task=["categorical_accuracy"],
-            means=True,
-            record_metric_per_sample=False,
-        ),
     )
 
     sysconfig = SysConfig(gpus=["all"], use_gpu=True)
@@ -239,7 +233,7 @@ def main():
 
     task = ImageClassificationTask(evaluation, num_classes=10, export_every_n_batches=5)
 
-    engine = LightningEngine(task, limit_test_batches=5)
+    engine = EvaluationEngine(task, limit_test_batches=5)
     results = engine.run()
     print_outputs(dataset, model, results)
 
