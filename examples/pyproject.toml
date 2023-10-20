@@ -20,7 +20,7 @@ dependencies = []
 charmory = "charmory_examples.cifar_example:main"
 
 [project.optional-dependencies]
-armory = ["albumentations", "charmory @ {root:uri}/../", "lightning"]
+armory = ["albumentations", "armory-library @ {root:uri}/../", "lightning"]
 
 developer = [
     "hatch",  # build tool
