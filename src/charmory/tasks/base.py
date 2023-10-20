@@ -4,7 +4,7 @@ Base Armory evaluation task
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
@@ -12,6 +12,9 @@ import torch
 
 from charmory.evaluation import Evaluation
 from charmory.export import Exporter, MlflowExporter
+
+ExportAdapter = Callable[[Any], Any]
+"""An adapter for exported data (e.g., images). """
 
 
 class BaseEvaluationTask(pl.LightningModule, ABC):
@@ -22,12 +25,14 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         evaluation: Evaluation,
         skip_benign: bool = False,
         skip_attack: bool = False,
+        export_adapter: Optional[ExportAdapter] = None,
         export_every_n_batches: int = 0,
     ):
         super().__init__()
         self.evaluation = evaluation
         self.skip_benign = skip_benign
         self.skip_attack = skip_attack
+        self.export_adapter = export_adapter
         self.export_every_n_batches = export_every_n_batches
         self._exporter: Optional[Exporter] = None
 

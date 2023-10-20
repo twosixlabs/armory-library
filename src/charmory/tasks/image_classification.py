@@ -35,7 +35,10 @@ class ImageClassificationTask(BaseEvaluationTask):
         batch_size = batch_data.shape[0]
         for sample_idx in range(batch_size):
             filename = f"batch_{batch_idx}_ex_{sample_idx}_{name}.png"
-            self.exporter.log_image(batch_data[sample_idx], filename)
+            image = batch_data[sample_idx]
+            if self.export_adapter is not None:
+                image = self.export_adapter(image)
+            self.exporter.log_image(image, filename)
 
     def run_benign(self, batch: BaseEvaluationTask.Batch):
         super().run_benign(batch)
