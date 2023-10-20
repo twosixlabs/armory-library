@@ -1,6 +1,7 @@
 from pprint import pprint
 import sys
-
+import boto3
+import botocore
 from PIL import Image
 import albumentations as A
 import art.attacks.evasion
@@ -29,6 +30,8 @@ from charmory.utils import create_jatic_dataset_transform
 
 BATCH_SIZE = 1
 TRAINING_EPOCHS = 20
+BUCKET_NAME = 'armory-library-data' 
+KEY = 'fasterrcnn_mobilenet_v3_2' 
 import torch
 
 torch.set_float32_matmul_precision("high")
@@ -59,6 +62,16 @@ def main(argv: list = sys.argv[1:]):
     ###
     # Model
     ###
+    s3 = boto3.resource('s3')
+    try:
+        s3.Bucket(BUCKET_NAME).download_file(KEY, 'my_local_image.jpg')
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == "404":
+            print("The object does not exist.")
+        else:
+            raise
+
+    
     model = torch.load(
         "/home/chris/armory/examples/src/charmory_examples/fasterrcnn_mobilenet_v3_2"
     )
