@@ -82,14 +82,16 @@ jobs:
 
 
   integration-tests:
-    name: 🧪 Integration Tests
+    name: 🧪 Integration Tests - ${{ matrix.test.name }}
     runs-on: ubuntu-latest
     needs: code-linting
     strategy:
       fail-fast: false
       matrix:
-        script:
-          - src/charmory_examples/image_classification/mnist_vit_pgd.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
+        test:
+          - name: image classification
+            dir: src/charmory_examples/image_classification
+            script: mnist_vit_pgd.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
         python-version: ["3.8"]
     steps:
       - name: Checkout
@@ -104,7 +106,7 @@ jobs:
         run: cd examples && pip install --no-compile --editable .[armory,huggingface]
 
       - name: Test
-        run: cd examples && python ${{ matrix.script }}
+        run: cd examples/${{ matrix.test.dir }} && python ${{ matrix.test.script }}
 
 
   generate-docs:
