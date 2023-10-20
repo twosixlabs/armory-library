@@ -106,6 +106,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install
+        # Consider switching to a non-yolo OD example and removing the yolo install,
+        # it adds 2-ish minutes to this install step.
         run: cd examples && pip install --no-compile --editable .[armory,huggingface,yolo]
 
       - name: Test
