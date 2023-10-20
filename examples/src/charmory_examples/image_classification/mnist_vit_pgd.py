@@ -9,8 +9,8 @@ import torch.nn
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 
 from armory.metrics.compute import BasicProfiler
-from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
-from charmory.engine import LightningEngine
+from charmory.data import ArmoryDataLoader
+from charmory.engine import EvaluationEngine
 import charmory.evaluation as ev
 from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
@@ -77,9 +77,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         return sample
 
     dataset.set_transform(transform)
-    dataloader = ArmoryDataLoader(
-        JaticImageClassificationDataset(dataset), batch_size=batch_size
-    )
+    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
 
     ###
     # Attack
@@ -105,7 +103,9 @@ def main(batch_size, export_every_n_batches, num_batches):
         author="TwoSix",
         dataset=ev.Dataset(
             name="MNIST",
-            test_dataset=dataloader,
+            x_key="image",
+            y_key="label",
+            test_dataloader=dataloader,
         ),
         model=ev.Model(
             name="ViT",
@@ -128,7 +128,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         export_adapter=Unnormalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
         export_every_n_batches=export_every_n_batches,
     )
-    engine = LightningEngine(task, limit_test_batches=num_batches)
+    engine = EvaluationEngine(task, limit_test_batches=num_batches)
 
     ###
     # Execute
