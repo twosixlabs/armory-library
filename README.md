@@ -55,12 +55,12 @@ DPOC: Christopher Woodall @christopher.woodall
 <!-- TODO: repoint to JATIC CI or drop the badges -->
 
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[ci-badge]: https://github.com/twosixlabs/armory/workflows/GitHub%20CI/badge.svg
-[ci-url]: https://github.com/twosixlabs/armory/actions/
-[pypi-badge]: https://badge.fury.io/py/armory-testbed.svg
-[pypi-url]: https://pypi.org/project/armory-testbed
-[python-badge]: https://img.shields.io/pypi/pyversions/armory-testbed
-[python-url]: https://pypi.org/project/armory-testbed
+[ci-badge]: https://github.com/twosixlabs/armory-library/actions/workflows/ci.yml/badge.svg
+[ci-url]: https://github.com/twosixlabs/armory-library/actions/
+[pypi-badge]: https://badge.fury.io/py/armory-library.svg
+[pypi-url]: https://pypi.org/project/armory-library
+[python-badge]: https://img.shields.io/pypi/pyversions/armory-library
+[python-url]: https://pypi.org/project/armory-library
 [license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
 [license-url]: https://opensource.org/licenses/MIT
 [docs-badge]: https://readthedocs.org/projects/armory/badge/
