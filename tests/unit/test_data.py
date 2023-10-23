@@ -2,12 +2,7 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 
-from charmory.data import (
-    ArmoryDataLoader,
-    ArmoryDataset,
-    JaticImageClassificationDataset,
-    JaticObjectDetectionDataset,
-)
+from charmory.data import ArmoryDataLoader, ArmoryDataset, TupleDataset
 
 pytestmark = pytest.mark.unit
 
@@ -23,49 +18,33 @@ def raw_dataset():
 def test_ArmoryDataset_with_custom_adapter(raw_dataset):
     def adapter(data):
         assert data == {"data": [1, 2, 3], "target": 4}
-        return np.array([1, 2, 3]), np.array([4])
+        return dict(x=np.array([1, 2, 3]), y=np.array([4]))
 
     dataset = ArmoryDataset(raw_dataset, adapter)
     assert len(dataset) == 2
 
-    x, y = dataset[0]
-    assert_array_equal(x, np.array([1, 2, 3]), strict=True)
-    assert_array_equal(y, np.array([4]), strict=True)
+    sample = dataset[0]
+    assert_array_equal(sample["x"], np.array([1, 2, 3]), strict=True)
+    assert_array_equal(sample["y"], np.array([4]), strict=True)
 
 
-def test_JaticImageClassificationDataset():
+def test_TupleDataset():
     raw_dataset = [
-        {"image": [1, 2, 3], "label": 4},
-        {"image": [5, 6, 7], "label": 8},
+        ([1, 2, 3], 4),
+        ([5, 6, 7], 8),
     ]
-    dataset = JaticImageClassificationDataset(raw_dataset)
+
+    dataset = TupleDataset(raw_dataset, x_key="data", y_key="target")
     assert len(dataset) == 2
 
-    x, y = dataset[1]
-    assert x == [5, 6, 7]
-    assert y == 8
-
-
-def test_JaticObjectDetectionDataset():
-    raw_dataset = [
-        {"image": [1, 2, 3], "objects": [{"boxes": [0, 0, 1, 1]}]},
-        {"image": [4, 5, 6], "objects": [{"boxes": [0, 1, 2, 2]}]},
-    ]
-    dataset = JaticObjectDetectionDataset(raw_dataset)
-    assert len(dataset) == 2
-
-    x, y = dataset[1]
-    assert x == [4, 5, 6]
-    assert y == [{"boxes": [0, 1, 2, 2]}]
+    sample = dataset[1]
+    assert sample["data"] == [5, 6, 7]
+    assert sample["target"] == 8
 
 
 def test_ArmoryDataLoader(raw_dataset):
-    def adapter(data):
-        return data["data"], data["target"]
+    loader = ArmoryDataLoader(raw_dataset, batch_size=2)
+    batch = next(iter(loader))
 
-    dataset = ArmoryDataset(raw_dataset, adapter)
-    loader = ArmoryDataLoader(dataset, batch_size=2)
-    x, y = next(iter(loader))
-
-    assert_array_equal(x, np.array([[1, 2, 3], [5, 6, 7]]), strict=True)
-    assert_array_equal(y, np.array([4, 8]), strict=True)
+    assert_array_equal(batch["data"], np.array([[1, 2, 3], [5, 6, 7]]), strict=True)
+    assert_array_equal(batch["target"], np.array([4, 8]), strict=True)

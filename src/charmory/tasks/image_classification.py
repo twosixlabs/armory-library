@@ -27,15 +27,43 @@ class ImageClassificationTask(BaseEvaluationTask):
         self.perturbation = PerturbationNormMetric(ord=perturbation_ord)
 
     def export_batch(self, batch: BaseEvaluationTask.Batch):
-        self._export("x", batch.x, batch.i)
+        self._export_image("x", batch.x, batch.i)
         if batch.x_adv is not None:
-            self._export("x_adv", batch.x_adv, batch.i)
+            self._export_image("x_adv", batch.x_adv, batch.i)
+        self._export_targets(batch)
 
-    def _export(self, name, batch_data, batch_idx):
+    def _export_image(self, name, batch_data, batch_idx):
         batch_size = batch_data.shape[0]
         for sample_idx in range(batch_size):
             filename = f"batch_{batch_idx}_ex_{sample_idx}_{name}.png"
             self.exporter.log_image(batch_data[sample_idx], filename)
+
+    @staticmethod
+    def _from_list(maybe_list, idx):
+        try:
+            return maybe_list[idx]
+        except:  # noqa: E722
+            # if it's None or is not a list/sequence/etc, just return None
+            return None
+
+    def _export_targets(self, batch: BaseEvaluationTask.Batch):
+        keys = set(batch.data.keys()) - {
+            self.evaluation.dataset.x_key,
+            self.evaluation.dataset.y_key,
+        }
+        for sample_idx in range(batch.x.shape[0]):
+            dictionary = dict(
+                y=batch.y[sample_idx],
+                y_pred=self._from_list(batch.y_pred, sample_idx),
+                y_target=self._from_list(batch.y_target, sample_idx),
+                y_pred_adv=self._from_list(batch.y_pred_adv, sample_idx),
+            )
+            for k in keys:
+                dictionary[k] = self._from_list(batch.data[k], sample_idx)
+            self.exporter.log_dict(
+                dictionary=dictionary,
+                artifact_file=f"batch_{batch.i}_ex_{sample_idx}_y.txt",
+            )
 
     def run_benign(self, batch: BaseEvaluationTask.Batch):
         super().run_benign(batch)

@@ -8,7 +8,7 @@ from charmory.tasks.base import BaseEvaluationTask
 from charmory.track import get_current_params, init_tracking_uri
 
 
-class LightningEngine:
+class EvaluationEngine:
     def __init__(
         self,
         task: BaseEvaluationTask,
@@ -36,14 +36,14 @@ class LightningEngine:
     def run(self):
         if self._was_run:
             raise RuntimeError(
-                "Evaluation engine has already been run. Create a new LightningEngine "
+                "Evaluation engine has already been run. Create a new EvaluationEngine "
                 "instance to perform a subsequent run."
             )
         self._was_run = True
 
         self._log_params()
         self.trainer.test(
-            self.task, dataloaders=self.task.evaluation.dataset.test_dataset
+            self.task, dataloaders=self.task.evaluation.dataset.test_dataloader
         )
         return dict(
             compute=self.task.evaluation.metric.profiler.results(),

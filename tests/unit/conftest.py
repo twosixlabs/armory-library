@@ -25,7 +25,9 @@ def data_loader():
 def evaluation_dataset(data_loader):
     return charmory.evaluation.Dataset(
         name="test",
-        test_dataset=data_loader,
+        test_dataloader=data_loader,
+        x_key="data",
+        y_key="target",
     )
 
 

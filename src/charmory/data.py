@@ -1,22 +1,17 @@
 """Armory Dataset Classes"""
 
-# This could get merged with armory.data.datasets
-
-from typing import TYPE_CHECKING, Any, Callable, Tuple
+from typing import Any, Callable, Mapping, Sequence
 
 import numpy as np
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 
-if TYPE_CHECKING:
-    import jatic_toolbox.protocols
-
 from charmory.track import track_init_params
 
-DatasetOutputAdapter = Callable[..., Tuple[Any, Any]]
+DatasetOutputAdapter = Callable[..., Mapping[str, Any]]
 """
-An adapter for dataset samples. The output must be a tuple of sample data and
-label data.
+An adapter for dataset samples. The output must be a dictionary of column names
+to values.
 """
 
 
@@ -34,8 +29,8 @@ class ArmoryDataset(Dataset):
         return self._adapter(self._dataset[index])
 
 
-class MapSampleDataset(ArmoryDataset):
-    """Dataset wrapper with a pre-applied adapter to adapt map-like samples to tuples"""
+class TupleDataset(ArmoryDataset):
+    """Dataset wrapper with a pre-applied adapter to adapt tuples to map-like samples"""
 
     def __init__(
         self,
@@ -48,29 +43,8 @@ class MapSampleDataset(ArmoryDataset):
         self._y_key = y_key
 
     def _adapt(self, sample):
-        x = sample[self._x_key]
-        y = sample[self._y_key]
-        return x, y
-
-
-class JaticImageClassificationDataset(MapSampleDataset):
-    """Dataset wrapper with a pre-applied adapter for JATIC image classification datasets"""
-
-    def __init__(
-        self,
-        dataset: "jatic_toolbox.protocols.VisionDataset",
-    ):
-        super().__init__(dataset, x_key="image", y_key="label")
-
-
-class JaticObjectDetectionDataset(MapSampleDataset):
-    """Dataset wrapper with a pre-applied adapter for JATIC image classification datasets"""
-
-    def __init__(
-        self,
-        dataset: "jatic_toolbox.protocols.ObjectDetectionDataset",
-    ):
-        super().__init__(dataset, x_key="image", y_key="objects")
+        x, y = sample
+        return {self._x_key: x, self._y_key: y}
 
 
 @track_init_params
@@ -85,6 +59,9 @@ class ArmoryDataLoader(DataLoader):
         super().__init__(*args, collate_fn=self._collate, **kwargs)
 
     @staticmethod
-    def _collate(batch):
-        x, y = zip(*batch)
-        return np.asarray(x), np.asarray(y)
+    def _collate(batch: Sequence[Mapping[str, Any]]) -> Mapping[str, Any]:
+        keys = list(batch[0].keys())
+        collated = {}
+        for key in keys:
+            collated[key] = np.asarray([b[key] for b in batch])
+        return collated
