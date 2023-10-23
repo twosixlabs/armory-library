@@ -1,8 +1,8 @@
 [project]
 requires-python = ">=3.8"
 
-name = "charmory"
-description = "Adversarial Robustness Evaluation Library"
+name = "armory-library"
+description = "TwoSix Armory Adversarial Robustness Evaluation Library"
 readme = "README.md"
 dynamic = ["version"]
 license = "MIT"
@@ -12,6 +12,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries",
 ]
 
 dependencies = [
@@ -58,9 +59,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/twosixlabs/armory"
-BugTracker = "https://github.com/twosixlabs/armory/issues"
-Documentation = "https://armory.readthedocs.io/en/latest/"
+Homepage = "https://github.com/twosixlabs/armory-library"
+BugTracker = "https://github.com/twosixlabs/armory-library/issues"
+Documentation = "https://armory-library.readthedocs.io/en/latest/"
 
 [project.scripts]
 armory = "charmory.example:main"
@@ -104,9 +105,9 @@ extras = [
 ]
 
 all = [
-    "charmory[developer]",
-    "charmory[documentation]",
-    # "charmory[extras]",
+    "armory-library[developer]",
+    "armory-library[documentation]",
+    # "armory-library[extras]",
 ]
 
 
