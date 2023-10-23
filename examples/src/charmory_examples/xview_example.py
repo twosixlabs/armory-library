@@ -16,7 +16,7 @@ from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.model.object_detection import JaticObjectDetectionModel
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
@@ -147,11 +147,6 @@ def main(argv: list = sys.argv[1:]):
         profiler=BasicProfiler(),
     )
 
-    eval_sysconfig = SysConfig(
-        gpus=["all"],
-        use_gpu=True,
-    )
-
     evaluation = Evaluation(
         name="xview-object-detection",
         description="XView object detection from HuggingFace",
@@ -160,7 +155,6 @@ def main(argv: list = sys.argv[1:]):
         model=eval_model,
         attack=eval_attack,
         metric=eval_metric,
-        sysconfig=eval_sysconfig,
     )
 
     ###

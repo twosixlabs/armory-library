@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
@@ -83,13 +83,9 @@ class SysConfig:
     """Class for handling system configurations.
 
     Attributes:
-        gpus: A list of GPU devices.
-        use_gpu: A boolean indicating whether to use a GPU.
         armory_home: The home directory for armory.
     """
 
-    gpus: List[str] = field(default_factory=list)
-    use_gpu: bool = False
     armory_home: Path = Path(os.getenv("ARMORY_HOME", Path.home() / ".armory"))
     # When using torchvision the user must specify a directory to download the dataset into.
     dataset_cache: Path = Path(
