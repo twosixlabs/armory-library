@@ -11,7 +11,7 @@ from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.experimental.example_results import print_outputs
 from charmory.model.object_detection import JaticObjectDetectionModel
 from charmory.tasks.object_detection import ObjectDetectionTask
@@ -157,11 +157,6 @@ def main(args):
         profiler=BasicProfiler(),
     )
 
-    eval_sysconfig = SysConfig(
-        gpus=["all"],
-        use_gpu=True,
-    )
-
     evaluation = Evaluation(
         name="coco-object-detection",
         description="COCO object detection from HuggingFace & TorchVision",
@@ -170,7 +165,6 @@ def main(args):
         model=eval_model,
         attack=eval_attack,
         metric=eval_metric,
-        sysconfig=eval_sysconfig,
     )
 
     ###

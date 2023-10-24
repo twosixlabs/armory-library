@@ -22,7 +22,7 @@ from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.experimental.example_results import print_outputs
 from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
@@ -218,8 +218,6 @@ def main():
         profiler=BasicProfiler(),
     )
 
-    sysconfig = SysConfig(gpus=["all"], use_gpu=True)
-
     evaluation = Evaluation(
         name="CIFAR10-classification",
         description="Baseline cifar10 image classification",
@@ -228,7 +226,6 @@ def main():
         model=model,
         attack=attack,
         metric=metric,
-        sysconfig=sysconfig,
     )
 
     task = ImageClassificationTask(evaluation, num_classes=10, export_every_n_batches=5)
