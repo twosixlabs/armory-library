@@ -1748,10 +1748,10 @@ class HOTA_metrics:
         self.class_name_to_class_id = {"pedestrian": 1, "vehicle": 2}
         self.tracked_classes = list(tracked_classes)
         self.coco_format = bool(coco_format)
-        self.hota_metrics_per_class_per_videos = {
+        self.hota_metrics_per_class_per_videos: dict = {
             key: defaultdict(dict) for key in self.tracked_classes
         }
-        self.hota_metrics_per_class_all_videos = {
+        self.hota_metrics_per_class_all_videos: dict = {
             key: {} for key in self.tracked_classes
         }
         self.HOTA_calc = HOTA()

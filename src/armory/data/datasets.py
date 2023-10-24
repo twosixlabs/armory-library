@@ -11,7 +11,7 @@ The 'downloads' subdirectory under <dataset_dir> is reserved for caching.
 import json
 import os
 import re
-from typing import Callable, List, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 from PIL import Image, ImageOps
 from art.data_generators import DataGenerator
@@ -112,6 +112,7 @@ class ArmoryDataGenerator(DataGenerator):
                     self.current = 0
                     break
 
+            x: Any
             if self.variable_length:
                 if isinstance(x_list[0], dict):
                     # Translate a list of dicts into a dict of arrays
@@ -126,6 +127,7 @@ class ArmoryDataGenerator(DataGenerator):
             else:
                 x = np.vstack(x_list)
 
+            y: Any
             if self.variable_y:
                 if isinstance(y_list[0], dict):
                     # Store y as a list of dicts
@@ -188,7 +190,7 @@ class EvalGenerator(DataGenerator):
         self.batches_per_epoch = 1
         self.context = armory_generator.context
 
-    def get_batch(self) -> (np.ndarray, np.ndarray):
+    def get_batch(self) -> Tuple[np.ndarray, np.ndarray]:
         if self.batches_processed == self.num_eval_batches:
             raise StopIteration()
         batch = self.armory_generator.get_batch()
@@ -349,7 +351,7 @@ def filter_by_index(dataset: "tf.data.Dataset", index: list, dataset_size: int):
     return dataset.enumerate().filter(enum_index).map(lambda i, x: x), num_valid_indices
 
 
-def filter_by_class(dataset: "tf.data.Dataset", class_ids: Union[list, int]):
+def filter_by_class(dataset: "tf.data.Dataset", class_ids: list):
     """
     class_ids must be an int or list of ints
 
@@ -428,9 +430,9 @@ def _generator_from_tfds(
     split: str,
     batch_size: int,
     epochs: int,
-    dataset_dir: str,
-    preprocessing_fn: Callable,
-    label_preprocessing_fn: Callable = None,
+    dataset_dir: Optional[str],
+    preprocessing_fn: Optional[Callable],
+    label_preprocessing_fn: Optional[Callable] = None,
     as_supervised: bool = True,
     supervised_xy_keys=None,
     download_and_prepare_kwargs=None,
@@ -439,7 +441,7 @@ def _generator_from_tfds(
     shuffle_files=True,
     cache_dataset: bool = True,
     framework: str = "numpy",
-    lambda_map: Callable = None,
+    lambda_map: Optional[Callable] = None,
     context=None,
     class_ids=None,
     index=None,
@@ -897,9 +899,9 @@ def mnist(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = mnist_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -955,10 +957,10 @@ def carla_obj_det_train(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = carla_obj_det_canonical_preprocessing,
     label_preprocessing_fn: Callable = carla_obj_det_label_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1026,10 +1028,10 @@ def carla_over_obj_det_train(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = carla_obj_det_canonical_preprocessing,
     label_preprocessing_fn: Callable = carla_obj_det_label_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1097,9 +1099,9 @@ def cifar10(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = cifar10_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1130,9 +1132,9 @@ def cifar100(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = cifar100_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1163,9 +1165,9 @@ def digit(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
-    preprocessing_fn: Callable = None,
-    fit_preprocessing_fn: Callable = None,
+    dataset_dir: Optional[str] = None,
+    preprocessing_fn: Optional[Callable] = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1197,15 +1199,15 @@ def speech_commands(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = speech_commands_canonical_preprocessing,
-    label_preprocessing_fn: Callable = None,
+    label_preprocessing_fn: Optional[Callable] = None,
     as_supervised: bool = True,
     supervised_xy_keys=None,
     download_and_prepare_kwargs=None,
     variable_y=False,
-    lambda_map: Callable = None,
-    fit_preprocessing_fn: Callable = None,
+    lambda_map: Optional[Callable] = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1256,9 +1258,9 @@ def imagenette(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = imagenette_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1292,7 +1294,7 @@ def german_traffic_sign(
     epochs: int = 1,
     batch_size: int = 1,
     preprocessing_fn: Callable = gtsrb_canonical_preprocessing,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1337,9 +1339,9 @@ def librispeech_dev_clean(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = librispeech_dev_clean_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1378,9 +1380,9 @@ def librispeech_full(
     split: str = "train_clean360",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = librispeech_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1411,12 +1413,12 @@ def librispeech_full(
 
 
 def librispeech(
+    dataset_dir: str,
     split: str = "train_clean100",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
     preprocessing_fn: Callable = librispeech_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1475,9 +1477,9 @@ def librispeech_dev_clean_asr(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = librispeech_dev_clean_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1523,9 +1525,9 @@ def resisc45(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = resisc45_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1567,9 +1569,9 @@ def resisc10(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = resisc10_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1629,13 +1631,13 @@ def ucf101(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = ucf101_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
-    max_frames: int = None,
+    max_frames: Optional[int] = None,
     **kwargs,
 ) -> ArmoryDataGenerator:
     """
@@ -1673,9 +1675,9 @@ def ucf101_clean(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = ucf101_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1733,9 +1735,9 @@ def xview(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = xview_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     label_preprocessing_fn: Callable = xview_label_preprocessing,
     cache_dataset: bool = True,
     framework: str = "numpy",
@@ -1879,10 +1881,10 @@ def coco2017(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = coco_canonical_preprocessing,
     label_preprocessing_fn: Callable = coco_label_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
@@ -1962,9 +1964,9 @@ def so2sat(
     split: str = "train",
     epochs: int = 1,
     batch_size: int = 1,
-    dataset_dir: str = None,
+    dataset_dir: Optional[str] = None,
     preprocessing_fn: Callable = so2sat_canonical_preprocessing,
-    fit_preprocessing_fn: Callable = None,
+    fit_preprocessing_fn: Optional[Callable] = None,
     cache_dataset: bool = True,
     framework: str = "numpy",
     shuffle_files: bool = True,
