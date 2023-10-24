@@ -13,7 +13,7 @@ from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.experimental.example_results import print_outputs
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
@@ -111,8 +111,6 @@ def main(argv: list = sys.argv[1:]):
         profiler=BasicProfiler(),
     )
 
-    sysconfig = SysConfig(gpus=["all"], use_gpu=True)
-
     evaluation = Evaluation(
         name="pokemon",
         description="Baseline Pokemon image classification",
@@ -121,7 +119,6 @@ def main(argv: list = sys.argv[1:]):
         model=model,
         attack=attack,
         metric=metric,
-        sysconfig=sysconfig,
     )
 
     task = ImageClassificationTask(
