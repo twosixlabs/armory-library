@@ -7,11 +7,10 @@ import art.attacks.evasion
 
 import armory.baseline_models.pytorch.cifar
 import armory.data.datasets
-from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.engine import LightningEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.engine import EvaluationEngine
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.experimental.example_results import print_outputs
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
@@ -28,13 +27,15 @@ def main(argv: list = sys.argv[1:]):
 
     dataset = Dataset(
         name="CIFAR10",
-        train_dataset=track_params(armory.data.datasets.cifar10)(
+        x_key="image",
+        y_key="label",
+        train_dataloader=track_params(armory.data.datasets.cifar10)(
             split="train",
             epochs=20,
             batch_size=64,
             shuffle_files=True,
         ),
-        test_dataset=track_params(armory.data.datasets.cifar10)(
+        test_dataloader=track_params(armory.data.datasets.cifar10)(
             split="test",
             epochs=1,
             batch_size=64,
@@ -81,16 +82,7 @@ def main(argv: list = sys.argv[1:]):
 
     metric = Metric(
         profiler=BasicProfiler(),
-        logger=MetricsLogger(
-            supported_metrics=["accuracy"],
-            perturbation=["linf"],
-            task=["categorical_accuracy"],
-            means=True,
-            record_metric_per_sample=False,
-        ),
     )
-
-    sysconfig = SysConfig(gpus=["all"], use_gpu=True)
 
     evaluation = Evaluation(
         name="cifar_baseline",
@@ -100,11 +92,10 @@ def main(argv: list = sys.argv[1:]):
         model=model,
         attack=attack,
         metric=metric,
-        sysconfig=sysconfig,
     )
 
     task = ImageClassificationTask(evaluation, num_classes=10, export_every_n_batches=5)
-    engine = LightningEngine(task, limit_test_batches=5)
+    engine = EvaluationEngine(task, limit_test_batches=5)
     results = engine.run()
 
     print_outputs(dataset, model, results)

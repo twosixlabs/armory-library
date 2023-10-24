@@ -9,12 +9,11 @@ from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox import load_dataset as load_jatic_dataset
 
 import armory.baseline_models.pytorch.pokemon
-from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
-from charmory.engine import LightningEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.data import ArmoryDataLoader
+from charmory.engine import EvaluationEngine
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.experimental.example_results import print_outputs
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
@@ -40,7 +39,7 @@ def load_huggingface_dataset():
     train_dataset.set_transform(transform)
 
     train_dataloader = ArmoryDataLoader(
-        dataset=JaticImageClassificationDataset(train_dataset),
+        dataset=train_dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
     )
@@ -53,7 +52,7 @@ def load_huggingface_dataset():
     )
     test_dataset.set_transform(transform)
     test_dataloader = ArmoryDataLoader(
-        dataset=JaticImageClassificationDataset(test_dataset),
+        dataset=test_dataset,
         batch_size=BATCH_SIZE,
     )
     return train_dataloader, test_dataloader
@@ -81,7 +80,11 @@ def main(argv: list = sys.argv[1:]):
 
     train_dataset, test_dataset = load_huggingface_dataset()
     dataset = Dataset(
-        name="POKEMON", train_dataset=train_dataset, test_dataset=test_dataset
+        name="POKEMON",
+        x_key="image",
+        y_key="label",
+        train_dataloader=train_dataset,
+        test_dataloader=test_dataset,
     )
 
     ###
@@ -106,16 +109,7 @@ def main(argv: list = sys.argv[1:]):
 
     metric = Metric(
         profiler=BasicProfiler(),
-        logger=MetricsLogger(
-            supported_metrics=["accuracy"],
-            perturbation=["linf"],
-            task=["categorical_accuracy"],
-            means=True,
-            record_metric_per_sample=False,
-        ),
     )
-
-    sysconfig = SysConfig(gpus=["all"], use_gpu=True)
 
     evaluation = Evaluation(
         name="pokemon",
@@ -125,13 +119,12 @@ def main(argv: list = sys.argv[1:]):
         model=model,
         attack=attack,
         metric=metric,
-        sysconfig=sysconfig,
     )
 
     task = ImageClassificationTask(
         evaluation, num_classes=150, export_every_n_batches=5
     )
-    engine = LightningEngine(task, limit_test_batches=5)
+    engine = EvaluationEngine(task, limit_test_batches=5)
     results = engine.run()
 
     print_outputs(dataset, model, results)

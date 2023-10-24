@@ -1,10 +1,14 @@
+"""Definition for the COCO object detection evaluation"""
+
 import argparse
-from pprint import pprint
+from typing import Optional
 
 import albumentations as A
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchObjectDetector
+import datasets
 import jatic_toolbox
+from jatic_toolbox.interop.huggingface import HuggingFaceObjectDetectionDataset
 import numpy as np
 import torch
 from torchvision.ops import box_convert
@@ -13,18 +17,22 @@ from transformers import AutoImageProcessor, AutoModelForObjectDetection
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
-from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.model.object_detection import YolosTransformer
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
 
 
-def get_cli_args():
+def get_cli_args(with_attack: bool):
     parser = argparse.ArgumentParser(
-        description="Run COCO object detection example using models and datasets from the JATIC toolbox",
+        description="Run COCO object detection evaluation",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    if not with_attack:
+        parser.add_argument(
+            "dataset_path",
+            type=str,
+        )
     parser.add_argument(
         "--batch-size",
         default=4,
@@ -43,11 +51,7 @@ def get_cli_args():
     return parser.parse_args()
 
 
-@track_params(prefix="main")
-def main(batch_size, export_every_n_batches, num_batches):
-    ###
-    # Model
-    ###
+def _load_model():
     model = track_params(AutoModelForObjectDetection.from_pretrained)(
         pretrained_model_name_or_path="hustvl/yolos-tiny"
     )
@@ -68,16 +72,28 @@ def main(batch_size, export_every_n_batches, num_batches):
         ),
     )
 
-    ###
-    # Dataset
-    ###
-    dataset = track_params(jatic_toolbox.load_dataset)(
-        provider="huggingface",
-        dataset_name="rafaelpadilla/coco2017",
-        task="object-detection",
-        split="val",
-        category_key="label",
+    eval_model = Model(
+        name="yolos",
+        model=detector,
     )
+
+    return eval_model, detector
+
+
+def _load_dataset(batch_size: int, dataset_path: Optional[str] = None):
+    if dataset_path is not None:
+        ds = track_params(datasets.load_from_disk)(dataset_path=dataset_path)
+        if isinstance(ds, datasets.DatasetDict):
+            ds = ds["test"]
+        dataset = HuggingFaceObjectDetectionDataset(ds, category_key="label")
+    else:
+        dataset = track_params(jatic_toolbox.load_dataset)(
+            provider="huggingface",
+            dataset_name="rafaelpadilla/coco2017",
+            task="object-detection",
+            split="val",
+            category_key="label",
+        )
 
     # Have to filter out non-RGB images
     def filter(sample):
@@ -107,7 +123,9 @@ def main(batch_size, export_every_n_batches, num_batches):
     )
 
     def transform(sample):
-        transformed = dict(image=[], objects=[])
+        transformed = dict(**sample)
+        transformed["image"] = []
+        transformed["objects"] = []
         for i in range(len(sample["image"])):
             transformed_img = img_transforms(
                 image=np.asarray(sample["image"][i]),
@@ -116,12 +134,15 @@ def main(batch_size, export_every_n_batches, num_batches):
             )
             # Transpose from HWC to CHW
             transformed["image"].append(transformed_img["image"].transpose(2, 0, 1))
-            transformed["objects"].append(
-                dict(
-                    bbox=transformed_img["bboxes"],
-                    label=transformed_img["labels"],
-                )
-            )
+            # Note, this only works because we aren't dropping any boxes
+            # in any of the albumentations transforms. Otherwise, we'd
+            # have to worry about removing data for the dropped boxes.
+            # Also, the area is being copied and not re-calculated, which
+            # only works because we don't actually use it.
+            obj = dict(**sample["objects"][i])
+            obj["bbox"] = transformed_img["bboxes"]
+            obj["label"] = transformed_img["labels"]
+            transformed["objects"].append(obj)
         for obj in transformed["objects"]:
             if len(obj.get("bbox", [])) > 0:
                 obj["bbox"] = box_convert(
@@ -133,21 +154,19 @@ def main(batch_size, export_every_n_batches, num_batches):
 
     dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
 
-    ###
-    # Evaluation
-    ###
-    eval_dataset = Dataset(
+    return Dataset(
         name="coco",
         test_dataloader=dataloader,
         x_key="image",
         y_key="objects",
     )
 
-    eval_model = Model(
-        name="faster-rcnn-resnet50",
-        model=detector,
-    )
 
+def _create_metric():
+    return Metric(profiler=BasicProfiler())
+
+
+def _create_attack(detector: PyTorchObjectDetector):
     patch = track_init_params(art.attacks.evasion.RobustDPatch)(
         detector,
         patch_shape=(3, 50, 50),
@@ -160,40 +179,49 @@ def main(batch_size, export_every_n_batches, num_batches):
         verbose=False,
     )
 
-    eval_attack = Attack(
+    return Attack(
         name="RobustDPatch",
         attack=AttackWrapper(patch),
         use_label_for_untargeted=False,
     )
 
-    eval_metric = Metric(
-        profiler=BasicProfiler(),
-    )
+
+def create_evaluation(
+    batch_size: int,
+    with_attack: bool,
+    dataset_path: Optional[str] = None,
+    **kwargs,
+) -> Evaluation:
+    model, detector = _load_model()
+    dataset = _load_dataset(batch_size=batch_size, dataset_path=dataset_path)
+    attack = _create_attack(detector) if with_attack else None
+
+    attack_type = "generated" if with_attack else "precomputed"
 
     evaluation = Evaluation(
-        name="coco-yolos-object-detection",
-        description="COCO object detection using YOLO from HuggingFace",
-        author="",
-        dataset=eval_dataset,
-        model=eval_model,
-        attack=eval_attack,
-        metric=eval_metric,
+        name=f"coco-yolos-{attack_type}-robustdpatch",
+        description=f"COCO object detection with {attack_type} RobustDPatch attack",
+        author="TwoSix",
+        dataset=dataset,
+        model=model,
+        attack=attack,
+        metric=_create_metric(),
     )
 
-    ###
-    # Engine
-    ###
+    return evaluation
+
+
+@track_params
+def create_evaluation_task(
+    export_every_n_batches: int, with_attack: bool, **kwargs
+) -> ObjectDetectionTask:
+    evaluation = create_evaluation(with_attack=with_attack, **kwargs)
 
     task = ObjectDetectionTask(
         evaluation,
         export_every_n_batches=export_every_n_batches,
         class_metrics=False,
+        skip_attack=not with_attack,
     )
-    engine = EvaluationEngine(task, limit_test_batches=num_batches)
-    results = engine.run()
 
-    pprint(results)
-
-
-if __name__ == "__main__":
-    main(**vars(get_cli_args()))
+    return task

@@ -9,11 +9,10 @@ import numpy as np
 import torch
 from transformers.image_utils import infer_channel_dimension_format
 
-from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import BasicProfiler
-from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
-from charmory.engine import LightningEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.data import ArmoryDataLoader
+from charmory.engine import EvaluationEngine
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_evaluation, track_init_params, track_params
@@ -65,13 +64,15 @@ def make_evaluation_from_scratch(epsilon: float) -> Evaluation:
     dataset.set_transform(transform)
 
     generator = ArmoryDataLoader(
-        dataset=JaticImageClassificationDataset(dataset),
+        dataset=dataset,
         batch_size=16,
     )
 
     eval_dataset = Dataset(
         name="food-category-classification",
-        test_dataset=generator,
+        x_key="image",
+        y_key="label",
+        test_dataloader=generator,
     )
 
     eval_model = Model(
@@ -97,18 +98,6 @@ def make_evaluation_from_scratch(epsilon: float) -> Evaluation:
 
     eval_metric = Metric(
         profiler=BasicProfiler(),
-        logger=MetricsLogger(
-            supported_metrics=["accuracy"],
-            perturbation=["linf"],
-            task=["categorical_accuracy"],
-            means=True,
-            record_metric_per_sample=False,
-        ),
-    )
-
-    eval_sysconfig = SysConfig(
-        gpus=["all"],
-        use_gpu=True,
     )
 
     evaluation = Evaluation(
@@ -119,7 +108,6 @@ def make_evaluation_from_scratch(epsilon: float) -> Evaluation:
         model=eval_model,
         attack=eval_attack,
         metric=eval_metric,
-        sysconfig=eval_sysconfig,
     )
 
     return evaluation
@@ -129,7 +117,7 @@ for epsilon in [x / 1000.0 for x in range(10, 40, 5)]:
     with track_evaluation("msw-food-3", "epsilon 0.010 to 0.040"):
         evaluation = make_evaluation_from_scratch(epsilon=epsilon)
         task = ImageClassificationTask(evaluation, num_classes=12)
-        engine = LightningEngine(task)
+        engine = EvaluationEngine(task)
         results = engine.run()
         print(f"Completed evaluation run with {epsilon=}")
         pprint(results)

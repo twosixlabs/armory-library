@@ -31,8 +31,9 @@ Example:
 
 import json
 import os
-from typing import Callable
+from typing import Any, Callable, Optional
 
+json_utils: Any
 try:
     # If numpy is available, enable NumpyEncoder for json export
     from armory.utils import json_utils
@@ -41,9 +42,6 @@ except ImportError:
 
 from armory import log
 from armory.utils.configuration import get_armory_home
-
-_PROBES = {}
-_HUB = None
 
 
 class Probe:
@@ -69,7 +67,6 @@ class Probe:
                 raise ValueError(f"name {name} must be '' or '.'-separated identifiers")
         self.name = name
         self.sink = sink
-        self._hooks = {}
         self._warned = False
 
     def set_sink(self, sink):
@@ -733,7 +730,7 @@ class ResultsLogWriter(LogWriter):
             raise KeyError(f"format_string key {e} is not in ('name', 'result')")
         self.format_string = format_string
 
-    def _write(self, name, batch, result, result_formatter: Callable = None):
+    def _write(self, name, batch, result, result_formatter: Optional[Callable] = None):
         """
         result_formatter - function that maps a result into a smaller formatted string
             for less verbose logging to stout

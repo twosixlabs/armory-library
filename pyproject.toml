@@ -105,9 +105,9 @@ extras = [
 ]
 
 all = [
-    "charmory[developer]",
-    "charmory[documentation]",
-    # "charmory[extras]",
+    "armory-library[developer]",
+    "armory-library[documentation]",
+    # "armory-library[extras]",
 ]
 
 

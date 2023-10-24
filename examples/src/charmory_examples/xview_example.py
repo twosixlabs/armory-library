@@ -1,3 +1,4 @@
+from pathlib import Path
 from pprint import pprint
 import sys
 
@@ -5,34 +6,44 @@ from PIL import Image
 import albumentations as A
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchFasterRCNN
+import boto3
+import botocore
 from datasets import load_dataset
-import jatic_toolbox
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox.interop.huggingface import HuggingFaceObjectDetectionDataset
+from jatic_toolbox.interop.torchvision import TorchVisionObjectDetector
 import numpy as np
+import torch
+from torchvision.transforms._presets import ObjectDetection
 
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
 import armory.version
-from charmory.data import ArmoryDataLoader, JaticObjectDetectionDataset
-from charmory.engine import LightningEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.data import ArmoryDataLoader
+from charmory.engine import EvaluationEngine
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.model.object_detection import JaticObjectDetectionModel
 from charmory.tasks.object_detection import ObjectDetectionTask
-from charmory.track import track_init_params, track_params
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+from charmory.track import track_init_params
 from charmory.utils import create_jatic_dataset_transform
 
 BATCH_SIZE = 1
 TRAINING_EPOCHS = 20
-import torch
+BUCKET_NAME = "armory-library-data"
+KEY = "fasterrcnn_mobilenet_v3_2"
+
 
 torch.set_float32_matmul_precision("high")
+import armory.data.datasets
 
 
 def load_huggingface_dataset():
-    train_data = load_dataset("Honaker/xview_dataset", split="train")
+    train_data = load_dataset("Honaker/xview_dataset_subset", split="train")
 
-    new_dataset = train_data.train_test_split(test_size=0.2, seed=1)
+    new_dataset = train_data.train_test_split(test_size=0.4, seed=3)
     train_dataset, test_dataset = new_dataset["train"], new_dataset["test"]
 
     train_dataset, test_dataset = HuggingFaceObjectDetectionDataset(
@@ -53,13 +64,23 @@ def main(argv: list = sys.argv[1:]):
     ###
     # Model
     ###
-    model = track_params(jatic_toolbox.load_model)(
-        provider="torchvision",
-        model_name="fasterrcnn_resnet50_fpn",
-        task="object-detection",
-    )
+    s3 = boto3.resource("s3")
+    try:
+        s3.Bucket(BUCKET_NAME).download_file(
+            KEY, Path.cwd() / "fasterrcnn_mobilenet_v3_2"
+        )
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "404":
+            print("The object does not exist.")
+        else:
+            raise
 
-    # Bypass JATIC model wrapper to allow targeted adversarial attacks
+    model = torch.load(Path.cwd() / "fasterrcnn_mobilenet_v3_2")
+    model.to(DEVICE)
+
+    model = TorchVisionObjectDetector(
+        model=model, processor=ObjectDetection(), labels=None
+    )
     model.forward = model._model.forward
 
     detector = track_init_params(PyTorchFasterRCNN)(
@@ -67,6 +88,7 @@ def main(argv: list = sys.argv[1:]):
         channels_first=True,
         clip_values=(0.0, 1.0),
     )
+
     model_transform = create_jatic_dataset_transform(model.preprocessor)
 
     train_dataset, test_dataset = load_huggingface_dataset()
@@ -105,24 +127,25 @@ def main(argv: list = sys.argv[1:]):
         transformed = model_transform(transformed)
         return transformed
 
-    train_dataset.set_transform(transform)
     test_dataset.set_transform(transform)
 
     train_dataloader = ArmoryDataLoader(
-        JaticObjectDetectionDataset(train_dataset),
+        train_dataset,
         batch_size=BATCH_SIZE,
     )
     test_dataloader = ArmoryDataLoader(
-        JaticObjectDetectionDataset(test_dataset),
+        test_dataset,
         batch_size=BATCH_SIZE,
     )
     eval_dataset = Dataset(
         name="XVIEW",
-        train_dataset=train_dataloader,
-        test_dataset=test_dataloader,
+        x_key="image",
+        y_key="label",
+        train_dataloader=train_dataloader,
+        test_dataloader=test_dataloader,
     )
     eval_model = Model(
-        name="fasterrcnn-resnet-50",
+        name="xview-trained-fasterrcnn-resnet-50",
         model=detector,
     )
 
@@ -145,11 +168,6 @@ def main(argv: list = sys.argv[1:]):
         profiler=BasicProfiler(),
     )
 
-    eval_sysconfig = SysConfig(
-        gpus=["all"],
-        use_gpu=True,
-    )
-
     evaluation = Evaluation(
         name="xview-object-detection",
         description="XView object detection from HuggingFace",
@@ -158,7 +176,6 @@ def main(argv: list = sys.argv[1:]):
         model=eval_model,
         attack=eval_attack,
         metric=eval_metric,
-        sysconfig=eval_sysconfig,
     )
 
     ###
@@ -167,10 +184,10 @@ def main(argv: list = sys.argv[1:]):
 
     task = ObjectDetectionTask(
         evaluation,
-        export_every_n_batches=5,
+        export_every_n_batches=2,
         class_metrics=False,
     )
-    engine = LightningEngine(task, limit_test_batches=10)
+    engine = EvaluationEngine(task, limit_test_batches=10)
     results = engine.run()
 
     pprint(results)

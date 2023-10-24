@@ -9,9 +9,9 @@ import torch.nn
 from transformers.image_utils import infer_channel_dimension_format
 
 from armory.metrics.compute import BasicProfiler
-from charmory.data import ArmoryDataLoader, JaticImageClassificationDataset
-from charmory.engine import LightningEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.data import ArmoryDataLoader
+from charmory.engine import EvaluationEngine
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
@@ -83,16 +83,16 @@ def main(args):
     transform = create_jatic_dataset_transform(model.preprocessor)
     dataset.set_transform(transform)
 
-    dataloader = ArmoryDataLoader(
-        JaticImageClassificationDataset(dataset), batch_size=args.batch_size
-    )
+    dataloader = ArmoryDataLoader(dataset, batch_size=args.batch_size)
 
     ###
     # Evaluation
     ###
     eval_dataset = Dataset(
         name="food-category-classification",
-        test_dataset=dataloader,
+        x_key="image",
+        y_key="label",
+        test_dataloader=dataloader,
     )
 
     eval_model = Model(
@@ -120,11 +120,6 @@ def main(args):
         profiler=BasicProfiler(),
     )
 
-    eval_sysconfig = SysConfig(
-        gpus=["all"],
-        use_gpu=True,
-    )
-
     evaluation = Evaluation(
         name="food-category-classification",
         description="Food category classification from HuggingFace",
@@ -133,7 +128,6 @@ def main(args):
         model=eval_model,
         attack=eval_attack,
         metric=eval_metric,
-        sysconfig=eval_sysconfig,
     )
 
     ###
@@ -143,7 +137,7 @@ def main(args):
     task = ImageClassificationTask(
         evaluation, num_classes=12, export_every_n_batches=args.export_every_n_batches
     )
-    engine = LightningEngine(task, limit_test_batches=args.num_batches)
+    engine = EvaluationEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()
 
     pprint(results)

@@ -2,13 +2,12 @@
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
 from torch.utils.data.dataloader import DataLoader
 
-from armory.instrument.config import MetricsLogger
 from armory.metrics.compute import NullProfiler, Profiler
 from charmory.labels import LabelTargeter
 
@@ -47,22 +46,23 @@ class Attack:
 @dataclass
 class Dataset:
     name: str
-    test_dataset: DataLoader
-    train_dataset: Optional[DataLoader] = None
+    x_key: str
+    y_key: str
+    test_dataloader: DataLoader
+    train_dataloader: Optional[DataLoader] = None
 
     def __post_init__(self):
         assert isinstance(
-            self.test_dataset, DataLoader
-        ), "Evaluation dataset's test_dataset is not an instance of DataLoader"
-        if self.train_dataset is not None:
+            self.test_dataloader, DataLoader
+        ), "Evaluation dataset's test_dataloader is not an instance of DataLoader"
+        if self.train_dataloader is not None:
             assert isinstance(
-                self.train_dataset, DataLoader
-            ), "Evaluation dataset's train_dataset is not an instance of DataLoader"
+                self.train_dataloader, DataLoader
+            ), "Evaluation dataset's train_dataloader is not an instance of DataLoader"
 
 
 @dataclass
 class Metric:
-    logger: MetricsLogger = field(default_factory=MetricsLogger)
     profiler: Profiler = field(default_factory=NullProfiler)
 
 
@@ -83,13 +83,9 @@ class SysConfig:
     """Class for handling system configurations.
 
     Attributes:
-        gpus: A list of GPU devices.
-        use_gpu: A boolean indicating whether to use a GPU.
         armory_home: The home directory for armory.
     """
 
-    gpus: List[str] = field(default_factory=list)
-    use_gpu: bool = False
     armory_home: Path = Path(os.getenv("ARMORY_HOME", Path.home() / ".armory"))
     # When using torchvision the user must specify a directory to download the dataset into.
     dataset_cache: Path = Path(

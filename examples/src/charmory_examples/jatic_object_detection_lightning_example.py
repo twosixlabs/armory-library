@@ -9,9 +9,9 @@ import numpy as np
 
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
-from charmory.data import ArmoryDataLoader, JaticObjectDetectionDataset
-from charmory.engine import LightningEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.data import ArmoryDataLoader
+from charmory.engine import EvaluationEngine
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.experimental.example_results import print_outputs
 from charmory.model.object_detection import JaticObjectDetectionModel
 from charmory.tasks.object_detection import ObjectDetectionTask
@@ -121,16 +121,16 @@ def main(args):
 
     dataset.set_transform(transform)
 
-    dataloader = ArmoryDataLoader(
-        JaticObjectDetectionDataset(dataset), batch_size=args.batch_size
-    )
+    dataloader = ArmoryDataLoader(dataset, batch_size=args.batch_size)
 
     ###
     # Evaluation
     ###
     eval_dataset = Dataset(
         name="coco",
-        test_dataset=dataloader,
+        x_key="image",
+        y_key="objects",
+        test_dataloader=dataloader,
     )
 
     eval_model = Model(
@@ -157,11 +157,6 @@ def main(args):
         profiler=BasicProfiler(),
     )
 
-    eval_sysconfig = SysConfig(
-        gpus=["all"],
-        use_gpu=True,
-    )
-
     evaluation = Evaluation(
         name="coco-object-detection",
         description="COCO object detection from HuggingFace & TorchVision",
@@ -170,7 +165,6 @@ def main(args):
         model=eval_model,
         attack=eval_attack,
         metric=eval_metric,
-        sysconfig=eval_sysconfig,
     )
 
     ###
@@ -182,7 +176,7 @@ def main(args):
         export_every_n_batches=args.export_every_n_batches,
         class_metrics=False,
     )
-    engine = LightningEngine(task, limit_test_batches=args.num_batches)
+    engine = EvaluationEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()
     print_outputs(dataset, model, results)
 
