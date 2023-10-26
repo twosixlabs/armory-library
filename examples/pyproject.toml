@@ -36,6 +36,7 @@ jatic = [
     "datasets",
     "huggingface_hub",
     "transformers",
+    "yolov5",
 ]
 
 demo = ["pandas", "sklearn", "plotly", "numpy", "matplotlib", "seaborn"]
