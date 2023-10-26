@@ -2,31 +2,40 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: armory
+title: armory-library
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
 type: software
 authors:
-  - given-names: David
-    family-names: Slater
+  - given-names: Matt
+    family-names: Wartell
     email: armory@twosixtech.com
-  - given-names: Lucas
-    family-names: Cadalzo
+  - given-names: Kyle
+    family-names: Treubig
     email: armory@twosixtech.com
-repository-code: 'https://github.com/twosixlabs/armory'
-url: 'https://www.gardproject.org/'
+  - given-names: Sterling
+    family-names: Suggs
+    email: armory@twosixtech.com
+repository-code: 'https://github.com/twosixlabs/armory-library'
+url: 'https://www.armory-library.org/'
 abstract: >-
-  Armory is a testbed for running scalable evaluations of
-  adversarial defenses for ML systems. Configuration files
-  are used to launch local or cloud instances of the Armory
-  docker containers. Models, datasets, and evaluation
-  scripts can be pulled from external repositories or from
-  the baselines within this project.
+  Armory-library is a library for evaluating adversarial
+  attack machine learning models. It is a pure Python
+  installable which is intended to be used in a user created
+  application. The armory-library API is intentionally small
+  and simple to afford "today" speed of integration.
+  Armory-library uses PyTorch, Lightning.AI, and IBM's
+  Adversarial Robustness Toolbox (ART) to effect its
+  evaluations; it logs all pararmeters and metrics to MLFlow
+  either locally or to a remote server.
+
+
+  Armory-library is part of the Armory project.
 keywords:
   - adversarial machine learning
 license: MIT
-commit: 029b811eef05167f33d393720ad193f307b1161a
-version: 0.16.4
-doi: 10.5281/zenodo.7561755
-date-released: '2023-01-20'
+commit: 1ab0924b6eeca7720b26d66289686b37e81c9830
+version: 23.10.4
+date-released: '2023-10-25'
+doi: 10.5281/zenodo.10041830
