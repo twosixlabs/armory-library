@@ -102,11 +102,14 @@ class ObjectDetectionTask(BaseEvaluationTask):
     def _export_image(self, name, images, truth, preds, batch_idx):
         batch_size = images.shape[0]
         for sample_idx in range(batch_size):
+            image = images[sample_idx]
+            if self.export_adapter is not None:
+                image = self.export_adapter(image)
             boxes_above_threshold = preds[sample_idx]["boxes"][
                 preds[sample_idx]["scores"] > self.export_score_threshold
             ]
             with_boxes = draw_boxes_on_image(
-                image=images[sample_idx],
+                image=image,
                 ground_truth_boxes=truth[sample_idx]["boxes"],
                 pred_boxes=boxes_above_threshold,
             )

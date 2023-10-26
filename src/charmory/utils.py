@@ -239,3 +239,27 @@ class PILtoNumpy_HuggingFace_Variable_Length(object):
         sample["image"] = [img.transpose(2, 0, 1) for img in sample["image"]]
 
         return sample
+
+
+class Unnormalize:
+    """
+    Inverse of `torchvision.transforms.Normalize` transform.
+    """
+
+    def __init__(self, mean, std):
+        """
+        Initialize the transform.
+
+        Args:
+            mean: Sequence of means for each channel
+            std: Sequence of standard deviations for each channel
+        """
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, data):
+        unnormalized = deepcopy(data)
+        for t, m, s in zip(unnormalized, self.mean, self.std):
+            t *= s
+            t += m
+        return unnormalized
