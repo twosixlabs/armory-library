@@ -1,6 +1,5 @@
 """Definition for the EuroSAT classification evaluation"""
 
-import argparse
 from copy import deepcopy
 import os
 from typing import Optional
@@ -8,6 +7,7 @@ from typing import Optional
 import albumentations as A
 from art.attacks.evasion import ProjectedGradientDescent
 from art.estimators.classification import PyTorchClassifier
+from charmory_examples.utils.args import create_parser
 import datasets
 import jatic_toolbox
 from jatic_toolbox.interop.huggingface import HuggingFaceVisionDataset
@@ -32,9 +32,10 @@ _MODELS = {
 
 def get_cli_args(with_attack: bool):
     """Get CLI-specified arguments to configure the evaluation."""
-    parser = argparse.ArgumentParser(
+    parser = create_parser(
         description="Run EuroSAT image classification evaluation",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        batch_size=4,
+        export_every_n_batches=5,
     )
     parser.add_argument(
         "model_name",
@@ -45,21 +46,6 @@ def get_cli_args(with_attack: bool):
             "dataset_path",
             type=str,
         )
-    parser.add_argument(
-        "--batch-size",
-        default=4,
-        type=int,
-    )
-    parser.add_argument(
-        "--num-batches",
-        default=None,
-        type=int,
-    )
-    parser.add_argument(
-        "--export-every-n-batches",
-        default=5,
-        type=int,
-    )
 
     if with_attack:
         attack_args = parser.add_argument_group("attack", "PGD attack parameters")

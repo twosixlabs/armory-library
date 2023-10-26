@@ -5,11 +5,11 @@ This file is unnecessarily complicated for the sake of demonstrating
 interoperability between dataset and model providers. This file is NOT
 a good example of using the JATIC toolbox or Armory.
 """
-import argparse
 import sys
 
 import art.attacks.evasion
 from art.estimators.classification import PyTorchClassifier
+from charmory_examples.utils.args import create_parser
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox import load_dataset as load_jatic_dataset
 from jatic_toolbox import load_model as load_jatic_model
@@ -29,10 +29,8 @@ from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import create_jatic_dataset_transform
 
-BATCH_SIZE = 16
 
-
-def load_huggingface_dataset(transform):
+def load_huggingface_dataset(transform, batch_size):
     print("Loading HuggingFace dataset from jatic_toolbox")
 
     train_dataset = track_params(load_jatic_dataset)(
@@ -44,7 +42,7 @@ def load_huggingface_dataset(transform):
     train_dataset.set_transform(transform)
     train_dataloader = ArmoryDataLoader(
         dataset=train_dataset,
-        batch_size=BATCH_SIZE,
+        batch_size=batch_size,
         shuffle=True,
     )
 
@@ -57,14 +55,14 @@ def load_huggingface_dataset(transform):
     test_dataset.set_transform(transform)
     test_dataloader = ArmoryDataLoader(
         dataset=test_dataset,
-        batch_size=BATCH_SIZE,
+        batch_size=batch_size,
         shuffle=False,
     )
 
     return train_dataloader, test_dataloader
 
 
-def load_torchvision_dataset(transform):
+def load_torchvision_dataset(transform, batch_size):
     print("Loading torchvision dataset from jatic_toolbox")
     train_dataset = track_params(load_jatic_dataset)(
         provider="torchvision",
@@ -77,7 +75,7 @@ def load_torchvision_dataset(transform):
     train_dataset.set_transform(transform)
     train_dataloader = ArmoryDataLoader(
         dataset=train_dataset,
-        batch_size=BATCH_SIZE,
+        batch_size=batch_size,
         shuffle=True,
     )
 
@@ -92,7 +90,7 @@ def load_torchvision_dataset(transform):
     test_dataset.set_transform(transform)
     test_dataloader = ArmoryDataLoader(
         dataset=test_dataset,
-        batch_size=BATCH_SIZE,
+        batch_size=batch_size,
         shuffle=False,
     )
 
@@ -146,9 +144,11 @@ def load_torchvision_model():
 
 
 def main():
-    parser = argparse.ArgumentParser(
+    parser = create_parser(
         description="Run example using models and datasets from the JATIC toolbox",
-        formatter_class=argparse.RawTextHelpFormatter,
+        batch_size=16,
+        export_every_n_batches=5,
+        num_batches=5,
     )
     parser.add_argument(
         "--dataset",
@@ -177,9 +177,13 @@ def main():
         loaded_model, transform = load_huggingface_model()
 
     if args.dataset == "torchvision":
-        train_dataset, test_dataset = load_torchvision_dataset(transform)
+        train_dataset, test_dataset = load_torchvision_dataset(
+            transform, args.batch_size
+        )
     else:
-        train_dataset, test_dataset = load_huggingface_dataset(transform)
+        train_dataset, test_dataset = load_huggingface_dataset(
+            transform, args.batch_size
+        )
 
     dataset = Dataset(
         name="CIFAR10",
@@ -228,9 +232,11 @@ def main():
         metric=metric,
     )
 
-    task = ImageClassificationTask(evaluation, num_classes=10, export_every_n_batches=5)
+    task = ImageClassificationTask(
+        evaluation, num_classes=10, export_every_n_batches=args.export_every_n_batches
+    )
 
-    engine = EvaluationEngine(task, limit_test_batches=5)
+    engine = EvaluationEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()
     print_outputs(dataset, model, results)
 

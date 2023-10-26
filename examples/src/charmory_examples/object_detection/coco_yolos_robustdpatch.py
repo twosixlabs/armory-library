@@ -1,9 +1,9 @@
-import argparse
 from pprint import pprint
 
 import albumentations as A
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchObjectDetector
+from charmory_examples.utils.args import create_parser
 import jatic_toolbox
 import numpy as np
 import torch
@@ -21,24 +21,11 @@ from charmory.track import track_init_params, track_params
 
 
 def get_cli_args():
-    parser = argparse.ArgumentParser(
+    parser = create_parser(
         description="Run COCO object detection example using models and datasets from the JATIC toolbox",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        "--batch-size",
-        default=4,
-        type=int,
-    )
-    parser.add_argument(
-        "--export-every-n-batches",
-        default=5,
-        type=int,
-    )
-    parser.add_argument(
-        "--num-batches",
-        default=20,
-        type=int,
+        batch_size=4,
+        export_every_n_batches=5,
+        num_batches=20,
     )
     return parser.parse_args()
 

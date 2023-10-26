@@ -1,11 +1,11 @@
 """Definition for the COCO object detection evaluation"""
 
-import argparse
 from typing import Optional
 
 import albumentations as A
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchObjectDetector
+from charmory_examples.utils.args import create_parser
 import datasets
 import jatic_toolbox
 from jatic_toolbox.interop.huggingface import HuggingFaceObjectDetectionDataset
@@ -24,30 +24,17 @@ from charmory.track import track_init_params, track_params
 
 
 def get_cli_args(with_attack: bool):
-    parser = argparse.ArgumentParser(
+    parser = create_parser(
         description="Run COCO object detection evaluation",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        batch_size=4,
+        export_every_n_batches=5,
+        num_batches=20,
     )
     if not with_attack:
         parser.add_argument(
             "dataset_path",
             type=str,
         )
-    parser.add_argument(
-        "--batch-size",
-        default=4,
-        type=int,
-    )
-    parser.add_argument(
-        "--export-every-n-batches",
-        default=5,
-        type=int,
-    )
-    parser.add_argument(
-        "--num-batches",
-        default=20,
-        type=int,
-    )
     return parser.parse_args()
 
 
