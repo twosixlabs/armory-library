@@ -2,26 +2,18 @@
 name: 🎁 Armory Release Workflow
 
 on:
-  repository_dispatch:
-    types: build-and-release
-
-  workflow_dispatch:
-    inputs:
-      test:
-        type: boolean
-        description: publish to pypi test server
-        required: true
-        default: true
-
+    push:
+        tags:
+          - 'v[0-9]+.[0-9]+.[0-9]+'
 jobs:
   release-wheel:
-    name: 🛞 Build release wheel
+    name: 🛞 Publish release wheel to PyPI
     runs-on: ubuntu-latest
     steps:
       - name: 🐍 Setup Python 3.10
         uses: actions/setup-python@v4
         with:
-          python-version: 3.10
+          python-version: "3.10"
 
       - name: 📩 Checkout Armory with full depth (for tags and SCM)
         uses: actions/checkout@v3

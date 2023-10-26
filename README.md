@@ -8,37 +8,32 @@
 [![License: MIT][license-badge]][license-url]
 [![Docs][docs-badge]][docs-url]
 [![Code style: black][style-badge]][style-url]
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7561756.svg)](https://doi.org/10.5281/zenodo.7561756)
-
+[![DOI](https://zenodo.org/badge/673882087.svg)](https://zenodo.org/doi/10.5281/zenodo.10041829)
 
 # Overview
 
-Charmory is the temporary name for the JATIC armory replacement. This name is
-mostly for the use of the developers as we move function and code from Armory to
-Charmory. Interim releases will be provided under this scaffolding name, although
-most users will still `import armory` as there is no Python package "charmory".
+Charmory is a scaffolding name as we rework code coming from the `armory.` namespace.
+It is slated to be renamed to `armory` once we adapt all legacy code that needs
+to be adapted. We expect the `charmory.` namespace to be disappear by the end of 2023.
+
+Presently, working use of armory-library, as shown in the `examples/` directory
+imports symbols from both `armory` and `charmory` namespaces. Soon a global substitution
+in user code from `charmory` to simply `armory` will be needed. We'll announce
+in the release notes when this is needed.
 
 
 
 # Installation & Configuration
 
 ```bash
-pip install charmory
+pip install armory-library
 ```
 
-Will make the `armory` namespace available to your Python environment. In the open-source
-version, the installation name was "armory-testbed" which provided also provided
-the `armory` namespace.
-
-## Conda
-```bash
-conda env create -f environment.yaml -n charmory
-conda activate charmory
-```
+Will make the `armory` and `charmory` namespaces available to your Python environment.
 
 
 # Usage
-See the documentation [here](https://jatic.pages.jatic.net/twosix/armory/).
+See the documentation in the [armory-library docs](https://armory-library.readthedocs.io/en/latest/).
 
 # Acknowledgment
 This material is based upon work supported by the Defense Advanced Research Projects
@@ -47,20 +42,15 @@ conclusions or recommendations expressed in this material are those of the autho
 and do not necessarily reflect the views of the Defense Advanced Research Projects
 Agency (DARPA).
 
-# Points of Contact
-POC: Matt Wartell @matt.wartell
-DPOC: Christopher Woodall @christopher.woodall
 
-
-<!-- TODO: repoint to JATIC CI or drop the badges -->
 
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[ci-badge]: https://github.com/twosixlabs/armory/workflows/GitHub%20CI/badge.svg
-[ci-url]: https://github.com/twosixlabs/armory/actions/
-[pypi-badge]: https://badge.fury.io/py/armory-testbed.svg
-[pypi-url]: https://pypi.org/project/armory-testbed
-[python-badge]: https://img.shields.io/pypi/pyversions/armory-testbed
-[python-url]: https://pypi.org/project/armory-testbed
+[ci-badge]: https://github.com/twosixlabs/armory-library/actions/workflows/ci.yml/badge.svg
+[ci-url]: https://github.com/twosixlabs/armory-library/actions/
+[pypi-badge]: https://badge.fury.io/py/armory-library.svg
+[pypi-url]: https://pypi.org/project/armory-library
+[python-badge]: https://img.shields.io/pypi/pyversions/armory-library
+[python-url]: https://pypi.org/project/armory-library
 [license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
 [license-url]: https://opensource.org/licenses/MIT
 [docs-badge]: https://readthedocs.org/projects/armory/badge/

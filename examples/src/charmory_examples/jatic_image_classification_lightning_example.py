@@ -11,7 +11,7 @@ from transformers.image_utils import infer_channel_dimension_format
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
@@ -120,11 +120,6 @@ def main(args):
         profiler=BasicProfiler(),
     )
 
-    eval_sysconfig = SysConfig(
-        gpus=["all"],
-        use_gpu=True,
-    )
-
     evaluation = Evaluation(
         name="food-category-classification",
         description="Food category classification from HuggingFace",
@@ -133,7 +128,6 @@ def main(args):
         model=eval_model,
         attack=eval_attack,
         metric=eval_metric,
-        sysconfig=eval_sysconfig,
     )
 
     ###

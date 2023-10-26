@@ -14,7 +14,7 @@ from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.model.object_detection import YolosTransformer
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
@@ -170,11 +170,6 @@ def main(batch_size, export_every_n_batches, num_batches):
         profiler=BasicProfiler(),
     )
 
-    eval_sysconfig = SysConfig(
-        gpus=["all"],
-        use_gpu=True,
-    )
-
     evaluation = Evaluation(
         name="coco-yolos-object-detection",
         description="COCO object detection using YOLO from HuggingFace",
@@ -183,7 +178,6 @@ def main(batch_size, export_every_n_batches, num_batches):
         model=eval_model,
         attack=eval_attack,
         metric=eval_metric,
-        sysconfig=eval_sysconfig,
     )
 
     ###

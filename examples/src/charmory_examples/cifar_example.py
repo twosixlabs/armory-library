@@ -10,7 +10,7 @@ import armory.data.datasets
 from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.experimental.example_results import print_outputs
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
@@ -84,8 +84,6 @@ def main(argv: list = sys.argv[1:]):
         profiler=BasicProfiler(),
     )
 
-    sysconfig = SysConfig(gpus=["all"], use_gpu=True)
-
     evaluation = Evaluation(
         name="cifar_baseline",
         description="Baseline cifar10 image classification",
@@ -94,7 +92,6 @@ def main(argv: list = sys.argv[1:]):
         model=model,
         attack=attack,
         metric=metric,
-        sysconfig=sysconfig,
     )
 
     task = ImageClassificationTask(evaluation, num_classes=10, export_every_n_batches=5)
