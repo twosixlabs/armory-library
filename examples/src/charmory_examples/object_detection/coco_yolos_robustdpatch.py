@@ -1,13 +1,10 @@
 from pprint import pprint
 
-import albumentations as A
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchObjectDetector
 from charmory_examples.utils.args import create_parser
 import jatic_toolbox
 import numpy as np
-import torch
-from torchvision.ops import box_convert
 from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
 from armory.art_experimental.attacks.patch import AttackWrapper
@@ -15,6 +12,10 @@ from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
+from charmory.experimental.transforms import (
+    BboxFormat,
+    create_object_detection_transform,
+)
 from charmory.model.object_detection import YolosTransformer
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
@@ -75,48 +76,16 @@ def main(batch_size, export_every_n_batches, num_batches):
     dataset._dataset = dataset._dataset.filter(filter)
     print(f"Dataset length after filtering: {len(dataset)}")
 
-    # Resize and pad images to 512x512
-    img_transforms = A.Compose(
-        [
-            A.LongestMaxSize(max_size=512),
-            A.PadIfNeeded(
-                min_height=512,
-                min_width=512,
-                border_mode=0,
-                value=(0, 0, 0),
-            ),
-            A.ToFloat(max_value=255),  # Scale to [0,1]
-        ],
-        bbox_params=A.BboxParams(
-            format="coco",
-            label_fields=["labels"],
-        ),
+    dataset.set_transform(
+        create_object_detection_transform(
+            # Resize and pad images to 512x512
+            max_size=512,
+            # Scale to [0,1]
+            float_max_value=255,
+            format=BboxFormat.COCO,
+            label_fields=["label", "id", "iscrowd"],
+        )
     )
-
-    def transform(sample):
-        transformed = dict(image=[], objects=[])
-        for i in range(len(sample["image"])):
-            transformed_img = img_transforms(
-                image=np.asarray(sample["image"][i]),
-                bboxes=sample["objects"][i]["bbox"],
-                labels=sample["objects"][i]["label"],
-            )
-            # Transpose from HWC to CHW
-            transformed["image"].append(transformed_img["image"].transpose(2, 0, 1))
-            transformed["objects"].append(
-                dict(
-                    bbox=transformed_img["bboxes"],
-                    label=transformed_img["labels"],
-                )
-            )
-        for obj in transformed["objects"]:
-            if len(obj.get("bbox", [])) > 0:
-                obj["bbox"] = box_convert(
-                    torch.tensor(obj["bbox"]), "xywh", "xyxy"
-                ).numpy()
-        return transformed
-
-    dataset.set_transform(transform)
 
     dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
 

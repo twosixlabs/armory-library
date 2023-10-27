@@ -3,7 +3,6 @@ from pprint import pprint
 import sys
 
 from PIL import Image
-import albumentations as A
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchFasterRCNN
 import boto3
@@ -12,7 +11,6 @@ from datasets import load_dataset
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox.interop.huggingface import HuggingFaceObjectDetectionDataset
 from jatic_toolbox.interop.torchvision import TorchVisionObjectDetector
-import numpy as np
 import torch
 from torchvision.transforms._presets import ObjectDetection
 
@@ -22,6 +20,10 @@ import armory.version
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
+from charmory.experimental.transforms import (
+    BboxFormat,
+    create_object_detection_transform,
+)
 from charmory.model.object_detection import JaticObjectDetectionModel
 from charmory.tasks.object_detection import ObjectDetectionTask
 
@@ -93,41 +95,15 @@ def main(argv: list = sys.argv[1:]):
 
     train_dataset, test_dataset = load_huggingface_dataset()
 
-    img_transforms = A.Compose(
-        [
-            A.LongestMaxSize(max_size=500),
-            A.PadIfNeeded(
-                min_height=500,
-                min_width=500,
-                border_mode=0,
-                value=(0, 0, 0),
-            ),
-        ],
-        bbox_params=A.BboxParams(
-            format="pascal_voc",
-            label_fields=["labels"],
-        ),
+    test_dataset.set_transform(
+        create_object_detection_transform(
+            max_size=500,
+            format=BboxFormat.XYXY,
+            label_fields=["category"],
+            img_from_np=Image.fromarray,
+            postprocessor=model_transform,
+        )
     )
-
-    def transform(sample):
-        transformed = dict(image=[], objects=[])
-        for i in range(len(sample["image"])):
-            transformed_img = img_transforms(
-                image=np.asarray(sample["image"][i]),
-                bboxes=sample["objects"][i]["bbox"],
-                labels=sample["objects"][i]["category"],
-            )
-            transformed["image"].append(Image.fromarray(transformed_img["image"]))
-            transformed["objects"].append(
-                dict(
-                    bbox=transformed_img["bboxes"],
-                    category=transformed_img["labels"],
-                )
-            )
-        transformed = model_transform(transformed)
-        return transformed
-
-    test_dataset.set_transform(transform)
 
     train_dataloader = ArmoryDataLoader(
         train_dataset,

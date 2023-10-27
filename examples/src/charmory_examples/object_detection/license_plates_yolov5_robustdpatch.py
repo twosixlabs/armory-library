@@ -1,13 +1,10 @@
 from pprint import pprint
 
-import albumentations as A
 from art.attacks.evasion import RobustDPatch
 from art.estimators.object_detection import PyTorchYolo
 from charmory_examples.utils.args import create_parser
 import datasets
-import numpy as np
 import torch
-from torchvision.ops import box_convert
 import yolov5
 from yolov5.utils.loss import ComputeLoss
 
@@ -16,6 +13,10 @@ from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
 import charmory.evaluation as ev
+from charmory.experimental.transforms import (
+    BboxFormat,
+    create_object_detection_transform,
+)
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
 
@@ -63,54 +64,6 @@ def load_model(
     return Yolo(model)
 
 
-def create_transform():
-    augmentations = A.Compose(
-        [
-            A.LongestMaxSize(max_size=512),
-            A.PadIfNeeded(
-                min_height=512,
-                min_width=512,
-                border_mode=0,
-                value=(0, 0, 0),
-            ),
-            A.ToFloat(max_value=255),  # Scale to [0,1]
-        ],
-        bbox_params=A.BboxParams(
-            format="coco",
-            label_fields=["category", "id"],
-        ),
-    )
-
-    def transform(sample):
-        # pprint(sample)
-        transformed = dict(**sample)
-        transformed["image"] = []
-        transformed["objects"] = []
-        for idx in range(len(sample["image"])):
-            res = augmentations(
-                image=np.asarray(sample["image"][idx]),
-                bboxes=sample["objects"][idx]["bbox"],
-                category=sample["objects"][idx]["category"],
-                id=sample["objects"][idx]["id"],
-            )
-            transformed["image"].append(res["image"].transpose(2, 0, 1))
-            transformed["objects"].append(
-                dict(
-                    boxes=res["bboxes"],
-                    labels=res["category"],
-                    id=res["id"],
-                )
-            )
-        for obj in transformed["objects"]:
-            if len(obj.get("boxes", [])) > 0:
-                obj["boxes"] = box_convert(
-                    torch.tensor(obj["boxes"]), "xywh", "xyxy"
-                ).numpy()
-        return transformed
-
-    return transform
-
-
 @track_params
 def main(batch_size, export_every_n_batches, num_batches):
     ###
@@ -132,7 +85,15 @@ def main(batch_size, export_every_n_batches, num_batches):
         name="full",
         split="test",
     )
-    dataset.set_transform(create_transform())
+    dataset.set_transform(
+        create_object_detection_transform(
+            max_size=512,
+            float_max_value=255,
+            format=BboxFormat.XYWH,
+            label_fields=["category", "id"],
+            rename_object_fields={"bbox": "boxes", "category": "labels"},
+        )
+    )
     dataloader = ArmoryDataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     ###
