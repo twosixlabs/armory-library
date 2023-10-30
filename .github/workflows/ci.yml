@@ -81,12 +81,45 @@ jobs:
         run: make test
 
 
+  integration-tests:
+    name: 🧪 Integration Tests - ${{ matrix.test.name }}
+    runs-on: ubuntu-latest
+    needs: code-linting
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - name: Image Classification
+            dir: src/charmory_examples/image_classification
+            script: mnist_vit_pgd.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
+          - name: Object Detection
+            dir: src/charmory_examples/object_detection
+            script: yolov5_license_plates.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
+        python-version: ["3.8"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        # Consider switching to a non-yolo OD example and removing the yolo install,
+        # it adds 2-ish minutes to this install step.
+        run: cd examples && pip install --no-compile --editable .[armory,huggingface,yolo]
+
+      - name: Test
+        run: cd examples/${{ matrix.test.dir }} && python ${{ matrix.test.script }}
+
+
   generate-docs:
     name: 📖 Generate Docs
     runs-on: ubuntu-latest
     needs:
-      - code-linting
       - unit-tests
+      - integration-tests
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -114,8 +147,8 @@ jobs:
     name: 🔨 Build
     runs-on: ubuntu-latest
     needs:
-      - code-linting
       - unit-tests
+      - integration-tests
     steps:
       - name: Checkout
         uses: actions/checkout@v3
