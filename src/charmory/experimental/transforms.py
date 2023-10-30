@@ -196,6 +196,57 @@ def default_transpose(img: np.ndarray) -> np.ndarray:
     return img.transpose(2, 0, 1)
 
 
+def create_image_classification_transform(
+    img_to_np: Callable[..., np.ndarray] = np.asarray,
+    img_from_np: Callable[[np.ndarray], Any] = default_transpose,
+    image_key: str = "image",
+    preprocessor: Optional[Transform] = None,
+    postprocessor: Optional[Transform] = None,
+    **kwargs,
+) -> Transform:
+    """
+    Creates a sample or batch transform capable of performing the following operations:
+        - Image transformations
+        - Arbitrary (user-supplied) pre and post transforms
+
+    See `create_image_transform` for additional arguments.
+
+    Example::
+
+        from charmory.experimental.transforms import create_image_classification_transform
+        import numpy as np
+
+        transform = create_image_classification_transform(max_size=256)
+        sample = transform(
+            dict(
+                image=[np.random.rand(400, 400, 3)],
+                labels=[2],
+            )
+        )
+        image = sample["image"][0]  # A CHW numpy array
+        label = sample["labels"][0]
+    """
+    img_transform = create_image_transform(**kwargs)
+
+    def transform_image(img):
+        res = img_transform(image=img_to_np(img))
+        return img_from_np(res["image"])
+
+    def transform(sample: Sample) -> Sample:
+        if preprocessor is not None:
+            sample = preprocessor(sample)
+
+        transformed = dict(**sample)
+        transformed[image_key] = [transform_image(img) for img in sample[image_key]]
+
+        if postprocessor is not None:
+            transformed = postprocessor(transformed)
+
+        return transformed
+
+    return transform
+
+
 def create_object_detection_transform(
     format: BboxFormat,
     img_to_np: Callable[..., np.ndarray] = np.asarray,
