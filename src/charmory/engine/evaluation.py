@@ -5,7 +5,7 @@ import lightning.pytorch.loggers as pl_loggers
 from lightning.pytorch.utilities import rank_zero_only
 
 from charmory.tasks.base import BaseEvaluationTask
-from charmory.track import get_current_params, init_tracking_uri
+from charmory.track import get_current_params, init_tracking_uri, track_system_metrics
 
 
 class EvaluationEngine:
@@ -42,9 +42,11 @@ class EvaluationEngine:
         self._was_run = True
 
         self._log_params()
-        self.trainer.test(
-            self.task, dataloaders=self.task.evaluation.dataset.test_dataloader
-        )
+        assert self.run_id, "No run ID was created by the MLflow logger"
+        with track_system_metrics(self.run_id):
+            self.trainer.test(
+                self.task, dataloaders=self.task.evaluation.dataset.test_dataloader
+            )
         return dict(
             compute=self.task.evaluation.metric.profiler.results(),
             metrics=self.trainer.callback_metrics,
