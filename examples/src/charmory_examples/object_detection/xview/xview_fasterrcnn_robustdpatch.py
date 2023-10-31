@@ -100,7 +100,7 @@ def main(argv: list = sys.argv[1:]):
             max_size=500,
             format=BboxFormat.XYXY,
             label_fields=["category"],
-            img_from_np=Image.fromarray,
+            image_from_np=Image.fromarray,
             postprocessor=model_transform,
         )
     )

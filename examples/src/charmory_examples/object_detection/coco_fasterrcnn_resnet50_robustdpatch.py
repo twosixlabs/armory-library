@@ -77,7 +77,7 @@ def main(args):
 
     dataset.set_transform(
         create_object_detection_transform(
-            img_from_np=Image.fromarray,
+            image_from_np=Image.fromarray,
             max_size=400,
             format=BboxFormat.XYXY,
             label_fields=["category"],

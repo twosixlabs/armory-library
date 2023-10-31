@@ -197,8 +197,8 @@ def default_transpose(img: np.ndarray) -> np.ndarray:
 
 
 def create_image_classification_transform(
-    img_to_np: Callable[..., np.ndarray] = np.asarray,
-    img_from_np: Callable[[np.ndarray], Any] = default_transpose,
+    image_to_np: Callable[..., np.ndarray] = np.asarray,
+    image_from_np: Callable[[np.ndarray], Any] = default_transpose,
     image_key: str = "image",
     preprocessor: Optional[Transform] = None,
     postprocessor: Optional[Transform] = None,
@@ -229,8 +229,8 @@ def create_image_classification_transform(
     img_transform = create_image_transform(**kwargs)
 
     def transform_image(img):
-        res = img_transform(image=img_to_np(img))
-        return img_from_np(res["image"])
+        res = img_transform(image=image_to_np(img))
+        return image_from_np(res["image"])
 
     def transform(sample: Sample) -> Sample:
         if preprocessor is not None:
@@ -249,8 +249,8 @@ def create_image_classification_transform(
 
 def create_object_detection_transform(
     format: BboxFormat,
-    img_to_np: Callable[..., np.ndarray] = np.asarray,
-    img_from_np: Callable[[np.ndarray], Any] = default_transpose,
+    image_to_np: Callable[..., np.ndarray] = np.asarray,
+    image_from_np: Callable[[np.ndarray], Any] = default_transpose,
     image_key: str = "image",
     objects_key: str = "objects",
     bbox_key: str = "bbox",
@@ -299,8 +299,8 @@ def create_object_detection_transform(
         labels = objects["label"]
 
     Args:
-        img_to_np: Callable to convert the input image to a numpy array
-        img_from_np: Callable to convert the augmented image numpy array (from
+        image_to_np: Callable to convert the input image to a numpy array
+        image_from_np: Callable to convert the augmented image numpy array (from
             albumentations) to the output image type
         image_key: Key in the input batch dictionary for the images. Defaults to
             "image".
@@ -330,7 +330,7 @@ def create_object_detection_transform(
 
         for idx in range(len(sample[image_key])):
             args: Sample = dict(
-                image=img_to_np(sample[image_key][idx]),
+                image=image_to_np(sample[image_key][idx]),
                 bboxes=sample[objects_key][idx][bbox_key],
             )
             # Include any "label" fields (albumentations will drop entries for
@@ -341,7 +341,7 @@ def create_object_detection_transform(
             # Perform transform on the image+boxes
             res = img_bbox_transform(**args)
 
-            transformed[image_key].append(img_from_np(res["image"]))
+            transformed[image_key].append(image_from_np(res["image"]))
 
             # Re-construct remaining, transformed objects
             obj = dict()
