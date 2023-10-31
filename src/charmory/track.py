@@ -350,12 +350,14 @@ def track_metrics(metrics: Mapping[str, Union[float, Sequence[float], torch.Tens
 def track_system_metrics(run_id: str):
     """
     Create a context in which to track system metrics and log them to the given
-    MLflow experiment run.
+    MLflow experiment run. System metrics include CPU, disk, and network utilization
+    metrics. If the `pynvml` package is installed, then GPU utilization metrics will
+    also be collected.
 
     Example::
 
         from charmory.track import track_system_metrics
-        mlflow
+        import mlflow
 
         with mlflow.start_run() as active_run:
             with track_system_metrics(active_run.info.run_id)
