@@ -94,7 +94,7 @@ jobs:
             script: mnist_vit_pgd.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
           - name: Object Detection
             dir: src/charmory_examples/object_detection
-            script: yolov5_license_plates.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
+            script: license_plates_yolov5_robustdpatch.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
         python-version: ["3.8"]
     steps:
       - name: Checkout
