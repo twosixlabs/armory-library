@@ -1,9 +1,10 @@
 # How to add a new dataset into armory
-I will use the RAIT dataset as an example. It is an object detection dataset.
+It is an object detection dataset drawn from TwoSix field exercises under the RAITE program. This dataset will not be available 
+to you. The characteristics of this dataset are:
 
-## Step 1 download dataset and locate all file in a folder
+## Step 1 download dataset and locate all files in a folder
 
-Use the RAITE dataset as an example. The train/test json files are loaded in which contain the image name, label, bboxes, and etc.
+Using the RAITE dataset, there are 3 json files in the dataset: Train json file, Test json file, still image json file, and dataset json file. The dataset json file contains all the images with labels of the entire dataset, so we will not use this since the train/test is the useful part for training and testing a machine learning model. The still image dataset is not useful likewise because it seems to be a completely different dataset from the train/test json files since the train/test json files don't contain the still images. The train/test json files are the useful files since they contain the splits that were already made for this dataset. In armory-library, we will use the test dataset with an attack to see how robust a machine learning model is with the attack. The training dataset is not using currently by armory-library, but that would be used to train the model.  The following lines convert the json files into a dictionary that python can read. Those two json files contain four keys: 'info', 'categories', 'images',and 'annotations'. 'images'.
 ```python 
 with open('/home/chris/make_dataset/raite/train_dataset.json') as f:
     dataset_train = json.load(f)
@@ -11,7 +12,7 @@ with open('/home/chris/make_dataset/raite/test_dataset.json') as f:
     dataset_test = json.load(f)
 ```
 ## Step 2 loop through the dictionary of the images to create a dataset in the COCO format
-For the RAIT dataset there were 4 keys in the train/test json files: 'info', 'categories', 'images',and 'annotations'. 'images' contains the list of images for that dataset split, the width/height of that image, and the image id that corresponds to label in 'annotations'. 'annotations' contains all the bbox objects for all images in that dataset split. It contains same image id, object id, bbox area, bbox, and category label.
+For the RAITE dataset there were 4 keys in the train/test json files: 'info', 'categories', 'images',and 'annotations'. The 'info' and 'categories' keys are not needed for the final dataset. The 'images' key contains the list of images for that dataset split, the width/height of that image, and the image id that corresponds to label in 'annotations' key. The 'annotations' key contains all the bbox objects for all images in that dataset split. It contains same image id, object id, bbox area, bbox, and category label.
 
 Here I create an annotations DataFrame which contains all the objects. I don't want to look through this dataset since it is longer than the dataset['images'] dictionary. Also I define where the actual images folder is located on my computer.
 ```python
