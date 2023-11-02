@@ -3,7 +3,7 @@
 import concurrent.futures
 from copy import deepcopy
 import itertools
-from typing import Any, Callable, Iterable, Mapping, Optional, Tuple
+from typing import Any, Callable, Iterable, Mapping, Optional
 
 
 def create_matrix(
@@ -61,16 +61,7 @@ def create_matrix(
                 values.append([value])
 
         # Create cartesian product of all possible parameter values
-        product: Iterable[Tuple[Any, ...]] = itertools.product(*values)
-
-        # Get subset of rows if partitioned
-        if worker_num is not None and num_workers is not None:
-            product = list(product)
-            num_rows = len(product)
-            # // is the floor (or integer) division operator
-            start = worker_num * num_rows // num_workers
-            stop = (worker_num + 1) * num_rows // num_workers
-            product = product[start:stop]
+        product = itertools.product(*values)
 
         # Create a key-value mapping for each argument in each row
         matrix = []
@@ -79,6 +70,14 @@ def create_matrix(
             if prune is not None and prune(**params):
                 continue
             matrix.append(params)
+
+        # Get subset of rows if partitioned
+        if worker_num is not None and num_workers is not None:
+            num_rows = len(matrix)
+            # // is the floor (or integer) division operator
+            start = worker_num * num_rows // num_workers
+            stop = (worker_num + 1) * num_rows // num_workers
+            matrix = matrix[start:stop]
 
         return matrix
 
