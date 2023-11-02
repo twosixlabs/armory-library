@@ -20,9 +20,10 @@ dependencies = []
 developer = [
     "hatch",  # build tool
     "wheel",  # build tool
-    "black",
-    "isort",
-    "flake8",
+    "pytest", # testing
+    "black",  # linter
+    "isort",  # linter
+    "flake8", # linter
 ]
 
 all = [
@@ -63,6 +64,13 @@ version_tuple = {version_tuple!r}
 
 [tool.setuptools_scm]
 # the presence of this empty block stops setuptools_scm from complaining
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+log_level = "ERROR"
+testpaths = ["tests"]
+log_cli = true
+filterwarnings = []
 
 [tool.isort]
 profile = "black"

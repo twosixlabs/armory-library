@@ -19,7 +19,7 @@ def create_matrix(worker_num: Optional[int] = None, num_workers: Optional[int] =
         # Create cartesian product of all possible parameter values
         product = itertools.product(*values)
 
-        # Get subset of rows if running parallelized
+        # Get subset of rows if partitioned
         if worker_num is not None and num_workers is not None:
             product = list(product)
             num_rows = len(product)
@@ -63,6 +63,10 @@ class Matrix:
                 continue
             results.append(self.func(*it_args, **it_kwargs))
         return results
+
+    def override(self, **kwargs):
+        self.kwargs.update(kwargs)
+        return self
 
     def partition(self, worker_num: Optional[int], num_workers: Optional[int]):
         self.worker_num = worker_num
