@@ -1,6 +1,8 @@
 from armory_matrix.range import frange
 import pytest
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.parametrize(
     "start,stop,step,expected",

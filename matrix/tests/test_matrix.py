@@ -4,6 +4,8 @@ import time
 from armory_matrix import matrix
 import pytest
 
+pytestmark = pytest.mark.unit
+
 
 def test_matrix():
     @matrix(x=[1, 2], y=[3, 4])

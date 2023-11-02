@@ -71,6 +71,9 @@ log_level = "ERROR"
 testpaths = ["tests"]
 log_cli = true
 filterwarnings = []
+markers = [
+    "unit",       # These are Unit Tests (fast and lightweight)
+]
 
 [tool.isort]
 profile = "black"

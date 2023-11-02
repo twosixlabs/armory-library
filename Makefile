@@ -49,7 +49,7 @@ define ExecuteTests
 
 	PYTEST_PARAMS="--exitfirst --suppress-no-test-exit-code"
 
-	python -m pytest -c pyproject.toml -m "unit" ./tests/unit/
+	python -m pytest -c pyproject.toml -m "unit" ./tests/unit/ ./matrix/tests/
 endef
 
 
