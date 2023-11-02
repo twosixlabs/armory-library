@@ -1,3 +1,5 @@
+"""Range generation utilities"""
+
 from typing import Generator, Optional, overload
 
 
