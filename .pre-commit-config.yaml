@@ -30,7 +30,8 @@ repos:
         files: |
           (?x)^(
             src/charmory/.*|
-            examples/src/.*
+            examples/src/.*|
+            matrix/src/.*
           )$
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.7.0

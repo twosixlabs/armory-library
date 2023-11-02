@@ -1,7 +1,7 @@
 import concurrent.futures
 from copy import deepcopy
 import itertools
-from typing import Any, Callable, Iterable, Mapping, Optional
+from typing import Any, Callable, Iterable, Mapping, Optional, Tuple
 
 
 def create_matrix(worker_num: Optional[int] = None, num_workers: Optional[int] = None):
@@ -17,7 +17,7 @@ def create_matrix(worker_num: Optional[int] = None, num_workers: Optional[int] =
                 values.append([value])
 
         # Create cartesian product of all possible parameter values
-        product = itertools.product(*values)
+        product: Iterable[Tuple[Any, ...]] = itertools.product(*values)
 
         # Get subset of rows if partitioned
         if worker_num is not None and num_workers is not None:
@@ -29,9 +29,9 @@ def create_matrix(worker_num: Optional[int] = None, num_workers: Optional[int] =
             product = product[start:stop]
 
         matrix = []
-        for values in product:
+        for row in product:
             # Create a key-value mapping for each argument in each row
-            matrix.append({k: v for k, v in zip(keys, values)})
+            matrix.append({k: v for k, v in zip(keys, row)})
 
         return matrix
 
@@ -39,7 +39,7 @@ def create_matrix(worker_num: Optional[int] = None, num_workers: Optional[int] =
 
 
 class Matrix:
-    def __init__(self, func, **kwargs):
+    def __init__(self, func: Callable, **kwargs):
         self.func = func
         self.kwargs = kwargs
         self.worker_num: Optional[int] = None
