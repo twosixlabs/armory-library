@@ -27,7 +27,7 @@ developer = [
 ]
 
 all = [
-    "armory-examples[developer]",
+    "armory-matrix[developer]",
 ]
 
 [build-system]
