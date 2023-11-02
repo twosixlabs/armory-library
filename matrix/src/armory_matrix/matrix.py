@@ -129,7 +129,10 @@ class Matrix:
             it_args = deepcopy(args)
             it_kwargs = deepcopy(kwargs)
             it_kwargs.update(it)
-            results.append(self.func(*it_args, **it_kwargs))
+            try:
+                results.append(self.func(*it_args, **it_kwargs))
+            except Exception as err:
+                results.append(err)
         return results
 
     def override(self, **kwargs):
@@ -185,7 +188,10 @@ class Matrix:
 
             results = []
             for future in concurrent.futures.as_completed(futures):
-                results.append(future.result())
+                try:
+                    results.append(future.result())
+                except Exception as err:
+                    results.append(err)
             return results
 
         return _run

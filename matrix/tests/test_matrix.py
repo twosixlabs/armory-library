@@ -29,6 +29,18 @@ def test_fixed_arguments():
     assert quadratic(2, b=10) == [12, 14, 16]
 
 
+def test_exceptions():
+    err = ValueError()
+
+    @matrix(x=range(5))
+    def raise_if_even(x):
+        if x % 2 == 0:
+            raise err
+        return x
+
+    assert raise_if_even() == [err, 1, err, 3, err]
+
+
 def test_override():
     @matrix(x=[1, 2], y=[3, 4])
     def multiply(x, y):
@@ -108,6 +120,18 @@ def test_parallel_with_fixed_arguments():
         return (a * x) + b
 
     assert set(quadratic.parallel(2)(2, b=10)) == {12, 14, 16}
+
+
+def test_parallel_with_exceptions():
+    err = ValueError()
+
+    @matrix(x=range(5))
+    def raise_if_even(x):
+        if x % 2 == 0:
+            raise err
+        return x
+
+    assert set(raise_if_even()) == {err, 1, 3}
 
 
 def test_parallel_with_override():
