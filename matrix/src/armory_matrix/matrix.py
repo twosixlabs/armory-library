@@ -1,7 +1,7 @@
 import concurrent.futures
 from copy import deepcopy
 import itertools
-from typing import Any, Iterable, Mapping, Optional
+from typing import Any, Callable, Iterable, Mapping, Optional
 
 
 def create_matrix(worker_num: Optional[int] = None, num_workers: Optional[int] = None):
@@ -44,6 +44,7 @@ class Matrix:
         self.kwargs = kwargs
         self.worker_num: Optional[int] = None
         self.num_workers: Optional[int] = None
+        self.pruner: Optional[Callable[..., bool]] = None
 
     @property
     def matrix(self):
@@ -58,12 +59,19 @@ class Matrix:
             it_args = deepcopy(args)
             it_kwargs = deepcopy(kwargs)
             it_kwargs.update(it)
+            if self.pruner and self.pruner(*it_args, **it_kwargs):
+                continue
             results.append(self.func(*it_args, **it_kwargs))
         return results
 
     def partition(self, worker_num: Optional[int], num_workers: Optional[int]):
         self.worker_num = worker_num
         self.num_workers = num_workers
+        return self
+
+    def prune(self, pruner: Optional[Callable[..., bool]]):
+        self.pruner = pruner
+        return self
 
     def parallel(self, max_workers):
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
@@ -74,6 +82,8 @@ class Matrix:
                 it_args = deepcopy(args)
                 it_kwargs = deepcopy(kwargs)
                 it_kwargs.update(it)
+                if self.pruner and self.pruner(*it_args, **it_kwargs):
+                    continue
                 futures.append(executor.submit(self.func, *it_args, **it_kwargs))
 
             results = []
