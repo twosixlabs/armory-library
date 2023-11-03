@@ -1,9 +1,9 @@
-import argparse
+from pprint import pprint
 
 from PIL import Image
-import albumentations as A
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchFasterRCNN
+from charmory_examples.utils.args import create_parser
 import jatic_toolbox
 import numpy as np
 
@@ -12,7 +12,10 @@ from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
-from charmory.experimental.example_results import print_outputs
+from charmory.experimental.transforms import (
+    BboxFormat,
+    create_object_detection_transform,
+)
 from charmory.model.object_detection import JaticObjectDetectionModel
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
@@ -20,24 +23,11 @@ from charmory.utils import create_jatic_dataset_transform
 
 
 def get_cli_args():
-    parser = argparse.ArgumentParser(
+    parser = create_parser(
         description="Run COCO object detection example using models and datasets from the JATIC toolbox",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        "--batch-size",
-        default=4,
-        type=int,
-    )
-    parser.add_argument(
-        "--export-every-n-batches",
-        default=5,
-        type=int,
-    )
-    parser.add_argument(
-        "--num-batches",
-        default=20,
-        type=int,
+        batch_size=4,
+        export_every_n_batches=5,
+        num_batches=20,
     )
     return parser.parse_args()
 
@@ -85,41 +75,15 @@ def main(args):
 
     model_transform = create_jatic_dataset_transform(model.preprocessor)
 
-    img_transforms = A.Compose(
-        [
-            A.LongestMaxSize(max_size=400),
-            A.PadIfNeeded(
-                min_height=400,
-                min_width=400,
-                border_mode=0,
-                value=(0, 0, 0),
-            ),
-        ],
-        bbox_params=A.BboxParams(
-            format="pascal_voc",
-            label_fields=["labels"],
-        ),
+    dataset.set_transform(
+        create_object_detection_transform(
+            image_from_np=Image.fromarray,
+            max_size=400,
+            format=BboxFormat.XYXY,
+            label_fields=["category"],
+            postprocessor=model_transform,
+        )
     )
-
-    def transform(sample):
-        transformed = dict(image=[], objects=[])
-        for i in range(len(sample["image"])):
-            transformed_img = img_transforms(
-                image=np.asarray(sample["image"][i]),
-                bboxes=sample["objects"][i]["bbox"],
-                labels=sample["objects"][i]["category"],
-            )
-            transformed["image"].append(Image.fromarray(transformed_img["image"]))
-            transformed["objects"].append(
-                dict(
-                    bbox=transformed_img["bboxes"],
-                    category=transformed_img["labels"],
-                )
-            )
-        transformed = model_transform(transformed)
-        return transformed
-
-    dataset.set_transform(transform)
 
     dataloader = ArmoryDataLoader(dataset, batch_size=args.batch_size)
 
@@ -178,7 +142,7 @@ def main(args):
     )
     engine = EvaluationEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()
-    print_outputs(dataset, model, results)
+    pprint(results)
 
     print("JATIC Experiment Complete!")
     return 0

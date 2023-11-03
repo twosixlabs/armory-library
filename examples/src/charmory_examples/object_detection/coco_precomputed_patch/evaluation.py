@@ -1,53 +1,41 @@
 """Definition for the COCO object detection evaluation"""
 
-import argparse
 from typing import Optional
 
-import albumentations as A
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchObjectDetector
+from charmory_examples.utils.args import create_parser
 import datasets
 import jatic_toolbox
 from jatic_toolbox.interop.huggingface import HuggingFaceObjectDetectionDataset
 import numpy as np
-import torch
-from torchvision.ops import box_convert
 from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
+from charmory.experimental.transforms import (
+    BboxFormat,
+    create_object_detection_transform,
+)
 from charmory.model.object_detection import YolosTransformer
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
 
 
 def get_cli_args(with_attack: bool):
-    parser = argparse.ArgumentParser(
+    parser = create_parser(
         description="Run COCO object detection evaluation",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        batch_size=4,
+        export_every_n_batches=5,
+        num_batches=20,
     )
     if not with_attack:
         parser.add_argument(
             "dataset_path",
             type=str,
         )
-    parser.add_argument(
-        "--batch-size",
-        default=4,
-        type=int,
-    )
-    parser.add_argument(
-        "--export-every-n-batches",
-        default=5,
-        type=int,
-    )
-    parser.add_argument(
-        "--num-batches",
-        default=20,
-        type=int,
-    )
     return parser.parse_args()
 
 
@@ -104,53 +92,14 @@ def _load_dataset(batch_size: int, dataset_path: Optional[str] = None):
     dataset._dataset = dataset._dataset.filter(filter)
     print(f"Dataset length after filtering: {len(dataset)}")
 
-    # Resize and pad images to 512x512
-    img_transforms = A.Compose(
-        [
-            A.LongestMaxSize(max_size=512),
-            A.PadIfNeeded(
-                min_height=512,
-                min_width=512,
-                border_mode=0,
-                value=(0, 0, 0),
-            ),
-            A.ToFloat(max_value=255),  # Scale to [0,1]
-        ],
-        bbox_params=A.BboxParams(
-            format="coco",
-            label_fields=["labels"],
-        ),
+    dataset.set_transform(
+        create_object_detection_transform(
+            max_size=512,
+            float_max_value=255,
+            format=BboxFormat.COCO,
+            label_fields=["label", "id", "iscrowd"],
+        )
     )
-
-    def transform(sample):
-        transformed = dict(**sample)
-        transformed["image"] = []
-        transformed["objects"] = []
-        for i in range(len(sample["image"])):
-            transformed_img = img_transforms(
-                image=np.asarray(sample["image"][i]),
-                bboxes=sample["objects"][i]["bbox"],
-                labels=sample["objects"][i]["label"],
-            )
-            # Transpose from HWC to CHW
-            transformed["image"].append(transformed_img["image"].transpose(2, 0, 1))
-            # Note, this only works because we aren't dropping any boxes
-            # in any of the albumentations transforms. Otherwise, we'd
-            # have to worry about removing data for the dropped boxes.
-            # Also, the area is being copied and not re-calculated, which
-            # only works because we don't actually use it.
-            obj = dict(**sample["objects"][i])
-            obj["bbox"] = transformed_img["bboxes"]
-            obj["label"] = transformed_img["labels"]
-            transformed["objects"].append(obj)
-        for obj in transformed["objects"]:
-            if len(obj.get("bbox", [])) > 0:
-                obj["bbox"] = box_convert(
-                    torch.tensor(obj["bbox"]), "xywh", "xyxy"
-                ).numpy()
-        return transformed
-
-    dataset.set_transform(transform)
 
     dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
 

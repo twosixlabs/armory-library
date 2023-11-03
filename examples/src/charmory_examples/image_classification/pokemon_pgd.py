@@ -15,9 +15,9 @@ from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.experimental.example_results import print_outputs
+from charmory.experimental.transforms import create_image_classification_transform
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
-from charmory.utils import PILtoNumpy_HuggingFace
 
 BATCH_SIZE = 16
 
@@ -26,7 +26,9 @@ BATCH_SIZE = 16
 
 
 def load_huggingface_dataset():
-    transform = PILtoNumpy_HuggingFace()
+    transform = create_image_classification_transform(
+        image_from_np=lambda img: img,
+    )
 
     train_dataset = track_params(load_jatic_dataset)(
         provider="huggingface",

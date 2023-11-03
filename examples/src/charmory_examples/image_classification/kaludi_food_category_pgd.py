@@ -1,8 +1,8 @@
-import argparse
 from pprint import pprint
 
 import art.attacks.evasion
 from art.estimators.classification import PyTorchClassifier
+from charmory_examples.utils.args import create_parser
 import jatic_toolbox
 import numpy as np
 import torch.nn
@@ -19,24 +19,11 @@ from charmory.utils import create_jatic_dataset_transform
 
 
 def get_cli_args():
-    parser = argparse.ArgumentParser(
+    parser = create_parser(
         description="Run food classification example using models and datasets from the JATIC toolbox",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        "--batch-size",
-        default=16,
-        type=int,
-    )
-    parser.add_argument(
-        "--export-every-n-batches",
-        default=5,
-        type=int,
-    )
-    parser.add_argument(
-        "--num-batches",
-        default=5,
-        type=int,
+        batch_size=16,
+        export_every_n_batches=5,
+        num_batches=5,
     )
     return parser.parse_args()
 

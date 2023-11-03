@@ -17,10 +17,10 @@ from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.experimental.example_results import print_outputs
+from charmory.experimental.transforms import create_image_classification_transform
 from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
-from charmory.utils import PILtoNumpy_HuggingFace_Variable_Length
 
 BATCH_SIZE = 16
 
@@ -29,7 +29,9 @@ BATCH_SIZE = 16
 
 
 def load_huggingface_dataset():
-    transform = PILtoNumpy_HuggingFace_Variable_Length(size=(500, 500))
+    transform = create_image_classification_transform(
+        max_size=500,
+    )
     train_dataset = load_jatic_dataset(
         provider="huggingface",
         dataset_name="imagenet-1k",
