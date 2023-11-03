@@ -132,6 +132,7 @@ source = "vcs"
 path = "src/armory/version.py"
 
 [tool.hatch.version.raw-options]
+root = "../"
 version_scheme = "post-release"
 
 [tool.hatch.build.hooks.vcs]
