@@ -1,76 +1,83 @@
+import time
+
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+from datasets import load_from_disk
 import numpy as np
 import torch
-import time
-from PIL import Image
-
-from datasets import load_from_disk
-from datasets.filesystems import S3FileSystem
-import cv2
+from torch.utils.data import DataLoader
 import torchvision
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor,FasterRCNN_MobileNet_V3_Large_320_FPN_Weights
-from torch.utils.data import Dataset, DataLoader
+from torchvision.models.detection.faster_rcnn import (
+    FasterRCNN_MobileNet_V3_Large_320_FPN_Weights,
+    FastRCNNPredictor,
+)
 from tqdm.auto import tqdm
 
 torch.set_float32_matmul_precision("high")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 BATCH_SIZE = 8
 
+
 def load_huggingface_dataset():
-    train_dataset = load_from_disk("s3://armory-library-data/datasets/xview_dataset/train/")
+    train_dataset = load_from_disk(
+        "s3://armory-library-data/datasets/xview_dataset/train/"
+    )
     new_dataset = train_dataset.train_test_split(test_size=0.3, seed=1)
     train_dataset, test_dataset = new_dataset["train"], new_dataset["test"]
 
     return train_dataset, test_dataset
 
+
 class Averager:
     def __init__(self):
         self.current_total = 0.0
         self.iterations = 0.0
-        
+
     def send(self, value):
         self.current_total += value
         self.iterations += 1
-    
+
     @property
     def value(self):
         if self.iterations == 0:
             return 0
         else:
             return 1.0 * self.current_total / self.iterations
-    
+
     def reset(self):
         self.current_total = 0.0
         self.iterations = 0.0
+
+
 def collate_fn(batch):
     """
-    To handle the data loading as different images may have different number 
+    To handle the data loading as different images may have different number
     of objects and to handle varying size tensors as well.
     """
     return tuple(zip(*batch))
 
 
 class xview(torch.utils.data.Dataset):
-    def __init__(self,dataset, width, height):
+    def __init__(self, dataset, width, height):
         self.image_dataset = dataset
         self.height = height
         self.width = width
-  
 
     def __getitem__(self, idx):
         img = self.image_dataset[idx]
         target = {}
-        target["boxes"] = torch.as_tensor(img['objects']['bbox'], dtype=torch.int64)
-        target["labels"] = torch.as_tensor(img['objects']['category'], dtype=torch.int64)
+        target["boxes"] = torch.as_tensor(img["objects"]["bbox"], dtype=torch.int64)
+        target["labels"] = torch.as_tensor(
+            img["objects"]["category"], dtype=torch.int64
+        )
         target["image_id"] = torch.tensor([idx])
-        image = img['image'].float()
+        image = img["image"].float()
 
         return image, target
- 
 
     def __len__(self):
         return len(self.image_dataset)
+
 
 def create_train_loader(train_dataset, num_workers=2):
     train_loader = DataLoader(
@@ -78,18 +85,21 @@ def create_train_loader(train_dataset, num_workers=2):
         batch_size=BATCH_SIZE,
         shuffle=True,
         num_workers=num_workers,
-        collate_fn=collate_fn
+        collate_fn=collate_fn,
     )
     return train_loader
+
+
 def create_valid_loader(valid_dataset, num_workers=2):
     valid_loader = DataLoader(
         valid_dataset,
         batch_size=BATCH_SIZE,
         shuffle=False,
         num_workers=num_workers,
-        collate_fn=collate_fn
+        collate_fn=collate_fn,
     )
     return valid_loader
+
 
 def create_model(num_classes):
     # get number of input features for the classifier
@@ -100,23 +110,26 @@ def create_model(num_classes):
 
 
 train_dataset, test_dataset = load_huggingface_dataset()
-model = torchvision.models.detection.fasterrcnn_mobilenet_v3_large_320_fpn(weights=FasterRCNN_MobileNet_V3_Large_320_FPN_Weights.DEFAULT)
+model = torchvision.models.detection.fasterrcnn_mobilenet_v3_large_320_fpn(
+    weights=FasterRCNN_MobileNet_V3_Large_320_FPN_Weights.DEFAULT
+)
 img_transforms = A.Compose(
-        [
-            A.LongestMaxSize(max_size=500),
-            A.PadIfNeeded(
-                min_height=500,
-                min_width=500,
-                border_mode=0,
-                value=(0, 0, 0),
-            ),
-            ToTensorV2(p=1.0),
-        ],
-        bbox_params=A.BboxParams(
-            format="pascal_voc",
-            label_fields=["labels"],
+    [
+        A.LongestMaxSize(max_size=500),
+        A.PadIfNeeded(
+            min_height=500,
+            min_width=500,
+            border_mode=0,
+            value=(0, 0, 0),
         ),
-    )
+        ToTensorV2(p=1.0),
+    ],
+    bbox_params=A.BboxParams(
+        format="pascal_voc",
+        label_fields=["labels"],
+    ),
+)
+
 
 def transform(sample):
     transformed = dict(image=[], objects=[])
@@ -135,6 +148,7 @@ def transform(sample):
         )
     return transformed
 
+
 train_dataset.set_transform(transform)
 test_dataset.set_transform(transform)
 
@@ -152,20 +166,19 @@ model = model.to(DEVICE)
 
 # function for running training iterations
 def train(train_data_loader, model):
-    print('Training')
+    print("Training")
     global train_itr
-    global train_loss_list
-    
-     # initialize tqdm progress bar
+
+    # initialize tqdm progress bar
     prog_bar = tqdm(train_data_loader, total=len(train_data_loader))
     model.train()
     for i, data in enumerate(prog_bar):
         optimizer.zero_grad()
-        
+
         images, targets = data
-        
+
         images = list(image.to(DEVICE) for image in images)
-        
+
         targets = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
         loss_dict = model(images, targets)
         losses = sum(loss for loss in loss_dict.values())
@@ -175,25 +188,25 @@ def train(train_data_loader, model):
         losses.backward()
         optimizer.step()
         train_itr += 1
-    
+
         # update the loss value beside the progress bar for each iteration
         prog_bar.set_description(desc=f"Loss: {loss_value:.4f}")
     return train_loss_list
 
 
 def validate(valid_data_loader, model):
-    print('Validating')
+    print("Validating")
     global val_itr
-    global val_loss_list
+
     # initialize tqdm progress bar
     prog_bar = tqdm(valid_data_loader, total=len(valid_data_loader))
-    #model.eval()
+    # model.eval()
     for i, data in enumerate(prog_bar):
         images, targets = data
-        
+
         images = list(image.to(DEVICE) for image in images)
         targets = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
-        
+
         with torch.no_grad():
             loss_dict = model(images, targets)
         losses = sum(loss for loss in loss_dict.values())
@@ -206,8 +219,7 @@ def validate(valid_data_loader, model):
     return val_loss_list
 
 
-
-NUM_EPOCHS= 10
+NUM_EPOCHS = 10
 # get the model parameters
 params = [p for p in model.parameters() if p.requires_grad]
 # define the optimizer
@@ -218,13 +230,13 @@ val_loss_hist = Averager()
 train_itr = 1
 val_itr = 1
 # train and validation loss lists to store loss values of all...
-# ... iterations till ena and plot graphs for all iterations
-train_loss_list = []
-val_loss_list = []
-# name to save the trained model with
-MODEL_NAME = 'model'
 
-if __name__ == '__main__':
+train_loss_list = []  # type: list[float]
+val_loss_list = []  # type: list[float]
+# name to save the trained model with
+MODEL_NAME = "model"
+
+if __name__ == "__main__":
     # start the training epochs
     for epoch in range(NUM_EPOCHS):
         print(f"\nEPOCH {epoch+1} of {NUM_EPOCHS}")
@@ -235,9 +247,9 @@ if __name__ == '__main__':
         start = time.time()
         train_loss = train(train_loader, model)
         val_loss = validate(valid_loader, model)
-        print(f"Epoch #{epoch+1} train loss: {train_loss_hist.value:.3f}")   
-        print(f"Epoch #{epoch+1} validation loss: {val_loss_hist.value:.3f}")   
+        print(f"Epoch #{epoch+1} train loss: {train_loss_hist.value:.3f}")
+        print(f"Epoch #{epoch+1} validation loss: {val_loss_hist.value:.3f}")
         end = time.time()
         print(f"Took {((end - start) / 60):.3f} minutes for epoch {epoch}")
 
-    torch.save(model, 'fasterrcnn_mobilenet_v3')
+    torch.save(model, "fasterrcnn_mobilenet_v3")
