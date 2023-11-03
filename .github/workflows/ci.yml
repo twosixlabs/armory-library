@@ -136,7 +136,9 @@ jobs:
           python-version: 3.8
 
       - name: Install
-        run: pip3 install -r requirements.txt
+        run: |
+          pip install pip>=23
+          pip install hatch
 
       - name: Build Library
         run: cd library && hatch build --clean --target wheel
