@@ -48,7 +48,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install
-        run: pip3 install -r requirements.txt
+        run: |
+          pip3 install --no-compile --editable .
+          pip3 install --no-compile --editable library
 
       - name: Test
         run: task test
