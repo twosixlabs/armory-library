@@ -4,12 +4,19 @@ import torch
 from datasets import load_from_disk
 from datasets.filesystems import S3FileSystem
 import cv2
+from torch.utils.data import Dataset, DataLoader
+from train_xview_model import xview
+from albumentations.pytorch import ToTensorV2
+from pathlib import Path
+from PIL import Image
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 BATCH_SIZE = 1
 
-torch.set_float32_matmul_precision("high")
+detection_threshold = 0.2
 
+torch.set_float32_matmul_precision("high")
+# label map to 
 LABEL_MAP_1 = {
     0: 1,
     1: 2,  
@@ -29,107 +36,57 @@ CLASSES_1 = [
 'Maritime Vessel',    
 ]
 def load_huggingface_dataset():
-    s3 = S3FileSystem(anon=False)
-    train_dataset = load_from_disk("s3://armory-library-data/datasets/train/", fs=s3)
+    train_dataset = load_from_disk("s3://armory-library-data/datasets/xview_dataset/train/")
 
     new_dataset = train_dataset.train_test_split(test_size=0.3, seed=1)
     train_dataset, test_dataset = new_dataset["train"], new_dataset["test"]
 
     return train_dataset, test_dataset
-train_dataset, test_dataset = load_huggingface_dataset()
 
-detection_threshold = 0.2
 
-from albumentations.pytorch import ToTensorV2
+
+img_transforms = A.Compose(
+        [
+            A.LongestMaxSize(max_size=500),
+            A.PadIfNeeded(
+                min_height=500,
+                min_width=500,
+                border_mode=0,
+                value=(0, 0, 0),
+            ),
+            ToTensorV2(p=1.0),
+        ],
+        bbox_params=A.BboxParams(
+            format="pascal_voc",
+            label_fields=["labels"],
+        ),
+    )
+
+def transform(sample):
+    transformed = dict(image=[], objects=[])
+    for i in range(len(sample["image"])):
+        transformed_img = img_transforms(
+            image=np.asarray(sample["image"][i]),
+            bboxes=sample["objects"][i]["bbox"],
+            labels=sample["objects"][i]["category"],
+        )
+        transformed["image"].append(transformed_img["image"])
+        transformed["objects"].append(
+            dict(
+                bbox=transformed_img["bboxes"],
+                category=transformed_img["labels"],
+            )
+        )
+    return transformed
+
 def collate_fn(batch):
     """
     To handle the data loading as different images may have different number 
     of objects and to handle varying size tensors as well.
     """
     return tuple(zip(*batch))
-def get_train_transform():
-    return A.Compose([
-
-        ToTensorV2(p=1.0),
-    ], bbox_params={
-        'format': 'pascal_voc',
-        'label_fields': ['labels']
-    })
-# define the validation transforms
-def get_valid_transform():
-    return A.Compose([
-        ToTensorV2(p=1.0),
-    ], bbox_params={
-        'format': 'pascal_voc', 
-        'label_fields': ['labels']
-    })
 
 
-
-
-class xview(torch.utils.data.Dataset):
-    def __init__(self,dataset, width, height,  transforms=None):
-        self.transforms = transforms
-        self.image_dataset = dataset
-        self.height = height
-        self.width = width
-  
-
-    def __getitem__(self, idx):
-        img = self.image_dataset[idx]
-
-
-        image = np.asarray(img['image'])
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
-        image_resized = cv2.resize(image, (self.width, self.height))
-        image_resized /= 255.0
-        image_width = image.shape[1]
-        image_height = image.shape[0]
-
-        boxes = img['objects']['bbox']
-        box_final = []
-        for box in boxes:
-            xmin_final = (box[0]/image_width)*self.width
-            xmax_final = (box[2]/image_width)*self.width
-            ymin_final = (box[1]/image_height)*self.height
-            yamx_final = (box[3]/image_height)*self.height
-            box_final.append([xmin_final, ymin_final, xmax_final, yamx_final])
-
-
-        boxes = torch.as_tensor(box_final, dtype=torch.float32)
-        area = img['objects']['area']
-        area = torch.as_tensor(area, dtype=torch.float32)
-        iscrowd = torch.zeros((boxes.shape[0],), dtype=torch.int64)
-        labels = img['objects']['category']
-        labels = list(
-                map(lambda x: LABEL_MAP_1[x], labels)
-            )  # map original classes to sequential classes
-        labels = torch.as_tensor(labels, dtype=torch.int64)
-
-        target = {}
-        target["boxes"] = boxes
-        target["labels"] = labels
-        target["area"] = area
-        target["iscrowd"] = iscrowd
-        image_id = torch.tensor([idx])
-        target["image_id"] = image_id
-
-
-        if self.transforms:
-            sample = self.transforms(image = image_resized,
-                                     bboxes = target['boxes'],
-                                     labels = labels)
-            image_resized = sample['image']
-            target['boxes'] = torch.Tensor(sample['bboxes'])
-            
-        return image_resized, target
-
-
-
-    def __len__(self):
-        return len(self.image_dataset)
-
-from torch.utils.data import Dataset, DataLoader
 def create_train_loader(train_dataset, num_workers=2):
     train_loader = DataLoader(
         train_dataset,
@@ -149,11 +106,13 @@ def create_valid_loader(valid_dataset, num_workers=2):
     )
     return valid_loader
 
+train_dataset, test_dataset = load_huggingface_dataset()
+train_dataset.set_transform(transform)
+test_dataset.set_transform(transform)
+model = torch.load(Path.cwd() / "fasterrcnn_mobilenet_v3")
 
-model = torch.load('Path.cwd() / "fasterrcnn_mobilenet_v3_2"')
-
-train_dataset_1 = xview(train_dataset, 500, 500,  transforms=get_train_transform())
-test_dataset_1 = xview(test_dataset, 500, 500,  transforms=get_valid_transform())
+train_dataset_1 = xview(train_dataset, 500, 500)
+test_dataset_1 = xview(test_dataset, 500, 500)
 train_loader = create_train_loader(train_dataset_1)
 valid_loader = create_valid_loader(test_dataset_1)
 print(f"Number of training samples: {len(train_dataset)}")
@@ -161,16 +120,11 @@ print(f"Number of validation samples: {len(test_dataset)}\n")
 # initialize the model and move to the computation device
 
 
-from torch.nn import CrossEntropyLoss
-from torch.nn import MSELoss
-classLossFunc = CrossEntropyLoss()
-bboxLossFunc = MSELoss()
-
 model.eval()
 for image, target in valid_loader:
     orig_image = image[0].numpy().copy()
-    orig_image = orig_image.transpose(1, 2, 0)
-    orig_image = cv2.cvtColor(orig_image, cv2.COLOR_RGB2BGR)
+    orig_image = np.array(Image.fromarray(image[0].numpy().transpose(1,2,0).astype(np.uint8)))
+
     image= list(img.to(DEVICE) for img in image)
     with torch.no_grad():
         outputs = model(image)
