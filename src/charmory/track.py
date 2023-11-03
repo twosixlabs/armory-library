@@ -84,7 +84,7 @@ def tracking_context(nested: bool = False):
     active will be isolated from other contexts. Upon completion of the context,
     all parameters will be cleared.
 
-    Example:
+    Example::
 
         from charmory.track import tracking_context, track_param
 
@@ -344,6 +344,51 @@ def track_metrics(metrics: Mapping[str, Union[float, Sequence[float], torch.Tens
         else:
             for val in value:
                 mlflow.log_metric(key, val)
+
+
+@contextmanager
+def track_system_metrics(run_id: str):
+    """
+    Create a context in which to track system metrics and log them to the given
+    MLflow experiment run. System metrics include CPU, disk, and network utilization
+    metrics. If the `pynvml` package is installed, then GPU utilization metrics will
+    also be collected.
+
+    Example::
+
+        from charmory.track import track_system_metrics
+        import mlflow
+
+        with mlflow.start_run() as active_run:
+            with track_system_metrics(active_run.info.run_id)
+                # Do something
+
+    Args:
+        run_id: MLflow experiment run ID of the run to which to record the
+            system metrics
+
+    Returns:
+        Context manager
+    """
+    monitor = None
+    try:
+        from mlflow.system_metrics.system_metrics_monitor import SystemMetricsMonitor
+
+        monitor = SystemMetricsMonitor(run_id)
+        monitor.start()
+    except Exception as err:
+        log.warning(
+            f"Exception creating system metrics monitor, {err}, system metrics will be unavailable for this run"
+        )
+
+    try:
+        yield
+    finally:
+        if monitor is not None:
+            try:
+                monitor.finish()
+            except Exception as err:
+                log.warning(f"Exception shutting down system metrics monitor, {err}")
 
 
 def server():
