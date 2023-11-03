@@ -131,3 +131,7 @@ version_tuple = {version_tuple!r}
 # Tools
 [tool.setuptools_scm]
 # the presence of this empty block stops setuptools_scm from complaining
+
+
+[tool.taskipy.tasks]
+test = "python -m pytest -m unit"
