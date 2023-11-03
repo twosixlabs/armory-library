@@ -16,7 +16,6 @@ classifiers = [
 ]
 
 dependencies = [
-    "setuptools_scm",
     "loguru",
     "requests",
 
@@ -58,33 +57,19 @@ dependencies = [
     "transformers",
 ]
 
+
 [project.urls]
 Homepage = "https://github.com/twosixlabs/armory-library"
 BugTracker = "https://github.com/twosixlabs/armory-library/issues"
 Documentation = "https://armory-library.readthedocs.io/en/latest/"
+
 
 [project.scripts]
 armory = "charmory.example:main"
 armory-mlflow-server = "charmory.track:server"
 
 
-# please see docs/getting_started.md#the-armory-flavors for how these
-# optional dependencies work
 [project.optional-dependencies]
-developer = [
-    "pytest",
-    "hatch",          # build tool
-    "wheel",          # build tool
-    "black[jupyter]",
-    "isort",
-    "flake8",
-    "bandit[toml]",   # code scanning
-    "pre-commit",
-    "ipywidgets",
-]
-
-documentation = ["mkdocs", "mkdocstrings", "mkdocs-exclude", "mkdocs-material"]
-
 extras = [
     # deepspeech
     "python-levenshtein",
@@ -104,24 +89,19 @@ extras = [
     "apache-beam >= 2.22.0",
 ]
 
-all = [
-    "armory-library[developer]",
-    "armory-library[documentation]",
-    # "armory-library[extras]",
-]
-
 
 [build-system]
 build-backend = "hatchling.build"
-requires = ["hatchling>=1.10.0", "hatch-vcs"]
+requires = ["hatchling", "hatch-vcs"]
+
 
 [tool.hatch.build]
 ignore-vcs = false
 reproducible = true
 directory = "dist"
 sources = ["src"]
-exclude = ["examples"]
 include = ["src/", "LICENSE", "pyproject.toml", "README.md"]
+
 
 [tool.hatch.metadata]
 allow-direct-references = true
@@ -131,9 +111,11 @@ allow-direct-references = true
 source = "vcs"
 path = "src/armory/version.py"
 
+
 [tool.hatch.version.raw-options]
 root = "../"
 version_scheme = "post-release"
+
 
 [tool.hatch.build.hooks.vcs]
 version-file = "src/armory/version.py"
@@ -149,38 +131,3 @@ version_tuple = {version_tuple!r}
 # Tools
 [tool.setuptools_scm]
 # the presence of this empty block stops setuptools_scm from complaining
-
-[tool.bandit]
-recursive = true
-targets = ["armory"]
-skips = [
-    "B101", # Ignore defensive `assert`s (especially useful for mypy)
-    "B404", # Ignore warnings about importing subprocess
-    "B603", # Ignore warnings about calling subprocess.Popen without shell=True
-    "B607", # Ignore warnings about calling subprocess.Popen without a full path to executable
-]
-
-[tool.pytest.ini_options]
-addopts = "-ra -q"
-log_level = "ERROR"
-testpaths = ["tests"]
-log_cli = true
-filterwarnings = []
-markers = [
-    "slow",       # This test is slow
-    "online",     # This test needs open internet access
-    "end_to_end", # Full End to End Test (typically slow)
-    "unit",       # These are Unit Tests (fast and lightweight)
-]
-# TODO: Add these to the pytest options. From armory/validation/test_config
-# addopts = -p no:cacheprovider
-# filterwarnings =
-#     ignore::DeprecationWarning
-#     ignore::RuntimeWarning
-#     ignore::UserWarning:tensorflow*
-#     ignore::UserWarning:torch*
-#     ignore::Warning:art*
-
-[tool.isort]
-profile = "black"
-force_sort_within_sections = true
