@@ -79,7 +79,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install
-        run: pip3 install -r requirements.txt
+        # Consider switching to a non-yolo OD example and removing the yolo install,
+        # it adds 2-ish minutes to this install step.
+        run: |
+          pip3 install --no-compile --editable .
+          pip3 install --no-compile --editable library
+          pip3 install --no-compile --editable examples[huggingface,yolo]
 
       - name: Test
         run: cd ${{ matrix.test.dir }} && python ${{ matrix.test.script }}
