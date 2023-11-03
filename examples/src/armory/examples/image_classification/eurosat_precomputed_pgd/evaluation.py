@@ -7,7 +7,6 @@ from typing import Optional
 import albumentations as A
 from art.attacks.evasion import ProjectedGradientDescent
 from art.estimators.classification import PyTorchClassifier
-from charmory_examples.utils.args import create_parser
 import datasets
 import jatic_toolbox
 from jatic_toolbox.interop.huggingface import HuggingFaceVisionDataset
@@ -15,6 +14,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model

@@ -40,7 +40,7 @@ try:
 except ImportError:
     json_utils = None
 
-from armory import log
+from armory.logs import log
 from armory.utils.configuration import get_armory_home
 
 

@@ -1,11 +1,9 @@
 import albumentations as A
-from charmory_examples.object_detection.coco_precomputed_patch.evaluation import (
+
+from armory.examples.image_classification.eurosat_precomputed_pgd.evaluation import (
     create_evaluation_task,
     get_cli_args,
 )
-import torch
-from torchvision.ops import box_convert
-
 from charmory.engine import AdversarialDatasetEngine
 from charmory.track import track_param
 
@@ -20,27 +18,14 @@ if __name__ == "__main__":
         # have to convert _back_ from CHW to HWC, as well as from
         # float [0.0,1.0] to int [0,255]
         sample["image"] = transform(image=sample["image"].transpose(1, 2, 0))["image"]
-        # convert `objects` from object of lists back to a list of objects
-        objects = []
-        for i in range(len(sample["objects"]["id"])):
-            objects.append(
-                dict(
-                    area=sample["objects"]["area"][i],
-                    bbox=box_convert(
-                        torch.tensor(sample["objects"]["boxes"][i]), "xyxy", "xywh"
-                    ),
-                    id=sample["objects"]["id"][i],
-                    iscrowd=sample["objects"]["iscrowd"][i],
-                    label=sample["objects"]["labels"][i],
-                )
-            )
-        sample["objects"] = objects
-
+        # rename from JATIC-toolbox wrapper key back to original key
+        sample["labels"] = sample["label"]
+        del sample["label"]
         return sample
 
     engine = AdversarialDatasetEngine(
         task,
-        output_dir="coco_with_robustdpatch",
+        output_dir=f"eurosat_with_{args.model_name}_pgd",
         adapter=adapter,
         features=task.evaluation.dataset.test_dataloader.dataset._dataset.features,
         num_batches=args.num_batches,
