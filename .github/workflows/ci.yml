@@ -51,6 +51,7 @@ jobs:
         run: |
           pip3 install --no-compile --editable .
           pip3 install --no-compile --editable library
+          pip3 install --no-compile --editable matrix
 
       - name: Test
         run: task test
@@ -85,6 +86,7 @@ jobs:
         # it adds 2-ish minutes to this install step.
         run: |
           pip3 install --no-compile --editable library
+          pip3 install --no-compile --editable matrix
           pip3 install --no-compile --editable examples[huggingface,yolo]
 
       - name: Test
