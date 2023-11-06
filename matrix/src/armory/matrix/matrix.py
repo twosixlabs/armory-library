@@ -21,7 +21,7 @@ def create_matrix(
 
     Example::
 
-        >>> from armory.matrix.matrix import create_matrix
+        >>> from armory.matrix import create_matrix
         >>> create_matrix()(a=[1, 2], b=[3, 4])
         [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 3}, {'a': 2, 'b': 4}]
         >>> create_matrix(1, 2)(a=[1, 2], b=[3, 4])
