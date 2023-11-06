@@ -49,6 +49,10 @@ def create_matrix(
         corresponding to each row of the matrix.
     """
 
+    if worker_num is None or num_workers is None:
+        worker_num = 0
+        num_workers = 1
+
     def _create(**kwargs) -> Iterable[Mapping[str, Any]]:
         # Keep ordered lists of keys and value iterables
         keys = []
@@ -64,22 +68,16 @@ def create_matrix(
         product = itertools.product(*values)
 
         # Create a key-value mapping for each argument in each row
-        matrix = []
+        count = 0
         for row in product:
             params = {k: v for k, v in zip(keys, row)}
+            # Skip over entries that are pruned
             if prune is not None and prune(**params):
                 continue
-            matrix.append(params)
-
-        # Get subset of rows if partitioned
-        if worker_num is not None and num_workers is not None:
-            num_rows = len(matrix)
-            # // is the floor (or integer) division operator
-            start = worker_num * num_rows // num_workers
-            stop = (worker_num + 1) * num_rows // num_workers
-            matrix = matrix[start:stop]
-
-        return matrix
+            # Skip over entries when partioning
+            if (count % num_workers) == worker_num:
+                yield params
+            count += 1
 
     return _create
 
@@ -220,9 +218,9 @@ def matrix(**kwargs):
 
         >>> # to partition
         >>> perform.partition(0, 2)(2, b=3)
-        [3, 5]
+        [3, 7, 11]
         >>> perform.partition(1, 2)(2, b=3)
-        [7, 9, 11]
+        [5, 9]
         >>> perform.parition(None, None) # to clear partition
 
         >>> # to override arguments

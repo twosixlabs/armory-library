@@ -55,28 +55,29 @@ def test_override():
 @pytest.mark.parametrize(
     "worker_num,num_workers,expected",
     [
+        (None, None, ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]),
         (0, 1, ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]),
         (1, 1, []),
-        (0, 2, ["ad", "ae", "af", "bd"]),
-        (1, 2, ["be", "bf", "cd", "ce", "cf"]),
-        (0, 3, ["ad", "ae", "af"]),
-        (1, 3, ["bd", "be", "bf"]),
-        (2, 3, ["cd", "ce", "cf"]),
-        (0, 4, ["ad", "ae"]),
-        (1, 4, ["af", "bd"]),
-        (2, 4, ["be", "bf"]),
-        (3, 4, ["cd", "ce", "cf"]),
-        (0, 5, ["ad"]),
-        (1, 5, ["ae", "af"]),
-        (2, 5, ["bd", "be"]),
-        (3, 5, ["bf", "cd"]),
-        (4, 5, ["ce", "cf"]),
-        (0, 6, ["ad"]),
-        (1, 6, ["ae", "af"]),
-        (2, 6, ["bd"]),
-        (3, 6, ["be", "bf"]),
-        (4, 6, ["cd"]),
-        (5, 6, ["ce", "cf"]),
+        (0, 2, ["ad", "af", "be", "cd", "cf"]),
+        (1, 2, ["ae", "bd", "bf", "ce"]),
+        (0, 3, ["ad", "bd", "cd"]),
+        (1, 3, ["ae", "be", "ce"]),
+        (2, 3, ["af", "bf", "cf"]),
+        (0, 4, ["ad", "be", "cf"]),
+        (1, 4, ["ae", "bf"]),
+        (2, 4, ["af", "cd"]),
+        (3, 4, ["bd", "ce"]),
+        (0, 5, ["ad", "bf"]),
+        (1, 5, ["ae", "cd"]),
+        (2, 5, ["af", "ce"]),
+        (3, 5, ["bd", "cf"]),
+        (4, 5, ["be"]),
+        (0, 6, ["ad", "cd"]),
+        (1, 6, ["ae", "ce"]),
+        (2, 6, ["af", "cf"]),
+        (3, 6, ["bd"]),
+        (4, 6, ["be"]),
+        (5, 6, ["bf"]),
     ],
 )
 def test_partition(worker_num, num_workers, expected):
@@ -163,4 +164,4 @@ def test_parallel_with_partition():
     def concat(x, y):
         return f"{x}{y}"
 
-    assert set(concat.partition(1, 3).parallel(2)()) == {"bd", "be", "bf"}
+    assert set(concat.partition(1, 3).parallel(2)()) == {"ae", "be", "ce"}
