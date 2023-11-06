@@ -77,7 +77,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         return sample
 
     dataset.set_transform(transform)
-    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
+    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size, num_workers=5)
 
     ###
     # Attack

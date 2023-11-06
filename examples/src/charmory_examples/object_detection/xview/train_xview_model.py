@@ -1,4 +1,5 @@
 import time
+from typing import List
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -12,7 +13,6 @@ from torchvision.models.detection.faster_rcnn import (
     FastRCNNPredictor,
 )
 from tqdm.auto import tqdm
-from typing import List
 
 torch.set_float32_matmul_precision("high")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -232,8 +232,8 @@ train_itr = 1
 val_itr = 1
 # train and validation loss lists to store loss values of all...
 
-train_loss_list: List[float] = [] 
-val_loss_list: List[float] = []  
+train_loss_list: List[float] = []
+val_loss_list: List[float] = []
 # name to save the trained model with
 MODEL_NAME = "model"
 
