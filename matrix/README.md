@@ -4,31 +4,79 @@
 
 # Overview
 
-This project includes example Python scripts and Jupyter notebook usages of the
-charmory (JATIC armory replacement) library.
+Armory-matrix provides a utility to automatically expand parameter
+specifications in order to perform a series of evaluations covering all possible
+combinations of parameters.
 
 # Installation
 
-```sh
-cd examples
-pip install --editable .
+```bash
+pip install armory-matrix
 ```
 
 # Usage
 
-```sh
-charmory
+Use the `matrix` decorator to specify the ranges of values for all parameters of
+a function. When the decorated function is invoked, it will automatically be
+called once for each combination of input parameters.
+
+```python
+from armory.matrix import matrix
+
+@matrix(
+    x=range(1, 3),
+    y=[1.5, 6.5],
+)
+def print_xy(x, y):
+    print(f"{x=}, {y=}")
+
+print_xy()
 ```
 
-# Acknowledgment
+Will produce the following output:
 
-This material is based upon work supported by the Defense Advanced Research Projects
-Agency (DARPA) under Contract No. HR001120C0114. Any opinions, findings and
-conclusions or recommendations expressed in this material are those of the author(s)
-and do not necessarily reflect the views of the Defense Advanced Research Projects
-Agency (DARPA).
+```
+x=1, y=1.5
+x=1, y=6.5
+x=2, y=1.5
+x=2, y=6.5
+```
 
-# Points of Contact
+Parameters may be overridden after definition:
 
-POC: Matt Wartell @matt.wartell
-DPOC: Christopher Woodall @christopher.woodall
+```python
+print_xy.override(x=[7])
+print_xy()
+```
+
+```
+x=7, y=1.5
+x=7, y=6.5
+```
+
+For distributed runs (e.g., as a job submitted to a SLURM cluster), one may
+specify a partition of the matrix to be run:
+
+```python
+print_xy.partition(0, 2)  # invoke partition 1 of 2
+print_xy()
+print("---")
+print_xy.partition(1, 2)  # invoke partition 2 of 2
+print_xy()
+```
+
+```
+x=1, y=1.5
+x=1, y=6.5
+---
+x=2, y=1.5
+x=2, y=6.5
+```
+
+Function invocations may be parallelized using a thread pool by specifying the
+max number of workers in the pool:
+
+```python
+print_xy.parallel(2)
+print_xy()
+```
