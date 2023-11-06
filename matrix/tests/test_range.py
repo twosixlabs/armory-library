@@ -1,5 +1,6 @@
-from armory_matrix.range import frange
 import pytest
+
+from armory.matrix.range import frange
 
 pytestmark = pytest.mark.unit
 

@@ -21,7 +21,7 @@ def create_matrix(
 
     Example::
 
-        >>> from armory_matrix.matrix import create_matrix
+        >>> from armory.matrix.matrix import create_matrix
         >>> create_matrix()(a=[1, 2], b=[3, 4])
         [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 3}, {'a': 2, 'b': 4}]
         >>> create_matrix(1, 2)(a=[1, 2], b=[3, 4])
@@ -204,7 +204,7 @@ def matrix(**kwargs):
 
     Example::
 
-        >>> from armory_matrix import matrix
+        >>> from armory.matrix import matrix
 
         >>> @matrix(x=range(5))
         >>> def perform(a, x, b):

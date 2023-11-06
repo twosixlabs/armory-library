@@ -31,7 +31,7 @@ def frange(
 
     Example::
 
-        >>> from armory_matrix.range import frange
+        >>> from armory.matrix.range import frange
         >>> list(frange(5))
         [0.0, 1.0, 2.0, 3.0, 4.0]
         >>> list(frange(1, 6))

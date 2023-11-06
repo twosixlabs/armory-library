@@ -1,8 +1,9 @@
 import threading
 import time
 
-from armory_matrix import matrix
 import pytest
+
+from armory.matrix import matrix
 
 pytestmark = pytest.mark.unit
 
