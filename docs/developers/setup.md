@@ -26,13 +26,13 @@ All of these configurations set Git to normalize line endings to LF on commit, a
 ### Initial Setup
 1. **Clone the repository**
   ```bash
-  git clone git@gitlab.jatic.net:jatic/twosix/armory.git
-  cd armory
+  git clone https://github.com/twosixlabs/armory-library.git
+  cd armory-library
   ```
 
-2. **Install the package**
+2. **Install the packages**
   ```bash
-  make install
+  ./dev-install.sh
   ```
 
 ---
@@ -60,7 +60,7 @@ source venv/bin/activate
 python -m pip install --upgrade pip build wheel
 
 # Install the project with all dependencies, without compiling
-pip install --no-compile --editable '.[all]'
+./dev-install.sh
 ```
 
 ## Linting the Code
@@ -69,6 +69,8 @@ Before committing any code, we run a pre-commit script that lints the code to en
 
 ```bash
 python -m pre_commit # or just `pre-commit`
+# or
+task lint
 ```
 
 ## Building the Application
@@ -76,7 +78,7 @@ python -m pre_commit # or just `pre-commit`
 We use hatch to build our Python application into a wheel file:
 
 ```bash
-make build
+hatch build --clean --target wheel
 ```
 
 ## Generating Documentation
@@ -84,7 +86,13 @@ make build
 We use mkdocs to build our project documentation:
 
 ```bash
-make docs
+task docs
+```
+
+## Running Unit Tests
+
+```bash
+task test
 ```
 
 ---

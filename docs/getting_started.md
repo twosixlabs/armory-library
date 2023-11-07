@@ -2,9 +2,7 @@
 
 ## Installation
 ```bash
-git clone https://gitlab.jatic.net/jatic/twosix/armory.git
-cd armory
-pip install --editable ".[all]"
+pip install armory-library
 ```
 
 ## Usage

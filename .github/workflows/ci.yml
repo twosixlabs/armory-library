@@ -49,9 +49,9 @@ jobs:
 
       - name: Install
         run: |
-          pip3 install --no-compile --editable .
-          pip3 install --no-compile --editable library
-          pip3 install --no-compile --editable matrix
+          pip3 install --no-compile .
+          pip3 install --no-compile ./library
+          pip3 install --no-compile ./matrix
 
       - name: Test
         run: task test
@@ -85,9 +85,9 @@ jobs:
         # Consider switching to a non-yolo OD example and removing the yolo install,
         # it adds 2-ish minutes to this install step.
         run: |
-          pip3 install --no-compile --editable library
-          pip3 install --no-compile --editable matrix
-          pip3 install --no-compile --editable examples[huggingface,yolo]
+          pip3 install --no-compile ./library
+          pip3 install --no-compile ./matrix
+          pip3 install --no-compile ./examples[huggingface,yolo]
 
       - name: Test
         run: cd ${{ matrix.test.dir }} && python ${{ matrix.test.script }}
