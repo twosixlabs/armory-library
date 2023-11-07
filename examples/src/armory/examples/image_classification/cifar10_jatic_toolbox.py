@@ -9,7 +9,6 @@ import sys
 
 import art.attacks.evasion
 from art.estimators.classification import PyTorchClassifier
-from charmory_examples.utils.args import create_parser
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox import load_dataset as load_jatic_dataset
 from jatic_toolbox import load_model as load_jatic_model
@@ -18,6 +17,7 @@ import torch.nn as nn
 
 import armory.baseline_models.pytorch.resnet18
 import armory.data.datasets
+from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import ArmoryDataLoader

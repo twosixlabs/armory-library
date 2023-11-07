@@ -7,26 +7,29 @@ on:
           - 'v[0-9]+.[0-9]+.[0-9]+'
 jobs:
   release-wheel:
-    name: 🛞 Publish release wheel to PyPI
+    name: 📦 Publish release wheel to PyPI
     runs-on: ubuntu-latest
     steps:
-      - name: 🐍 Setup Python 3.10
+      - name: Setup Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      - name: 📩 Checkout Armory with full depth (for tags and SCM)
+      - name: Checkout Armory with full depth (for tags and SCM)
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
           ref: ${{ github.event.client_payload.branch }}
 
-      - name: 🔨 Build wheel
+      - name: Install
         run: |
           pip install pip>=23
           pip install hatch
-          hatch build --clean --target wheel
 
-      - name: 📦 Upload wheel to PyPI
+      - name: Build library wheel
         run: |
-           hatch publish --user __token__ --auth ${{ secrets.PYPI_PUBLISH_TOKEN }}
+          cd library && hatch build --clean --target wheel
+
+      - name: Upload library wheel to PyPI
+        run: |
+           cd library && hatch publish --user __token__ --auth ${{ secrets.PYPI_PUBLISH_TOKEN }}

@@ -29,7 +29,7 @@ repos:
         additional_dependencies: [types-requests]
         files: |
           (?x)^(
-            src/charmory/.*|
+            library/src/charmory/.*|
             examples/src/.*
           )$
   - repo: https://github.com/nbQA-dev/nbQA
@@ -40,7 +40,7 @@ repos:
         args: ["--ignore-missing-imports"]
         files: |
           (?x)^(
-            src/charmory/.*|
+            library/src/charmory/.*|
             tutorials/notebooks/.*|
             examples/notebooks/.*
           )$

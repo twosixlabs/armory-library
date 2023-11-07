@@ -24,37 +24,10 @@ jobs:
           python-version: 3.8
 
       - name: Install pre-commit
-        run: pip3 install pre-commit
+        run: pip3 install pre-commit taskipy
 
       - name: Lint
-        run: make lint
-
-
-  static-analysis:
-    name: 🔍 Static Analysis
-    runs-on: ubuntu-latest
-    needs: code-linting
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.8
-
-      - name: Install tools
-        run: pip3 install bandit mypy
-
-      - name: Scan
-        run: make scan
-
-      - name: Upload Scan Results
-        uses: actions/upload-artifact@v3
-        with:
-          name: armory-library-bandit
-          path: bandit_scan.txt
-          retention-days: 1
+        run: task lint
 
 
   unit-tests:
@@ -75,10 +48,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install
-        run: make install
+        run: |
+          pip3 install --no-compile .
+          pip3 install --no-compile ./library
 
       - name: Test
-        run: make test
+        run: task test
 
 
   integration-tests:
@@ -90,10 +65,10 @@ jobs:
       matrix:
         test:
           - name: Image Classification
-            dir: src/charmory_examples/image_classification
+            dir: examples/src/armory/examples/image_classification
             script: mnist_vit_pgd.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
           - name: Object Detection
-            dir: src/charmory_examples/object_detection
+            dir: examples/src/armory/examples/object_detection
             script: license_plates_yolov5_robustdpatch.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
         python-version: ["3.8"]
     steps:
@@ -108,10 +83,12 @@ jobs:
       - name: Install
         # Consider switching to a non-yolo OD example and removing the yolo install,
         # it adds 2-ish minutes to this install step.
-        run: cd examples && pip install --no-compile --editable .[armory,huggingface,yolo]
+        run: |
+          pip3 install --no-compile ./library
+          pip3 install --no-compile ./examples[huggingface,yolo]
 
       - name: Test
-        run: cd examples/${{ matrix.test.dir }} && python ${{ matrix.test.script }}
+        run: cd ${{ matrix.test.dir }} && python ${{ matrix.test.script }}
 
 
   generate-docs:
@@ -130,10 +107,10 @@ jobs:
           python-version: 3.8
 
       - name: Install tools
-        run: pip install mkdocs mkdocstrings mkdocs-exclude mkdocs-material
+        run: pip install mkdocs mkdocstrings mkdocs-exclude mkdocs-material taskipy
 
       - name: Generate
-        run: make docs
+        run: task docs
 
       - name: Upload Docs
         uses: actions/upload-artifact@v3
@@ -159,14 +136,16 @@ jobs:
           python-version: 3.8
 
       - name: Install
-        run: make install
+        run: |
+          pip install pip>=23
+          pip install hatch
 
-      - name: Build
-        run: make build
+      - name: Build Library
+        run: cd library && hatch build --clean --target wheel
 
-      - name: Upload Wheel
+      - name: Upload Library Wheel
         uses: actions/upload-artifact@v3
         with:
           name: armory-library-wheel
-          path: dist/*.whl
+          path: library/dist/*.whl
           retention-days: 7
