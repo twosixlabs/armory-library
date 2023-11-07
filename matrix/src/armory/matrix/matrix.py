@@ -2,8 +2,41 @@
 
 import concurrent.futures
 from copy import deepcopy
-import itertools
-from typing import Any, Callable, Iterable, Mapping, Optional
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple
+
+
+def product(
+    prior: Dict[str, Any], remaining: List[Tuple[str, Any]]
+) -> Iterable[Mapping[str, Any]]:
+    """
+    Generates a cartesian product of parameters.
+
+    This function works recursively, iterating over each parameter range in a
+    depth-first manner. We do this rather than use `itertools.product` in order
+    to support dynamic, or dependent, parameter ranges that are created based
+    on the preceding parameter values.
+
+    Args:
+        prior: Key-value parameter mapping of parameters generated so far
+        remaining: List of remaining key and value-iterable pairs
+
+    Yields:
+        Key-value parameter mappings for each row in the cartesian product
+        matrix
+    """
+    if not remaining:
+        yield prior
+    else:
+        key, values = remaining[0]
+        if callable(values):
+            values = values(**prior)
+        if not isinstance(values, Iterable):
+            values = [values]
+        for value in values:
+            next = deepcopy(prior)
+            next[key] = value
+            for params in product(next, remaining[1:]):
+                yield params
 
 
 def create_matrix(
@@ -22,12 +55,14 @@ def create_matrix(
     Example::
 
         >>> from armory.matrix import create_matrix
-        >>> create_matrix()(a=[1, 2], b=[3, 4])
+        >>> list(create_matrix()(a=[1, 2], b=[3, 4]))
         [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 3}, {'a': 2, 'b': 4}]
-        >>> create_matrix(1, 2)(a=[1, 2], b=[3, 4])
+        >>> list(create_matrix(1, 2)(a=[1, 2], b=[3, 4]))
         [{'a': 2, 'b': 3}, {'a': 2, 'b': 4}]
-        >>> create_matrix(None, None, lambda a, b: a=="2" and b=="4")(a=[1, 2], b=[3, 4])
+        >>> list(create_matrix(None, None, lambda a, b: a=="2" and b=="4")(a=[1, 2], b=[3, 4]))
         [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 3}]
+        >>> list(create_matrix()(a=[1, 2], b=lambda a: (3, 4) if a == 1 else (5, 6)))
+        [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 5}, {'a': 2, 'b': 6}]
 
     Args:
         worker_num: The index of this node among all nodes, used to determine
@@ -42,35 +77,25 @@ def create_matrix(
             returned matrix.
 
     Returns:
-        A function that will generate a sequence of key-value mappings. The
-        function accepts keyword arguments of iterables, ranges, or sequences
-        specifying the allowable values for each argument. The return value of
-        the function is a sequence of key-value mappings that are the arguments
-        corresponding to each row of the matrix.
+        A generator of key-value mappings. The generator function accepts
+        keyword arguments of iterables, ranges, or sequences specifying the
+        allowable values for each argument. The yielded value of the generator
+        is a key-value mapping of arguments corresponding to a row of the
+        matrix.
+
+        If an argument to the generator is a callable, it will be called with
+        the preceding keyword parameter values for the current row. The return
+        of the callable is the value--or iterable--for the keyword, from which
+        to generate additional rows in the matrix.
     """
 
     if worker_num is None or num_workers is None:
         worker_num = 0
         num_workers = 1
 
-    def _create(**kwargs) -> Iterable[Mapping[str, Any]]:
-        # Keep ordered lists of keys and value iterables
-        keys = []
-        values = []
-        for key, value in kwargs.items():
-            keys.append(key)
-            if isinstance(value, Iterable):
-                values.append(value)
-            else:
-                values.append([value])
-
-        # Create cartesian product of all possible parameter values
-        product = itertools.product(*values)
-
-        # Create a key-value mapping for each argument in each row
+    def _generate(**kwargs) -> Iterable[Mapping[str, Any]]:
         count = 0
-        for row in product:
-            params = {k: v for k, v in zip(keys, row)}
+        for params in product({}, list(kwargs.items())):
             # Skip over entries that are pruned
             if prune is not None and prune(**params):
                 continue
@@ -79,7 +104,7 @@ def create_matrix(
                 yield params
             count += 1
 
-    return _create
+    return _generate
 
 
 class Matrix:

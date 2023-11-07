@@ -105,6 +105,49 @@ def test_pruning():
     ]
 
 
+def test_single_dynamic():
+    def dynamic_z(x, y):
+        if x == "b":
+            return "ef"
+        return "0"
+
+    @matrix(x="ab", y="cd", z=dynamic_z)
+    def concat(x, y, z):
+        return f"{x}{y}{z}"
+
+    assert concat() == [
+        "ac0",
+        "ad0",
+        "bce",
+        "bcf",
+        "bde",
+        "bdf",
+    ]
+
+
+def test_multiple_dynamic():
+    def dynamic_y(x):
+        if x == "b":
+            return "cd"
+        return "0"
+
+    def dynamic_z(x, y):
+        if y == "d":
+            return "ef"
+        return "0"
+
+    @matrix(x="ab", y=dynamic_y, z=dynamic_z)
+    def concat(x, y, z):
+        return f"{x}{y}{z}"
+
+    assert concat() == [
+        "a00",
+        "bc0",
+        "bde",
+        "bdf",
+    ]
+
+
 def test_parallel():
     @matrix(x="abc", y="def")
     def get_thread_id(x, y):
