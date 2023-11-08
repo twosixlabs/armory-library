@@ -1,13 +1,28 @@
 """Perturbation metrics"""
 
+from typing import Union
+
 import torch
 from torchmetrics import Metric
 
 
 class PerturbationNormMetric(Metric):
-    """Metric for L-norm distance between ground truth and perturbed samples"""
+    """
+    Metric for L-norm distance between ground truth and perturbed samples.
 
-    def __init__(self, ord: float = torch.inf):
+    The calculation of the norm depends on the value used for the order of the
+    norm, as follows. In the following table, `d` is the distance between ground
+    truth and perturbed samples as calculated by `x - x_adv`.
+
+    order        | norm formula
+    -------------|-------------
+    `torch.inf`  | `max(abs(d))`
+    `-torch.inf` | `min(abs(d))`
+    0            | `sum(d != 0)`
+    1, 2         | `sum(abs(d)**ord)**(1./ord)`
+    """
+
+    def __init__(self, ord: Union[float, int] = torch.inf):
         """
         Initializes the perturbation norm distance metric.
 
