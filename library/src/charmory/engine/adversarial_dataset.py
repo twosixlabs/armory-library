@@ -1,11 +1,13 @@
 """Armory engine to create adversarial datasets"""
-from typing import Any, Callable, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Callable, Generator, Mapping, Optional
 
-import datasets
 import numpy as np
 
 from charmory.tasks.base import BaseEvaluationTask
 from charmory.track import get_current_params
+
+if TYPE_CHECKING:
+    import datasets
 
 SampleAdapter = Callable[[Mapping[str, Any]], Mapping[str, Any]]
 """
@@ -19,7 +21,7 @@ class AdversarialDatasetEngine:
     Armory engine to create adversarial datasets. An adversarial dataset has
     an adversarial attack already applied to every sample in the dataset.
 
-    Example:
+    Example::
 
         from charmory.engine import AdversarialDatasetEngine
 
@@ -40,14 +42,14 @@ class AdversarialDatasetEngine:
         task: BaseEvaluationTask,
         output_dir: Optional[str] = None,
         adapter: Optional[SampleAdapter] = None,
-        features: Optional[datasets.Features] = None,
+        features: Optional["datasets.Features"] = None,
         num_batches: Optional[int] = None,
     ):
         """
         Initializes the engine.
 
         Args:
-            evaluation: Armory evaluation from which to generate the dataset
+            task: Armory evaluation task from which to generate the dataset
             output_dir: Optional, directory to which to write the generated dataset
             adapter: Optional, adapter to perform additional modifications to samples
             features: Optional, dataset features
@@ -63,12 +65,14 @@ class AdversarialDatasetEngine:
         self.num_batches = num_batches
 
     @staticmethod
-    def _default_adapter(sample: Mapping[str, Any]):
+    def _default_adapter(sample: Mapping[str, Any]) -> Mapping[str, Any]:
         # do nothing
         return sample
 
-    def generate(self) -> datasets.Dataset:
+    def generate(self) -> "datasets.Dataset":
         """Create the adversarial dataset"""
+        import datasets
+
         dataset = datasets.Dataset.from_generator(
             self._generator, features=self.features
         )
@@ -80,7 +84,7 @@ class AdversarialDatasetEngine:
 
         return dataset
 
-    def _generator(self):
+    def _generator(self) -> Generator[Mapping[str, Any], None, None]:
         """
         Iterates over every batch in the source dataset, applies the adversarial
         attack, and yields the pre-attacked samples.
