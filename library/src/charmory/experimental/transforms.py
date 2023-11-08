@@ -225,6 +225,22 @@ def create_image_classification_transform(
         )
         image = sample["image"][0]  # A CHW numpy array
         label = sample["labels"][0]
+
+    Args:
+        image_to_np: Callable to convert the input image to a numpy array
+        image_from_np: Callable to convert the augmented image numpy array (from
+            albumentations) to the output image type
+        image_key: Key in the input batch dictionary for the images. Defaults to
+            "image".
+        preprocessor: Optional, arbitrary transform to apply to the sample prior
+            to performing image transforms.
+        postprocessor: Optional, arbitrary transform to apply to final output
+            sample.
+        **kwargs: All other keyword arguments will be forwarded to the
+            `create_image_transform` function.
+
+    Returns:
+        Sample transform function
     """
     img_transform = create_image_transform(**kwargs)
 
@@ -317,6 +333,9 @@ def create_object_detection_transform(
             sample.
         **kwargs: All other keyword arguments will be forwarded to the
             `create_image_bbox_transform` function.
+
+    Returns:
+        Sample transform function
     """
     img_bbox_transform = create_image_bbox_transform(format=format, **kwargs)
 
