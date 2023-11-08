@@ -13,6 +13,7 @@ class JaticImageClassificationModel(ArmoryModel):
     models.
 
     Example::
+
         import jatic_toolbox
         from charmory.model.image_classification import JaticImageClassificationModel
 

@@ -25,6 +25,14 @@ class BboxFormat(Enum):
     """
     Supported bounding box formats. Enum members are included for both the
     torchvision and the albumentations names for ease of use.
+
+    Attributes:
+        XYWH: Bounding box format is (xmin, ymin, width, height)
+        COCO: Bounding box format is (xmin, ymin, width, height)
+        XYXY: Bounding box format is (xmin, ymin, xmax, ymax)
+        PASCAL_VOC: Bounding box format is (xmin, ymin, xmax, ymax)
+        CXCYWH: Bounding box format is (center x, center y, width, height)
+        YOLO: Bounding box format is (center x, center y, width, height)
     """
 
     # (xmin, ymin, width, height)
