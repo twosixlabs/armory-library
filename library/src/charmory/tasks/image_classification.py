@@ -1,5 +1,7 @@
 """Image classification evaluation task"""
 
+from typing import Union
+
 import torch
 import torchmetrics.classification
 
@@ -14,9 +16,21 @@ class ImageClassificationTask(BaseEvaluationTask):
         self,
         *args,
         num_classes: int,
-        perturbation_ord: float = torch.inf,
+        perturbation_ord: Union[float, int] = torch.inf,
         **kwargs,
     ):
+        """
+        Initializes the task.
+
+        Args:
+            *args: All positional arguments will be forwarded to the
+                `charmory.tasks.base.BaseEvaluationTask` class
+            num_classes: Total number of classes the model is capable of
+                predicting, used for categorical accuracy metrics
+            perturbation_ord: L-norm order for the perturbation distance metrics
+            **kwargs: All other keyword arguments will be forwarded to the
+                `charmory.tasks.base.BaseEvaluationTask` class
+        """
         super().__init__(*args, **kwargs)
         self.benign_accuracy = torchmetrics.classification.Accuracy(
             task="multiclass", num_classes=num_classes
