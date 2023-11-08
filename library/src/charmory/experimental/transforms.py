@@ -66,9 +66,10 @@ def create_image_transform(
 ) -> A.Compose:
     """
     Creates an image transform capable of performing the following operations:
-        - Resizing & padding (if a `max_size` is provided)
-        - Rescaling values from 0-255 to 0-1 (if a `float_max_value` is provided)
-        - Normalization into z-scores (if both `mean` and `std` are provided)
+
+    - Resizing & padding (if a `max_size` is provided)
+    - Rescaling values from 0-255 to 0-1 (if a `float_max_value` is provided)
+    - Normalization into z-scores (if both `mean` and `std` are provided)
 
     Example::
 
@@ -214,8 +215,9 @@ def create_image_classification_transform(
 ) -> Transform:
     """
     Creates a sample or batch transform capable of performing the following operations:
-        - Image transformations
-        - Arbitrary (user-supplied) pre and post transforms
+
+    - Image transformations
+    - Arbitrary (user-supplied) pre and post transforms
 
     See `create_image_transform` for additional arguments.
 
@@ -286,10 +288,11 @@ def create_object_detection_transform(
 ) -> Transform:
     """
     Creates a sample or batch transform capable of performing the following operations:
-        - Image and bounding box transformations
-        - Bounding box format conversion
-        - Bounding box field renames
-        - Arbitrary (user-supplied) pre and post transforms
+
+    - Image and bounding box transformations
+    - Bounding box format conversion
+    - Bounding box field renames
+    - Arbitrary (user-supplied) pre and post transforms
 
     See `create_image_bbox_transform` for additional arguments.
 
