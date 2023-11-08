@@ -2,7 +2,7 @@
 Label-related utilties
 """
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, Sequence, Union, runtime_checkable
 
 import numpy as np
 
@@ -20,7 +20,17 @@ class LabelTargeter(Protocol):
 
 
 class FixedLabelTargeter:
-    def __init__(self, *, value):
+    """
+    Label targeter that returns a single, fixed integer value for each input label
+    """
+
+    def __init__(self, *, value: int):
+        """
+        Initializes the label targeter.
+
+        Args:
+            value: Fixed integer value
+        """
         if not isinstance(value, int) or value < 0:
             raise ValueError(f"value {value} must be a nonnegative int")
         self.value = value
@@ -30,7 +40,17 @@ class FixedLabelTargeter:
 
 
 class FixedStringTargeter:
-    def __init__(self, *, value):
+    """
+    Label targeter that returns a single, fixed string value for each input label
+    """
+
+    def __init__(self, *, value: str):
+        """
+        Initializes the label targeter.
+
+        Args:
+            value: Fixed string value
+        """
         if not isinstance(value, str):
             raise ValueError(f"target value {value} is not a string")
         self.value = value
@@ -40,7 +60,19 @@ class FixedStringTargeter:
 
 
 class RandomLabelTargeter:
+    """
+    Label targeter that returns a random value from the given range of values
+    for each input label
+    """
+
     def __init__(self, *, num_classes):
+        """
+        Initializes the label targeter.
+
+        Args:
+            num_classes: Total number of classes, the returned value will be a
+                random value in the range of [0,num_classes)
+        """
         if not isinstance(num_classes, int) or num_classes < 2:
             raise ValueError(f"num_classes {num_classes} must be an int >= 2")
         self.num_classes = num_classes
@@ -51,7 +83,19 @@ class RandomLabelTargeter:
 
 
 class RoundRobinTargeter:
-    def __init__(self, *, num_classes, offset=1):
+    """
+    Label targeter that applies a fixed integer offset to each input label
+    """
+
+    def __init__(self, *, num_classes: int, offset: int = 1):
+        """
+        Initializes the label targeter.
+
+        Args:
+            num_classes: Total number of classes, used to determine when an
+                offset input value wraps back to 0
+            offset: Fixed integer offset value to be added to input label values
+        """
         if not isinstance(num_classes, int) or num_classes < 1:
             raise ValueError(f"num_classes {num_classes} must be a positive int")
         if not isinstance(offset, int) or offset % num_classes == 0:
@@ -65,7 +109,23 @@ class RoundRobinTargeter:
 
 
 class ManualTargeter:
-    def __init__(self, *, values, repeat=False, dtype=int):
+    """
+    Label targeter that returns fixed values as specified in an ordered list
+    """
+
+    def __init__(
+        self, *, values: Sequence[Any], repeat: bool = False, dtype: type = int
+    ):
+        """
+        Initializes the label targeter.
+
+        Args:
+            values: Ordered list of fixed values to return. Values are consumed
+                from the list with each call to `generate`.
+            repeat: Whether to wrap back to the beginning of the `values` list
+                after reaching the end, defaults to `False`
+            dtype: The type of the values, defaults to `int`
+        """
         if not values:
             raise ValueError('"values" cannot be an empty list')
         self.values = values
@@ -92,17 +152,27 @@ class ManualTargeter:
 
 
 class IdentityTargeter:
+    """Label targeter that returns unmodified copies of the input labels"""
+
     def generate(self, y):
         return y.copy().astype(int)
 
 
 class ObjectDetectionFixedLabelTargeter:
     """
-    Replaces the ground truth labels with the specified value. Does not modify
-    the number of boxes or location of boxes.
+    Label targeter that replaces the ground truth labels with the specified
+    fixed integer value. Does not modify the number of boxes or location of
+    boxes.
     """
 
-    def __init__(self, *, value, score=1.0):
+    def __init__(self, *, value: int, score: float = 1.0):
+        """
+        Initializes the label targeter.
+
+        Args:
+            value: Fixed integer value for the label
+            score: Fixed score floating point value
+        """
         if not isinstance(value, int) or value < 0:
             raise ValueError(f"value {value} must be a nonnegative int")
         self.value = value
@@ -125,12 +195,19 @@ class ObjectDetectionFixedLabelTargeter:
 
 class MatchedTranscriptLengthTargeter:
     """
-    Targets labels of a length close to the true label
+    Label targeter that returns a transcript from a fixed list with a length
+    closest to that of the input labels.
 
-    If two labels are tied in length, then it pseudorandomly picks one.
+    If two transcripts are tied in length, then it pseudorandomly picks one.
     """
 
-    def __init__(self, *, transcripts):
+    def __init__(self, *, transcripts: Sequence[Union[bytes, str]]):
+        """
+        Initializes the label targeter.
+
+        Args:
+            transcripts: List of replacement transcripts from which to choose
+        """
         if not transcripts:
             raise ValueError('"transcripts" cannot be None or an empty list')
         for t in transcripts:
