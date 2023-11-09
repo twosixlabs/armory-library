@@ -16,7 +16,24 @@ ModelOutputAdapter = Callable[[Any], Any]
 
 
 class ArmoryModel(nn.Module):
-    """Wrapper around a model to apply an adapter to inputs and outputs of the model"""
+    """
+    Wrapper around a model to apply an adapter to inputs and outputs of the
+    model.
+
+    Example::
+        from charmory.model import ArmoryModel
+
+        def preadapter(images, *args, **kwargs):
+            # Apply some transform to images
+            return (images,) + args, kwargs
+
+        def postadapter(output):
+            # Apply some transform to output
+            return output
+
+        # assuming `model` has been defined elsewhere
+        wrapper = ArmoryModel(model, preadapter=preadapter, postadapter=postadapter)
+    """
 
     def __init__(
         self,
@@ -24,12 +41,24 @@ class ArmoryModel(nn.Module):
         preadapter: Optional[ModelInputAdapter] = None,
         postadapter: Optional[ModelOutputAdapter] = None,
     ):
+        """
+        Initializes the model wrapper.
+
+        Args:
+            model: Model being wrapped
+            preadapter: Optional, model input adapter
+            postadapter: Optional, model output adapter
+        """
         super().__init__()
         self._preadapter = preadapter
         self._model = model
         self._postadapter = postadapter
 
     def forward(self, *args, **kwargs):
+        """
+        Applies pre- or postadapters, as appropriate and invokes the wrapped
+        model
+        """
         if self._preadapter:
             args, kwargs = self._preadapter(*args, **kwargs)
 

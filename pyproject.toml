@@ -34,7 +34,7 @@ dependencies = [
     # Docs
     #
     "mkdocs",
-    "mkdocstrings",
+    "mkdocstrings-python",
     "mkdocs-exclude",
     "mkdocs-material",
 

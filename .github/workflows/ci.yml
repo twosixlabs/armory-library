@@ -107,7 +107,7 @@ jobs:
           python-version: 3.8
 
       - name: Install tools
-        run: pip install mkdocs mkdocstrings mkdocs-exclude mkdocs-material taskipy
+        run: pip install mkdocs mkdocstrings-python mkdocs-exclude mkdocs-material taskipy
 
       - name: Generate
         run: task docs

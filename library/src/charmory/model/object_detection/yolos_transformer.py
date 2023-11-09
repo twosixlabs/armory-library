@@ -1,3 +1,4 @@
+"""Armory model wrapper for HuggingFace transformer YOLOS models."""
 from typing import TYPE_CHECKING, Tuple
 
 import torchvision.transforms
@@ -11,7 +12,17 @@ from charmory.model import ArmoryModel
 class YolosTransformer(ArmoryModel):
     """
     Model wrapper with pre-applied input and output adapters for HuggingFace
-    transformer YOLOS models
+    transformer YOLOS models.
+
+    Example::
+
+        from transformers import AutoImageProcessor, AutoModelForObjectDetection
+        from charmory.model.object_detection import YolosTransformer
+
+        model = AutoModelForObjectDetection.from_pretrained(CHECKPOINT)
+        processor = AutoImageProcessor.from_pretrained(CHECKPOINT)
+
+        transformer = YolosTransformer(model, processor)
     """
 
     def __init__(
@@ -22,6 +33,21 @@ class YolosTransformer(ArmoryModel):
         norm_std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
         target_size: Tuple[int, int] = (512, 512),
     ):
+        """
+        Initializes the model wrapper.
+
+        Args:
+            model: YOLOS model being wrapped
+            image_processor: HuggingFace YOLOS image processor corresponding to
+                the model
+            norm_mean: Mean values per channel to use for statistical
+                normalization of image data
+            norm_std: Standard deviation values per channel to use for
+                statistical normalization of image data
+            target_size: Size (as a `height, width` tuple) of images, used for
+                correct postprocessing and resizing of the bounding box
+                predictions
+        """
         super().__init__(model, preadapter=self._preadapt, postadapter=self._postadapt)
         self.image_processor = image_processor
         self.normalize = torchvision.transforms.Normalize(norm_mean, norm_std)

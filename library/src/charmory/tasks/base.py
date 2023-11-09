@@ -29,6 +29,19 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         export_adapter: Optional[ExportAdapter] = None,
         export_every_n_batches: int = 0,
     ):
+        """
+        Initializes the task.
+
+        Args:
+            evaluation: Configuration for the evaluation
+            skip_benign: Whether to skip the benign, unperturbed inference
+            skip_attack: Whether to skip the adversarial, perturbed inference
+            export_adapter: Optional, adapter to be applied to inference data
+                prior to exporting to MLflow
+            export_every_n_batches: Frequency at which batches will be exported
+                to MLflow. A value of 0 means that no batches will be exported.
+                The data that is exported is task-specific.
+        """
         super().__init__()
         self.evaluation = evaluation
         self.skip_benign = skip_benign
@@ -68,6 +81,7 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
 
     @property
     def exporter(self) -> Exporter:
+        """Sample exporter for the current evaluation run"""
         if self._exporter is None:
             logger = self.logger
             if isinstance(logger, MLFlowLogger):
@@ -81,6 +95,10 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
     ###
 
     def _should_export(self, batch_idx) -> bool:
+        """
+        Whether the specified batch should be exported, based on the
+        `export_every_n_batches` value.
+        """
         if self.export_every_n_batches == 0:
             return False
         return (batch_idx + 1) % self.export_every_n_batches == 0
@@ -98,6 +116,7 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
     ###
 
     def create_batch(self, batch, batch_idx):
+        """Creates a batch object from the given dataset-specific batch"""
         return self.Batch(
             i=batch_idx,
             data=batch,
