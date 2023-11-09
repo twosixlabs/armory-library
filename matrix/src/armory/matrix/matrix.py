@@ -58,8 +58,8 @@ def create_matrix(
         >>> list(create_matrix()(a=[1, 2], b=[3, 4]))
         [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 3}, {'a': 2, 'b': 4}]
         >>> list(create_matrix(1, 2)(a=[1, 2], b=[3, 4]))
-        [{'a': 2, 'b': 3}, {'a': 2, 'b': 4}]
-        >>> list(create_matrix(None, None, lambda a, b: a=="2" and b=="4")(a=[1, 2], b=[3, 4]))
+        [{'a': 1, 'b': 4}, {'a': 2, 'b': 4}]
+        >>> list(create_matrix(None, None, lambda a, b: a==2 and b==4)(a=[1, 2], b=[3, 4]))
         [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 3}]
         >>> list(create_matrix()(a=[1, 2], b=lambda a: (3, 4) if a == 1 else (5, 6)))
         [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 5}, {'a': 2, 'b': 6}]
@@ -230,8 +230,8 @@ def matrix(**kwargs):
         >>> from armory.matrix import matrix
 
         >>> @matrix(x=range(5))
-        >>> def perform(a, x, b):
-        >>>    return (a * x) + b
+        ... def perform(a, x, b):
+        ...    return (a * x) + b
 
         >>> perform(2, b=3)
         [3, 5, 7, 9, 11]
@@ -239,14 +239,18 @@ def matrix(**kwargs):
         >>> # to filter by pruning...
         >>> perform.prune(lambda x: x % 2 == 1)(2, b=3)
         [3, 7, 11]
-        >>> perform.prune(None) # to clear pruning
+        >>> # Use None to clear pruning
+        >>> perform.prune(None)(2, b=3)
+        [3, 5, 7, 9, 11]
 
         >>> # to partition
         >>> perform.partition(0, 2)(2, b=3)
         [3, 7, 11]
         >>> perform.partition(1, 2)(2, b=3)
         [5, 9]
-        >>> perform.parition(None, None) # to clear partition
+        >>> # Use None to clear partition
+        >>> perform.partition(None, None)(2, b=3)
+        [3, 5, 7, 9, 11]
 
         >>> # to override arguments
         >>> perform.override(x=range(3, 7))(2, b=3)
