@@ -54,16 +54,21 @@ def frange(
     """
     # If only start is given, then treat it as the stop and start from 0.0
     if stop is None:
-        stop = start + 0.0
+        stop = start
         start = 0.0
     if step is None:
         step = 1.0
     if step == 0.0:
         raise ValueError()
 
+    # Make sure all params are floats
+    stop = float(stop)
+    start = float(start)
+    step = float(step)
+
     count = 0
     while True:
-        temp = float(start + count * step)
+        temp = start + count * step
         if step > 0 and temp >= stop:
             break
         elif step < 0 and temp <= stop:
