@@ -1,11 +1,19 @@
+import doctest
 import threading
 import time
 
 import pytest
 
 from armory.matrix import matrix
+import armory.matrix.matrix_generation
 
 pytestmark = pytest.mark.unit
+
+
+def test_docstrings():
+    results = doctest.testmod(armory.matrix.matrix_generation)
+    assert results.attempted > 0
+    assert results.failed == 0
 
 
 def test_matrix():

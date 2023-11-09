@@ -1,8 +1,17 @@
+import doctest
+
 import pytest
 
+import armory.matrix.range
 from armory.matrix.range import frange
 
 pytestmark = pytest.mark.unit
+
+
+def test_docstrings():
+    results = doctest.testmod(armory.matrix.range)
+    assert results.attempted > 0
+    assert results.failed == 0
 
 
 @pytest.mark.parametrize(

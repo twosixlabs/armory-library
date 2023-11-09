@@ -1,1 +1,1 @@
-from armory.matrix.matrix import create_matrix, matrix
+from armory.matrix.matrix_generation import create_matrix, matrix
