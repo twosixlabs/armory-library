@@ -21,6 +21,13 @@ def test_matrix():
     def multiply(x, y):
         return x * y
 
+    assert multiply.num_rows == 4
+    assert list(multiply.matrix) == [
+        {"x": 1, "y": 3},
+        {"x": 1, "y": 4},
+        {"x": 2, "y": 3},
+        {"x": 2, "y": 4},
+    ]
     assert multiply() == [3, 4, 6, 8]
 
 

@@ -68,6 +68,25 @@ for x in range(1, 3):
         print_xy(x=x, y=y)
 ```
 
+The resulting parameter matrix may be inspected via the `num_rows` and `matrix`
+properties of the decorated function.
+
+```python
+assert print_xy.num_rows == 4
+
+for row in print_xy.matrix:
+    print(row)
+```
+
+Will produce the following output:
+
+```
+{'x': 1, 'y': 1.5}
+{'x': 1, 'y': 6.5}
+{'x': 2, 'y': 1.5}
+{'x': 2, 'y': 6.5}
+```
+
 The parameter ranges specified with the `@matrix` decorator can be any type as
 long as it is iterable. When a non-iterable value is used, it is effectively a
 fixed value for all rows of the matrix. The following are all valid matrix

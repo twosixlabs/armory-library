@@ -132,6 +132,11 @@ class Matrix:
             prune=self.pruner,
         )(**self.kwargs)
 
+    @property
+    def num_rows(self):
+        """Count of all rows in the matrix."""
+        return sum(1 for _ in self.matrix)
+
     def __call__(self, *args, **kwargs):
         """
         Invokes the function once for each row of the matrix. Any given keyword
