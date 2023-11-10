@@ -33,7 +33,7 @@ class EvaluationEngine:
     """
 
     def __init__(
-        self, task: BaseEvaluationTask, run_id: Optional[str] = None, **kwargs
+        self, task: BaseEvaluationTask, mlflow_run_id: Optional[str] = None, **kwargs
     ):
         """
         Initializes the engine.
@@ -50,7 +50,7 @@ class EvaluationEngine:
             experiment_name=self.task.evaluation.name,
             tags={"mlflow.note.content": self.task.evaluation.description},
             tracking_uri=init_tracking_uri(self.task.evaluation.sysconfig.armory_home),
-            run_id=run_id,
+            run_id=mlflow_run_id,
         )
         self.trainer = pl.Trainer(
             inference_mode=False,
