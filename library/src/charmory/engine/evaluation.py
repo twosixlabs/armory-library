@@ -57,7 +57,7 @@ class EvaluationEngine:
             logger=self._logger,
             **kwargs,
         )
-        self.run_id = run_id
+        self.mlflow_run_id = mlflow_run_id
         self._was_run = False
 
     @rank_zero_only
