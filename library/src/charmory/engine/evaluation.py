@@ -63,7 +63,7 @@ class EvaluationEngine:
     @rank_zero_only
     def _log_params(self):
         """Log tracked params with MLflow"""
-        self.run_id = self._logger.run_id
+        self.mlflow_run_id = self._logger.run_id
         self._logger.log_hyperparams(get_current_params())
 
     def run(self) -> EvaluationResults:
@@ -76,8 +76,8 @@ class EvaluationEngine:
         self._was_run = True
 
         self._log_params()
-        assert self.run_id, "No run ID was created by the MLflow logger"
-        with track_system_metrics(self.run_id):
+        assert self.mlflow_run_id, "No run ID was created by the MLflow logger"
+        with track_system_metrics(self.mlflow_run_id):
             self.trainer.test(
                 self.task, dataloaders=self.task.evaluation.dataset.test_dataloader
             )
