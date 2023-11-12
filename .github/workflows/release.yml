@@ -2,12 +2,14 @@
 name: 🎁 Armory Release Workflow
 
 on:
+    workflow_dispatch:
+
     push:
         tags:
           - 'v[0-9]+.[0-9]+.[0-9]+'
 jobs:
   release-wheel:
-    name: 📦 Publish release wheel to PyPI
+    name: 📦 Publish release wheels to PyPI
     runs-on: ubuntu-latest
     steps:
       - name: Setup Python 3.10
@@ -26,10 +28,12 @@ jobs:
           pip install pip>=23
           pip install hatch
 
-      - name: Build library wheel
+      - name: Build wheels
         run: |
           cd library && hatch build --clean --target wheel
+          cd examples && hatch build --clean --target wheel
 
-      - name: Upload library wheel to PyPI
+      - name: Upload wheels to PyPI
         run: |
            cd library && hatch publish --user __token__ --auth ${{ secrets.PYPI_PUBLISH_TOKEN }}
+           cd examples && hatch publish --user __token__ --auth ${{ secrets.PYPI_PUBLISH_TOKEN }}

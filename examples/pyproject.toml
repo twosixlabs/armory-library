@@ -2,7 +2,7 @@
 requires-python = ">=3.8"
 
 name = "armory-examples"
-description = "Adversarial Robustness Library Examples"
+description = "TwoSix Armory Adversarial Robustness Library Examples"
 readme = "README.md"
 dynamic = ["version"]
 license = "MIT"
