@@ -59,7 +59,7 @@ def product(
 def create_matrix(
     worker_num: Optional[int] = None,
     num_workers: Optional[int] = None,
-    prune: Optional[Callable[..., bool]] = None,
+    filter: Optional[Callable[..., bool]] = None,
 ):
     """
     Creates a matrix of variable parameter values as a sequence of key-value
@@ -88,8 +88,8 @@ def create_matrix(
         num_workers: The count of all nodes, used to determine the size of the
             partition of the matrix to return. If specified, `worker_num` must
             also be provided.
-        prune: A callable to determine whether a row of the matrix should be
-            pruned. If the callable returns `True` for a given set of
+        filter: A callable to determine whether a row of the matrix should be
+            omitted. If the callable returns `True` for a given set of
             parameters, that parameter set, or row, will be omitted from the
             returned matrix.
 
@@ -113,8 +113,8 @@ def create_matrix(
     def _generate(**kwargs) -> Iterable[Mapping[str, Any]]:
         count = 0
         for params in product({}, list(kwargs.items())):
-            # Skip over entries that are pruned
-            if prune is not None and prune(**params):
+            # Skip over entries that are filtered out
+            if filter is not None and filter(**params):
                 continue
             # Skip over entries when partioning
             if (count % num_workers) == worker_num:
@@ -142,7 +142,7 @@ class Matrix(Generic[P, T]):
         self.kwargs = kwargs
         self.worker_num: Optional[int] = None
         self.num_workers: Optional[int] = None
-        self.pruner: Optional[Callable[P, bool]] = None
+        self._filter: Optional[Callable[P, bool]] = None
 
     @property
     def matrix(self):
@@ -150,7 +150,7 @@ class Matrix(Generic[P, T]):
         return create_matrix(
             worker_num=self.worker_num,
             num_workers=self.num_workers,
-            prune=self.pruner,
+            filter=self._filter,
         )(**self.kwargs)
 
     @property
@@ -197,9 +197,9 @@ class Matrix(Generic[P, T]):
         self.num_workers = num_workers
         return self
 
-    def prune(self, pruner: Optional[Callable[P, bool]]):
-        """Specifies the pruner callable to be used when generating the matrix."""
-        self.pruner = pruner
+    def filter(self, filter: Optional[Callable[P, bool]]):
+        """Specifies the filter callable to be used when generating the matrix."""
+        self._filter = filter
         return self
 
     def parallel(self, max_workers):
@@ -262,11 +262,11 @@ def matrix(**kwargs):
         >>> perform(2, b=3)
         [3, 5, 7, 9, 11]
 
-        >>> # to filter by pruning...
-        >>> perform.prune(lambda x: x % 2 == 1)(2, b=3)
+        >>> # to filter...
+        >>> perform.filter(lambda x: x % 2 == 1)(2, b=3)
         [3, 7, 11]
-        >>> # Use None to clear pruning
-        >>> perform.prune(None)(2, b=3)
+        >>> # Use None to clear filter
+        >>> perform.filter(None)(2, b=3)
         [3, 5, 7, 9, 11]
 
         >>> # to partition

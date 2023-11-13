@@ -109,10 +109,10 @@ def test_pruning():
     def concat(x, y, z):
         return f"{x}{y}{z}"
 
-    assert concat.prune(lambda x, y, z: x == "a" and z == "e")() == [
-        # "ace", # pruned
+    assert concat.filter(lambda x, y, z: x == "a" and z == "e")() == [
+        # "ace", # filtered
         "acf",
-        # "ade", # pruned
+        # "ade", # filtered
         "adf",
         "bce",
         "bcf",
@@ -210,9 +210,9 @@ def test_parallel_with_pruning():
     def concat(x, y):
         return f"{x}{y}"
 
-    assert set(concat.prune(lambda x, y: x == "a" and y == "d").parallel(3)()) == {
+    assert set(concat.filter(lambda x, y: x == "a" and y == "d").parallel(3)()) == {
         "ac",
-        # "ad", # pruned
+        # "ad", # filtered
         "bc",
         "bd",
     }

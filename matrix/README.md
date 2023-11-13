@@ -244,6 +244,26 @@ def foo(a, b):
 If we omitted the `**kwargs` from `gen`, we would encounter an "unexpected
 keyword argument" error.
 
+## Filtering
+
+Rows may be omitted from execution by providing a filter callable:
+
+```python
+assert print_xy.num_rows == 4
+print_xy.filter(lambda x, y: x == 1 and y == 1.6)
+assert print_xy.num_rows == 3
+print_xy()
+```
+
+Any row for which the filter callable returns `True` will be omitted from the
+matrix.
+
+```
+x=1, y=1.5
+x=2, y=1.5
+x=2, y=6.5
+```
+
 ## Partitioning
 
 For distributed runs (e.g., as a job submitted to a SLURM cluster), one may
