@@ -57,8 +57,8 @@ def product(
 
 
 def create_matrix(
-    worker_num: Optional[int] = None,
-    num_workers: Optional[int] = None,
+    partition_num: Optional[int] = None,
+    num_partitions: Optional[int] = None,
     filter: Optional[Callable[..., bool]] = None,
 ):
     """
@@ -82,12 +82,10 @@ def create_matrix(
         [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 5}, {'a': 2, 'b': 6}]
 
     Args:
-        worker_num: The index of this node among all nodes, used to determine
-            which partition of the matrix to return. If specified, `num_workers`
-            must also be provided.
-        num_workers: The count of all nodes, used to determine the size of the
-            partition of the matrix to return. If specified, `worker_num` must
-            also be provided.
+        partition_num: The index of the partition to be executed. If specified,
+            `num_partitions` must also be provided.
+        num_partitions: The total number of partitions. If specified,
+            `partition_num` must also be provided.
         filter: A callable to determine whether a row of the matrix should be
             omitted. If the callable returns `True` for a given set of
             parameters, that parameter set, or row, will be omitted from the
@@ -106,9 +104,9 @@ def create_matrix(
         to generate additional rows in the matrix.
     """
 
-    if worker_num is None or num_workers is None:
-        worker_num = 0
-        num_workers = 1
+    if partition_num is None or num_partitions is None:
+        partition_num = 0
+        num_partitions = 1
 
     def _generate(**kwargs) -> Iterable[Mapping[str, Any]]:
         count = 0
@@ -117,7 +115,7 @@ def create_matrix(
             if filter is not None and filter(**params):
                 continue
             # Skip over entries when partioning
-            if (count % num_workers) == worker_num:
+            if (count % num_partitions) == partition_num:
                 yield params
             count += 1
 
@@ -140,16 +138,16 @@ class Matrix(Generic[P, T]):
     def __init__(self, func: Callable[P, T], **kwargs):
         self.func = func
         self.kwargs = kwargs
-        self.worker_num: Optional[int] = None
-        self.num_workers: Optional[int] = None
+        self.partition_num: Optional[int] = None
+        self.num_partitions: Optional[int] = None
         self._filter: Optional[Callable[P, bool]] = None
 
     @property
     def matrix(self):
         """The generated matrix of arguments"""
         return create_matrix(
-            worker_num=self.worker_num,
-            num_workers=self.num_workers,
+            partition_num=self.partition_num,
+            num_partitions=self.num_partitions,
             filter=self._filter,
         )(**self.kwargs)
 
@@ -188,13 +186,13 @@ class Matrix(Generic[P, T]):
         self.kwargs.update(kwargs)
         return self
 
-    def partition(self, worker_num: Optional[int], num_workers: Optional[int]):
+    def partition(self, partition_num: Optional[int], num_partitions: Optional[int]):
         """
-        Specifies the worker index and count used to partition the matrix for
-        parallel-worker applications.
+        Specifies the partition index and count used to partition the matrix for
+        distributed, parallel-worker applications.
         """
-        self.worker_num = worker_num
-        self.num_workers = num_workers
+        self.partition_num = partition_num
+        self.num_partitions = num_partitions
         return self
 
     def filter(self, filter: Optional[Callable[P, bool]]):
