@@ -68,6 +68,8 @@ for x in range(1, 3):
         print_xy(x=x, y=y)
 ```
 
+## Parameter inspection
+
 The resulting parameter matrix may be inspected via the `num_rows` and `matrix`
 properties of the decorated function.
 
@@ -86,6 +88,8 @@ Will produce the following output:
 {'x': 2, 'y': 1.5}
 {'x': 2, 'y': 6.5}
 ```
+
+## Parameter range specification
 
 The parameter ranges specified with the `@matrix` decorator can be any type as
 long as it is iterable. When a non-iterable value is used, it is effectively a
@@ -110,6 +114,48 @@ def foo(a, b, c, d):
 
 See the note below in [Dynamic parameters](#generator-functions) regarding use of
 generator functions.
+
+## Return values
+
+The return value from calling the decorated function will be a sequence of all
+the return values for each invocation of the function with parameters from rows
+of the matrix. If the function raises an exception, the caught exception will be
+the return value for that call.
+
+```python
+@matrix(a=range(1, 3), b=range(3))
+def division(a, b):
+    return a / b
+
+print(division())
+```
+
+Will produce the following output:
+
+```
+[
+    ZeroDivisionError('division by zero'), # 1 / 0
+    1.0,                                   # 1 / 1
+    0.5,                                   # 1 / 2
+    ZeroDivisionError('division by zero'), # 2 / 0
+    2.0,                                   # 2 / 1
+    1.0,                                   # 2 / 2
+]
+```
+
+## Partial parameter specification
+
+It is also possible to only specify a subset of a function's arguments as matrix
+parameters. Any arguments not defined with the `@matrix` decorator must be
+specified when the function is invoked.
+
+```python
+@matrix(x=range(1, 4))
+def quadratic(a, x, b):
+    return (a * x) + b
+
+assert quadratic(a=2, b=10) == [12, 14, 16]
+```
 
 ## Post-definition overrides
 
@@ -221,8 +267,8 @@ x=2, y=6.5
 
 ## Parallelization
 
-Function invocations may be parallelized using a thread pool by specifying the
-max number of workers in the pool:
+Function invocations may be parallelized within the Python process by using a
+thread pool and specifying the max number of workers in the pool:
 
 ```python
 print_xy.parallel(2)
