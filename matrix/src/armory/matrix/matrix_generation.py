@@ -200,7 +200,7 @@ class Matrix(Generic[P, T]):
         self._filter = filter
         return self
 
-    def parallel(self, max_workers):
+    def parallel(self, max_workers, timeout: Optional[float] = None):
         """
         Creates a thread pool in which to perform the invoked function for each
         row of the matrix.
@@ -214,7 +214,9 @@ class Matrix(Generic[P, T]):
             perform.parallel(2)()  # Will use up to 2 threads
 
         Args:
-            Maximum number of workers to use in the thread pool
+            max_workers: Maximum number of workers to use in the thread pool
+            timeout: Maximum number of seconds to wait. If None, then there is
+                no limit on the wait time.
 
         Returns:
             A function that will accept additional arguments to be forwarded to
@@ -233,7 +235,7 @@ class Matrix(Generic[P, T]):
                 futures.append(executor.submit(self.func, *it_args, **it_kwargs))
 
             results = []
-            for future in concurrent.futures.as_completed(futures):
+            for future in concurrent.futures.as_completed(futures, timeout):
                 try:
                     results.append(future.result())
                 except Exception as err:
