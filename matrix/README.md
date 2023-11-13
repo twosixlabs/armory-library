@@ -162,8 +162,7 @@ assert quadratic(a=2, b=10) == [12, 14, 16]
 Parameters may be overridden after definition:
 
 ```python
-print_xy.override(x=[7])
-print_xy()
+print_xy.override(x=[7])()
 ```
 
 ```
@@ -250,9 +249,9 @@ Rows may be omitted from execution by providing a filter callable:
 
 ```python
 assert print_xy.num_rows == 4
-print_xy.filter(lambda x, y: x == 1 and y == 1.6)
-assert print_xy.num_rows == 3
-print_xy()
+filtered_print_xy = print_xy.filter(lambda x, y: x == 1 and y == 1.6)
+assert filtered_print_xy.num_rows == 3
+filtered_print_xy()
 ```
 
 Any row for which the filter callable returns `True` will be omitted from the
@@ -270,11 +269,9 @@ For distributed runs (e.g., as a job submitted to a SLURM cluster), one may
 specify a partition of the matrix to be run:
 
 ```python
-print_xy.partition(0, 2)  # invoke partition 1 of 2
-print_xy()
+print_xy.partition(0, 2)()  # invoke partition 1 of 2
 print("---")
-print_xy.partition(1, 2)  # invoke partition 2 of 2
-print_xy()
+print_xy.partition(1, 2)()  # invoke partition 2 of 2
 ```
 
 ```
@@ -291,6 +288,5 @@ Function invocations may be parallelized within the Python process by using a
 thread pool and specifying the max number of workers in the pool:
 
 ```python
-print_xy.parallel(2)
-print_xy()
+print_xy.parallel(2)()
 ```

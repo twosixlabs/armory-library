@@ -135,12 +135,19 @@ class Matrix(Generic[P, T]):
     the `matrix` decorator.
     """
 
-    def __init__(self, func: Callable[P, T], **kwargs):
+    def __init__(
+        self,
+        func: Callable[P, T],
+        kwargs: Dict,
+        partition_num: Optional[int] = None,
+        num_partitions: Optional[int] = None,
+        filter: Optional[Callable[P, bool]] = None,
+    ):
         self.func = func
         self.kwargs = kwargs
-        self.partition_num: Optional[int] = None
-        self.num_partitions: Optional[int] = None
-        self._filter: Optional[Callable[P, bool]] = None
+        self.partition_num = partition_num
+        self.num_partitions = num_partitions
+        self._filter = filter
 
     @property
     def matrix(self):
@@ -183,22 +190,38 @@ class Matrix(Generic[P, T]):
 
     def override(self, **kwargs):
         """Overrides the input parameter constraints for the matrix."""
-        self.kwargs.update(kwargs)
-        return self
+        new_kwargs = deepcopy(self.kwargs)
+        new_kwargs.update(kwargs)
+        return Matrix(
+            self.func,
+            kwargs=new_kwargs,
+            partition_num=self.partition_num,
+            num_partitions=self.num_partitions,
+            filter=self._filter,
+        )
 
     def partition(self, partition_num: Optional[int], num_partitions: Optional[int]):
         """
         Specifies the partition index and count used to partition the matrix for
         distributed, parallel-worker applications.
         """
-        self.partition_num = partition_num
-        self.num_partitions = num_partitions
-        return self
+        return Matrix(
+            self.func,
+            kwargs=deepcopy(self.kwargs),
+            partition_num=partition_num,
+            num_partitions=num_partitions,
+            filter=self._filter,
+        )
 
     def filter(self, filter: Optional[Callable[P, bool]]):
         """Specifies the filter callable to be used when generating the matrix."""
-        self._filter = filter
-        return self
+        return Matrix(
+            self.func,
+            kwargs=deepcopy(self.kwargs),
+            partition_num=self.partition_num,
+            num_partitions=self.num_partitions,
+            filter=filter,
+        )
 
     def parallel(self, max_workers, timeout: Optional[float] = None):
         """
@@ -265,18 +288,12 @@ def matrix(**kwargs):
         >>> # to filter...
         >>> perform.filter(lambda x: x % 2 == 1)(2, b=3)
         [3, 7, 11]
-        >>> # Use None to clear filter
-        >>> perform.filter(None)(2, b=3)
-        [3, 5, 7, 9, 11]
 
         >>> # to partition
         >>> perform.partition(0, 2)(2, b=3)
         [3, 7, 11]
         >>> perform.partition(1, 2)(2, b=3)
         [5, 9]
-        >>> # Use None to clear partition
-        >>> perform.partition(None, None)(2, b=3)
-        [3, 5, 7, 9, 11]
 
         >>> # to override arguments
         >>> perform.override(x=range(3, 7))(2, b=3)
@@ -292,6 +309,6 @@ def matrix(**kwargs):
     """
 
     def decorator(func: Callable[..., T]):
-        return Matrix(func, **kwargs)
+        return Matrix(func, kwargs=kwargs)
 
     return decorator
