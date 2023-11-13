@@ -2,7 +2,24 @@
 
 import concurrent.futures
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
+
+# This was only added to the builtin `typing` in Python 3.10,
+# so we have to use `typing_extensions` for 3.8 support
+from typing_extensions import ParamSpec
 
 
 def product(
@@ -107,7 +124,11 @@ def create_matrix(
     return _generate
 
 
-class Matrix:
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+class Matrix(Generic[P, T]):
     """
     A function to be invoked multiple times with parameters from rows of a
     cartesian product matrix of all possible parameters.
@@ -116,12 +137,12 @@ class Matrix:
     the `matrix` decorator.
     """
 
-    def __init__(self, func: Callable, **kwargs):
+    def __init__(self, func: Callable[P, T], **kwargs):
         self.func = func
         self.kwargs = kwargs
         self.worker_num: Optional[int] = None
         self.num_workers: Optional[int] = None
-        self.pruner: Optional[Callable[..., bool]] = None
+        self.pruner: Optional[Callable[P, bool]] = None
 
     @property
     def matrix(self):
@@ -137,7 +158,7 @@ class Matrix:
         """Count of all rows in the matrix."""
         return sum(1 for _ in self.matrix)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> Sequence[Union[T, Exception]]:
         """
         Invokes the function once for each row of the matrix. Any given keyword
         arguments are merged with the keyword arguments from the matrix row.
@@ -151,7 +172,7 @@ class Matrix:
         Returns:
             List of return values from each function invocation
         """
-        results = []
+        results: List[Union[T, Exception]] = []
         for it in self.matrix:
             it_args = deepcopy(args)
             it_kwargs = deepcopy(kwargs)
@@ -176,7 +197,7 @@ class Matrix:
         self.num_workers = num_workers
         return self
 
-    def prune(self, pruner: Optional[Callable[..., bool]]):
+    def prune(self, pruner: Optional[Callable[P, bool]]):
         """Specifies the pruner callable to be used when generating the matrix."""
         self.pruner = pruner
         return self
@@ -270,7 +291,7 @@ def matrix(**kwargs):
         Function decorator to wrap a given function in a callable `Matrix` object.
     """
 
-    def decorator(func):
+    def decorator(func: Callable[..., T]):
         return Matrix(func, **kwargs)
 
     return decorator

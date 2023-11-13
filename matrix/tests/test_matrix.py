@@ -44,6 +44,7 @@ def test_fixed_arguments():
     def quadratic(a, x, b):
         return (a * x) + b
 
+    assert all([isinstance(x, TypeError) for x in quadratic()])
     assert quadratic(2, b=10) == [12, 14, 16]
 
 
