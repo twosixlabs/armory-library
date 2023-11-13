@@ -30,10 +30,14 @@ jobs:
 
       - name: Build wheels
         run: |
+          hatch build --clean --target wheel                 # armory-suite
           cd library && hatch build --clean --target wheel
-          cd examples && hatch build --clean --target wheel
+          cd ../examples && hatch build --clean --target wheel
 
+      # there is no point in using the pypi-publish action, since we need to publish
+      # multiple wheels  and this is just too easy as it is
       - name: Upload wheels to PyPI
         run: |
+           hatch publish --user __token__ --auth ${{ secrets.PYPI_PUBLISH_TOKEN }} # armory-suite
            cd library && hatch publish --user __token__ --auth ${{ secrets.PYPI_PUBLISH_TOKEN }}
-           cd examples && hatch publish --user __token__ --auth ${{ secrets.PYPI_PUBLISH_TOKEN }}
+           cd ../examples && hatch publish --user __token__ --auth ${{ secrets.PYPI_PUBLISH_TOKEN }}
