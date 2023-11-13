@@ -151,10 +151,16 @@ class PILtoNumpy(object):
     Example::
 
         training_data = torchvision.datasets.Food101(
-        root="some/root/location",
-        split = "train",
-        download=True,
-        transform=torchvision.transforms.Compose([torchvision.transforms.Resize(512,512), PILtoNumpy()])
+            root="some/root/location",
+            split = "train",
+            download=True,
+            transform=torchvision.transforms.Compose(
+                [
+                    torchvision.transforms.Resize(512,512),
+                    PILtoNumpy(),
+                ]
+            )
+        )
 
     Args:
         the __call__ method takes a sample of type PIL.Image.Image

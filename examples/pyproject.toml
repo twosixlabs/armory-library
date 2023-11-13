@@ -2,7 +2,7 @@
 requires-python = ">=3.8"
 
 name = "armory-examples"
-description = "Adversarial Robustness Library Examples"
+description = "TwoSix Armory Adversarial Robustness Library Examples"
 readme = "README.md"
 dynamic = ["version"]
 license = "MIT"
@@ -26,9 +26,12 @@ huggingface = [
     "transformers",
 ]
 
-jatic = [
-    "jatic_toolbox @ git+ssh://git@gitlab.jatic.net/jatic/cdao/jatic-toolbox.git@v0.2.0rc1",
-]
+# pypi will not accept this dependency because it is not a public repo therefore I'm
+# just pulling it for at least the time needed to publish armory-examples thus aquiring
+# the package name
+#
+# jatic = [ "jatic_toolbox @
+#     git+ssh://git@gitlab.jatic.net/jatic/cdao/jatic-toolbox.git@v0.2.0rc1", ]
 
 yolo = [
     "yolov5",

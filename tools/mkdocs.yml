@@ -10,6 +10,8 @@ site_dir: ../public/
 repo_url: https://gitlab.jatic.net/jatic/twosix/armory/
 edit_uri: blob/master/documentation/
 
+use_directory_urls: false
+
 theme:
     name: material
     locale: en
@@ -19,9 +21,33 @@ plugins:
   - exclude:
       glob:
         - original/*
+  - mkdocstrings:
+      handlers:
+          python:
+              paths: [../library/src]
+              options:
+                  show_source: false
+                  show_submodules: true
+                  show_root_heading: true
+                  show_root_full_path: true
+                  show_category_heading: true
+                  signature_crossrefs: true
 
 nav:
   - Home: index.md
   - Getting Started: getting_started.md
   - Developers Guide: developers/README.md
   - Exporting Data: exporting_data.md
+  - API Reference:
+    - Ingestion and Adaptation:
+      - Datasets: reference/data.md
+      - Transforms: reference/transforms.md
+      - Models: reference/model.md
+    - Evaluation:
+      - Configuration: reference/evaluation.md
+      - Label Targeters: reference/labels.md
+      - Profilers: reference/profiler.md
+    - Tasks: reference/task.md
+    - Engines: reference/engine.md
+    - Tracking: reference/track.md
+    - Utilities: reference/utils.md

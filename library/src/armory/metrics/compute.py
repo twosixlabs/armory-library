@@ -1,5 +1,5 @@
 """
-Computational metrics
+Profilers to collect computational metrics
 """
 
 import cProfile
@@ -23,9 +23,7 @@ class Profiler(Protocol):
 
 
 class NullProfiler:
-    """
-    Measures computational resource use
-    """
+    """Profiler that does nothing (no-op)"""
 
     def __init__(self):
         self.measurement_dict = {}
@@ -39,6 +37,8 @@ class NullProfiler:
 
 
 class BasicProfiler(NullProfiler):
+    """Profiler using `time.perf_counter`"""
+
     @contextlib.contextmanager
     def measure(self, name):
         startTime = time.perf_counter()
@@ -72,6 +72,8 @@ class BasicProfiler(NullProfiler):
 
 
 class DeterministicProfiler(NullProfiler):
+    """Profiler using cProfile for deterministic profiling"""
+
     def __init__(self):
         super().__init__()
         log.warning(

@@ -16,9 +16,32 @@ to values.
 
 
 class ArmoryDataset(Dataset):
-    """Wrapper around a dataset to apply an adapter to all samples obtained from the dataset"""
+    """
+    Wrapper around a PyTorch dataset to apply an adapter to all samples obtained
+    from the dataset.
+
+    Example::
+
+        from charmory.data import ArmoryDataset
+
+        def rename_fields(sample):
+            # Rename the 'data' field in the sample to 'image'
+            sample["image"] = sample.pop("data")
+            return sample
+
+        # assuming `dataset` has been defined elsewhere
+        renamed_dataset = ArmoryDataset(dataset, rename_fields)
+    """
 
     def __init__(self, dataset, adapter: DatasetOutputAdapter):
+        """
+        Initializes the dataset.
+
+        Args:
+            dataset: Source dataset to be wrapped. It must be subscriptable and
+                support the `len` operator.
+            adapter: Dataset sample adapter
+        """
         self._dataset = dataset
         self._adapter = adapter
 
@@ -30,7 +53,22 @@ class ArmoryDataset(Dataset):
 
 
 class TupleDataset(ArmoryDataset):
-    """Dataset wrapper with a pre-applied adapter to adapt tuples to map-like samples"""
+    """
+    Dataset wrapper with a pre-applied adapter to adapt tuples to map-like
+    samples.
+
+    Example::
+
+        from charmory.data import TupleDataset
+
+        # assuming `dataset` has been defined elsewhere
+        print(dataset[0])
+        # output: [[0, 0, 0], [0, 0, 0]], [5]
+
+        tuple_ds = TupleDataset(dataset, x_key="image", y_key="label")
+        print(tuple_ds[0])
+        # output: {'image': [[0, 0, 0], [0, 0, 0]], 'label': [5]}
+    """
 
     def __init__(
         self,
@@ -38,6 +76,15 @@ class TupleDataset(ArmoryDataset):
         x_key: str,
         y_key: str,
     ):
+        """
+        Initializes the dataset.
+
+        Args:
+            dataset: Source dataset where samples are a two-entry tuple of data,
+                or x, and target, or y.
+            x_key: Key name to use for x data in the adapted sample dictionary
+            y_key: Key name to use for y data in the adapted sample dictionary
+        """
         super().__init__(dataset, self._adapt)
         self._x_key = x_key
         self._y_key = y_key

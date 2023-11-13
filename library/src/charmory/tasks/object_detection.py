@@ -84,6 +84,23 @@ class ObjectDetectionTask(BaseEvaluationTask):
         score_threshold: Optional[float] = None,
         **kwargs,
     ):
+        """
+        Initializes the task.
+
+        Args:
+            *args: All positional arguments will be forwarded to the
+                `charmory.tasks.base.BaseEvaluationTask` class
+            class_metrics: Whether to track mAP metrics per class
+            export_score_threshold: Minimum prediction score for a detection
+                bounding box to be drawn on the exported sample
+            iou_threshold: Maximum intersection-over-union value for
+                non-maximum suppression filtering of detection bounding boxes
+            score_threshold: Minimum prediction score. All predictions with a
+                score lower than this threshold will be ignored and not
+                included in any evalutation metric
+            **kwargs: All other keyword arguments will be forwarded to the
+                `charmory.tasks.base.BaseEvaluationTask` class
+        """
         super().__init__(*args, **kwargs)
         self.benign_map = MAP(prefix="benign", class_metrics=class_metrics)
         self.attack_map = MAP(prefix="attack", class_metrics=class_metrics)

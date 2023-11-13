@@ -8,13 +8,34 @@ from charmory.model.base import ArmoryModel, ModelInputAdapter
 
 
 class JaticObjectDetectionModel(ArmoryModel):
-    """Model wrapper with pre-applied output adapter for JATIC object detection models"""
+    """
+    Model wrapper with pre-applied output adapter for JATIC object detection
+    models.
+
+    Example::
+        import jatic_toolbox
+        from charmory.model.object_detection import JaticObjectDetectionModel
+
+        model = jatic_toolbox.load_model(
+            provider=PROVIDER,
+            model_name=MODEL_NAME,
+            task="object-detection",
+        )
+        model = JaticObjectDetectionModel(model)
+    """
 
     def __init__(
         self,
         model: "jatic_toolbox.protocols.ObjectDetector",
         preadapter: Optional[ModelInputAdapter] = None,
     ):
+        """
+        Initializes the model wrapper.
+
+        Args:
+            model: model being wrapped
+            preadapter: Optional, model input adapter
+        """
         super().__init__(model, preadapter=preadapter, postadapter=self._adapt)
 
     def _adapt(self, output):

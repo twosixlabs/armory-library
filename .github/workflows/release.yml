@@ -2,6 +2,8 @@
 name: 🎁 Armory Release Workflow
 
 on:
+    workflow_dispatch:
+
     push:
         tags:
           - 'v[0-9]+.[0-9]+.[0-9]+'
@@ -15,6 +17,7 @@ jobs:
         package:
           - library
           - matrix
+          - examples
     steps:
       - name: Setup Python 3.10
         uses: actions/setup-python@v4

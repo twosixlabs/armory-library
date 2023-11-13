@@ -25,6 +25,14 @@ class BboxFormat(Enum):
     """
     Supported bounding box formats. Enum members are included for both the
     torchvision and the albumentations names for ease of use.
+
+    Attributes:
+        XYWH: Bounding box format is (xmin, ymin, width, height)
+        COCO: Bounding box format is (xmin, ymin, width, height)
+        XYXY: Bounding box format is (xmin, ymin, xmax, ymax)
+        PASCAL_VOC: Bounding box format is (xmin, ymin, xmax, ymax)
+        CXCYWH: Bounding box format is (center x, center y, width, height)
+        YOLO: Bounding box format is (center x, center y, width, height)
     """
 
     # (xmin, ymin, width, height)
@@ -58,9 +66,10 @@ def create_image_transform(
 ) -> A.Compose:
     """
     Creates an image transform capable of performing the following operations:
-        - Resizing & padding (if a `max_size` is provided)
-        - Rescaling values from 0-255 to 0-1 (if a `float_max_value` is provided)
-        - Normalization into z-scores (if both `mean` and `std` are provided)
+
+    - Resizing & padding (if a `max_size` is provided)
+    - Rescaling values from 0-255 to 0-1 (if a `float_max_value` is provided)
+    - Normalization into z-scores (if both `mean` and `std` are provided)
 
     Example::
 
@@ -206,8 +215,9 @@ def create_image_classification_transform(
 ) -> Transform:
     """
     Creates a sample or batch transform capable of performing the following operations:
-        - Image transformations
-        - Arbitrary (user-supplied) pre and post transforms
+
+    - Image transformations
+    - Arbitrary (user-supplied) pre and post transforms
 
     See `create_image_transform` for additional arguments.
 
@@ -225,6 +235,22 @@ def create_image_classification_transform(
         )
         image = sample["image"][0]  # A CHW numpy array
         label = sample["labels"][0]
+
+    Args:
+        image_to_np: Callable to convert the input image to a numpy array
+        image_from_np: Callable to convert the augmented image numpy array (from
+            albumentations) to the output image type
+        image_key: Key in the input batch dictionary for the images. Defaults to
+            "image".
+        preprocessor: Optional, arbitrary transform to apply to the sample prior
+            to performing image transforms.
+        postprocessor: Optional, arbitrary transform to apply to final output
+            sample.
+        **kwargs: All other keyword arguments will be forwarded to the
+            `create_image_transform` function.
+
+    Returns:
+        Sample transform function
     """
     img_transform = create_image_transform(**kwargs)
 
@@ -262,10 +288,11 @@ def create_object_detection_transform(
 ) -> Transform:
     """
     Creates a sample or batch transform capable of performing the following operations:
-        - Image and bounding box transformations
-        - Bounding box format conversion
-        - Bounding box field renames
-        - Arbitrary (user-supplied) pre and post transforms
+
+    - Image and bounding box transformations
+    - Bounding box format conversion
+    - Bounding box field renames
+    - Arbitrary (user-supplied) pre and post transforms
 
     See `create_image_bbox_transform` for additional arguments.
 
@@ -317,6 +344,9 @@ def create_object_detection_transform(
             sample.
         **kwargs: All other keyword arguments will be forwarded to the
             `create_image_bbox_transform` function.
+
+    Returns:
+        Sample transform function
     """
     img_bbox_transform = create_image_bbox_transform(format=format, **kwargs)
 
