@@ -69,42 +69,52 @@ def test_override():
 
 
 @pytest.mark.parametrize(
-    "worker_num,num_workers,expected",
+    "start,stop,step,expected",
     [
-        (None, None, ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]),
-        (0, 1, ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]),
-        (1, 1, []),
-        (0, 2, ["ad", "af", "be", "cd", "cf"]),
-        (1, 2, ["ae", "bd", "bf", "ce"]),
-        (0, 3, ["ad", "bd", "cd"]),
-        (1, 3, ["ae", "be", "ce"]),
-        (2, 3, ["af", "bf", "cf"]),
-        (0, 4, ["ad", "be", "cf"]),
-        (1, 4, ["ae", "bf"]),
-        (2, 4, ["af", "cd"]),
-        (3, 4, ["bd", "ce"]),
-        (0, 5, ["ad", "bf"]),
-        (1, 5, ["ae", "cd"]),
-        (2, 5, ["af", "ce"]),
-        (3, 5, ["bd", "cf"]),
-        (4, 5, ["be"]),
-        (0, 6, ["ad", "cd"]),
-        (1, 6, ["ae", "ce"]),
-        (2, 6, ["af", "cf"]),
-        (3, 6, ["bd"]),
-        (4, 6, ["be"]),
-        (5, 6, ["bf"]),
+        # Steps
+        (None, None, None, ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]),
+        (0, None, 1, ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]),
+        (0, None, 2, ["ad", "af", "be", "cd", "cf"]),
+        (1, None, 2, ["ae", "bd", "bf", "ce"]),
+        (0, None, 3, ["ad", "bd", "cd"]),
+        (1, None, 3, ["ae", "be", "ce"]),
+        (2, None, 3, ["af", "bf", "cf"]),
+        (0, None, 4, ["ad", "be", "cf"]),
+        (1, None, 4, ["ae", "bf"]),
+        (2, None, 4, ["af", "cd"]),
+        (3, None, 4, ["bd", "ce"]),
+        (0, None, 5, ["ad", "bf"]),
+        (1, None, 5, ["ae", "cd"]),
+        (2, None, 5, ["af", "ce"]),
+        (3, None, 5, ["bd", "cf"]),
+        (4, None, 5, ["be"]),
+        (0, None, 6, ["ad", "cd"]),
+        (1, None, 6, ["ae", "ce"]),
+        (2, None, 6, ["af", "cf"]),
+        (3, None, 6, ["bd"]),
+        (4, None, 6, ["be"]),
+        (5, None, 6, ["bf"]),
+        # None-zero start
+        (4, None, 2, ["be", "cd", "cf"]),
+        (5, None, 2, ["bf", "ce"]),
+        # Stops
+        (0, 6, 2, ["ad", "af", "be"]),
+        (1, 6, 2, ["ae", "bd", "bf"]),
+        # Start and stop
+        (2, 6, 2, ["af", "be"]),
+        (3, 6, 2, ["bd", "bf"]),
+        (2, 6, None, ["af", "bd", "be", "bf"]),
     ],
 )
-def test_partition(worker_num, num_workers, expected):
+def test_slice(start, stop, step, expected):
     @matrix(x="abc", y="def")
     def concat(x, y):
         return f"{x}{y}"
 
-    assert concat.partition(worker_num, num_workers)() == expected
+    assert concat[start:stop:step]() == expected
 
 
-def test_pruning():
+def test_filtering():
     @matrix(x="ab", y="cd", z="ef")
     def concat(x, y, z):
         return f"{x}{y}{z}"
@@ -205,7 +215,7 @@ def test_parallel_with_override():
     assert set(multiply.override(x=5).parallel(2)()) == {15, 20}
 
 
-def test_parallel_with_pruning():
+def test_parallel_with_filtering():
     @matrix(x="ab", y="cd")
     def concat(x, y):
         return f"{x}{y}"
@@ -223,4 +233,4 @@ def test_parallel_with_partition():
     def concat(x, y):
         return f"{x}{y}"
 
-    assert set(concat.partition(1, 3).parallel(2)()) == {"ae", "be", "ce"}
+    assert set(concat[1::3].parallel(2)()) == {"ae", "be", "ce"}

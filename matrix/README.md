@@ -269,9 +269,9 @@ For distributed runs (e.g., as a job submitted to a SLURM cluster), one may
 specify a partition of the matrix to be run:
 
 ```python
-print_xy.partition(0, 2)()  # invoke partition 1 of 2
+print_xy[0::2]()  # invoke partition 1 of 2
 print("---")
-print_xy.partition(1, 2)()  # invoke partition 2 of 2
+print_xy[1::2]()  # invoke partition 2 of 2
 ```
 
 ```
@@ -280,6 +280,14 @@ x=1, y=6.5
 ---
 x=2, y=1.5
 x=2, y=6.5
+```
+
+Typical Python slice operations apply, including use of a stop index. Note
+however, that negative start or stop values are not supported.
+
+```python
+print_xy[10]() # Skip the first 10 rows
+print_xy[5:10]() # Execute rows 5 through 9
 ```
 
 ## Parallelization

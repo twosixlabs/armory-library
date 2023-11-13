@@ -56,9 +56,19 @@ def product(
                 yield params
 
 
+def is_in_partition(index: int, partition: slice) -> bool:
+    """Checks if the given row index is included in the partition, or slice"""
+    if partition.start is not None and index < partition.start:
+        return False
+    if partition.stop is not None and index >= partition.stop:
+        return False
+    if partition.step is not None:
+        return (index % partition.step) == (partition.start % partition.step)
+    return True
+
+
 def create_matrix(
-    partition_num: Optional[int] = None,
-    num_partitions: Optional[int] = None,
+    partition: Optional[slice] = None,
     filter: Optional[Callable[..., bool]] = None,
 ):
     """
@@ -74,18 +84,15 @@ def create_matrix(
         >>> from armory.matrix import create_matrix
         >>> list(create_matrix()(a=[1, 2], b=[3, 4]))
         [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 3}, {'a': 2, 'b': 4}]
-        >>> list(create_matrix(1, 2)(a=[1, 2], b=[3, 4]))
+        >>> list(create_matrix(slice(1, None, 2))(a=[1, 2], b=[3, 4]))
         [{'a': 1, 'b': 4}, {'a': 2, 'b': 4}]
-        >>> list(create_matrix(None, None, lambda a, b: a==2 and b==4)(a=[1, 2], b=[3, 4]))
+        >>> list(create_matrix(None, lambda a, b: a==2 and b==4)(a=[1, 2], b=[3, 4]))
         [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 3}]
         >>> list(create_matrix()(a=[1, 2], b=lambda a: (3, 4) if a == 1 else (5, 6)))
         [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 5}, {'a': 2, 'b': 6}]
 
     Args:
-        partition_num: The index of the partition to be executed. If specified,
-            `num_partitions` must also be provided.
-        num_partitions: The total number of partitions. If specified,
-            `partition_num` must also be provided.
+        partition: Partition, or slice, of the matrix rows to be executed.
         filter: A callable to determine whether a row of the matrix should be
             omitted. If the callable returns `True` for a given set of
             parameters, that parameter set, or row, will be omitted from the
@@ -104,20 +111,16 @@ def create_matrix(
         to generate additional rows in the matrix.
     """
 
-    if partition_num is None or num_partitions is None:
-        partition_num = 0
-        num_partitions = 1
-
     def _generate(**kwargs) -> Iterable[Mapping[str, Any]]:
-        count = 0
+        index = 0
         for params in product({}, list(kwargs.items())):
             # Skip over entries that are filtered out
             if filter is not None and filter(**params):
                 continue
             # Skip over entries when partioning
-            if (count % num_partitions) == partition_num:
+            if partition is None or is_in_partition(index, partition):
                 yield params
-            count += 1
+            index += 1
 
     return _generate
 
@@ -139,22 +142,19 @@ class Matrix(Generic[P, T]):
         self,
         func: Callable[P, T],
         kwargs: Dict,
-        partition_num: Optional[int] = None,
-        num_partitions: Optional[int] = None,
+        partition: Optional[slice] = None,
         filter: Optional[Callable[P, bool]] = None,
     ):
         self.func = func
         self.kwargs = kwargs
-        self.partition_num = partition_num
-        self.num_partitions = num_partitions
+        self._partition = partition
         self._filter = filter
 
     @property
     def matrix(self):
         """The generated matrix of arguments"""
         return create_matrix(
-            partition_num=self.partition_num,
-            num_partitions=self.num_partitions,
+            partition=self._partition,
             filter=self._filter,
         )(**self.kwargs)
 
@@ -189,37 +189,31 @@ class Matrix(Generic[P, T]):
         return results
 
     def override(self, **kwargs):
-        """Overrides the input parameter constraints for the matrix."""
+        """Creates a modified matrix with overridden input parameter constraints."""
         new_kwargs = deepcopy(self.kwargs)
         new_kwargs.update(kwargs)
         return Matrix(
             self.func,
             kwargs=new_kwargs,
-            partition_num=self.partition_num,
-            num_partitions=self.num_partitions,
+            partition=self._partition,
             filter=self._filter,
         )
 
-    def partition(self, partition_num: Optional[int], num_partitions: Optional[int]):
-        """
-        Specifies the partition index and count used to partition the matrix for
-        distributed, parallel-worker applications.
-        """
+    def __getitem__(self, partition: slice) -> "Matrix[P, T]":
+        """Creates a modified matrix that executes a partition, or slice, of rows."""
         return Matrix(
             self.func,
             kwargs=deepcopy(self.kwargs),
-            partition_num=partition_num,
-            num_partitions=num_partitions,
+            partition=partition,
             filter=self._filter,
         )
 
     def filter(self, filter: Optional[Callable[P, bool]]):
-        """Specifies the filter callable to be used when generating the matrix."""
+        """Creates a modified matrix that executes a filtered set of rows of the matrix."""
         return Matrix(
             self.func,
             kwargs=deepcopy(self.kwargs),
-            partition_num=self.partition_num,
-            num_partitions=self.num_partitions,
+            partition=self._partition,
             filter=filter,
         )
 
@@ -290,9 +284,9 @@ def matrix(**kwargs):
         [3, 7, 11]
 
         >>> # to partition
-        >>> perform.partition(0, 2)(2, b=3)
+        >>> perform[0::2](2, b=3)
         [3, 7, 11]
-        >>> perform.partition(1, 2)(2, b=3)
+        >>> perform[1::2](2, b=3)
         [5, 9]
 
         >>> # to override arguments
