@@ -2,6 +2,7 @@ import doctest
 
 import pytest
 
+from armory.matrix import matrix
 import armory.matrix.range
 from armory.matrix.range import frange
 
@@ -27,3 +28,19 @@ def test_docstrings():
 )
 def test_frange(start, stop, step, expected):
     assert list(frange(start, stop, step)) == expected
+
+
+def test_frange_in_matrix():
+    @matrix(
+        x=frange(2, 4),
+        y=frange(4, 2, -1.0),
+    )
+    def multiply(x, y):
+        return x * y
+
+    assert list(multiply.matrix) == [
+        dict(x=2.0, y=4.0),
+        dict(x=2.0, y=3.0),
+        dict(x=3.0, y=4.0),
+        dict(x=3.0, y=3.0),
+    ]
