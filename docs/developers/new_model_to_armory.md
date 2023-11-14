@@ -33,7 +33,7 @@ classifier = track_init_params(PyTorchClassifier)(
 )
 ```
 For this section of code we create two variables `model` and `classifier`. We found a model on HuggingFace that is trained on the same pokemon image dataset with the model card 'tianzhihui-isc/vit-base-patch16-224-in21k-finetuned-pokemon-classification'. This can be replaced with another model off of Huggingface.
-- The model variable uses AutoModelForImageClassification.from_pretrained which takes in a huggingface model card name as a variable. This retrieves the model from
+- The model variable uses `AutoModelForImageClassification.from_pretrained` which takes in a HuggingFace model card name as a variable. This retrieves the model from
     HuggingFace that we will use for this example. `track_params` is a function wrapper that stores the argument values as parameters in MLflow. Lastly,
     the JaticImageClassificationModel is another wrapper to make the model compatible with Armory. This allows the model to have a standard output like other
     jatic image classification models.
