@@ -9,7 +9,7 @@ from charmory.track import track_init_params, track_params
 from art.estimators.classification import PyTorchClassifier
 
 import torch
-from transformers import AutoImageProcessor, AutoModelForImageClassification
+from transformers import AutoModelForImageClassification
 ```
 In each example the model and classifier objects are created to be used by armory-library
 
@@ -59,9 +59,7 @@ SRRmodel = pytorch_new_model.SRResNet()
 Lastly, I run the same code from the first example for creating the model and classifier variables.
 ```python
 model = JaticImageClassificationModel(
-    (
-        SRRmodel
-    ),
+    SRRmodel
 )
 
 classifier = track_init_params(PyTorchClassifier)(
@@ -90,10 +88,8 @@ lite0_model = EfficientNet.from_pretrained('efficientnet-lite0', weights_path = 
 
 This is the same code from the last two examples to create a model and classifier variables.
 ```python
-model = JaticImageClassificationModel(
-    
-        SRRmodel
-    
+model = JaticImageClassificationModel(  
+    SRRmodel
 )
 
 classifier = track_init_params(PyTorchClassifier)(
