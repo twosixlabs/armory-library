@@ -7,7 +7,7 @@
 Armory-matrix provides a utility to automatically expand parameter
 specifications in order to evaluate all combinations of parameters.
 
-For example, given two parameters `x` and `y` where `x` can be a number
+For example, given two parameters `x` and `y` where `x` can be an integer
 between 1 and 3 and `y` can be 1.5 or 6.5, we have the following matrix of
 parameter combinations:
 
@@ -57,7 +57,7 @@ x=2, y=1.5
 x=2, y=6.5
 ```
 
-This is roughly equivalent to the following:
+This is roughly equivalent to the nested loops below:
 
 ```python
 def print_xy(x, y):
@@ -223,8 +223,8 @@ dynamic parameters, where the latter parameters depend on the former.
 
 A custom generator function as a parameter range is effectively equivalent to a
 dynamic parameter range. This is intentional, since generators cannot be rewound
-and it is often necessary to iterate through the range of values multiple times.
-However, this means that you may need to account for the prior parameter
+and it is often necessary to iterate multiple times through a `matrix` parameter
+space. However, this means that you may need to account for the prior parameter
 arguments that will be passed to the generator function.
 
 ```python
