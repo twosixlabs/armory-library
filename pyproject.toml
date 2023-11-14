@@ -50,7 +50,7 @@ dependencies = [
 [tool.pytest.ini_options]
 addopts = "-ra -q"
 log_level = "ERROR"
-testpaths = ["library/tests"]
+testpaths = ["library/tests", "matrix/tests"]
 log_cli = true
 filterwarnings = []
 markers = [

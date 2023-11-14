@@ -9,8 +9,15 @@ on:
           - 'v[0-9]+.[0-9]+.[0-9]+'
 jobs:
   release-wheel:
-    name: 📦 Publish release wheels to PyPI
+    name: 📦 Publish release wheel to PyPI - ${{ matrix.package }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - library
+          - matrix
+          - examples
     steps:
       - name: Setup Python 3.10
         uses: actions/setup-python@v4
@@ -28,12 +35,10 @@ jobs:
           pip install pip>=23
           pip install hatch
 
-      - name: Build wheels
+      - name: Build wheel
         run: |
-          cd library && hatch build --clean --target wheel
-          cd examples && hatch build --clean --target wheel
+          cd ${{ matrix.package }} && hatch build --clean --target wheel
 
-      - name: Upload wheels to PyPI
+      - name: Upload wheel to PyPI
         run: |
-           cd library && hatch publish --user __token__ --auth ${{ secrets.PYPI_PUBLISH_TOKEN }}
-           cd examples && hatch publish --user __token__ --auth ${{ secrets.PYPI_PUBLISH_TOKEN }}
+           cd ${{ matrix.package }} && hatch publish --user __token__ --auth ${{ secrets.PYPI_PUBLISH_TOKEN }}
