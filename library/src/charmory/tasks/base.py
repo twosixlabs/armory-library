@@ -150,21 +150,7 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
             assert self.evaluation.attack
 
         with self.evaluation.metric.profiler.measure("Attack"):
-            # If targeted, use the label targeter to generate the target label
-            if self.evaluation.attack.targeted:
-                if TYPE_CHECKING:
-                    assert self.evaluation.attack.label_targeter
-                batch.y_target = self.evaluation.attack.label_targeter.generate(batch.y)
-            else:
-                # If untargeted, use either the natural or benign labels
-                # (when set to None, the ART attack handles the benign label)
-                batch.y_target = (
-                    batch.y if self.evaluation.attack.use_label_for_untargeted else None
-                )
-
-            batch.x_adv = self.evaluation.attack.attack.generate(
-                x=batch.x, y=batch.y_target, **self.evaluation.attack.generate_kwargs
-            )
+            self.evaluation.attack(batch)
 
     ###
     # LightningModule method overrides

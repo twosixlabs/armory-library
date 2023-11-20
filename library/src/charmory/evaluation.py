@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
@@ -14,7 +14,7 @@ from charmory.labels import LabelTargeter
 
 @dataclass
 class Attack:
-    """Configuration for the attack to be applied during model evaluation"""
+    """Configuration for an ART evasion attack"""
 
     name: str
     """Descriptive name of the attack"""
@@ -65,6 +65,21 @@ class Attack:
         to optimize _away from_.
         """
         return self.attack.targeted
+
+    def __call__(self, batch):
+        # If targeted, use the label targeter to generate the target label
+        if self.targeted:
+            if TYPE_CHECKING:
+                assert self.label_targeter
+            batch.y_target = self.label_targeter.generate(batch.y)
+        else:
+            # If untargeted, use either the natural or benign labels
+            # (when set to None, the ART attack handles the benign label)
+            batch.y_target = batch.y if self.use_label_for_untargeted else None
+
+        batch.x_adv = self.attack.generate(
+            x=batch.x, y=batch.y_target, **self.generate_kwargs
+        )
 
 
 @dataclass
