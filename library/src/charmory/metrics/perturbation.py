@@ -35,7 +35,7 @@ class PerturbationNormMetric(Metric):
         self.total: torch.Tensor
         self.add_state(
             "distance",
-            default=torch.tensor(0, dtype=torch.float64),
+            default=torch.tensor(0, dtype=torch.float32),
             dist_reduce_fx="sum",
         )
         self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
