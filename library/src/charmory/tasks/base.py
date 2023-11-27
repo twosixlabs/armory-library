@@ -180,22 +180,35 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
                 batch.x_perturbed, **self.evaluation.model.predict_kwargs
             )
 
-    def compute_metrics(self, batch: Batch):
+    def update_metrics(self, batch: Batch):
         x = torch.tensor(batch.x).to(self.device)
         x_perturbed = torch.tensor(batch.x_perturbed).to(self.device)
         y = torch.tensor(batch.y).to(self.device)
         y_predicted = torch.tensor(batch.y_predicted).to(self.device)
 
-        for name, metric in self._perturbation_metrics[batch.chain_name].items():
-            metric(x, x_perturbed)
-            self.log_metric(f"{batch.chain_name}/{name}", metric)
+        for metric in self._perturbation_metrics[batch.chain_name].values():
+            metric.update(x, x_perturbed)
 
-        for name, metric in self._prediction_metrics[batch.chain_name].items():
-            metric(y_predicted, y)
-            self.log_metric(f"{batch.chain_name}/{name}", metric)
+        for metric in self._prediction_metrics[batch.chain_name].values():
+            metric.update(y_predicted, y)
 
-    def log_metric(self, name: str, metric):
-        self.log(name, metric)
+    def log_metric(self, name: str, metric: Any):
+        if isinstance(metric, dict):
+            metrics = {f"{name}/{k}": v for k, v in metric.items()}
+            self.log_dict(metrics, sync_dist=True)
+            return
+
+        elif isinstance(metric, torch.Tensor):
+            if len(metric.shape) == 0:
+                self.log(name, metric)
+            else:
+                self.log_dict(
+                    {f"{name}/{idx}": value for idx, value in enumerate(metric)},
+                    sync_dist=True,
+                )
+
+        else:
+            self.log(name, metric)
 
     @staticmethod
     def _from_list(maybe_list, idx):
@@ -243,7 +256,20 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
             with torch.enable_grad():
                 self.apply_perturbations(chain_batch, chain)
             self.evaluate(chain_batch)
-            self.compute_metrics(chain_batch)
+            self.update_metrics(chain_batch)
 
             if self._should_export(batch_idx):
                 self.export_batch(chain_batch)
+
+    def on_test_epoch_end(self) -> None:
+        for chain_name, chain in self._perturbation_metrics.items():
+            for metric_name, metric in chain.items():
+                self.log_metric(f"{chain_name}/{metric_name}", metric.compute())
+                metric.reset()
+
+        for chain_name, chain in self._prediction_metrics.items():
+            for metric_name, metric in chain.items():
+                self.log_metric(f"{chain_name}/{metric_name}", metric.compute())
+                metric.reset()
+
+        return super().on_test_epoch_end()

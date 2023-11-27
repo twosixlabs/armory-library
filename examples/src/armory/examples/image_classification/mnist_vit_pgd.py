@@ -108,11 +108,32 @@ def main(batch_size, export_every_n_batches, num_batches):
     metric = ev.Metric(
         profiler=BasicProfiler(),
         perturbation={
-            "linf": PerturbationNormMetric(ord=torch.inf),
+            "linf_norm": PerturbationNormMetric(ord=torch.inf),
         },
         prediction={
-            "accuracy": torchmetrics.classification.Accuracy(
+            "accuracy_avg": torchmetrics.classification.Accuracy(
                 task="multiclass", num_classes=10
+            ),
+            "accuracy_by_class": torchmetrics.classification.Accuracy(
+                task="multiclass", num_classes=10, average=None
+            ),
+            "precision_avg": torchmetrics.classification.Precision(
+                task="multiclass", num_classes=10
+            ),
+            "precision_by_class": torchmetrics.classification.Precision(
+                task="multiclass", num_classes=10, average=None
+            ),
+            "recall_avg": torchmetrics.classification.Recall(
+                task="multiclass", num_classes=10
+            ),
+            "recall_by_class": torchmetrics.classification.Recall(
+                task="multiclass", num_classes=10, average=None
+            ),
+            "f1_score_avg": torchmetrics.classification.F1Score(
+                task="multiclass", num_classes=10
+            ),
+            "f1_score_by_class": torchmetrics.classification.F1Score(
+                task="multiclass", num_classes=10, average=None
             ),
         },
     )
