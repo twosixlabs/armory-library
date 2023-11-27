@@ -2,11 +2,12 @@
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional
 
 from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
 from torch.utils.data.dataloader import DataLoader
+from torchmetrics.metric import Metric as TorchMetric
 
 from armory.metrics.compute import NullProfiler, Profiler
 from charmory.labels import LabelTargeter
@@ -66,19 +67,20 @@ class Attack:
         """
         return self.attack.targeted
 
-    def __call__(self, batch):
+    def __call__(self, x, batch):
         # If targeted, use the label targeter to generate the target label
         if self.targeted:
             if TYPE_CHECKING:
                 assert self.label_targeter
-            batch.y_target = self.label_targeter.generate(batch.y)
+            y_target = self.label_targeter.generate(batch.y)
         else:
             # If untargeted, use either the natural or benign labels
             # (when set to None, the ART attack handles the benign label)
-            batch.y_target = batch.y if self.use_label_for_untargeted else None
+            y_target = batch.y if self.use_label_for_untargeted else None
 
-        batch.x_adv = self.attack.generate(
-            x=batch.x, y=batch.y_target, **self.generate_kwargs
+        return (
+            self.attack.generate(x=x, y=y_target, **self.generate_kwargs),
+            dict(y_target=y_target),
         )
 
 
@@ -114,6 +116,16 @@ class Dataset:
 class Metric:
     """Configuration for the metrics collected during model evaluation"""
 
+    perturbation: Dict[str, TorchMetric] = field(default_factory=dict)
+    """
+    Dictionary of metric names to torchmetrics Metric objects for perturbation
+    (x vs perturbed x) metrics
+    """
+    prediction: Dict[str, TorchMetric] = field(default_factory=dict)
+    """
+    Dictionary of metric names to torchmetrics Metric objects for prediction
+    (y vs predicted y) metrics
+    """
     profiler: Profiler = field(default_factory=NullProfiler)
     """Computational performance profiler instance"""
 
@@ -185,6 +197,8 @@ class Evaluation:
     """Configuration for the dataset to be used for evaluation"""
     author: Optional[str]
     """Optional, author to which to attribute evaluation results"""
+    perturbations: Dict[str, Iterable[Attack]] = field(default_factory=dict)
+    """Optional, perturbation chains to be applied during evaluation"""
     attack: Optional[Attack] = None
     """Optional, configuration for the attack to be applied during evaluation"""
     metric: Metric = field(default_factory=Metric)

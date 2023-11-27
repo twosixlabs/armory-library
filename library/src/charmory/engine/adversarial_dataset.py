@@ -91,13 +91,13 @@ class AdversarialDatasetEngine:
         """
         batch_idx = 0
         for ds_batch in iter(self.task.evaluation.dataset.test_dataloader):
-            task_batch = self.task.create_batch(ds_batch, batch_idx)
+            task_batch = self.task.create_batch("", ds_batch, batch_idx)
             self.task.apply_attack(task_batch)
-            assert isinstance(task_batch.x_adv, np.ndarray)
+            assert isinstance(task_batch.x_perturbed, np.ndarray)
 
-            for idx in range(len(task_batch.x_adv)):
+            for idx in range(len(task_batch.x_perturbed)):
                 sample = {key: val[idx] for key, val in ds_batch.items()}
-                sample[self.task.evaluation.dataset.x_key] = task_batch.x_adv[idx]
+                sample[self.task.evaluation.dataset.x_key] = task_batch.x_perturbed[idx]
                 yield self.adapter(sample)
 
             batch_idx += 1

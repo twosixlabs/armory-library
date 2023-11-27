@@ -6,12 +6,14 @@ from art.estimators.classification import PyTorchClassifier
 import datasets
 import torch
 import torch.nn
+import torchmetrics.classification
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
 import charmory.evaluation as ev
+from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
@@ -82,7 +84,7 @@ def main(batch_size, export_every_n_batches, num_batches):
     ###
     # Attack
     ###
-    attack = track_init_params(ProjectedGradientDescent)(
+    pgd = track_init_params(ProjectedGradientDescent)(
         classifier,
         batch_size=batch_size,
         eps=0.031,
@@ -92,6 +94,27 @@ def main(batch_size, export_every_n_batches, num_batches):
         random_eps=False,
         targeted=False,
         verbose=False,
+    )
+
+    pgd_attack = ev.Attack(
+        name="PGD",
+        attack=pgd,
+        use_label_for_untargeted=False,
+    )
+
+    ###
+    # Metrics
+    ###
+    metric = ev.Metric(
+        profiler=BasicProfiler(),
+        perturbation={
+            "linf": PerturbationNormMetric(ord=torch.inf),
+        },
+        prediction={
+            "accuracy": torchmetrics.classification.Accuracy(
+                task="multiclass", num_classes=10
+            ),
+        },
     )
 
     ###
@@ -111,12 +134,11 @@ def main(batch_size, export_every_n_batches, num_batches):
             name="ViT",
             model=classifier,
         ),
-        attack=ev.Attack(
-            name="PGD",
-            attack=attack,
-            use_label_for_untargeted=False,
-        ),
-        metric=ev.Metric(profiler=BasicProfiler()),
+        perturbations={
+            "benign": [],
+            "attack": [pgd_attack],
+        },
+        metric=metric,
     )
 
     ###
@@ -124,7 +146,6 @@ def main(batch_size, export_every_n_batches, num_batches):
     ###
     task = ImageClassificationTask(
         evaluation,
-        num_classes=10,
         export_adapter=Unnormalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
         export_every_n_batches=export_every_n_batches,
     )

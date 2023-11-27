@@ -3,15 +3,15 @@ Base Armory evaluation task
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, Iterable, Mapping, Optional
 
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
 import numpy as np
 import torch
 
-from charmory.evaluation import Evaluation
+from charmory.evaluation import Attack, Evaluation
 from charmory.export import Exporter, MlflowExporter
 
 ExportAdapter = Callable[[Any], Any]
@@ -50,6 +50,30 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         self.export_every_n_batches = export_every_n_batches
         self._exporter: Optional[Exporter] = None
 
+        # Make copies of user-configured metrics for each perturbation chain
+        self._perturbation_metrics = torch.nn.ModuleDict(
+            {
+                chain_name: torch.nn.ModuleDict(
+                    {
+                        metric_name: metric.clone()
+                        for metric_name, metric in self.evaluation.metric.perturbation.items()
+                    }
+                )
+                for chain_name in self.evaluation.perturbations.keys()
+            }
+        )
+        self._prediction_metrics = torch.nn.ModuleDict(
+            {
+                chain_name: torch.nn.ModuleDict(
+                    {
+                        metric_name: metric.clone()
+                        for metric_name, metric in self.evaluation.metric.prediction.items()
+                    }
+                )
+                for chain_name in self.evaluation.perturbations.keys()
+            }
+        )
+
     ###
     # Inner classes
     ###
@@ -58,14 +82,14 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
     class Batch:
         """Batch being evaluated during each step of the evaluation task"""
 
+        chain_name: str
         i: int
         data: Mapping[str, Any]
         x_key: str
         y_key: str
-        y_pred: Optional[Any] = None
-        y_target: Optional[Any] = None
-        x_adv: Optional[Any] = None
-        y_pred_adv: Optional[Any] = None
+        perturbation_output: Dict[str, Any] = field(default_factory=dict)
+        x_perturbed: Optional[Any] = None
+        y_predicted: Optional[Any] = None
 
         @property
         def x(self):
@@ -115,54 +139,111 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
     # Task evaluation methods
     ###
 
-    def create_batch(self, batch, batch_idx):
+    def create_batch(self, chain_name, batch, batch_idx):
         """Creates a batch object from the given dataset-specific batch"""
         return self.Batch(
+            chain_name=chain_name,
             i=batch_idx,
             data=batch,
             x_key=self.evaluation.dataset.x_key,
             y_key=self.evaluation.dataset.y_key,
         )
 
-    def run_benign(self, batch: Batch):
-        """Perform benign evaluation"""
+    def apply_perturbations(self, batch: Batch, chain: Iterable[Attack]):
+        """
+        Applies the given perturbation chain to the batch to produce the perturbed data
+        to be given to the model
+        """
+        x = batch.x
+        with self.evaluation.metric.profiler.measure(
+            f"{batch.chain_name}/perturbation"
+        ):
+            for perturbation in chain:
+                with self.evaluation.metric.profiler.measure(
+                    f"{batch.chain_name}/perturbation/{perturbation.name}"
+                ):
+                    res = perturbation(x, batch)
+                if isinstance(res, tuple):
+                    x, out = res
+                    batch.perturbation_output[perturbation.name] = out
+                else:
+                    x = res
+        batch.x_perturbed = x
+
+    def evaluate(self, batch: Batch):
+        """Perform evaluation on batch"""
+        assert isinstance(batch.x_perturbed, np.ndarray)
         # Ensure that input sample isn't overwritten by model
-        batch.x.flags.writeable = False
-        with self.evaluation.metric.profiler.measure("Inference"):
-            batch.y_pred = self.evaluation.model.model.predict(
-                batch.x, **self.evaluation.model.predict_kwargs
+        batch.x_perturbed.flags.writeable = False
+        with self.evaluation.metric.profiler.measure(f"{batch.chain_name}/predict"):
+            batch.y_predicted = self.evaluation.model.model.predict(
+                batch.x_perturbed, **self.evaluation.model.predict_kwargs
             )
 
-    def run_attack(self, batch: Batch):
-        """Perform adversarial evaluation"""
-        self.apply_attack(batch)
-        assert isinstance(batch.x_adv, np.ndarray)
+    def compute_metrics(self, batch: Batch):
+        x = torch.tensor(batch.x).to(self.device)
+        x_perturbed = torch.tensor(batch.x_perturbed).to(self.device)
+        y = torch.tensor(batch.y).to(self.device)
+        y_predicted = torch.tensor(batch.y_predicted).to(self.device)
 
-        # Ensure that input sample isn't overwritten by model
-        batch.x_adv.flags.writeable = False
-        batch.y_pred_adv = self.evaluation.model.model.predict(
-            batch.x_adv, **self.evaluation.model.predict_kwargs
-        )
+        for name, metric in self._perturbation_metrics[batch.chain_name].items():
+            metric(x, x_perturbed)
+            self.log_metric(f"{batch.chain_name}/{name}", metric)
 
-    def apply_attack(self, batch: Batch):
-        """Apply attack to batch"""
-        if TYPE_CHECKING:
-            assert self.evaluation.attack
+        for name, metric in self._prediction_metrics[batch.chain_name].items():
+            metric(y_predicted, y)
+            self.log_metric(f"{batch.chain_name}/{name}", metric)
 
-        with self.evaluation.metric.profiler.measure("Attack"):
-            self.evaluation.attack(batch)
+    def log_metric(self, name: str, metric):
+        self.log(name, metric)
+
+    @staticmethod
+    def _from_list(maybe_list, idx):
+        try:
+            return maybe_list[idx]
+        except:  # noqa: E722
+            # if it's None or is not a list/sequence/etc, just return None
+            return None
+
+    def export_batch_metadata(self, batch: Batch):
+        data_keys = set(batch.data.keys()) - {
+            self.evaluation.dataset.x_key,
+            self.evaluation.dataset.y_key,
+        }
+        for sample_idx in range(batch.x.shape[0]):
+            dictionary = dict(
+                y=batch.y[sample_idx],
+                y_predicted=self._from_list(batch.y_predicted, sample_idx),
+            )
+            for key in data_keys:
+                dictionary[key] = self._from_list(batch.data[key], sample_idx)
+            for name, output in batch.perturbation_output.items():
+                if isinstance(output, Mapping):
+                    dictionary.update(
+                        {k: self._from_list(v, sample_idx) for k, v in output.items()}
+                    )
+                else:
+                    dictionary[name] = self._from_list(output, sample_idx)
+            self.exporter.log_dict(
+                dictionary=dictionary,
+                artifact_file=f"batch_{batch.i}_ex_{sample_idx}_{batch.chain_name}.txt",
+            )
 
     ###
     # LightningModule method overrides
     ###
 
     def test_step(self, batch, batch_idx):
-        """Invokes task's benign and adversarial evaluations"""
-        curr_batch = self.create_batch(batch, batch_idx)
-        if not self.skip_benign:
-            self.run_benign(curr_batch)
-        if not self.skip_attack:
+        """
+        Performs evaluations of the model for each configured perturbation chain
+        """
+        for name, chain in self.evaluation.perturbations.items():
+            chain_batch = self.create_batch(name, batch, batch_idx)
+
             with torch.enable_grad():
-                self.run_attack(curr_batch)
-        if self._should_export(batch_idx):
-            self.export_batch(curr_batch)
+                self.apply_perturbations(chain_batch, chain)
+            self.evaluate(chain_batch)
+            self.compute_metrics(chain_batch)
+
+            if self._should_export(batch_idx):
+                self.export_batch(chain_batch)
