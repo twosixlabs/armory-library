@@ -135,6 +135,9 @@ def main(batch_size, export_every_n_batches, num_batches):
             "f1_score_by_class": torchmetrics.classification.F1Score(
                 task="multiclass", num_classes=10, average=None
             ),
+            "confusion": torchmetrics.classification.ConfusionMatrix(
+                task="multiclass", num_classes=10
+            ),
         },
     )
 

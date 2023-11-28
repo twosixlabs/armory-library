@@ -201,11 +201,14 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         elif isinstance(metric, torch.Tensor):
             if len(metric.shape) == 0:
                 self.log(name, metric)
-            else:
+            elif len(metric.shape) == 1:
                 self.log_dict(
                     {f"{name}/{idx}": value for idx, value in enumerate(metric)},
                     sync_dist=True,
                 )
+            else:
+                for idx, value in enumerate(metric):
+                    self.log_metric(f"{name}/{idx}", value)
 
         else:
             self.log(name, metric)
