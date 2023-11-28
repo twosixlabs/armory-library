@@ -12,13 +12,13 @@ from charmory.track import track_param
 
 @matrix(
     model_name=("convnext", "swin", "vit"),
-    attack_eps=frange(0.01, 0.03, 0.005),
-    attack_max_iter=range(10, 26, 5),
+    attack_max_iter=range(1, 36, 3),
 )
 def run_evaluation(num_batches, **kwargs):
     task = create_evaluation_task(
         with_attack=True,
         attack_batch_size=1,
+        attack_eps=0.031,
         attack_eps_step=0.007,
         attack_num_random_init=1,
         attack_random_eps=False,
@@ -33,12 +33,13 @@ def run_evaluation(num_batches, **kwargs):
 
 if __name__ == "__main__":
     parser = create_parser(
-        description="Run EuroSAT image classification evaluation matrix",
+        description="mwartell cost comparison matrix test",
         batch_size=4,
         export_every_n_batches=5,
     )
     args = parser.parse_args()
 
+    pprint(list(run_evaluation.matrix))
     run_evaluation(
         num_batches=args.num_batches,
         batch_size=args.batch_size,

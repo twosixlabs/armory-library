@@ -149,7 +149,7 @@ def _load_dataset(batch_size: int, dataset_path: Optional[str] = None):
 
     dataset.set_transform(transform_func)
 
-    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
+    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size, num_workers=15)
 
     eval_dataset = Dataset(
         name="EuroSAT",
@@ -201,12 +201,10 @@ def create_evaluation(
         else None
     )
 
-    attack_type = "generated" if with_attack else "precomputed"
-
     evaluation = Evaluation(
-        name=f"eurosat-{model_name}-{attack_type}-pgd",
-        description=f"EuroSAT classification using {model_name} model with {attack_type} PGD attack",
-        author="TwoSix",
+        name=f"gpusat-cost-compare-mwartell",
+        description=f"compare cost metrics across models and iterations",
+        author="mwartell",
         attack=attack,
         dataset=dataset,
         metric=_create_metric(),
