@@ -126,7 +126,7 @@ def main(argv: list = sys.argv[1:]):
     task = ImageClassificationTask(
         evaluation, num_classes=150, export_every_n_batches=5
     )
-    engine = EvaluationEngine(task, limit_test_batches=5)
+    engine = EvaluationEngine(task, limit_test_batches=5, accelerator="mps")
     results = engine.run()
 
     print_outputs(dataset, model, results)

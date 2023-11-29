@@ -1,5 +1,6 @@
 """Utilities to support experiment tracking within Armory."""
 
+import armory.version as version
 from contextlib import contextmanager
 from copy import deepcopy
 from functools import wraps
@@ -321,6 +322,7 @@ def track_evaluation(
         description=description,
     )
 
+    track_param("Armory.version", version.__version__)
     mlflow.log_params(get_current_params())
 
     return run
