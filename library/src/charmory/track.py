@@ -321,8 +321,12 @@ def track_evaluation(
         experiment_id=experiment_id,
         description=description,
     )
-
+    print("*****BEFORE*****")
+    print(get_current_params())
+    print(version.__version__)
     track_param("Armory.version", version.__version__)
+    print("*****AFTER*****")
+    print(get_current_params())
     mlflow.log_params(get_current_params())
 
     return run
