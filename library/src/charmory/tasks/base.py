@@ -4,15 +4,18 @@ Base Armory evaluation task
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Iterable, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Mapping, Optional
 
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
 import numpy as np
 import torch
 
-from charmory.evaluation import Attack, Evaluation
+from charmory.evaluation import Evaluation
 from charmory.export import Exporter, MlflowExporter
+
+if TYPE_CHECKING:
+    from charmory.perturbation import Perturbation
 
 ExportAdapter = Callable[[Any], Any]
 """An adapter for exported data (e.g., images). """
@@ -149,7 +152,7 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
             y_key=self.evaluation.dataset.y_key,
         )
 
-    def apply_perturbations(self, batch: Batch, chain: Iterable[Attack]):
+    def apply_perturbations(self, batch: Batch, chain: Iterable["Perturbation"]):
         """
         Applies the given perturbation chain to the batch to produce the perturbed data
         to be given to the model
@@ -162,12 +165,8 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
                 with self.evaluation.metric.profiler.measure(
                     f"{batch.chain_name}/perturbation/{perturbation.name}"
                 ):
-                    res = perturbation(x, batch)
-                if isinstance(res, tuple):
-                    x, out = res
+                    x, out = perturbation.apply(x, batch)
                     batch.perturbation_output[perturbation.name] = out
-                else:
-                    x = res
         batch.x_perturbed = x
 
     def evaluate(self, batch: Batch):

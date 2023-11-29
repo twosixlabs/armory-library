@@ -15,6 +15,7 @@ from charmory.engine import EvaluationEngine
 import charmory.evaluation as ev
 from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.model.image_classification import JaticImageClassificationModel
+from charmory.perturbation import ArtEvasionAttack
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import Unnormalize
@@ -96,7 +97,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         verbose=False,
     )
 
-    pgd_attack = ev.Attack(
+    pgd_attack = ArtEvasionAttack(
         name="PGD",
         attack=pgd,
         use_label_for_untargeted=False,
