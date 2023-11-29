@@ -1,4 +1,3 @@
-import argparse
 from pprint import pprint
 
 from art.attacks.evasion import ProjectedGradientDescent
@@ -10,6 +9,7 @@ import torchmetrics.classification
 from torchvision.transforms.v2 import GaussianBlur
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 
+from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
@@ -23,24 +23,11 @@ from charmory.utils import Unnormalize
 
 
 def get_cli_args():
-    parser = argparse.ArgumentParser(
+    parser = create_parser(
         description="MNIST image classification using a ViT model and PGD attack",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        "--batch-size",
-        default=16,
-        type=int,
-    )
-    parser.add_argument(
-        "--export-every-n-batches",
-        default=5,
-        type=int,
-    )
-    parser.add_argument(
-        "--num-batches",
-        default=10,
-        type=int,
+        batch_size=16,
+        export_every_n_batches=5,
+        num_batches=10,
     )
     return parser.parse_args()
 
@@ -81,7 +68,9 @@ def main(batch_size, export_every_n_batches, num_batches):
         return sample
 
     dataset.set_transform(transform)
-    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size, num_workers=5)
+    dataloader = ArmoryDataLoader(
+        dataset, batch_size=batch_size, num_workers=5, shuffle=True
+    )
 
     ###
     # Attack
@@ -191,6 +180,12 @@ def main(batch_size, export_every_n_batches, num_batches):
     # Execute
     ###
     pprint(engine.run())
+    pprint(task.perturbation_metrics.compute())
+    pprint(task.prediction_metrics.compute())
+    print("benign")
+    pprint(task.prediction_metrics["benign"]["confusion"].compute())
+    print("attack")
+    pprint(task.prediction_metrics["attack"]["confusion"].compute())
 
 
 if __name__ == "__main__":

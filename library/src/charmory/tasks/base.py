@@ -54,9 +54,9 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         self._exporter: Optional[Exporter] = None
 
         # Make copies of user-configured metrics for each perturbation chain
-        self._perturbation_metrics = torch.nn.ModuleDict(
+        self.perturbation_metrics = self.MetricsDict(
             {
-                chain_name: torch.nn.ModuleDict(
+                chain_name: self.MetricsDict(
                     {
                         metric_name: metric.clone()
                         for metric_name, metric in self.evaluation.metric.perturbation.items()
@@ -65,9 +65,9 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
                 for chain_name in self.evaluation.perturbations.keys()
             }
         )
-        self._prediction_metrics = torch.nn.ModuleDict(
+        self.prediction_metrics = self.MetricsDict(
             {
-                chain_name: torch.nn.ModuleDict(
+                chain_name: self.MetricsDict(
                     {
                         metric_name: metric.clone()
                         for metric_name, metric in self.evaluation.metric.prediction.items()
@@ -101,6 +101,18 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         @property
         def y(self):
             return self.data[self.y_key]
+
+    class MetricsDict(torch.nn.ModuleDict):
+        def update_metrics(self, pred: torch.Tensor, target: torch.Tensor) -> None:
+            for metric in self.values():
+                metric.update(pred, target)
+
+        def compute(self) -> Mapping[str, torch.Tensor]:
+            return {name: metric.compute() for name, metric in self.items()}
+
+        def reset(self) -> None:
+            for metric in self.values():
+                metric.reset()
 
     ###
     # Properties
@@ -185,11 +197,8 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         y = torch.tensor(batch.y).to(self.device)
         y_predicted = torch.tensor(batch.y_predicted).to(self.device)
 
-        for metric in self._perturbation_metrics[batch.chain_name].values():
-            metric.update(x, x_perturbed)
-
-        for metric in self._prediction_metrics[batch.chain_name].values():
-            metric.update(y_predicted, y)
+        self.perturbation_metrics[batch.chain_name].update_metrics(x, x_perturbed)
+        self.prediction_metrics[batch.chain_name].update_metrics(y_predicted, y)
 
     def log_metric(self, name: str, metric: Any):
         if isinstance(metric, dict):
@@ -248,6 +257,12 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
     # LightningModule method overrides
     ###
 
+    def on_test_epoch_start(self) -> None:
+        """Resets all metrics"""
+        self.perturbation_metrics.reset()
+        self.prediction_metrics.reset()
+        return super().on_test_epoch_start()
+
     def test_step(self, batch, batch_idx):
         """
         Performs evaluations of the model for each configured perturbation chain
@@ -264,14 +279,13 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
                 self.export_batch(chain_batch)
 
     def on_test_epoch_end(self) -> None:
-        for chain_name, chain in self._perturbation_metrics.items():
+        """Logs all metric results"""
+        for chain_name, chain in self.perturbation_metrics.items():
             for metric_name, metric in chain.items():
                 self.log_metric(f"{chain_name}/{metric_name}", metric.compute())
-                metric.reset()
 
-        for chain_name, chain in self._prediction_metrics.items():
+        for chain_name, chain in self.prediction_metrics.items():
             for metric_name, metric in chain.items():
                 self.log_metric(f"{chain_name}/{metric_name}", metric.compute())
-                metric.reset()
 
         return super().on_test_epoch_end()
