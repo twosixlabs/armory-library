@@ -6,7 +6,7 @@ import lightning.pytorch.loggers as pl_loggers
 from lightning.pytorch.utilities import rank_zero_only
 from torch import Tensor
 
-import armory.version as version
+import armory.version
 from charmory.tasks.base import BaseEvaluationTask
 from charmory.track import (
     get_current_params,
@@ -69,7 +69,7 @@ class EvaluationEngine:
     @rank_zero_only
     def _log_params(self):
         """Log tracked params with MLflow"""
-        track_param("Armory.version", version.__version__)
+        track_param("Armory.version", armory.version.__version__)
         self.run_id = self._logger.run_id
         self._logger.log_hyperparams(get_current_params())
 
