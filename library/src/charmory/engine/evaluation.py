@@ -8,7 +8,12 @@ from torch import Tensor
 
 import armory.version as version
 from charmory.tasks.base import BaseEvaluationTask
-from charmory.track import get_current_params, init_tracking_uri, track_param, track_system_metrics
+from charmory.track import (
+    get_current_params,
+    init_tracking_uri,
+    track_param,
+    track_system_metrics,
+)
 
 
 class EvaluationResults(TypedDict):
