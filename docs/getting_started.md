@@ -1,23 +1,15 @@
 # Getting Started
 
-## Installation
-```bash
-pip install armory-library
-```
+## Lori's Journey
 
-## Usage
-### Example:
-```python
-from charmory.blocks import cifar10, mnist  # noqa: F401
-from charmory.engine import Engine
+1. PyTorch self-tutorial introduction
 
-baseline = cifar10.baseline
-result = Engine(baseline).run()
 
-print(result)
-```
 
-### Example testing entrypoint:
-```bash
-$ armory
-```
+## prerequisite concepts in an Armory context
+
+What is a dataset? Where do you get it? How do you load it?
+
+What is a model? Where do you get it? How do you load it?
+
+What is an attack? Where do you get it? How do you load it?
