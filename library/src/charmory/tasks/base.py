@@ -194,17 +194,19 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
     def update_metrics(self, batch: Batch):
         x = torch.tensor(batch.x).to(self.device)
         x_perturbed = torch.tensor(batch.x_perturbed).to(self.device)
-        y = torch.tensor(batch.y).to(self.device)
-        y_predicted = torch.tensor(batch.y_predicted).to(self.device)
+        y = self.target_to_tensor(batch.y)
+        y_predicted = self.target_to_tensor(batch.y_predicted)
 
         self.perturbation_metrics[batch.chain_name].update_metrics(x, x_perturbed)
         self.prediction_metrics[batch.chain_name].update_metrics(y_predicted, y)
 
+    def target_to_tensor(self, target):
+        return torch.tensor(target).to(self.device)
+
     def log_metric(self, name: str, metric: Any):
         if isinstance(metric, dict):
-            metrics = {f"{name}/{k}": v for k, v in metric.items()}
-            self.log_dict(metrics, sync_dist=True)
-            return
+            for k, v in metric.items():
+                self.log_metric(f"{name}/{k}", v)
 
         elif isinstance(metric, torch.Tensor):
             if len(metric.shape) == 0:

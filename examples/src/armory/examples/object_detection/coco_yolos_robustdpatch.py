@@ -4,6 +4,9 @@ import art.attacks.evasion
 from art.estimators.object_detection import PyTorchObjectDetector
 import jatic_toolbox
 import numpy as np
+import torch
+import torchmetrics.detection
+from torchvision.transforms.v2 import GaussianBlur
 from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
 from armory.art_experimental.attacks.patch import AttackWrapper
@@ -11,12 +14,14 @@ from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
+from charmory.evaluation import Dataset, Evaluation, Metric, Model
 from charmory.experimental.transforms import (
     BboxFormat,
     create_object_detection_transform,
 )
+from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.model.object_detection import YolosTransformer
+from charmory.perturbation import ArtEvasionAttack, TorchTransformPerturbation
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
 
@@ -90,18 +95,16 @@ def main(batch_size, export_every_n_batches, num_batches):
     dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
 
     ###
-    # Evaluation
+    # Perturbations
     ###
-    eval_dataset = Dataset(
-        name="coco",
-        test_dataloader=dataloader,
-        x_key="image",
-        y_key="objects",
+
+    blur = track_init_params(GaussianBlur)(
+        kernel_size=5,
     )
 
-    eval_model = Model(
-        name="faster-rcnn-resnet50",
-        model=detector,
+    blur_perturb = TorchTransformPerturbation(
+        name="blur",
+        perturbation=blur,
     )
 
     patch = track_init_params(art.attacks.evasion.RobustDPatch)(
@@ -116,14 +119,39 @@ def main(batch_size, export_every_n_batches, num_batches):
         verbose=False,
     )
 
-    eval_attack = Attack(
+    patch_attack = ArtEvasionAttack(
         name="RobustDPatch",
         attack=AttackWrapper(patch),
         use_label_for_untargeted=False,
     )
 
+    ###
+    # Metrics
+    ###
+
     eval_metric = Metric(
         profiler=BasicProfiler(),
+        perturbation={
+            "linf_norm": PerturbationNormMetric(ord=torch.inf),
+        },
+        prediction={
+            "map": torchmetrics.detection.MeanAveragePrecision(class_metrics=False),
+        },
+    )
+
+    ###
+    # Evaluation
+    ###
+    eval_dataset = Dataset(
+        name="coco",
+        test_dataloader=dataloader,
+        x_key="image",
+        y_key="objects",
+    )
+
+    eval_model = Model(
+        name="faster-rcnn-resnet50",
+        model=detector,
     )
 
     evaluation = Evaluation(
@@ -132,7 +160,12 @@ def main(batch_size, export_every_n_batches, num_batches):
         author="",
         dataset=eval_dataset,
         model=eval_model,
-        attack=eval_attack,
+        perturbations={
+            "benign": [],
+            "attack": [patch_attack],
+            "blur": [blur_perturb],
+            "blur_attack": [patch_attack, blur_perturb],
+        },
         metric=eval_metric,
     )
 
@@ -143,7 +176,6 @@ def main(batch_size, export_every_n_batches, num_batches):
     task = ObjectDetectionTask(
         evaluation,
         export_every_n_batches=export_every_n_batches,
-        class_metrics=False,
     )
     engine = EvaluationEngine(task, limit_test_batches=num_batches)
     results = engine.run()

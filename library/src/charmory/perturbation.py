@@ -14,6 +14,7 @@ from typing import (
 )
 
 import numpy as np
+import torch
 
 if TYPE_CHECKING:
     from art.attacks import EvasionAttack
@@ -71,6 +72,33 @@ class CallablePerturbation(Perturbation):
         self, data: np.ndarray, batch
     ) -> Tuple[np.ndarray, Optional[Mapping[str, Any]]]:
         return self.perturbation(data), None
+
+
+@dataclass
+class TorchTransformPerturbation(Perturbation):
+    """
+    A generic perturbation for a torchvision transform.
+
+    Example::
+
+        from charmory.perturbation import TorchPerturbation
+        from torchvision.transforms.v2 import GaussianBlur
+
+        perturb = TorchPerturbation(
+            name="blur",
+            perturbation=GaussianBlur(kernel_size=5),
+        )
+    """
+
+    name: str
+    """Descriptive name of the perturbation"""
+    perturbation: Callable[[torch.Tensor], torch.Tensor]
+    """Callable accepting the input data and returning the perturbed data"""
+
+    def apply(
+        self, data: np.ndarray, batch
+    ) -> Tuple[np.ndarray, Optional[Mapping[str, Any]]]:
+        return self.perturbation(torch.Tensor(data)).numpy(), None
 
 
 @dataclass
