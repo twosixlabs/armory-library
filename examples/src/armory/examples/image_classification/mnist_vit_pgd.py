@@ -1,4 +1,5 @@
 import argparse
+import functools
 from pprint import pprint
 
 from art.attacks.evasion import ProjectedGradientDescent
@@ -41,6 +42,17 @@ def get_cli_args():
     return parser.parse_args()
 
 
+###
+# Transform
+###
+def transform(processor, sample):
+    # Use the HF image processor and convert from BW To RGB
+    sample["image"] = processor([img.convert("RGB") for img in sample["image"]])[
+        "pixel_values"
+    ]
+    return sample
+
+
 @track_params
 def main(batch_size, export_every_n_batches, num_batches):
     ###
@@ -69,14 +81,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         "farleyknight-org-username/vit-base-mnist"
     )
 
-    def transform(sample):
-        # Use the HF image processor and convert from BW To RGB
-        sample["image"] = processor([img.convert("RGB") for img in sample["image"]])[
-            "pixel_values"
-        ]
-        return sample
-
-    dataset.set_transform(transform)
+    dataset.set_transform(functools.partial(transform, processor))
     dataloader = ArmoryDataLoader(dataset, batch_size=batch_size, num_workers=5)
 
     ###
