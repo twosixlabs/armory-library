@@ -48,8 +48,9 @@ $ armory-examples mnist-vit-pgd
 # runs the example mnist-vit-pgd evaluation
 ```
 
-The example source code, along with the Armory-library documentation is a good place
-to see how to construct your own evaluations.
+The [example source code][example-src], along with the [Armory-library
+documentation](docs/index.md) is a good place to learn how to construct your own
+evaluations using armory-library.
 
 # Quick Look
 
@@ -59,10 +60,18 @@ run for free on Google Colab to get a taste of how Armory works.
 
 [![Open In Colab][colab-badge]][colab-url]
 
+# Documentation
 
-# Usage
+The Armory-library documentation is [published on Read the Docs][docs-url] or
+can be viewed directly in [the docs directory](docs/index.md) of this repository.
 
-See the documentation in the [armory-library docs](https://armory-library.readthedocs.io/en/latest/).
+# The historic GARD-Armory
+
+Armory-library is the successor to the [GARD-Armory research program run under
+DARPA][GARD-Armory]. As that program is nearing its conclusion, that repository
+will be archived sometime in 2024 and there will be no further development in
+GARD-Armory by the time you are reading this sentence. The development teams
+for both GARD-Armory and Armory-library can be reached at <armory@twosixtech.com>
 
 # Acknowledgment
 
@@ -90,3 +99,5 @@ Defense Advanced Research Projects Agency (DARPA) or JATIC.
 [gardproject]: https://www.gardproject.org
 [colab-badge]: https://colab.research.google.com/assets/colab-badge.svg
 [colab-url]: https://colab.research.google.com/github/twosixlabs/armory-library/master/examples/notebooks/armory_colab_example.ipynb
+[example-src]: https://github.com/twosixlabs/armory-library/tree/master/examples/src/armory/examples
+[GARD-Armory]: https://github.com/twosixlabs/armory

@@ -68,6 +68,7 @@ src_paths = ["library/src"]
 
 
 [tool.taskipy.tasks]
+# the keys on the left are arguments for the `task` command, for example `task lint`
 docs = "python -m mkdocs build --verbose --config-file ./tools/mkdocs.yml"
 lint = "python -m pre_commit run --all-files"
 test = "python -m pytest -m unit"
