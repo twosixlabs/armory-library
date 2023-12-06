@@ -20,7 +20,8 @@ class ArmoryModel(nn.Module):
     Wrapper around a model to apply an adapter to inputs and outputs of the
     model.
 
-    Example::
+    Example:
+
         from charmory.model import ArmoryModel
 
         def preadapter(images, *args, **kwargs):
