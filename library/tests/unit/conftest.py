@@ -1,11 +1,11 @@
 from unittest.mock import MagicMock
 
-from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
 import pytest
 from torch.utils.data.dataloader import DataLoader
 
 import charmory.evaluation
+from charmory.perturbation import Perturbation
 
 
 @pytest.fixture
@@ -32,10 +32,8 @@ def evaluation_dataset(data_loader):
 
 
 @pytest.fixture
-def evaluation_attack():
-    attack = MagicMock(spec=EvasionAttack)
-    attack.targeted = False
-    return charmory.evaluation.Attack(name="test", attack=attack)
+def evaluation_perturbation():
+    return MagicMock(spec=Perturbation)
 
 
 @pytest.fixture
@@ -52,7 +50,7 @@ def evaluation_sysconfig():
 def evaluation(
     evaluation_model,
     evaluation_dataset,
-    evaluation_attack,
+    evaluation_perturbation,
     evaluation_metric,
     evaluation_sysconfig,
 ):
@@ -62,7 +60,7 @@ def evaluation(
         author=None,
         model=evaluation_model,
         dataset=evaluation_dataset,
-        attack=evaluation_attack,
+        perturbations={"test": [evaluation_perturbation]},
         metric=evaluation_metric,
         sysconfig=evaluation_sysconfig,
     )
