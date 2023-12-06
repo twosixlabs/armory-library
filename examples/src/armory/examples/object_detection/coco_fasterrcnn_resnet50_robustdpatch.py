@@ -5,18 +5,20 @@ import art.attacks.evasion
 from art.estimators.object_detection import PyTorchFasterRCNN
 import jatic_toolbox
 import numpy as np
+import torchmetrics.detection
 
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
+from charmory.evaluation import Dataset, Evaluation, Metric, Model
 from charmory.experimental.transforms import (
     BboxFormat,
     create_object_detection_transform,
 )
 from charmory.model.object_detection import JaticObjectDetectionModel
+from charmory.perturbation import ArtEvasionAttack
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import create_jatic_dataset_transform
@@ -111,7 +113,7 @@ def main(args):
         verbose=False,
     )
 
-    eval_attack = Attack(
+    eval_attack = ArtEvasionAttack(
         name="RobustDPatch",
         attack=AttackWrapper(patch),
         use_label_for_untargeted=False,
@@ -119,6 +121,9 @@ def main(args):
 
     eval_metric = Metric(
         profiler=BasicProfiler(),
+        prediction={
+            "map": torchmetrics.detection.MeanAveragePrecision(class_metrics=False),
+        },
     )
 
     evaluation = Evaluation(
@@ -127,7 +132,10 @@ def main(args):
         author="",
         dataset=eval_dataset,
         model=eval_model,
-        attack=eval_attack,
+        perturbations={
+            "benign": [],
+            "attack": [eval_attack],
+        },
         metric=eval_metric,
     )
 

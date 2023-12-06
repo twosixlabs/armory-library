@@ -1,6 +1,6 @@
 """Definition for the COCO object detection evaluation"""
 
-from typing import Optional
+from typing import Dict, Iterable, Optional
 
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchObjectDetector
@@ -8,18 +8,20 @@ import datasets
 import jatic_toolbox
 from jatic_toolbox.interop.huggingface import HuggingFaceObjectDetectionDataset
 import numpy as np
+import torchmetrics.detection
 from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
 from armory.art_experimental.attacks.patch import AttackWrapper
 from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
+from charmory.evaluation import Dataset, Evaluation, Metric, Model
 from charmory.experimental.transforms import (
     BboxFormat,
     create_object_detection_transform,
 )
 from charmory.model.object_detection import YolosTransformer
+from charmory.perturbation import ArtEvasionAttack, Perturbation
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
 
@@ -112,7 +114,12 @@ def _load_dataset(batch_size: int, dataset_path: Optional[str] = None):
 
 
 def _create_metric():
-    return Metric(profiler=BasicProfiler())
+    return Metric(
+        profiler=BasicProfiler(),
+        prediction={
+            "map": torchmetrics.detection.MeanAveragePrecision(class_metrics=False),
+        },
+    )
 
 
 def _create_attack(detector: PyTorchObjectDetector):
@@ -128,7 +135,7 @@ def _create_attack(detector: PyTorchObjectDetector):
         verbose=False,
     )
 
-    return Attack(
+    return ArtEvasionAttack(
         name="RobustDPatch",
         attack=AttackWrapper(patch),
         use_label_for_untargeted=False,
@@ -143,7 +150,9 @@ def create_evaluation(
 ) -> Evaluation:
     model, detector = _load_model()
     dataset = _load_dataset(batch_size=batch_size, dataset_path=dataset_path)
-    attack = _create_attack(detector) if with_attack else None
+    perturbations: Dict[str, Iterable[Perturbation]] = dict(benign=[])
+    if with_attack:
+        perturbations["attack"] = [_create_attack(detector)]
 
     attack_type = "generated" if with_attack else "precomputed"
 
@@ -153,7 +162,7 @@ def create_evaluation(
         author="TwoSix",
         dataset=dataset,
         model=model,
-        attack=attack,
+        perturbations=perturbations,
         metric=_create_metric(),
     )
 

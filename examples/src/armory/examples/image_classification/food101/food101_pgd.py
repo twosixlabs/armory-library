@@ -1,7 +1,10 @@
+from pprint import pprint
 import sys
 
 import art.attacks.evasion
 from jatic_toolbox import load_dataset as load_jatic_dataset
+import torch
+import torchmetrics.classification
 from torchvision import transforms as T
 
 import armory.baseline_models.pytorch.food101
@@ -10,8 +13,9 @@ from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model, SysConfig
-from charmory.experimental.example_results import print_outputs
+from charmory.evaluation import Dataset, Evaluation, Metric, Model, SysConfig
+from charmory.metrics.perturbation import PerturbationNormMetric
+from charmory.perturbation import ArtEvasionAttack
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.utils import PILtoNumpy
 
@@ -87,7 +91,7 @@ def main():
     # The rest of this file was directly copied from the existing cifar example
     ###
 
-    attack = Attack(
+    attack = ArtEvasionAttack(
         name="PGD",
         attack=art.attacks.evasion.ProjectedGradientDescent(
             classifier,
@@ -105,6 +109,14 @@ def main():
 
     metric = Metric(
         profiler=BasicProfiler(),
+        perturbation={
+            "linf_norm": PerturbationNormMetric(ord=torch.inf),
+        },
+        prediction={
+            "accuracy": torchmetrics.classification.Accuracy(
+                task="multiclass", num_classes=101
+            ),
+        },
     )
 
     evaluation = Evaluation(
@@ -113,18 +125,19 @@ def main():
         author="msw@example.com",
         dataset=dataset,
         model=model,
-        attack=attack,
+        perturbations={
+            "benign": [],
+            "attack": [attack],
+        },
         metric=metric,
         sysconfig=sysconfig,
     )
 
-    task = ImageClassificationTask(
-        evaluation, num_classes=101, export_every_n_batches=5
-    )
+    task = ImageClassificationTask(evaluation, export_every_n_batches=5)
 
     engine = EvaluationEngine(task, limit_test_batches=5)
     results = engine.run()
-    print_outputs(dataset, model, results)
+    pprint(results)
 
     print("JATIC Experiment Complete!")
     return 0

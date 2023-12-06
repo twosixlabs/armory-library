@@ -11,6 +11,7 @@ from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox.interop.huggingface import HuggingFaceObjectDetectionDataset
 from jatic_toolbox.interop.torchvision import TorchVisionObjectDetector
 import torch
+import torchmetrics.detection
 from torchvision.transforms._presets import ObjectDetection
 
 from armory.art_experimental.attacks.patch import AttackWrapper
@@ -18,12 +19,13 @@ from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
+from charmory.evaluation import Dataset, Evaluation, Metric, Model
 from charmory.experimental.transforms import (
     BboxFormat,
     create_object_detection_transform,
 )
 from charmory.model.object_detection import JaticObjectDetectionModel
+from charmory.perturbation import ArtEvasionAttack
 from charmory.tasks.object_detection import ObjectDetectionTask
 
 torch.set_float32_matmul_precision("high")
@@ -135,7 +137,7 @@ def main(argv: list = sys.argv[1:]):
         verbose=False,
     )
 
-    eval_attack = Attack(
+    eval_attack = ArtEvasionAttack(
         name="RobustDPatch",
         attack=AttackWrapper(patch),
         use_label_for_untargeted=False,
@@ -143,6 +145,9 @@ def main(argv: list = sys.argv[1:]):
 
     eval_metric = Metric(
         profiler=BasicProfiler(),
+        prediction={
+            "map": torchmetrics.detection.MeanAveragePrecision(class_metrics=False),
+        },
     )
 
     evaluation = Evaluation(
@@ -151,7 +156,10 @@ def main(argv: list = sys.argv[1:]):
         author="Chris Honaker",
         dataset=eval_dataset,
         model=eval_model,
-        attack=eval_attack,
+        perturbations={
+            "benign": [],
+            "attack": [eval_attack],
+        },
         metric=eval_metric,
     )
 

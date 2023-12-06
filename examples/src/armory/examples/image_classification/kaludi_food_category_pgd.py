@@ -4,15 +4,19 @@ import art.attacks.evasion
 from art.estimators.classification import PyTorchClassifier
 import jatic_toolbox
 import numpy as np
+import torch
 import torch.nn
+import torchmetrics.classification
 from transformers.image_utils import infer_channel_dimension_format
 
 from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
+from charmory.evaluation import Dataset, Evaluation, Metric, Model
+from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.model.image_classification import JaticImageClassificationModel
+from charmory.perturbation import ArtEvasionAttack
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import create_jatic_dataset_transform
@@ -87,7 +91,7 @@ def main(args):
         model=classifier,
     )
 
-    eval_attack = Attack(
+    eval_attack = ArtEvasionAttack(
         name="PGD",
         attack=track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
             classifier,
@@ -105,6 +109,14 @@ def main(args):
 
     eval_metric = Metric(
         profiler=BasicProfiler(),
+        perturbation={
+            "linf_norm": PerturbationNormMetric(ord=torch.inf),
+        },
+        prediction={
+            "accuracy": torchmetrics.classification.Accuracy(
+                task="multiclass", num_classes=12
+            ),
+        },
     )
 
     evaluation = Evaluation(
@@ -113,7 +125,10 @@ def main(args):
         author="Kaludi",
         dataset=eval_dataset,
         model=eval_model,
-        attack=eval_attack,
+        perturbations={
+            "benign": [],
+            "attack": [eval_attack],
+        },
         metric=eval_metric,
     )
 
@@ -122,7 +137,7 @@ def main(args):
     ###
 
     task = ImageClassificationTask(
-        evaluation, num_classes=12, export_every_n_batches=args.export_every_n_batches
+        evaluation, export_every_n_batches=args.export_every_n_batches
     )
     engine = EvaluationEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()

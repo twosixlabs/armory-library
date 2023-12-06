@@ -17,7 +17,7 @@ from charmory.engine import EvaluationEngine
 import charmory.evaluation as ev
 from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.model.image_classification import JaticImageClassificationModel
-from charmory.perturbation import ArtEvasionAttack, CallablePerturbation
+from charmory.perturbation import ArtEvasionAttack, TorchTransformPerturbation
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import Unnormalize
@@ -84,7 +84,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         kernel_size=5,
     )
 
-    blur_perturb = CallablePerturbation(
+    blur_perturb = TorchTransformPerturbation(
         name="blur",
         perturbation=blur,
     )
