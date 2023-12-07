@@ -96,12 +96,16 @@ class MlflowExporter(Exporter):
 
 
 def _serialize(obj):
+    if isinstance(obj, torch.Tensor):
+        if obj.ndim == 0:
+            return obj.item()
+        return [_serialize(i) for i in obj]
     if isinstance(obj, np.integer):
         return int(obj)
     if isinstance(obj, np.floating):
         return float(obj)
     if isinstance(obj, np.ndarray):
-        return [_serialize(i) for i in obj.tolist()]
+        return _serialize(obj.tolist())
     if isinstance(obj, list):
         return [_serialize(i) for i in obj]
     if isinstance(obj, dict):

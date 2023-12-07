@@ -4,11 +4,14 @@ Base Armory evaluation task
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+
+# from pprint import pprint
 from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Mapping, Optional
 
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
-import numpy as np
+
+# import numpy as np
 import torch
 
 from charmory.evaluation import Evaluation
@@ -178,27 +181,29 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
                     f"{batch.chain_name}/perturbation/{perturbation.name}"
                 ):
                     x, out = perturbation.apply(x, batch)
+                    x = x.to(self.device)
                     batch.perturbation_output[perturbation.name] = out
         batch.x_perturbed = x
 
     def evaluate(self, batch: Batch):
         """Perform evaluation on batch"""
-        assert isinstance(batch.x_perturbed, np.ndarray)
-        # Ensure that input sample isn't overwritten by model
-        batch.x_perturbed.flags.writeable = False
         with self.evaluation.metric.profiler.measure(f"{batch.chain_name}/predict"):
-            batch.y_predicted = self.evaluation.model.model.predict(
-                batch.x_perturbed, **self.evaluation.model.predict_kwargs
-            )
+            batch.y_predicted = self.evaluation.model.model(batch.x_perturbed)
 
     def update_metrics(self, batch: Batch):
-        x = torch.tensor(batch.x).to(self.device)
-        x_perturbed = torch.tensor(batch.x_perturbed).to(self.device)
-        y = self.target_to_tensor(batch.y)
-        y_predicted = self.target_to_tensor(batch.y_predicted)
+        # pprint(batch.y_predicted)
+        # pprint(batch.y)
+        # x = torch.tensor(batch.x).to(self.device)
+        # x_perturbed = torch.tensor(batch.x_perturbed).to(self.device)
+        # y = self.target_to_tensor(batch.y)
+        # y_predicted = self.target_to_tensor(batch.y_predicted)
 
-        self.perturbation_metrics[batch.chain_name].update_metrics(x, x_perturbed)
-        self.prediction_metrics[batch.chain_name].update_metrics(y_predicted, y)
+        self.perturbation_metrics[batch.chain_name].update_metrics(
+            batch.x, batch.x_perturbed
+        )
+        self.prediction_metrics[batch.chain_name].update_metrics(
+            batch.y_predicted, batch.y
+        )
 
     def target_to_tensor(self, target):
         return torch.tensor(target).to(self.device)

@@ -6,18 +6,18 @@ from art.estimators.classification import PyTorchClassifier
 import datasets
 import torch
 import torch.nn
+import torch.utils.data.dataloader
 import torchmetrics.classification
 from torchvision.transforms.v2 import GaussianBlur
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 
 from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
-from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
 import charmory.evaluation as ev
 from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.model.image_classification import JaticImageClassificationModel
-from charmory.perturbation import ArtEvasionAttack, TorchTransformPerturbation
+from charmory.perturbation import ArtEvasionAttack, CallablePerturbation
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import Unnormalize
@@ -73,7 +73,7 @@ def main(batch_size, export_every_n_batches, num_batches):
     )
 
     dataset.set_transform(functools.partial(transform, processor))
-    dataloader = ArmoryDataLoader(
+    dataloader = torch.utils.data.dataloader.DataLoader(
         dataset, batch_size=batch_size, num_workers=5, shuffle=True
     )
 
@@ -84,7 +84,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         kernel_size=5,
     )
 
-    blur_perturb = TorchTransformPerturbation(
+    blur_perturb = CallablePerturbation(
         name="blur",
         perturbation=blur,
     )
@@ -161,7 +161,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         ),
         model=ev.Model(
             name="ViT",
-            model=classifier,
+            model=model,
         ),
         perturbations={
             "benign": [],

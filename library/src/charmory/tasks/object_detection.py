@@ -1,5 +1,6 @@
 """Object detection evaluation task"""
 
+# from pprint import pprint
 from typing import Optional
 
 import numpy as np
@@ -52,7 +53,7 @@ class ObjectDetectionTask(BaseEvaluationTask):
     def _export_image(self, chain_name, images, truth, preds, batch_idx):
         batch_size = images.shape[0]
         for sample_idx in range(batch_size):
-            image = images[sample_idx]
+            image = images[sample_idx].cpu().numpy()
             if self.export_adapter is not None:
                 image = self.export_adapter(image)
             boxes_above_threshold = preds[sample_idx]["boxes"][
@@ -91,16 +92,19 @@ class ObjectDetectionTask(BaseEvaluationTask):
         return preds
 
     def evaluate(self, batch: BaseEvaluationTask.Batch):
+        # print(type(batch.x_perturbed))
         super().evaluate(batch)
         if batch.y_predicted is not None:
             batch.y_predicted = self._filter_predictions(batch.y_predicted)
 
     def target_to_tensor(self, targets):
-        return [
-            {
-                "boxes": torch.FloatTensor(target["boxes"]),
-                "labels": torch.IntTensor(target["labels"]),
-                "scores": torch.FloatTensor(target.get("scores", [])),
-            }
-            for target in targets
-        ]
+        # pprint(targets)
+        return targets
+        # return [
+        #     {
+        #         "boxes": torch.FloatTensor(target["boxes"]),
+        #         "labels": torch.IntTensor(target["labels"]),
+        #         "scores": torch.FloatTensor(target.get("scores", [])),
+        #     }
+        #     for target in targets
+        # ]

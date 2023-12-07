@@ -15,7 +15,7 @@ class ImageClassificationTask(BaseEvaluationTask):
         batch_size = batch_data.shape[0]
         for sample_idx in range(batch_size):
             filename = f"batch_{batch_idx}_ex_{sample_idx}_{chain_name}.png"
-            image = batch_data[sample_idx]
+            image = batch_data[sample_idx].cpu().numpy()
             if self.export_adapter is not None:
                 image = self.export_adapter(image)
             self.exporter.log_image(image, filename)

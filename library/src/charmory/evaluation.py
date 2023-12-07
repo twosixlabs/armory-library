@@ -2,9 +2,8 @@
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Callable, Dict, Iterable, Optional
 
-from art.estimators import BaseEstimator
 from torch.utils.data.dataloader import DataLoader
 from torchmetrics.metric import Metric as TorchMetric
 
@@ -64,18 +63,8 @@ class Model:
 
     name: str
     """Descriptive name of the model"""
-    model: BaseEstimator
+    model: Callable[[Any], Any]
     """Model, wrapped in an ART estimator"""
-    predict_kwargs: Dict[str, Any] = field(default_factory=dict)
-    """
-    Optional, additional keyword arguments to be used with the estimator's
-    `predict` method
-    """
-
-    def __post_init__(self):
-        assert isinstance(
-            self.model, BaseEstimator
-        ), "Evaluation model is not an instance of BaseEstimator"
 
 
 @dataclass

@@ -1,4 +1,5 @@
 """Armory model wrapper for HuggingFace transformer YOLOS models."""
+# from pprint import pprint
 from typing import TYPE_CHECKING, Tuple
 
 import torchvision.transforms
@@ -74,4 +75,6 @@ class YolosTransformer(ArmoryModel):
             output,
             target_sizes=[self.target_size for _ in range(len(output.pred_boxes))],
         )
+        # pprint(output)
+        # pprint(result)
         return result

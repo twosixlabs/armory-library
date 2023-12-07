@@ -30,8 +30,8 @@ class Perturbation(Protocol):
     """Descriptive name of the perturbation"""
 
     def apply(
-        self, data: np.ndarray, batch
-    ) -> Tuple[np.ndarray, Optional[Mapping[str, Any]]]:
+        self, data: torch.Tensor, batch
+    ) -> Tuple[torch.Tensor, Optional[Mapping[str, Any]]]:
         """
         Applies a perturbation to the given batch of sample data.
 
@@ -65,12 +65,12 @@ class CallablePerturbation(Perturbation):
 
     name: str
     """Descriptive name of the perturbation"""
-    perturbation: Callable[[np.ndarray], np.ndarray]
+    perturbation: Callable[[torch.Tensor], torch.Tensor]
     """Callable accepting the input data and returning the perturbed data"""
 
     def apply(
-        self, data: np.ndarray, batch
-    ) -> Tuple[np.ndarray, Optional[Mapping[str, Any]]]:
+        self, data: torch.Tensor, batch
+    ) -> Tuple[torch.Tensor, Optional[Mapping[str, Any]]]:
         return self.perturbation(data), None
 
 
@@ -165,7 +165,7 @@ class ArtEvasionAttack(Perturbation):
         """
         return self.attack.targeted
 
-    def apply(self, x: np.ndarray, batch) -> Tuple[np.ndarray, Mapping[str, Any]]:
+    def apply(self, x: torch.Tensor, batch) -> Tuple[torch.Tensor, Mapping[str, Any]]:
         # If targeted, use the label targeter to generate the target label
         if self.targeted:
             if TYPE_CHECKING:
@@ -177,6 +177,10 @@ class ArtEvasionAttack(Perturbation):
             y_target = batch.y if self.use_label_for_untargeted else None
 
         return (
-            self.attack.generate(x=x, y=y_target, **self.generate_kwargs),
+            torch.from_numpy(
+                self.attack.generate(
+                    x=x.cpu().numpy(), y=y_target, **self.generate_kwargs
+                )
+            ),
             dict(y_target=y_target),
         )

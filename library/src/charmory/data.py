@@ -2,7 +2,8 @@
 
 from typing import Any, Callable, Mapping, Sequence
 
-import numpy as np
+# import numpy as np
+import torch
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 
@@ -110,5 +111,9 @@ class ArmoryDataLoader(DataLoader):
         keys = list(batch[0].keys())
         collated = {}
         for key in keys:
-            collated[key] = np.asarray([b[key] for b in batch])
+            # collated[key] = np.asarray([b[key] for b in batch])
+            if key == "image":
+                collated[key] = torch.stack([b[key] for b in batch])
+            else:
+                collated[key] = [b[key] for b in batch]
         return collated
