@@ -1,24 +1,5 @@
 # Getting Started
 
-## Installation
-```bash
-pip install armory-library
-```
-## Usage
-### Example:
-```python
-from charmory.blocks import cifar10, mnist  # noqa: F401
-from charmory.engine import Engine
-baseline = cifar10.baseline
-result = Engine(baseline).run()
-print(result)
-```
-
--### Example testing entrypoint:
- ```bash
-$ armory
-```
-
 ## Lori's Journey
 
 1. PyTorch self-tutorial introduction
@@ -118,7 +99,7 @@ weights_path = EfficientnetLite0ModelFile.get_model_file_path()
 
 lite0_model = EfficientNet.from_pretrained('efficientnet-lite0', weights_path = weights_path )
 
-model = JaticImageClassificationModel(  
+model = JaticImageClassificationModel(
     SRRmodel
 )
 ```
