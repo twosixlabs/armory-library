@@ -12,7 +12,8 @@ from charmory.track import track_param
 
 @matrix(
     model_name=("convnext", "swin", "vit"),
-    attack_max_iter=range(1, 36, 3),
+    # attack_max_iter=range(1, 36, 3),
+    attack_max_iter=range(1, 10, 3),
 )
 def run_evaluation(num_batches, **kwargs):
     task = create_evaluation_task(
@@ -33,7 +34,7 @@ def run_evaluation(num_batches, **kwargs):
 
 if __name__ == "__main__":
     parser = create_parser(
-        description="mwartell cost comparison matrix test",
+        description="mwartell eurosat cost comparison matrix test",
         batch_size=4,
         export_every_n_batches=5,
     )

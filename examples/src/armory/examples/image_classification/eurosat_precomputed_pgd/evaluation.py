@@ -202,7 +202,7 @@ def create_evaluation(
     )
 
     evaluation = Evaluation(
-        name=f"gpusat-cost-compare-mwartell",
+        name="msw-cost-compare-test",
         description=f"compare cost metrics across models and iterations",
         author="mwartell",
         attack=attack,
