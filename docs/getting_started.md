@@ -10,47 +10,63 @@
 
 ### Dataset
 
-A dataset is a collection of images (samples) in a sequence-like structure such as a tuple, map, or numpy array. Each can have a target (label) assigned. Datasets can be imported from a variety of sources such as PyTorch, HuggingFace, or GitHub ???.
+A dataset is a collection of images (samples) in a sequence-like structure such as a
+tuple, map, or numpy array. Each can have a target (label) assigned. Datasets can be
+imported from a variety of sources such as PyTorch, HuggingFace, or GitHub ???.
 
 ### Basic
 
 The following is a basic example of loading tuple data:
+
 ```python
 raw_dataset = [
         ([1, 2, 3], 4),
         ([5, 6, 7], 8),
     ]
 
-    dataset = TupleDataset(raw_dataset, x_key="data", y_key="target")
+keyed_dataset = TupleDataset(raw_dataset, x_key="data", y_key="target")
 ```
 
-Below, we employ a custom adapter:
+For this dataset we need a adapter because ????.
+
 ```python
-raw_dataset = [
-        {"data": [1, 2, 3], "target": 4},
-        {"data": [5, 6, 7], "target": 8},
-    ]
+from pprint import pprint
+pprint(keyed_dataset)
 
 def adapter(data):
-    assert data == {"data": [1, 2, 3], "target": 4}
-    return dict(x=np.array([1, 2, 3]), y=np.array([4]))
-
-dataset = ArmoryDataset(raw_dataset, adapter)
+    # ??? What goes here? Is armory expecting specific keys? Were the keys given
+    # to TupleDataset arbitrary or necessary?
+dataset = ArmoryDataset(keyed_dataset, adapter)
 ```
 
 #### Huggingface
 
 The following is an example of how to load a dataset from Huggingface:
+
 ```python
+import datasets # hugging face dataset library
+from transformers import AutoImageProcessor # hugging face image processor class
+from armory.data import ArmoryLoader
+
+
 dataset = datasets.load_dataset("mnist", split="test")
 processor = AutoImageProcessor.from_pretrained(
-        "farleyknight-org-username/vit-base-mnist"
+        "farleyknight-org-username/vit-base-mnist"  # !!! this is a model card
     )
 
-    dataset.set_transform(functools.partial(transform, processor))
-    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size, num_workers=5)
+dataset.set_transform(functools.partial(transform, processor))
+dataloader = ArmoryDataLoader(dataset, batch_size=batch_size, num_workers=5)
 ```
-Here, `AutoImageProcessor.from_pretrained` expects a Huggingface name for the dataset card. Then `ArmoryDataLoader` generates the numpy arrays that are required by ART for the evaluation.
+
+The `load_dataset` functions imports the [MNIST][mnist] (handwritten digit) dataset from
+HuggingFace. The `split` parameters specifies which subset of the dataset to load,
+is usually either `train` or `test` or possibly, depending on the dataset `validation`.
+
+Here, `AutoImageProcessor.from_pretrained` expects a HuggingFace name for the dataset
+card. Then `ArmoryDataLoader` generates the numpy arrays that are required by ART for
+the evaluation.
+
+[mnist]: https://huggingface.co/datasets/mnist
 
 ### Model
 
@@ -135,7 +151,7 @@ classifier = track_init_params(PyTorchClassifier)(
 
 An attack is a transformation of (each sample in) the dataset in order to disrupt the machine learning algorithm's results. For example, after an attack, the model may misclassify an image or fail to detect an object. In Armory, targeted attacks are designed to focus on only one class at a time.
 
-Attacks can be loaded from ART or ???. [Custom attacks](https://github.com/twosixlabs/armory-library//blob/master/tutorials/adaptive_attacks/custom_attack.md) can also be written.
+Attacks can be loaded from [IBM's Adversarial Robustness Toolbox][art].
 
 The following is an example of how to define an attack from ART's ProjectedGradientDescent:
 ```python
@@ -156,3 +172,5 @@ attack = Attack(
     )
 ```
 Here, ???
+
+[art]: https://github.com/Trusted-AI/adversarial-robustness-toolbox
