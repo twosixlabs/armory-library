@@ -53,7 +53,7 @@ class ObjectDetectionTask(BaseEvaluationTask):
     def _export_image(self, chain_name, images, truth, preds, batch_idx):
         batch_size = images.shape[0]
         for sample_idx in range(batch_size):
-            image = images[sample_idx].cpu().numpy()
+            image = images[sample_idx]
             if self.export_adapter is not None:
                 image = self.export_adapter(image)
             boxes_above_threshold = preds[sample_idx]["boxes"][
@@ -65,7 +65,7 @@ class ObjectDetectionTask(BaseEvaluationTask):
                 pred_boxes=boxes_above_threshold,
             )
             filename = f"batch_{batch_idx}_ex_{sample_idx}_{chain_name}.png"
-            self.exporter.log_image(with_boxes, filename)
+            self.exporter.log_image(with_boxes.cpu().numpy(), filename)
 
     def _filter_predictions(self, preds):
         for pred in preds:

@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from mlflow.client import MlflowClient
 import numpy as np
-import numpy.typing as npt
+
+# import numpy.typing as npt
 import torch
 from torchvision.utils import draw_bounding_boxes
 
@@ -114,14 +115,17 @@ def _serialize(obj):
 
 
 def draw_boxes_on_image(
-    image: npt.NDArray[np.number],
-    ground_truth_boxes: Optional[np.ndarray] = None,
+    image: torch.Tensor,
+    # image: npt.NDArray[np.number],
+    # ground_truth_boxes: Optional[np.ndarray] = None,
+    ground_truth_boxes: Optional[torch.Tensor] = None,
     ground_truth_color: str = "red",
     ground_truth_width: int = 2,
-    pred_boxes: Optional[np.ndarray] = None,
+    pred_boxes: Optional[torch.Tensor] = None,
     pred_color: str = "white",
     pred_width: int = 2,
-) -> npt.NDArray[np.uint8]:
+    # ) -> npt.NDArray[np.uint8]:
+) -> torch.Tensor:
     """
     Draw bounding boxes for ground truth objects and predicted objects on top of
     an image sample.
@@ -148,19 +152,20 @@ def draw_boxes_on_image(
         Numpy uint8 array of (C, H, W) image with bounding boxes data
     """
     if image.shape[-1] in (1, 3, 6):  # Convert from (H, W, C) to (C, H, W)
-        image = image.transpose(2, 0, 1)
+        image = image.permute(2, 0, 1)
 
-    if image.dtype != np.uint8:  # Convert/scale to uint8
-        if np.max(image) <= 1:
-            image = np.round(np.clip(image, 0.0, 1.0) * 255.0)
-        image = image.astype(np.uint8)
+    if image.dtype != torch.uint8:  # Convert/scale to uint8
+        if torch.max(image) <= 1:
+            image = torch.round(torch.clip(image, 0.0, 1.0) * 255.0)
+        image = image.type(torch.uint8)
 
-    with_boxes = torch.as_tensor(image)
+    # with_boxes = torch.as_tensor(image)
+    with_boxes = image
 
     if ground_truth_boxes is not None and len(ground_truth_boxes) > 0:
         with_boxes = draw_bounding_boxes(
             image=with_boxes,
-            boxes=torch.as_tensor(ground_truth_boxes),
+            boxes=ground_truth_boxes,
             colors=ground_truth_color,
             width=ground_truth_width,
         )
@@ -168,9 +173,9 @@ def draw_boxes_on_image(
     if pred_boxes is not None and len(pred_boxes) > 0:
         with_boxes = draw_bounding_boxes(
             image=with_boxes,
-            boxes=torch.as_tensor(pred_boxes),
+            boxes=pred_boxes,
             colors=pred_color,
             width=pred_width,
         )
 
-    return with_boxes.numpy()
+    return with_boxes
