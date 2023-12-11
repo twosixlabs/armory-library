@@ -30,7 +30,7 @@ keyed_dataset = TupleDataset(raw_dataset, x_key="data", y_key="target")
 pprint(keyed_dataset)
 ```
 
-You'll see that we have turned the raw dataset into a map with keys "data" and "target". These keys are arbitrary; the same ones just need to be provided in the evaluation later.
+You'll see that we have turned the raw dataset into a map with keys "data" and "target". These keys are arbitrary; the same ones just need to be provided in the evaluation later and correspond to the images and labels respectively.
 
 For this dataset we need a adapter because ????.
 
