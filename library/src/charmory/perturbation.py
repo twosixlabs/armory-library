@@ -10,28 +10,30 @@ from typing import (
     Optional,
     Protocol,
     Tuple,
+    TypeVar,
     runtime_checkable,
 )
 
-import numpy as np
-import torch
+from charmory.typing import autocoerce
 
 if TYPE_CHECKING:
     from art.attacks import EvasionAttack
+    import numpy as np
 
     from charmory.labels import LabelTargeter
 
 
+T = TypeVar("T")
+
+
 @runtime_checkable
-class Perturbation(Protocol):
+class Perturbation(Protocol[T]):
     """A perturbation that can be applied to dataset batches"""
 
     name: str
     """Descriptive name of the perturbation"""
 
-    def apply(
-        self, data: torch.Tensor, batch
-    ) -> Tuple[torch.Tensor, Optional[Mapping[str, Any]]]:
+    def apply(self, data: T, batch) -> Tuple[T, Optional[Mapping[str, Any]]]:
         """
         Applies a perturbation to the given batch of sample data.
 
@@ -47,7 +49,7 @@ class Perturbation(Protocol):
 
 
 @dataclass
-class CallablePerturbation(Perturbation):
+class CallablePerturbation(Perturbation[T]):
     """
     A generic perturbation for a simple callable (e.g., a transform or
     augmentation).
@@ -65,44 +67,18 @@ class CallablePerturbation(Perturbation):
 
     name: str
     """Descriptive name of the perturbation"""
-    perturbation: Callable[[torch.Tensor], torch.Tensor]
+    perturbation: Callable[[T], T]
     """Callable accepting the input data and returning the perturbed data"""
 
-    def apply(
-        self, data: torch.Tensor, batch
-    ) -> Tuple[torch.Tensor, Optional[Mapping[str, Any]]]:
+    def __post_init__(self):
+        self.perturbation = autocoerce(self.perturbation)
+
+    def apply(self, data: T, batch) -> Tuple[T, Optional[Mapping[str, Any]]]:
         return self.perturbation(data), None
 
 
 @dataclass
-class TorchTransformPerturbation(Perturbation):
-    """
-    A generic perturbation for a torchvision transform.
-
-    Example::
-
-        from charmory.perturbation import TorchPerturbation
-        from torchvision.transforms.v2 import GaussianBlur
-
-        perturb = TorchPerturbation(
-            name="blur",
-            perturbation=GaussianBlur(kernel_size=5),
-        )
-    """
-
-    name: str
-    """Descriptive name of the perturbation"""
-    perturbation: Callable[[torch.Tensor], torch.Tensor]
-    """Callable accepting the input data and returning the perturbed data"""
-
-    def apply(
-        self, data: np.ndarray, batch
-    ) -> Tuple[np.ndarray, Optional[Mapping[str, Any]]]:
-        return self.perturbation(torch.Tensor(data)).numpy(), None
-
-
-@dataclass
-class ArtEvasionAttack(Perturbation):
+class ArtEvasionAttack(Perturbation["np.ndarray"]):
     """
     A perturbation using an evasion attack from the Adversarial Robustness
     Toolbox (ART).
@@ -142,6 +118,7 @@ class ArtEvasionAttack(Perturbation):
     """
 
     def __post_init__(self):
+        self.attack.generate = autocoerce(self.attack.generate)
         if self.targeted:
             assert (
                 self.label_targeter is not None
@@ -149,6 +126,7 @@ class ArtEvasionAttack(Perturbation):
             assert (
                 not self.use_label_for_untargeted
             ), "Evaluation attack is targeted, use_label_for_targeted cannot be True"
+            self.label_targeter.generate = autocoerce(self.label_targeter.generate)
         else:
             assert (
                 not self.label_targeter
@@ -165,7 +143,7 @@ class ArtEvasionAttack(Perturbation):
         """
         return self.attack.targeted
 
-    def apply(self, x: torch.Tensor, batch) -> Tuple[torch.Tensor, Mapping[str, Any]]:
+    def apply(self, x: "np.ndarray", batch) -> Tuple["np.ndarray", Mapping[str, Any]]:
         # If targeted, use the label targeter to generate the target label
         if self.targeted:
             if TYPE_CHECKING:
@@ -177,10 +155,6 @@ class ArtEvasionAttack(Perturbation):
             y_target = batch.y if self.use_label_for_untargeted else None
 
         return (
-            torch.from_numpy(
-                self.attack.generate(
-                    x=x.cpu().numpy(), y=y_target, **self.generate_kwargs
-                )
-            ),
+            self.attack.generate(x=x, y=y_target, **self.generate_kwargs),
             dict(y_target=y_target),
         )

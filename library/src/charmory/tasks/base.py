@@ -181,9 +181,8 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
                     f"{batch.chain_name}/perturbation/{perturbation.name}"
                 ):
                     x, out = perturbation.apply(x, batch)
-                    x = x.to(self.device)
                     batch.perturbation_output[perturbation.name] = out
-        batch.x_perturbed = x
+        batch.x_perturbed = torch.as_tensor(x, device=self.device)
 
     def evaluate(self, batch: Batch):
         """Perform evaluation on batch"""
