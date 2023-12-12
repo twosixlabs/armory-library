@@ -11,6 +11,8 @@ import numpy as np
 import torch
 from torchvision.utils import draw_bounding_boxes
 
+from charmory.typing import autocoerce
+
 if TYPE_CHECKING:
     import PIL.Image
     import matplotlib.figure
@@ -60,6 +62,7 @@ class MlflowExporter(Exporter):
         self.client = client
         self.run_id = run_id
 
+    @autocoerce
     def log_image(
         self, image: Union[np.ndarray, "PIL.Image.Image"], artifact_path: str
     ):
@@ -114,17 +117,15 @@ def _serialize(obj):
     return obj
 
 
+@autocoerce
 def draw_boxes_on_image(
     image: torch.Tensor,
-    # image: npt.NDArray[np.number],
-    # ground_truth_boxes: Optional[np.ndarray] = None,
     ground_truth_boxes: Optional[torch.Tensor] = None,
     ground_truth_color: str = "red",
     ground_truth_width: int = 2,
     pred_boxes: Optional[torch.Tensor] = None,
     pred_color: str = "white",
     pred_width: int = 2,
-    # ) -> npt.NDArray[np.uint8]:
 ) -> torch.Tensor:
     """
     Draw bounding boxes for ground truth objects and predicted objects on top of
@@ -134,7 +135,7 @@ def draw_boxes_on_image(
     boxes.
 
     Args:
-        image: Numpy array of image data. May be of shape (C, H, W) or (H, W, C).
+        image: 3-dimensional array of image data. May be of shape (C, H, W) or (H, W, C).
             If array type is not uint8, all values will be clipped between 0.0
             and 1.0 then scaled to a uint8 between 0 and 255.
         ground_truth_boxes: Optional array of shape (N, 4) containing ground truth
@@ -149,7 +150,7 @@ def draw_boxes_on_image(
         pred_width: Width of ground truth bounding boxes.
 
     Return:
-        Numpy uint8 array of (C, H, W) image with bounding boxes data
+        uint8 tensor of (C, H, W) image with bounding boxes data
     """
     if image.shape[-1] in (1, 3, 6):  # Convert from (H, W, C) to (C, H, W)
         image = image.permute(2, 0, 1)
@@ -159,7 +160,6 @@ def draw_boxes_on_image(
             image = torch.round(torch.clip(image, 0.0, 1.0) * 255.0)
         image = image.type(torch.uint8)
 
-    # with_boxes = torch.as_tensor(image)
     with_boxes = image
 
     if ground_truth_boxes is not None and len(ground_truth_boxes) > 0:

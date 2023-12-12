@@ -3,7 +3,6 @@
 # from pprint import pprint
 from typing import Optional
 
-import numpy as np
 import torch
 import torchvision.ops
 
@@ -51,8 +50,7 @@ class ObjectDetectionTask(BaseEvaluationTask):
         self.export_batch_metadata(batch)
 
     def _export_image(self, chain_name, images, truth, preds, batch_idx):
-        batch_size = images.shape[0]
-        for sample_idx in range(batch_size):
+        for sample_idx in range(len(images)):
             image = images[sample_idx]
             if self.export_adapter is not None:
                 image = self.export_adapter(image)
@@ -65,7 +63,7 @@ class ObjectDetectionTask(BaseEvaluationTask):
                 pred_boxes=boxes_above_threshold,
             )
             filename = f"batch_{batch_idx}_ex_{sample_idx}_{chain_name}.png"
-            self.exporter.log_image(with_boxes.cpu().numpy(), filename)
+            self.exporter.log_image(with_boxes, filename)
 
     def _filter_predictions(self, preds):
         for pred in preds:
@@ -86,9 +84,9 @@ class ObjectDetectionTask(BaseEvaluationTask):
                 boxes = pred["boxes"][keep]
                 scores = pred["scores"][keep]
                 labels = pred["labels"][keep]
-                pred["boxes"] = np.array([boxes]) if single else boxes
-                pred["scores"] = np.array([scores]) if single else scores
-                pred["labels"] = np.array([labels]) if single else labels
+                pred["boxes"] = [boxes] if single else boxes
+                pred["scores"] = [scores] if single else scores
+                pred["labels"] = [labels] if single else labels
         return preds
 
     def evaluate(self, batch: BaseEvaluationTask.Batch):
