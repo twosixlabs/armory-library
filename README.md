@@ -98,6 +98,6 @@ Defense Advanced Research Projects Agency (DARPA) or JATIC.
 [style-url]: https://github.com/ambv/black
 [gardproject]: https://www.gardproject.org
 [colab-badge]: https://colab.research.google.com/assets/colab-badge.svg
-[colab-url]: https://colab.research.google.com/github/twosixlabs/armory-library/master/examples/notebooks/armory_colab_example.ipynb
+[colab-url]: https://colab.research.google.com/github/twosixlabs/armory-library/blob/master/examples/notebooks/armory_colab_example.ipynb
 [example-src]: https://github.com/twosixlabs/armory-library/tree/master/examples/src/armory/examples
 [GARD-Armory]: https://github.com/twosixlabs/armory
