@@ -1,9 +1,9 @@
-""" run_matrix - Run torchvision image classification models trained on
+""" matrix_tv - Run torchvision image classification models trained on
 ImageNet against the TwoSix ImageNet dataset.
 
 Usage:
-    run_matrix.py [options]
-    run_matrix.py --script
+    matrix_tv.py [options]
+    matrix_tv.py [options] --script
 
 Options:
     -b --batches=N         Number of batches to run [default: 20]
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     if args["script"]:
         for model in _MODELS:
             print(
-                f"python run_matrix.py --model {model} "
+                f"python matrix_tv.py --model {model} "
                 f"--batches {args['batches']} --size {args['size']} "
                 f"--export {args['export']}"
             )
