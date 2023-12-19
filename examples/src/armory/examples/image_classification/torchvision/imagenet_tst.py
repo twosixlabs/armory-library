@@ -16,13 +16,17 @@ Because it is derived from a competition, the train dataset is claimed to have
 only -1 for its labels. I've not confirmed this yet.
 """
 
+import functools
 import io
 import json
 from pathlib import Path
+import timeit
 
 from PIL import Image
 import pyarrow.parquet as pq
 import torchvision.datasets
+
+from charmory.evaluation import SysConfig
 
 
 class ImageNetTST(torchvision.datasets.VisionDataset):
@@ -58,7 +62,9 @@ class ImageNetTST(torchvision.datasets.VisionDataset):
 
     def __getitem__(self, index):
         row = self.df.iloc[index]
-        image = Image.open(io.BytesIO(row["image"]["bytes"]))
+        image = Image.open(io.BytesIO(row["image"]["bytes"])).convert("RGB")
+        if self.transform:
+            image = self.transform(image)
         target = row["label"]
         return image, target
 
@@ -66,16 +72,18 @@ class ImageNetTST(torchvision.datasets.VisionDataset):
         return self.labels[index]
 
 
-def get_local_imagenettst(split: str = "val"):
-    from charmory.evaluation import SysConfig
-
+@functools.cache
+def get_local_imagenettst(split: str = "val", transform=None):
     root = SysConfig().dataset_cache / "imagenet-tst"
+    return ImageNetTST(root, split=split, transform=transform)
 
-    return ImageNetTST(root, split=split)
+
+def test_intst_dataset_images(dataset):
+    print(f"{len(dataset)=}")
+
+    for image, label in dataset:
+        assert isinstance(image, Image.Image)
 
 
 if __name__ == "__main__":
-    intst = get_local_imagenettst()
-    print(f"{len(intst)=}")
-    image, target = intst[0]
-    print(f"{image=} {target=}")
+    print(timeit.timeit(lambda: get_local_imagenettst(split="val")))

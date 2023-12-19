@@ -5,13 +5,13 @@ Usage:
     run_matrix.py [options]
 
 Options:
-    --batch=N       Batch size [default: 1]
-    --num=N         Number of batches to run [default: 5]
-    --export=N      Export results every N batches [default: 5]
+    -b --batch=N       Batch size [default: 1]
+    -n --num=N         Number of batches to run [default: 20]
+    -e --export=N      Export results every N batches [default: 5]
 """
 
 
-from copy import deepcopy
+# from copy import deepcopy  # TODO: why is this unref, what was it doing in run_matrix?
 from pprint import pprint
 
 import albumentations as A
@@ -30,9 +30,8 @@ from torchvision.models import (
 )
 
 from armory.matrix import matrix
-from armory.matrix.range import frange
 from armory.metrics.compute import BasicProfiler
-from charmory.data import ArmoryDataLoader
+from charmory.data import ArmoryDataLoader, TupleDataset
 from charmory.engine import EvaluationEngine
 from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from charmory.tasks.image_classification import ImageClassificationTask
@@ -74,18 +73,14 @@ def _load_dataset(batch_size: int):
         ],
     )
 
-    def transform_func(sample):
-        transformed = deepcopy(sample)
-        for i in range(len(sample["image"])):
-            transformed["image"] = [
-                transforms(image=np.asarray(image))["image"].transpose(2, 0, 1)
-                for image in sample["image"]
-            ]
-        return transformed
+    def transform_func(image):
+        return transforms(image=np.asarray(image))["image"].transpose(2, 0, 1)
 
     dataset = get_local_imagenettst(split="val", transform=transform_func)
 
-    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
+    dataloader = ArmoryDataLoader(
+        TupleDataset(dataset, "image", "label"), batch_size=batch_size
+    )
 
     eval_dataset = Dataset(
         name="ImageNet1k",
@@ -156,6 +151,7 @@ def create_evaluation_task(
     return task
 
 
+# @matrix(model_factory=(alexnet,), eps=[0.03], max_iter=[3])
 @matrix(
     model_factory=(
         alexnet,
@@ -165,8 +161,8 @@ def create_evaluation_task(
         densenet121,
         efficientnet_b0,
     ),
-    eps=frange(0.01, 0.03, 0.005),
-    max_iter=range(10, 26, 5),
+    eps=[0.03],
+    max_iter=[10],
 )
 def run_evaluation(num_batches, **kwargs):
     task = create_evaluation_task(**kwargs)
@@ -175,15 +171,22 @@ def run_evaluation(num_batches, **kwargs):
     results = engine.run()
     pprint(results)
 
+    print(res[0])
+
 
 if __name__ == "__main__":
+    import traceback
+
     import docopt
 
     args = docopt.docopt(__doc__)
+    args = {k.replace("--", ""): int(v) for k, v in args.items()}
 
+    args = {"num": 100, "batch": 1, "export": 5}
     res = run_evaluation(
-        num_batches=args["--batch"],
-        batch_size=args["--num"],
-        export_every_n_batches=args["--export"],
+        num_batches=args["num"],
+        batch_size=int(args["batch"]),
+        export_every_n_batches=args["export"],
     )
     pprint(res)
+    traceback.print_tb(res[0].__traceback__)
