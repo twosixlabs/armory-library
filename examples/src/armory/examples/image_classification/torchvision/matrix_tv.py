@@ -3,16 +3,18 @@ ImageNet against the TwoSix ImageNet dataset.
 
 Usage:
     run_matrix.py [options]
+    run_matrix.py --script
 
 Options:
-    -b --batch=N       Batch size [default: 1]
-    -n --num=N         Number of batches to run [default: 20]
-    -e --export=N      Export results every N batches [default: 5]
+    -b --batches=N         Number of batches to run [default: 20]
+    -s --size=N  i         Batch size [default: 1]
+    -e --export=N          Export results every N batches [default: 5]
+    -m --model=NAME        Model to run [default: alexnet]
 """
 
 
 # from copy import deepcopy  # TODO: why is this unref, what was it doing in run_matrix?
-from pprint import pprint
+import sys
 
 import albumentations as A
 from art.attacks.evasion import ProjectedGradientDescent
@@ -27,9 +29,48 @@ from torchvision.models import (
     densenet121,
     densenet169,
     efficientnet_b0,
+    efficientnet_v2_m,
+    efficientnet_v2_s,
+    googlenet,
+    inception_v3,
+    maxvit_t,
+    mobilenet_v2,
+    mobilenet_v3_small,
+    regnet_x_400mf,
+    resnet18,
+    resnet50,
+    resnext50_32x4d,
+    shufflenet_v2_x1_0,
+    vgg11,
+    vit_b_16,
+    wide_resnet50_2,
 )
 
-from armory.matrix import matrix
+# TODO this selection of models is arbitrary and incomplete
+_MODELS = {
+    "alexnet": alexnet,
+    "convnext_base": convnext_base,
+    "convnext_tiny": convnext_tiny,
+    "densenet121": densenet121,
+    "densenet169": densenet169,
+    "efficientnet_b0": efficientnet_b0,
+    "efficientnet_v2_s": efficientnet_v2_s,
+    "efficientnet_v2_m": efficientnet_v2_m,
+    "googlenet": googlenet,
+    "inception_v3": inception_v3,
+    "maxvit_t": maxvit_t,
+    "mobilenet_v2": mobilenet_v2,
+    "mobilenet_v3_small": mobilenet_v3_small,
+    "regnet_x_400mf": regnet_x_400mf,
+    "resnet18": resnet18,
+    "resnet50": resnet50,
+    "resnext50_32x4d": resnext50_32x4d,
+    "shufflenet_v2_x1_0": shufflenet_v2_x1_0,
+    "vgg11": vgg11,
+    "vit_b_16": vit_b_16,
+    "wide_resnet50_2": wide_resnet50_2,
+}
+
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader, TupleDataset
 from charmory.engine import EvaluationEngine
@@ -38,7 +79,8 @@ from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_param
 
 
-def _load_model(factory):
+def _load_model(name: str):
+    factory = _MODELS[name]
     model = factory(weights="DEFAULT")
     classifier = track_init_params(PyTorchClassifier)(
         model,
@@ -50,9 +92,10 @@ def _load_model(factory):
         nb_classes=1000,
         clip_values=(0.0, 1.0),
     )
+    track_param("model.name", name)
 
     eval_model = Model(
-        name=type(model).__name__,
+        name=name,
         model=classifier,
     )
 
@@ -114,19 +157,22 @@ def _create_attack(classifier: PyTorchClassifier, eps: float, max_iter: int):
     )
 
 
-def create_evaluation(
-    model_factory,
-    batch_size: int,
+def run_evaluation(
+    experiment: str,
+    model_name: str,
+    batches: int,
+    size: int,
+    export: int,
     eps: float,
     max_iter: int,
-) -> Evaluation:
-    model, classifier = _load_model(model_factory)
-    dataset = _load_dataset(batch_size=batch_size)
+):
+    dataset = _load_dataset(batch_size=size)
+    model, classifier = _load_model(model_name)
     attack = _create_attack(classifier, eps=eps, max_iter=max_iter)
 
     evaluation = Evaluation(
-        name=f"mwartell-imagenet-{model_factory.__name__}-pgd",
-        description=f"Imagenet classification using {model_factory.__name__} model with PGD attack",
+        name=experiment,
+        description=f"Imagenet classification using {model_name} model with PGD attack",
         author="TwoSix",
         attack=attack,
         dataset=dataset,
@@ -134,59 +180,40 @@ def create_evaluation(
         model=model,
     )
 
-    return evaluation
-
-
-def create_evaluation_task(
-    export_every_n_batches: int, **kwargs
-) -> ImageClassificationTask:
-    evaluation = create_evaluation(**kwargs)
-
     task = ImageClassificationTask(
         evaluation,
         num_classes=1000,
-        export_every_n_batches=export_every_n_batches,
+        export_every_n_batches=export,
     )
 
-    return task
-
-
-# @matrix(model_factory=(alexnet,), eps=[0.03], max_iter=[3])
-@matrix(
-    model_factory=(
-        alexnet,
-        convnext_base,
-        convnext_tiny,
-        densenet169,
-        densenet121,
-        efficientnet_b0,
-    ),
-    eps=[0.03],
-    max_iter=[10],
-)
-def run_evaluation(num_batches, **kwargs):
-    task = create_evaluation_task(**kwargs)
-    track_param("main.num_batches", num_batches)
-    engine = EvaluationEngine(task, limit_test_batches=num_batches)
-    results = engine.run()
-    pprint(results)
-
-    print(res[0])
+    track_param("main.num_batches", batches)
+    engine = EvaluationEngine(task, limit_test_batches=batches)
+    return engine.run()
 
 
 if __name__ == "__main__":
-    import traceback
-
     import docopt
 
     args = docopt.docopt(__doc__)
-    args = {k.replace("--", ""): int(v) for k, v in args.items()}
+    args = {k.replace("--", ""): v for k, v in args.items()}
 
-    args = {"num": 100, "batch": 1, "export": 5}
+    # emit a shell script to run all registered models
+    if args["script"]:
+        for model in _MODELS:
+            print(
+                f"python run_matrix.py --model {model} "
+                f"--batches {args['batches']} --size {args['size']} "
+                f"--export {args['export']}"
+            )
+        sys.exit(0)
+
     res = run_evaluation(
-        num_batches=args["num"],
-        batch_size=int(args["batch"]),
-        export_every_n_batches=args["export"],
+        experiment="mwartell-imagenet-nomatrix",
+        model_name=args["model"],
+        batches=int(args["batches"]),
+        size=int(args["size"]),
+        export=int(args["export"]),
+        eps=0.003,
+        max_iter=10,
     )
-    pprint(res)
-    traceback.print_tb(res[0].__traceback__)
+    print(res)
