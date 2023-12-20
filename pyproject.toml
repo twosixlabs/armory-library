@@ -1,6 +1,12 @@
 [build-system]
 build-backend = "hatchling.build"
-requires = ["hatchling"]
+
+# hatchling 1.19 prevents installation of a pyproject with no files included
+# because this package currently has no files, but does include helpful
+# dependencies and scripts, we had to pin to 1.19 on 12-dec-2023 as a
+# workaround. This can possibly be unpinned in the furture.
+# cf. https://github.com/pypa/hatch/issues/1113
+requires = ["hatchling<=1.18.0"]
 
 
 [project]
@@ -68,6 +74,7 @@ src_paths = ["library/src"]
 
 
 [tool.taskipy.tasks]
+# the keys on the left are arguments for the `task` command, for example `task lint`
 docs = "python -m mkdocs build --verbose --config-file ./tools/mkdocs.yml"
 lint = "python -m pre_commit run --all-files"
 test = "python -m pytest -m unit"
