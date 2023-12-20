@@ -23,6 +23,7 @@ import io
 import json
 from pathlib import Path
 import timeit
+from typing import List
 
 from PIL import Image
 import pyarrow.parquet as pq
@@ -39,7 +40,7 @@ class ImageNetTST(torchvision.datasets.VisionDataset):
             "test",
         ], "split must be one of train, val, test"
 
-        self.labels: list[str] = json.load(open(Path(root) / "imagenet_classes.json"))[
+        self.labels: List[str] = json.load(open(Path(root) / "imagenet_classes.json"))[
             "imagenet_classes"
         ]
 
@@ -74,7 +75,7 @@ class ImageNetTST(torchvision.datasets.VisionDataset):
         return self.labels[index]
 
 
-@functools.cache
+@functools.lru_cache
 def get_local_imagenettst(split: str = "val", transform=None):
     """a convenience method which assumes you've already downloaded the dataset"""
     root = SysConfig().dataset_cache / "imagenet-tst"
