@@ -1,6 +1,6 @@
 # torchvision sample evaluations
 
-This curated dataset exists to allow armory to compare multiple, different models
+This curated dataset exists to allow armory to evaluate multiple, different models
 for comparative analysis.
 
 The dataset is a subset of the [ImageNet](http://www.image-net.org/) dataset,
