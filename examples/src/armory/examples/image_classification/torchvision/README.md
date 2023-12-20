@@ -1,8 +1,14 @@
 # torchvision sample evaluations
 
-I am looking to evaluate the performance of standard, pre-trained torchvision models on
-the ImageNet dataset. I am using the
-[torchvision.models](https://pytorch.org/docs/stable/torchvision/models.html) module to
-load the models and the
-[torchvision.datasets.ImageNet](https://pytorch.org/docs/stable/torchvision/datasets.html#torchvision.datasets.ImageNet)
-module to load the dataset.
+This curated dataset exists to allow armory to compare multiple, different models
+for comparative analysis.
+
+The dataset is a subset of the [ImageNet](http://www.image-net.org/) dataset,
+as retrieved from HuggingFace's [datasets](https://huggingface.co/datasets) library
+as parquet files and adapted into th vision.datasets.VisionDataset protocol.
+
+The driver program imgntst.py allows a named model from the torchvision image
+classification model library (https://pytorch.org/vision/stable/models.html#classification)
+to be evaluated against the dataset.
+
+The names of just about every file here could be better.

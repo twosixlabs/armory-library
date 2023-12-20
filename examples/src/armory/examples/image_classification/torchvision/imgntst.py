@@ -1,9 +1,9 @@
-""" matrix_tv - Run torchvision image classification models trained on
+""" imgntst - Run torchvision image classification models trained on
 ImageNet against the TwoSix ImageNet dataset.
 
 Usage:
-    matrix_tv.py [options]
-    matrix_tv.py [options] --script
+    imgntst.py [options]
+    imgntst.py [options] --script
 
 Options:
     -b --batches=N         Number of batches to run [default: 20]
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     if args["script"]:
         for model in _MODELS:
             print(
-                f"python matrix_tv.py --model {model} "
+                f"python imgntst.py --model {model} "
                 f"--batches {args['batches']} --size {args['size']} "
                 f"--export {args['export']}"
             )

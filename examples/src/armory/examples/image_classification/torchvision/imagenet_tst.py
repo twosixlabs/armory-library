@@ -16,6 +16,8 @@ Because it is derived from a competition, the train dataset is claimed to have
 only -1 for its labels. I've not confirmed this yet.
 """
 
+# TODO: this could be easily generalized to read from S3 or local cache
+
 import functools
 import io
 import json
@@ -74,6 +76,7 @@ class ImageNetTST(torchvision.datasets.VisionDataset):
 
 @functools.cache
 def get_local_imagenettst(split: str = "val", transform=None):
+    """a convenience method which assumes you've already downloaded the dataset"""
     root = SysConfig().dataset_cache / "imagenet-tst"
     return ImageNetTST(root, split=split, transform=transform)
 
