@@ -27,6 +27,7 @@ class JaticImageClassificationModel(ArmoryModel):
 
     def __init__(
         self,
+        name: str,
         model: "jatic_toolbox.protocols.ImageClassifier",
         preadapter: Optional[ModelInputAdapter] = None,
     ):
@@ -37,7 +38,7 @@ class JaticImageClassificationModel(ArmoryModel):
             model: model being wrapped
             preadapter: Optional, model input adapter
         """
-        super().__init__(model, preadapter=preadapter, postadapter=self._adapt)
+        super().__init__(name, model, preadapter=preadapter, postadapter=self._adapt)
 
     def _adapt(self, output):
         if hasattr(output, "logits"):

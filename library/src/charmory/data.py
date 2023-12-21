@@ -1,12 +1,13 @@
 """Armory Dataset Classes"""
 
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, List, Mapping, Sequence
 
-# import numpy as np
+import numpy as np
 import torch
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 
+import charmory.batch as batch
 from charmory.track import track_init_params
 
 DatasetOutputAdapter = Callable[..., Mapping[str, Any]]
@@ -117,3 +118,57 @@ class ArmoryDataLoader(DataLoader):
             else:
                 collated[key] = [b[key] for b in batch]
         return collated
+
+
+def _collate_by_type(values: List):
+    if len(values) == 0:
+        return []
+    if isinstance(values[0], np.ndarray):
+        return np.asarray(values)
+    if isinstance(values[0], torch.Tensor):
+        return torch.stack(values)
+    return values
+
+
+def _pop_and_cast(values, key):
+    value = values.pop(key)
+    if isinstance(value, np.ndarray) or isinstance(value, torch.Tensor):
+        return value
+    if isinstance(value, list):
+        return np.asarray(value)
+    raise ValueError(f"Dataset {key} is unsupported type: {type(value)}")
+
+
+class ImageClassificationDataLoader(DataLoader):
+    def __init__(
+        self,
+        *args,
+        dim: batch.ImageDimensions,
+        image_key: str,
+        label_key: str,
+        scale: batch.Scale,
+        **kwargs,
+    ):
+        kwargs.pop("collate_fn", None)
+        super().__init__(*args, collate_fn=self._collate, **kwargs)
+        self.dim = dim
+        self.image_key = image_key
+        self.label_key = label_key
+        self.scale = scale
+
+    def _collate(self, samples: Sequence[Mapping[str, Any]]) -> batch.Batch:
+        collated = {
+            key: _collate_by_type([s[key] for s in samples])
+            for key in samples[0].keys()
+        }
+        images = batch.BatchedImages(
+            images=_pop_and_cast(collated, self.image_key),
+            dim=self.dim,
+            scale=self.scale,
+        )
+        labels = batch.NDimArray(_pop_and_cast(collated, self.label_key))
+        return batch.ImageClassificationBatch(
+            inputs=images,
+            targets=labels,
+            metadata=collated,
+        )

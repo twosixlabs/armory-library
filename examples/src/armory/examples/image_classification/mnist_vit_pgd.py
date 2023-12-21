@@ -13,10 +13,16 @@ from transformers import AutoImageProcessor, AutoModelForImageClassification
 
 from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
+from charmory.batch import BatchedImages, DataType, ImageDimensions, NDimArray, Scale
+from charmory.data import ImageClassificationDataLoader
 from charmory.engine import EvaluationEngine
 import charmory.evaluation as ev
+from charmory.metric import PerturbationMetric, PredictionMetric
 from charmory.metrics.perturbation import PerturbationNormMetric
-from charmory.model.image_classification import JaticImageClassificationModel
+from charmory.model.image_classification import (
+    ImageClassifier,
+    JaticImageClassificationModel,
+)
 from charmory.perturbation import ArtEvasionAttack, CallablePerturbation
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
@@ -50,6 +56,7 @@ def main(batch_size, export_every_n_batches, num_batches):
     # Model
     ###
     model = JaticImageClassificationModel(
+        "vit",
         track_params(AutoModelForImageClassification.from_pretrained)(
             "farleyknight-org-username/vit-base-mnist"
         ),
@@ -73,8 +80,15 @@ def main(batch_size, export_every_n_batches, num_batches):
     )
 
     dataset.set_transform(functools.partial(transform, processor))
-    dataloader = torch.utils.data.dataloader.DataLoader(
-        dataset, batch_size=batch_size, num_workers=5, shuffle=True
+    dataloader = ImageClassificationDataLoader(
+        dataset,
+        dim=ImageDimensions.CHW,
+        scale=Scale(dtype=DataType.FLOAT, max=1.0),
+        image_key="image",
+        label_key="label",
+        batch_size=batch_size,
+        num_workers=5,
+        shuffle=True,
     )
 
     ###
@@ -87,6 +101,7 @@ def main(batch_size, export_every_n_batches, num_batches):
     blur_perturb = CallablePerturbation(
         name="blur",
         perturbation=blur,
+        inputs_accessor=BatchedImages.as_torch(),
     )
 
     pgd = track_init_params(ProjectedGradientDescent)(
@@ -104,47 +119,65 @@ def main(batch_size, export_every_n_batches, num_batches):
     pgd_attack = ArtEvasionAttack(
         name="PGD",
         attack=pgd,
+        inputs_accessor=BatchedImages.as_numpy(),
         use_label_for_untargeted=False,
     )
 
     ###
     # Metrics
     ###
-    metric = ev.Metric(
-        profiler=BasicProfiler(),
-        perturbation={
-            "linf_norm": PerturbationNormMetric(ord=torch.inf),
-        },
-        prediction={
-            "accuracy_avg": torchmetrics.classification.Accuracy(
-                task="multiclass", num_classes=10
-            ),
-            "accuracy_by_class": torchmetrics.classification.Accuracy(
+    metrics = {
+        "linf_norm": PerturbationMetric(
+            PerturbationNormMetric(ord=torch.inf),
+            BatchedImages.as_torch(),
+        ),
+        "accuracy_avg": PredictionMetric(
+            torchmetrics.classification.Accuracy(task="multiclass", num_classes=10),
+            NDimArray.as_torch(device=torch.device("cuda")),
+        ),
+        "accuracy_by_class": PredictionMetric(
+            torchmetrics.classification.Accuracy(
                 task="multiclass", num_classes=10, average=None
             ),
-            "precision_avg": torchmetrics.classification.Precision(
-                task="multiclass", num_classes=10
-            ),
-            "precision_by_class": torchmetrics.classification.Precision(
+            NDimArray.as_torch(device=torch.device("cuda")),
+        ),
+        "precision_avg": PredictionMetric(
+            torchmetrics.classification.Precision(task="multiclass", num_classes=10),
+            NDimArray.as_torch(device=torch.device("cuda")),
+        ),
+        "precision_by_class": PredictionMetric(
+            torchmetrics.classification.Precision(
                 task="multiclass", num_classes=10, average=None
             ),
-            "recall_avg": torchmetrics.classification.Recall(
-                task="multiclass", num_classes=10
-            ),
-            "recall_by_class": torchmetrics.classification.Recall(
+            NDimArray.as_torch(device=torch.device("cuda")),
+        ),
+        "recall_avg": PredictionMetric(
+            torchmetrics.classification.Recall(task="multiclass", num_classes=10),
+            NDimArray.as_torch(device=torch.device("cuda")),
+        ),
+        "recall_by_class": PredictionMetric(
+            torchmetrics.classification.Recall(
                 task="multiclass", num_classes=10, average=None
             ),
-            "f1_score_avg": torchmetrics.classification.F1Score(
-                task="multiclass", num_classes=10
-            ),
-            "f1_score_by_class": torchmetrics.classification.F1Score(
+            NDimArray.as_torch(device=torch.device("cuda")),
+        ),
+        "f1_score_avg": PredictionMetric(
+            torchmetrics.classification.F1Score(task="multiclass", num_classes=10),
+            NDimArray.as_torch(device=torch.device("cuda")),
+        ),
+        "f1_score_by_class": PredictionMetric(
+            torchmetrics.classification.F1Score(
                 task="multiclass", num_classes=10, average=None
             ),
-            "confusion": torchmetrics.classification.ConfusionMatrix(
+            NDimArray.as_torch(device=torch.device("cuda")),
+        ),
+        "confusion": PredictionMetric(
+            torchmetrics.classification.ConfusionMatrix(
                 task="multiclass", num_classes=10
             ),
-        },
-    )
+            NDimArray.as_torch(device=torch.device("cuda")),
+        ),
+    }
 
     ###
     # Evaluation
@@ -155,20 +188,20 @@ def main(batch_size, export_every_n_batches, num_batches):
         author="TwoSix",
         dataset=ev.Dataset(
             name="MNIST",
-            x_key="image",
-            y_key="label",
-            test_dataloader=dataloader,
+            dataloader=dataloader,
         ),
-        model=ev.Model(
+        model=ImageClassifier(
             name="ViT",
             model=model,
+            inputs_accessor=BatchedImages.as_torch(device=torch.device("cuda")),
         ),
         perturbations={
             "benign": [],
             "attack": [pgd_attack],
             "blur": [blur_perturb],
         },
-        metric=metric,
+        metrics=metrics,
+        profiler=BasicProfiler(),
     )
 
     ###
@@ -185,12 +218,11 @@ def main(batch_size, export_every_n_batches, num_batches):
     # Execute
     ###
     pprint(engine.run())
-    pprint(task.perturbation_metrics.compute())
-    pprint(task.prediction_metrics.compute())
+    pprint(task.metrics.compute())
     print("benign")
-    pprint(task.prediction_metrics["benign"]["confusion"].compute())
+    pprint(task.metrics["benign"]["confusion"].compute())
     print("attack")
-    pprint(task.prediction_metrics["attack"]["confusion"].compute())
+    pprint(task.metrics["attack"]["confusion"].compute())
 
 
 if __name__ == "__main__":

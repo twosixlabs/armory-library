@@ -2,13 +2,23 @@
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, Optional
-
-from torch.utils.data.dataloader import DataLoader
-from torchmetrics.metric import Metric as TorchMetric
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Iterable,
+    Mapping,
+    Optional,
+    Protocol,
+    runtime_checkable,
+)
 
 from armory.metrics.compute import NullProfiler, Profiler
-from charmory.perturbation import Perturbation
+from charmory.metric import Metric
+
+if TYPE_CHECKING:
+    from torch.utils.data.dataloader import DataLoader
+
+    from charmory.batch import Batch
 
 
 @dataclass
@@ -17,54 +27,40 @@ class Dataset:
 
     name: str
     """Descriptive name of the dataset"""
-    x_key: str
-    """
-    Key in the sample dictionaries containing the data to be used for model
-    inference
-    """
-    y_key: str
-    """Key in the sample dictionaries containing the natural labels"""
-    test_dataloader: DataLoader
+
+    dataloader: "DataLoader"
     """Data loader for evaluation data"""
-    train_dataloader: Optional[DataLoader] = None
-    """Optional, data loader for training data"""
-
-    def __post_init__(self):
-        assert isinstance(
-            self.test_dataloader, DataLoader
-        ), "Evaluation dataset's test_dataloader is not an instance of DataLoader"
-        if self.train_dataloader is not None:
-            assert isinstance(
-                self.train_dataloader, DataLoader
-            ), "Evaluation dataset's train_dataloader is not an instance of DataLoader"
 
 
-@dataclass
-class Metric:
-    """Configuration for the metrics collected during model evaluation"""
-
-    perturbation: Dict[str, TorchMetric] = field(default_factory=dict)
-    """
-    Dictionary of metric names to torchmetrics Metric objects for perturbation
-    (x vs perturbed x) metrics
-    """
-    prediction: Dict[str, TorchMetric] = field(default_factory=dict)
-    """
-    Dictionary of metric names to torchmetrics Metric objects for prediction
-    (y vs predicted y) metrics
-    """
-    profiler: Profiler = field(default_factory=NullProfiler)
-    """Computational performance profiler instance"""
+@runtime_checkable
+class ExporterProtocol(Protocol):
+    def export(self, batch: "Batch") -> None:
+        """Exports the given batch"""
+        ...
 
 
-@dataclass
-class Model:
-    """Configuration for the model being evaluated"""
+@runtime_checkable
+class ModelProtocol(Protocol):
+    """Model being evaluated"""
 
     name: str
     """Descriptive name of the model"""
-    model: Callable[[Any], Any]
-    """Model, wrapped in an ART estimator"""
+
+    def predict(self, batch: "Batch"):
+        """Executes the model to generate predictions from the given batch"""
+        ...
+
+
+@runtime_checkable
+class PerturbationProtocol(Protocol):
+    """A perturbation that can be applied to dataset batches"""
+
+    name: str
+    """Descriptive name of the perturbation"""
+
+    def apply(self, batch: "Batch") -> None:
+        """Applies a perturbation to the given batch"""
+        ...
 
 
 @dataclass
@@ -79,6 +75,7 @@ class SysConfig:
     Path to the user-specific folder where Armory will store evaluation results,
     cached data, etc.
     """
+
     dataset_cache: Path = Path(
         os.getenv(
             "ARMORY_DATASET_CACHE", Path.home() / ".cache" / "armory" / "dataset_cache"
@@ -108,15 +105,19 @@ class Evaluation:
     """
     description: str
     """Full description of the evaluation"""
-    model: Model
+    model: ModelProtocol
     """Configuration for the model being evaluated"""
     dataset: Dataset
     """Configuration for the dataset to be used for evaluation"""
     author: Optional[str]
     """Optional, author to which to attribute evaluation results"""
-    perturbations: Dict[str, Iterable[Perturbation]] = field(default_factory=dict)
+    perturbations: Dict[str, Iterable[PerturbationProtocol]] = field(
+        default_factory=dict
+    )
     """Optional, perturbation chains to be applied during evaluation"""
-    metric: Metric = field(default_factory=Metric)
-    """Optional, configuration for the metrics collected during model evaluation"""
+    metrics: Mapping[str, Metric] = field(default_factory=dict)
+    """Optional, dictionary of metric names to metric collection objects"""
+    profiler: Profiler = field(default_factory=NullProfiler)
+    """Optional, computational performance profiler instance"""
     sysconfig: SysConfig = field(default_factory=SysConfig)
     """Optional, host system configuration"""

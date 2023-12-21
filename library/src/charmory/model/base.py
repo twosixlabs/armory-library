@@ -33,11 +33,17 @@ class ArmoryModel(nn.Module):
             return output
 
         # assuming `model` has been defined elsewhere
-        wrapper = ArmoryModel(model, preadapter=preadapter, postadapter=postadapter)
+        wrapper = ArmoryModel(
+            "MyModel",
+            model,
+            preadapter=preadapter,
+            postadapter=postadapter,
+        )
     """
 
     def __init__(
         self,
+        name: str,
         model,
         preadapter: Optional[ModelInputAdapter] = None,
         postadapter: Optional[ModelOutputAdapter] = None,
@@ -46,11 +52,13 @@ class ArmoryModel(nn.Module):
         Initializes the model wrapper.
 
         Args:
+            name: Name of the model
             model: Model being wrapped
             preadapter: Optional, model input adapter
             postadapter: Optional, model output adapter
         """
         super().__init__()
+        self.name = name
         self._preadapter = preadapter
         self._model = model
         self._postadapter = postadapter

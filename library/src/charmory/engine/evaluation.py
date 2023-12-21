@@ -86,9 +86,9 @@ class EvaluationEngine:
         assert self.run_id, "No run ID was created by the MLflow logger"
         with track_system_metrics(self.run_id):
             self.trainer.test(
-                self.task, dataloaders=self.task.evaluation.dataset.test_dataloader
+                self.task, dataloaders=self.task.evaluation.dataset.dataloader
             )
         return EvaluationResults(
-            compute=self.task.evaluation.metric.profiler.results(),
+            compute=self.task.evaluation.profiler.results(),
             metrics=self.trainer.callback_metrics,
         )

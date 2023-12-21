@@ -14,11 +14,11 @@ from lightning.pytorch.loggers import MLFlowLogger
 # import numpy as np
 import torch
 
-from charmory.evaluation import Evaluation
 from charmory.export import Exporter, MlflowExporter
 
 if TYPE_CHECKING:
-    from charmory.perturbation import Perturbation
+    from charmory.batch import Batch
+    from charmory.evaluation import Evaluation, PerturbationProtocol
 
 ExportAdapter = Callable[[Any], Any]
 """An adapter for exported data (e.g., images). """
@@ -29,7 +29,7 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
 
     def __init__(
         self,
-        evaluation: Evaluation,
+        evaluation: "Evaluation",
         skip_benign: bool = False,
         skip_attack: bool = False,
         export_adapter: Optional[ExportAdapter] = None,
@@ -57,23 +57,12 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         self._exporter: Optional[Exporter] = None
 
         # Make copies of user-configured metrics for each perturbation chain
-        self.perturbation_metrics = self.MetricsDict(
+        self.metrics = self.MetricsDict(
             {
                 chain_name: self.MetricsDict(
                     {
                         metric_name: metric.clone()
-                        for metric_name, metric in self.evaluation.metric.perturbation.items()
-                    }
-                )
-                for chain_name in self.evaluation.perturbations.keys()
-            }
-        )
-        self.prediction_metrics = self.MetricsDict(
-            {
-                chain_name: self.MetricsDict(
-                    {
-                        metric_name: metric.clone()
-                        for metric_name, metric in self.evaluation.metric.prediction.items()
+                        for metric_name, metric in self.evaluation.metrics.items()
                     }
                 )
                 for chain_name in self.evaluation.perturbations.keys()
@@ -84,31 +73,31 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
     # Inner classes
     ###
 
-    @dataclass
-    class Batch:
-        """Batch being evaluated during each step of the evaluation task"""
+    # @dataclass
+    # class Batch:
+    #     """Batch being evaluated during each step of the evaluation task"""
 
-        chain_name: str
-        i: int
-        data: Mapping[str, Any]
-        x_key: str
-        y_key: str
-        perturbation_output: Dict[str, Any] = field(default_factory=dict)
-        x_perturbed: Optional[Any] = None
-        y_predicted: Optional[Any] = None
+    #     chain_name: str
+    #     i: int
+    #     data: Mapping[str, Any]
+    #     x_key: str
+    #     y_key: str
+    #     perturbation_output: Dict[str, Any] = field(default_factory=dict)
+    #     x_perturbed: Optional[Any] = None
+    #     y_predicted: Optional[Any] = None
 
-        @property
-        def x(self):
-            return self.data[self.x_key]
+    #     @property
+    #     def x(self):
+    #         return self.data[self.x_key]
 
-        @property
-        def y(self):
-            return self.data[self.y_key]
+    #     @property
+    #     def y(self):
+    #         return self.data[self.y_key]
 
     class MetricsDict(torch.nn.ModuleDict):
-        def update_metrics(self, pred: torch.Tensor, target: torch.Tensor) -> None:
+        def update_metrics(self, batch: "Batch") -> None:
             for metric in self.values():
-                metric.update(pred, target)
+                metric.update(batch)
 
         def compute(self) -> Mapping[str, torch.Tensor]:
             return {name: metric.compute() for name, metric in self.items()}
@@ -150,46 +139,50 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
     ###
 
     @abstractmethod
-    def export_batch(self, batch: Batch) -> None:
+    def export_batch(self, chain_name: str, batch_idx: int, batch: "Batch") -> None:
         """Export the given batch"""
 
     ###
     # Task evaluation methods
     ###
 
-    def create_batch(self, chain_name, batch, batch_idx):
-        """Creates a batch object from the given dataset-specific batch"""
-        return self.Batch(
-            chain_name=chain_name,
-            i=batch_idx,
-            data=batch,
-            x_key=self.evaluation.dataset.x_key,
-            y_key=self.evaluation.dataset.y_key,
-        )
+    # def create_batch(self, chain_name, batch, batch_idx):
+    #     """Creates a batch object from the given dataset-specific batch"""
+    #     return self.Batch(
+    #         chain_name=chain_name,
+    #         i=batch_idx,
+    #         data=batch,
+    #         x_key=self.evaluation.dataset.x_key,
+    #         y_key=self.evaluation.dataset.y_key,
+    #     )
 
-    def apply_perturbations(self, batch: Batch, chain: Iterable["Perturbation"]):
+    def apply_perturbations(
+        self, chain_name: str, batch: "Batch", chain: Iterable["PerturbationProtocol"]
+    ):
         """
         Applies the given perturbation chain to the batch to produce the perturbed data
         to be given to the model
         """
-        x = batch.x
-        with self.evaluation.metric.profiler.measure(
-            f"{batch.chain_name}/perturbation"
-        ):
+        # x = batch.x
+        with self.evaluation.profiler.measure(f"{chain_name}/perturbation"):
             for perturbation in chain:
-                with self.evaluation.metric.profiler.measure(
-                    f"{batch.chain_name}/perturbation/{perturbation.name}"
+                with self.evaluation.profiler.measure(
+                    f"{chain_name}/perturbation/{perturbation.name}"
                 ):
-                    x, out = perturbation.apply(x, batch)
-                    batch.perturbation_output[perturbation.name] = out
-        batch.x_perturbed = torch.as_tensor(x, device=self.device)
+                    metadata = perturbation.apply(batch)
+                    # x, out = perturbation.apply(x, batch)
+                    if metadata is not None:
+                        batch.metadata[f"perturbation.{perturbation.name}"] = metadata
+                    # batch.perturbation_output[perturbation.name] = out
+        # batch.x_perturbed = torch.as_tensor(x, device=self.device)
 
-    def evaluate(self, batch: Batch):
+    def evaluate(self, chain_name: str, batch: "Batch"):
         """Perform evaluation on batch"""
-        with self.evaluation.metric.profiler.measure(f"{batch.chain_name}/predict"):
-            batch.y_predicted = self.evaluation.model.model(batch.x_perturbed)
+        with self.evaluation.profiler.measure(f"{chain_name}/predict"):
+            self.evaluation.model.predict(batch)
+            # batch.y_predicted = self.evaluation.model.model(batch.x_perturbed)
 
-    def update_metrics(self, batch: Batch):
+    def update_metrics(self, chain_name: str, batch: "Batch"):
         # pprint(batch.y_predicted)
         # pprint(batch.y)
         # x = torch.tensor(batch.x).to(self.device)
@@ -197,15 +190,21 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         # y = self.target_to_tensor(batch.y)
         # y_predicted = self.target_to_tensor(batch.y_predicted)
 
-        self.perturbation_metrics[batch.chain_name].update_metrics(
-            batch.x, batch.x_perturbed
-        )
-        self.prediction_metrics[batch.chain_name].update_metrics(
-            batch.y_predicted, batch.y
-        )
+        self.metrics[chain_name].update_metrics(batch)
 
-    def target_to_tensor(self, target):
-        return torch.tensor(target).to(self.device)
+        # self.perturbation_metrics[chain_name].update_metrics(
+        #     batch.unperturbed.torch(),
+        #     batch.inputs.torch(),
+        #     # batch.x, batch.x_perturbed
+        # )
+        # self.prediction_metrics[chain_name].update_metrics(
+        #     batch.predictions.torch(),
+        #     batch.targets.torch()
+        #     # batch.y_predicted, batch.y
+        # )
+
+    # def target_to_tensor(self, target):
+    #     return torch.tensor(target).to(self.device)
 
     def log_metric(self, name: str, metric: Any):
         if isinstance(metric, dict):
@@ -235,7 +234,7 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
             # if it's None or is not a list/sequence/etc, just return None
             return None
 
-    def export_batch_metadata(self, batch: Batch):
+    def export_batch_metadata(self, batch: "Batch"):
         data_keys = set(batch.data.keys()) - {
             self.evaluation.dataset.x_key,
             self.evaluation.dataset.y_key,
@@ -265,32 +264,30 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
 
     def on_test_epoch_start(self) -> None:
         """Resets all metrics"""
-        self.perturbation_metrics.reset()
-        self.prediction_metrics.reset()
+        self.metrics.reset()
         return super().on_test_epoch_start()
 
     def test_step(self, batch, batch_idx):
         """
         Performs evaluations of the model for each configured perturbation chain
         """
-        for name, chain in self.evaluation.perturbations.items():
-            chain_batch = self.create_batch(name, batch, batch_idx)
+        for chain_name, chain in self.evaluation.perturbations.items():
+            # chain_batch = self.create_batch(name, batch, batch_idx)
+            chain_batch = batch.clone()
+            chain_batch.metadata["batch.i"] = batch_idx
+            chain_batch.metadata["batch.chain"] = chain_name
 
             with torch.enable_grad():
-                self.apply_perturbations(chain_batch, chain)
-            self.evaluate(chain_batch)
-            self.update_metrics(chain_batch)
+                self.apply_perturbations(chain_name, chain_batch, chain)
+            self.evaluate(chain_name, chain_batch)
+            self.update_metrics(chain_name, chain_batch)
 
-            if self._should_export(batch_idx):
-                self.export_batch(chain_batch)
+            # if self._should_export(batch_idx):
+            #     self.export_batch(chain_name, batch_idx, chain_batch)
 
     def on_test_epoch_end(self) -> None:
         """Logs all metric results"""
-        for chain_name, chain in self.perturbation_metrics.items():
-            for metric_name, metric in chain.items():
-                self.log_metric(f"{chain_name}/{metric_name}", metric.compute())
-
-        for chain_name, chain in self.prediction_metrics.items():
+        for chain_name, chain in self.metrics.items():
             for metric_name, metric in chain.items():
                 self.log_metric(f"{chain_name}/{metric_name}", metric.compute())
 
