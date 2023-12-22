@@ -1,26 +1,24 @@
 """
-Base Armory evaluation task
+Armory lightning module to perform evaluations
 """
 
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional
+from typing import Any, Iterable, Mapping
 
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
 import torch
 
+from charmory.batch import Batch
+from charmory.evaluation import Evaluation, PerturbationProtocol
 from charmory.export.sink import MlflowSink, Sink
 
-if TYPE_CHECKING:
-    from charmory.batch import Batch
-    from charmory.evaluation import Evaluation, PerturbationProtocol
 
-
-class BaseEvaluationTask(pl.LightningModule):
-    """Base Armory evaluation task"""
+class EvaluationModule(pl.LightningModule):
+    """Armory lightning module to perform evaluations"""
 
     def __init__(
         self,
-        evaluation: "Evaluation",
+        evaluation: Evaluation,
         export_every_n_batches: int = 0,
     ):
         """
@@ -34,9 +32,9 @@ class BaseEvaluationTask(pl.LightningModule):
         """
         super().__init__()
         self.evaluation = evaluation
+        # store model as an attribute so it gets moved to device automatically
         self.model = evaluation.model
         self.export_every_n_batches = export_every_n_batches
-        self._exporter: Optional[Sink] = None
 
         # Make copies of user-configured metrics for each perturbation chain
         self.metrics = self.MetricsDict(
@@ -96,9 +94,7 @@ class BaseEvaluationTask(pl.LightningModule):
                 with self.evaluation.profiler.measure(
                     f"{chain_name}/perturbation/{perturbation.name}"
                 ):
-                    metadata = perturbation.apply(batch)
-                    if metadata is not None:
-                        batch.metadata[f"perturbation.{perturbation.name}"] = metadata
+                    perturbation.apply(batch)
 
     def evaluate(self, chain_name: str, batch: "Batch"):
         """Perform evaluation on batch"""
@@ -133,6 +129,8 @@ class BaseEvaluationTask(pl.LightningModule):
     ###
 
     def setup(self, stage: str) -> None:
+        """Sets up the exporter"""
+        super().setup(stage)
         logger = self.logger
         if isinstance(logger, MLFlowLogger):
             sink = MlflowSink(logger.experiment, logger.run_id)
@@ -151,7 +149,6 @@ class BaseEvaluationTask(pl.LightningModule):
         """
         for chain_name, chain in self.evaluation.perturbations.items():
             chain_batch = batch.clone()
-            chain_batch.metadata["perturbations"] = dict()
 
             with torch.enable_grad():
                 self.apply_perturbations(chain_name, chain_batch, chain)

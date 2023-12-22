@@ -25,7 +25,6 @@ from charmory.model.image_classification import (
     JaticImageClassificationModel,
 )
 from charmory.perturbation import ArtEvasionAttack, CallablePerturbation
-from charmory.tasks.base import BaseEvaluationTask
 from charmory.track import track_init_params, track_params
 
 
@@ -204,21 +203,21 @@ def main(batch_size, export_every_n_batches, num_batches):
     ###
     # Engine
     ###
-    task = BaseEvaluationTask(
+    engine = EvaluationEngine(
         evaluation,
         export_every_n_batches=export_every_n_batches,
+        limit_test_batches=num_batches,
     )
-    engine = EvaluationEngine(task, limit_test_batches=num_batches)
 
     ###
     # Execute
     ###
     pprint(engine.run())
-    pprint(task.metrics.compute())
+    pprint(engine.module.metrics.compute())
     print("benign")
-    pprint(task.metrics["benign"]["confusion"].compute())
+    pprint(engine.module.metrics["benign"]["confusion"].compute())
     print("attack")
-    pprint(task.metrics["attack"]["confusion"].compute())
+    pprint(engine.module.metrics["attack"]["confusion"].compute())
 
 
 if __name__ == "__main__":
