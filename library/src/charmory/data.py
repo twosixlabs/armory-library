@@ -4,7 +4,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from enum import StrEnum, auto
 from functools import partial, singledispatch
-from typing import (
+from typing import (  # Sequence,; cast,
     Any,
     Callable,
     Dict,
@@ -12,19 +12,18 @@ from typing import (
     Optional,
     Protocol,
     Self,
-    Sequence,
     Tuple,
     TypedDict,
     TypeVar,
     Union,
-    cast,
     runtime_checkable,
 )
 
 import numpy as np
 import numpy.typing as npt
 import torch
-from torchvision.ops import box_convert
+
+# from torchvision.ops import box_convert
 
 ###
 # to_numpy
@@ -243,14 +242,14 @@ def convert_scale(data, from_scale: Scale, to_scale: Optional[Scale] = None):
 class SupportsConversion(Protocol):
     """A type whose data can be converted to framework-specific representations"""
 
-    def numpy(self, dtype: Optional[npt.DTypeLike] = None) -> Any:
+    def to_numpy(self, dtype: Optional[npt.DTypeLike] = None) -> Any:
         """
         Generates a NumPy-based representation of the data. Specific subtypes may
         support additional conversion arguments.
         """
         ...
 
-    def torch(
+    def to_torch(
         self, dtype: Optional[torch.dtype] = None, device: Optional[torch.device] = None
     ) -> Any:
         """
@@ -264,6 +263,10 @@ class SupportsConversion(Protocol):
 class SupportsUpdate(Protocol):
     def update(self, data: Any) -> None:
         ...
+
+
+class SupportsMutation(SupportsConversion, SupportsUpdate, Protocol):
+    pass
 
 
 RepresentationType = TypeVar("RepresentationType")
@@ -300,15 +303,29 @@ class Metadata(TypedDict):
 
 InputsType = TypeVar("InputsType", bound=SupportsConversion, covariant=True)
 TargetsType = TypeVar("TargetsType", bound=SupportsConversion, covariant=True)
-PredictionsType = TypeVar("PredictionsType", bound=SupportsConversion, covariant=True)
+PredictionsType = TypeVar("PredictionsType", bound=SupportsMutation, covariant=True)
 
 
 class _Batch(Protocol, Generic[InputsType, TargetsType, PredictionsType]):
-    initial_inputs: InputsType
-    inputs: InputsType
-    targets: TargetsType
-    metadata: Metadata
-    predictions: Optional[PredictionsType]
+    @property
+    def initial_inputs(self) -> InputsType:
+        ...
+
+    @property
+    def inputs(self) -> InputsType:
+        ...
+
+    @property
+    def targets(self) -> TargetsType:
+        ...
+
+    @property
+    def metadata(self) -> Metadata:
+        ...
+
+    @property
+    def predictions(self) -> PredictionsType:
+        ...
 
     def clone(self) -> Self:
         ...
@@ -318,7 +335,7 @@ class _Batch(Protocol, Generic[InputsType, TargetsType, PredictionsType]):
 
 
 Accessor = _Accessor[RepresentationType]
-Batch = _Batch[SupportsConversion, SupportsConversion, SupportsConversion]
+Batch = _Batch[SupportsConversion, SupportsConversion, SupportsMutation]
 
 
 ###
@@ -343,7 +360,7 @@ class _CallableAccessor(_Accessor[RepresentationType]):
         self._set(convertable, data)
 
 
-class _TorchCallableAccessor(TorchAccessor, _CallableAccessor[RepresentationType]):
+class _TorchCallableAccessor(TorchAccessor, _Accessor[RepresentationType]):
     def __init__(
         self,
         get: Callable[..., RepresentationType],
@@ -371,7 +388,7 @@ class _TorchCallableAccessor(TorchAccessor, _CallableAccessor[RepresentationType
 
 class DefaultNumpyAccessor(_Accessor[RepresentationType]):
     def get(self, convertable) -> RepresentationType:
-        return convertable.numpy()
+        return convertable.to_numpy()
 
     def set(self, convertable, data: RepresentationType):
         if isinstance(convertable, SupportsUpdate):
@@ -397,7 +414,7 @@ class DefaultTorchAccessor(TorchAccessor, _Accessor[RepresentationType]):
             self.device = device
 
     def get(self, convertable) -> RepresentationType:
-        return convertable.torch(device=self.device)
+        return convertable.to_torch(device=self.device)
 
     def set(self, convertable, data: RepresentationType):
         if isinstance(convertable, SupportsUpdate):
@@ -413,7 +430,7 @@ class DefaultTorchAccessor(TorchAccessor, _Accessor[RepresentationType]):
 ###
 
 
-class BatchedImages(SupportsConversion):
+class BatchedImages(SupportsConversion, SupportsUpdate):
     RepresentationTypes = Union[np.ndarray, torch.Tensor]
     Accessor = Union[_Accessor[np.ndarray], _Accessor[torch.Tensor]]
 
@@ -468,7 +485,19 @@ class BatchedImages(SupportsConversion):
         images = convert_dim(images, from_dim, dim)
         return images
 
-    def numpy(
+    @classmethod
+    def as_numpy(
+        cls,
+        dim: Optional[ImageDimensions] = None,
+        scale: Optional[Scale] = None,
+        dtype: Optional[npt.DTypeLike] = None,
+    ) -> _Accessor[np.ndarray]:
+        return _CallableAccessor(
+            get=partial(cls.to_numpy_images, dim=dim, scale=scale, dtype=dtype),
+            set=partial(cls.update, dim=dim, scale=scale),
+        )
+
+    def to_numpy_images(
         self,
         dim: Optional[ImageDimensions] = None,
         scale: Optional[Scale] = None,
@@ -479,17 +508,11 @@ class BatchedImages(SupportsConversion):
         images = to_dtype(images, dtype)
         return images
 
-    @classmethod
-    def as_numpy(
-        cls,
-        dim: Optional[ImageDimensions] = None,
-        scale: Optional[Scale] = None,
+    def to_numpy(
+        self,
         dtype: Optional[npt.DTypeLike] = None,
-    ) -> _Accessor[np.ndarray]:
-        return _CallableAccessor(
-            get=partial(cls.numpy, dim=dim, scale=scale, dtype=dtype),
-            set=partial(cls.update, dim=dim, scale=scale),
-        )
+    ) -> np.ndarray:
+        return self.to_numpy_images(dtype=dtype)
 
     @classmethod
     def as_torch(
@@ -500,12 +523,12 @@ class BatchedImages(SupportsConversion):
         device: Optional[torch.device] = None,
     ) -> _Accessor[torch.Tensor]:
         return _TorchCallableAccessor[torch.Tensor](
-            get=partial(cls.torch, dim=dim, scale=scale, dtype=dtype),
+            get=partial(cls.to_torch_images, dim=dim, scale=scale, dtype=dtype),
             set=partial(cls.update, dim=dim, scale=scale),
             device=device,
         )
 
-    def torch(
+    def to_torch_images(
         self,
         dim: Optional[ImageDimensions] = None,
         scale: Optional[Scale] = None,
@@ -519,8 +542,17 @@ class BatchedImages(SupportsConversion):
         images = to_dtype(images, dtype)
         return images
 
+    def to_torch(
+        self,
+        dtype: Optional[torch.dtype] = None,
+        device: Optional[torch.device] = None,
+    ) -> torch.Tensor:
+        return self.to_torch_images(dtype=dtype, device=device)
+
 
 class NDimArray(SupportsConversion):
+    Accessor = Union[_Accessor[np.ndarray], _Accessor[torch.Tensor]]
+
     def __init__(
         self,
         contents: Union[np.ndarray, torch.Tensor],
@@ -539,9 +571,15 @@ class NDimArray(SupportsConversion):
         dtype: Optional[npt.DTypeLike] = None,
     ) -> _Accessor[np.ndarray]:
         return _CallableAccessor(
-            get=partial(cls.numpy, dtype=dtype),
+            get=partial(cls.to_numpy, dtype=dtype),
             set=partial(cls.update),
         )
+
+    def to_numpy(
+        self,
+        dtype: Optional[npt.DTypeLike] = None,
+    ) -> np.ndarray:
+        return to_dtype(to_numpy(self.contents), dtype)
 
     @classmethod
     def as_torch(
@@ -550,18 +588,12 @@ class NDimArray(SupportsConversion):
         device: Optional[torch.device] = None,
     ) -> _Accessor[torch.Tensor]:
         return _TorchCallableAccessor[torch.Tensor](
-            get=partial(cls.torch, dtype=dtype),
+            get=partial(cls.to_torch, dtype=dtype),
             set=partial(cls.update),
             device=device,
         )
 
-    def numpy(
-        self,
-        dtype: Optional[npt.DTypeLike] = None,
-    ) -> np.ndarray:
-        return to_dtype(to_numpy(self.contents), dtype)
-
-    def torch(
+    def to_torch(
         self,
         dtype: Optional[torch.dtype] = None,
         device: Optional[torch.device] = None,
@@ -575,21 +607,48 @@ class NDimArray(SupportsConversion):
 
 
 class ImageClassificationBatch(_Batch[BatchedImages, NDimArray, NDimArray]):
-    def __init__(self, inputs: BatchedImages, targets: NDimArray, metadata: Metadata):
-        self.initial_inputs = inputs.clone()
-        self.inputs = inputs
-        self.targets = targets
-        self.metadata = metadata
-        self.predictions: Optional[NDimArray] = None
+    def __init__(
+        self,
+        inputs: BatchedImages,
+        targets: NDimArray,
+        metadata: Metadata,
+        predictions: Optional[NDimArray] = None,
+    ):
+        self._initial_inputs = inputs.clone()
+        self._inputs = inputs
+        self._targets = targets
+        self._metadata = metadata
+        self._predictions = (
+            predictions if predictions is not None else NDimArray(np.array([]))
+        )
+
+    @property
+    def initial_inputs(self) -> BatchedImages:
+        return self._initial_inputs
+
+    @property
+    def inputs(self) -> BatchedImages:
+        return self._inputs
+
+    @property
+    def targets(self) -> NDimArray:
+        return self._targets
+
+    @property
+    def metadata(self) -> Metadata:
+        return self._metadata
+
+    @property
+    def predictions(self) -> NDimArray:
+        return self._predictions
 
     def clone(self) -> "ImageClassificationBatch":
-        copy = ImageClassificationBatch(
-            inputs=self.inputs.clone(),
-            targets=self.targets.clone(),
-            metadata=deepcopy(self.metadata),
+        return ImageClassificationBatch(
+            inputs=self._inputs.clone(),
+            targets=self._targets.clone(),
+            metadata=deepcopy(self._metadata),
+            predictions=self._predictions.clone(),
         )
-        copy.predictions = self.predictions
-        return copy
 
     def __len__(self) -> int:
         return len(self.inputs)

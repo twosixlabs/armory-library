@@ -1,12 +1,18 @@
 from abc import ABC, abstractmethod
 from typing import Mapping, Optional
 
-from charmory.data import Batch
+from charmory.data import Accessor, Batch, DefaultNumpyAccessor
 from charmory.export.sink import Sink
 
 
 class Exporter(ABC):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        predictions_accessor: Optional[Accessor] = None,
+        targets_accessor: Optional[Accessor] = None,
+    ) -> None:
+        self.predictions_accessor = predictions_accessor or DefaultNumpyAccessor()
+        self.targets_accessor = targets_accessor or DefaultNumpyAccessor()
         self.sink: Optional[Sink] = None
 
     def use_sink(self, sink: Sink) -> None:
@@ -27,12 +33,12 @@ class Exporter(ABC):
     def _export_metadata(self, chain_name: str, batch_idx: int, batch: Batch) -> None:
         assert self.sink, "No sink has been set, unable to export"
 
-        targets = batch.targets.numpy()
-        predictions = batch.predictions.numpy() if batch.predictions else None
+        targets = self.targets_accessor.get(batch.targets)
+        predictions = self.predictions_accessor.get(batch.predictions)
 
         for sample_idx in range(len(batch)):
             dictionary = dict(
-                targets=targets[sample_idx],
+                targets=self._from_list(targets, sample_idx),
                 predictions=self._from_list(predictions, sample_idx),
             )
             for key, value in batch.metadata["data"].items():
