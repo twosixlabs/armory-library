@@ -17,6 +17,7 @@ from charmory.batch import BatchedImages, DataType, ImageDimensions, NDimArray, 
 from charmory.data import ImageClassificationDataLoader
 from charmory.engine import EvaluationEngine
 import charmory.evaluation as ev
+from charmory.export.image_classification import ImageClassificationExporter
 from charmory.metric import PerturbationMetric, PredictionMetric
 from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.model.image_classification import (
@@ -122,6 +123,12 @@ def main(batch_size, export_every_n_batches, num_batches):
         use_label_for_untargeted=False,
     )
 
+    targeted_attack = ArtEvasionAttack(
+        name="PGD",
+        attack=pgd,
+        use_label_for_untargeted=True,
+    )
+
     ###
     # Metrics
     ###
@@ -185,9 +192,11 @@ def main(batch_size, export_every_n_batches, num_batches):
         perturbations={
             "benign": [],
             "attack": [pgd_attack],
+            "targeted_attack": [targeted_attack],
             "blur": [blur_perturb],
         },
         metrics=metrics,
+        exporter=ImageClassificationExporter(),
         profiler=BasicProfiler(),
     )
 

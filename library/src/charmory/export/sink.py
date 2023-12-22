@@ -1,17 +1,12 @@
 """
-Sample exporting utilities
+Sample export sinks/destinations
 """
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from mlflow.client import MlflowClient
 import numpy as np
-
-# import numpy.typing as npt
 import torch
-from torchvision.utils import draw_bounding_boxes
-
-from charmory.typing import autocoerce
 
 if TYPE_CHECKING:
     import PIL.Image
@@ -20,8 +15,8 @@ if TYPE_CHECKING:
     import plotly.graph_objects
 
 
-class Exporter:
-    """No-op exporter"""
+class Sink:
+    """No-op export sink"""
 
     def log_image(
         self, image: Union[np.ndarray, "PIL.Image.Image"], artifact_path: str
@@ -52,7 +47,7 @@ class Exporter:
         pass
 
 
-class MlflowExporter(Exporter):
+class MlflowSink(Sink):
     """
     Convenience wrapper around an MLFlow client to automatically invoke the
     client APIs with the run ID
@@ -62,7 +57,6 @@ class MlflowExporter(Exporter):
         self.client = client
         self.run_id = run_id
 
-    @autocoerce
     def log_image(
         self, image: Union[np.ndarray, "PIL.Image.Image"], artifact_path: str
     ):
@@ -115,67 +109,3 @@ def _serialize(obj):
     if isinstance(obj, dict):
         return {k: _serialize(v) for k, v in obj.items()}
     return obj
-
-
-@autocoerce
-def draw_boxes_on_image(
-    image: torch.Tensor,
-    ground_truth_boxes: Optional[torch.Tensor] = None,
-    ground_truth_color: str = "red",
-    ground_truth_width: int = 2,
-    pred_boxes: Optional[torch.Tensor] = None,
-    pred_color: str = "white",
-    pred_width: int = 2,
-) -> torch.Tensor:
-    """
-    Draw bounding boxes for ground truth objects and predicted objects on top of
-    an image sample.
-
-    Ground truth bounding boxes will be drawn first, then the predicted bounding
-    boxes.
-
-    Args:
-        image: 3-dimensional array of image data. May be of shape (C, H, W) or (H, W, C).
-            If array type is not uint8, all values will be clipped between 0.0
-            and 1.0 then scaled to a uint8 between 0 and 255.
-        ground_truth_boxes: Optional array of shape (N, 4) containing ground truth
-            bounding boxes in (xmin, ymin, xmax, ymax) format.
-        ground_truth_color: Color to use for ground truth bounding boxes. Color can
-            be represented as PIL strings (e.g., "red").
-        ground_truth_width: Width of ground truth bounding boxes.
-        pred_boxes: Optional array of shape (N, 4) containing predicted
-            bounding boxes in (xmin, ymin, xmax, ymax) format.
-        pred_color: Color to use for predicted bounding boxes. Color can
-            be represented as PIL strings (e.g., "red").
-        pred_width: Width of ground truth bounding boxes.
-
-    Return:
-        uint8 tensor of (C, H, W) image with bounding boxes data
-    """
-    if image.shape[-1] in (1, 3, 6):  # Convert from (H, W, C) to (C, H, W)
-        image = image.permute(2, 0, 1)
-
-    if image.dtype != torch.uint8:  # Convert/scale to uint8
-        if torch.max(image) <= 1:
-            image = torch.round(torch.clip(image, 0.0, 1.0) * 255.0)
-        image = image.type(torch.uint8)
-
-    with_boxes = image
-
-    if ground_truth_boxes is not None and len(ground_truth_boxes) > 0:
-        with_boxes = draw_bounding_boxes(
-            image=with_boxes,
-            boxes=ground_truth_boxes,
-            colors=ground_truth_color,
-            width=ground_truth_width,
-        )
-
-    if pred_boxes is not None and len(pred_boxes) > 0:
-        with_boxes = draw_bounding_boxes(
-            image=with_boxes,
-            boxes=pred_boxes,
-            colors=pred_color,
-            width=pred_width,
-        )
-
-    return with_boxes

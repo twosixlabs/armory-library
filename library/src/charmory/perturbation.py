@@ -122,4 +122,4 @@ class ArtEvasionAttack(PerturbationProtocol):
             **self.generate_kwargs,
         )
         self.inputs_accessor.set(batch.inputs, perturbed)
-        batch.metadata[f"perturbation.{self.name}"] = dict(y_target=y_target)
+        batch.metadata["perturbations"][self.name] = dict(y_target=y_target)

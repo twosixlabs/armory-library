@@ -13,6 +13,7 @@ from typing import (
 )
 
 from armory.metrics.compute import NullProfiler, Profiler
+from charmory.export import Exporter, NullExporter
 from charmory.metric import Metric
 
 if TYPE_CHECKING:
@@ -30,13 +31,6 @@ class Dataset:
 
     dataloader: "DataLoader"
     """Data loader for evaluation data"""
-
-
-@runtime_checkable
-class ExporterProtocol(Protocol):
-    def export(self, batch: "Batch") -> None:
-        """Exports the given batch"""
-        ...
 
 
 @runtime_checkable
@@ -117,6 +111,8 @@ class Evaluation:
     """Optional, perturbation chains to be applied during evaluation"""
     metrics: Mapping[str, Metric] = field(default_factory=dict)
     """Optional, dictionary of metric names to metric collection objects"""
+    exporter: Exporter = field(default_factory=NullExporter)
+    """Optional, sample exporter"""
     profiler: Profiler = field(default_factory=NullProfiler)
     """Optional, computational performance profiler instance"""
     sysconfig: SysConfig = field(default_factory=SysConfig)

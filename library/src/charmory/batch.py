@@ -304,6 +304,11 @@ class _Accessor(Protocol, Generic[RepresentationType]):
         ...
 
 
+class Metadata(TypedDict):
+    data: Dict[str, Any]
+    perturbations: Dict[str, Any]
+
+
 InputsType = TypeVar("InputsType", bound=SupportsConversion, covariant=True)
 TargetsType = TypeVar("TargetsType", bound=SupportsConversion, covariant=True)
 PredictionsType = TypeVar("PredictionsType", bound=SupportsConversion, covariant=True)
@@ -313,35 +318,14 @@ class _Batch(Protocol, Generic[InputsType, TargetsType, PredictionsType]):
     initial_inputs: InputsType
     inputs: InputsType
     targets: TargetsType
-    metadata: Dict[str, Any]
+    metadata: Metadata
     predictions: Optional[PredictionsType]
 
     def clone(self) -> Self:
         ...
 
-    # @property
-    # def inputs(self) -> InputsType:
-    #     ...
-
-    # @inputs.setter
-    # def inputs(self, inputs: InputsType):
-    #     ...
-
-    # @property
-    # def targets(self) -> SupportsConversion:
-    #     ...
-
-    # @property
-    # def metadata(self) -> Dict[str, Any]:
-    #     ...
-
-    # @property
-    # def predictions(self) -> Optional[SupportsConversion]:
-    #     ...
-
-    # @predictions.setter
-    # def predictions(self, predictions: SupportsConversion):
-    #     ...
+    def __len__(self) -> int:
+        ...
 
 
 Accessor = _Accessor[RepresentationType]
@@ -456,6 +440,9 @@ class BatchedImages(SupportsConversion):
         self.images = images
         self.dim = dim
         self.scale = scale
+
+    def __len__(self) -> int:
+        return len(self.images)
 
     def clone(self):
         return BatchedImages(images=self.images, dim=self.dim, scale=self.scale)
@@ -687,12 +674,7 @@ class ComputerVisionBatch(Batch2):
 
 
 class ImageClassificationBatch(_Batch[BatchedImages, NDimArray, NDimArray]):
-    def __init__(
-        self,
-        inputs: BatchedImages,
-        targets: NDimArray,
-        metadata: Dict[str, Any],
-    ):
+    def __init__(self, inputs: BatchedImages, targets: NDimArray, metadata: Metadata):
         self.initial_inputs = inputs.clone()
         self.inputs = inputs
         self.targets = targets
@@ -708,17 +690,8 @@ class ImageClassificationBatch(_Batch[BatchedImages, NDimArray, NDimArray]):
         copy.predictions = self.predictions
         return copy
 
-    # @property
-    # def inputs(self) -> BatchedImages:
-    #     return self._inputs
-
-    # @property
-    # def targets(self) -> NDimArray:
-    #     return self._targets
-
-    # @property
-    # def metadata(self) -> Dict[str, Any]:
-    #     return self._metadata
+    def __len__(self) -> int:
+        return len(self.inputs)
 
 
 # def get_targets_numpy(self) -> np.ndarray:

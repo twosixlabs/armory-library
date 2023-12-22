@@ -170,5 +170,5 @@ class ImageClassificationDataLoader(DataLoader):
         return batch.ImageClassificationBatch(
             inputs=images,
             targets=labels,
-            metadata=collated,
+            metadata=batch.Metadata(data=collated, perturbations=dict()),
         )
