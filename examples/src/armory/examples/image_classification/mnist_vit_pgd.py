@@ -180,7 +180,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         model=ImageClassifier(
             name="ViT",
             model=model,
-            inputs_accessor=BatchedImages.as_torch(device=torch.device("cuda")),
+            accessor=BatchedImages.as_torch(),
         ),
         perturbations={
             "benign": [],

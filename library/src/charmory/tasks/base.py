@@ -50,6 +50,7 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         """
         super().__init__()
         self.evaluation = evaluation
+        self.model = evaluation.model
         self.skip_benign = skip_benign
         self.skip_attack = skip_attack
         self.export_adapter = export_adapter

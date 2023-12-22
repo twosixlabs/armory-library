@@ -2,6 +2,7 @@
 
 from typing import Any, Callable, Dict, Optional, Tuple
 
+import torch
 import torch.nn as nn
 
 Args = Tuple[Any, ...]
@@ -62,6 +63,11 @@ class ArmoryModel(nn.Module):
         self._preadapter = preadapter
         self._model = model
         self._postadapter = postadapter
+        self.device = torch.device("cpu")
+
+    def _apply(self, fn, *args, **kwargs):
+        super()._apply(fn, *args, **kwargs)
+        self.device = fn(torch.zeros(1)).device
 
     def forward(self, *args, **kwargs):
         """
