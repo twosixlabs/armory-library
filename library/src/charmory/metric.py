@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional, Self
 
 import torch.nn as nn
 
-from charmory.batch import DefaultTorchAccessor
+from charmory.batch import DefaultTorchAccessor, TorchAccessor
 
 if TYPE_CHECKING:
     from torchmetrics import Metric as TorchMetric
@@ -19,7 +19,7 @@ class Metric(nn.Module, ABC):
 
     def _apply(self, *args, **kwargs):
         super()._apply(*args, **kwargs)
-        if isinstance(self.accessor, DefaultTorchAccessor):
+        if isinstance(self.accessor, TorchAccessor):
             self.accessor.to(device=self.metric.device)
 
     def compute(self):

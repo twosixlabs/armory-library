@@ -19,6 +19,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    runtime_checkable,
 )
 
 import numpy as np
@@ -341,6 +342,15 @@ Accessor = _Accessor[RepresentationType]
 Batch = _Batch[SupportsConversion, SupportsConversion, SupportsConversion]
 
 
+@runtime_checkable
+class TorchAccessor(Protocol):
+    def to(
+        self,
+        device: Optional[torch.device] = None,
+    ):
+        ...
+
+
 class _CallableAccessor(_Accessor[RepresentationType]):
     def __init__(
         self,
@@ -358,27 +368,48 @@ class _CallableAccessor(_Accessor[RepresentationType]):
         self._set(convertable, data)
 
 
-class DefaultTorchAccessor(_Accessor[RepresentationType]):
+class _TorchCallableAccessor(TorchAccessor, _CallableAccessor[RepresentationType]):
     def __init__(
         self,
-        dtype: Optional[torch.dtype] = None,
+        get: Callable[..., RepresentationType],
+        set: Callable[[Any, RepresentationType], None],
         device: Optional[torch.device] = None,
     ):
-        self.dtype = dtype
+        self._get = get
+        self._set = set
         self.device = device
 
     def to(
         self,
-        dtype: Optional[torch.dtype] = None,
         device: Optional[torch.device] = None,
     ):
-        if dtype is not None:
-            self.dtype = dtype
+        if self.device is None and device is not None:
+            self.device = device
+
+    def get(self, convertable) -> RepresentationType:
+        """Obtains the representation data from a convertable type"""
+        return self._get(convertable, device=self.device)
+
+    def set(self, convertable, data: RepresentationType) -> None:
+        self._set(convertable, data)
+
+
+class DefaultTorchAccessor(TorchAccessor, _Accessor[RepresentationType]):
+    def __init__(
+        self,
+        device: Optional[torch.device] = None,
+    ):
+        self.device = device
+
+    def to(
+        self,
+        device: Optional[torch.device] = None,
+    ):
         if device is not None:
             self.device = device
 
     def get(self, convertable) -> RepresentationType:
-        return convertable.torch(dtype=self.dtype, device=self.device)
+        return convertable.torch(device=self.device)
 
     def set(self, convertable, data: RepresentationType):
         raise NotImplementedError("Cannot mutate type using the default torch accessor")
@@ -471,9 +502,10 @@ class BatchedImages(SupportsConversion):
         dtype: Optional[torch.dtype] = None,
         device: Optional[torch.device] = None,
     ) -> _Accessor[torch.Tensor]:
-        return _CallableAccessor(
-            get=partial(cls.torch, dim=dim, scale=scale, dtype=dtype, device=device),
+        return _TorchCallableAccessor[torch.Tensor](
+            get=partial(cls.torch, dim=dim, scale=scale, dtype=dtype),
             set=partial(cls.update, dim=dim, scale=scale),
+            device=device,
         )
 
     def torch(
@@ -520,9 +552,10 @@ class NDimArray(SupportsConversion):
         dtype: Optional[torch.dtype] = None,
         device: Optional[torch.device] = None,
     ) -> _Accessor[torch.Tensor]:
-        return _CallableAccessor(
-            get=partial(cls.torch, dtype=dtype, device=device),
+        return _TorchCallableAccessor[torch.Tensor](
+            get=partial(cls.torch, dtype=dtype),
             set=partial(cls.update),
+            device=device,
         )
 
     def numpy(
