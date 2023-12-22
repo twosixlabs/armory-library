@@ -96,30 +96,6 @@ class TupleDataset(ArmoryDataset):
         return {self._x_key: x, self._y_key: y}
 
 
-@track_init_params
-class ArmoryDataLoader(DataLoader):
-    """
-    Customization of the PyTorch DataLoader to produce numpy arrays instead of
-    Tensors, as required by ART
-    """
-
-    def __init__(self, *args, **kwargs):
-        kwargs.pop("collate_fn", None)
-        super().__init__(*args, collate_fn=self._collate, **kwargs)
-
-    @staticmethod
-    def _collate(batch: Sequence[Mapping[str, Any]]) -> Mapping[str, Any]:
-        keys = list(batch[0].keys())
-        collated = {}
-        for key in keys:
-            # collated[key] = np.asarray([b[key] for b in batch])
-            if key == "image":
-                collated[key] = torch.stack([b[key] for b in batch])
-            else:
-                collated[key] = [b[key] for b in batch]
-        return collated
-
-
 def _collate_by_type(values: List):
     if len(values) == 0:
         return []
@@ -139,6 +115,7 @@ def _pop_and_cast(values, key):
     raise ValueError(f"Dataset {key} is unsupported type: {type(value)}")
 
 
+@track_init_params
 class ImageClassificationDataLoader(DataLoader):
     def __init__(
         self,

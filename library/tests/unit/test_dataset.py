@@ -2,7 +2,7 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 
-from charmory.data import ArmoryDataLoader, ArmoryDataset, TupleDataset
+from charmory.dataset import ArmoryDataLoader, ArmoryDataset, TupleDataset
 
 pytestmark = pytest.mark.unit
 

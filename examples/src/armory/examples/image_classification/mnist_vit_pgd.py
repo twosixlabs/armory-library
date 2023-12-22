@@ -14,7 +14,7 @@ from transformers import AutoImageProcessor, AutoModelForImageClassification
 from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
 from charmory.batch import BatchedImages, DataType, ImageDimensions, Scale
-from charmory.data import ImageClassificationDataLoader
+from charmory.dataset import ImageClassificationDataLoader
 from charmory.engine import EvaluationEngine
 import charmory.evaluation as ev
 from charmory.export.image_classification import ImageClassificationExporter
