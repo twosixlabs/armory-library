@@ -15,6 +15,8 @@ class ImageClassificationExporter(Exporter):
         )
 
     def export(self, chain_name: str, batch_idx: int, batch: "Batch") -> None:
+        assert self.sink, "No sink has been set, unable to export"
+
         self._export_metadata(chain_name, batch_idx, batch)
 
         images = self.accessor.get(batch.inputs)

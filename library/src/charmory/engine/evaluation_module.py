@@ -132,10 +132,11 @@ class EvaluationModule(pl.LightningModule):
         """Sets up the exporter"""
         super().setup(stage)
         logger = self.logger
-        if isinstance(logger, MLFlowLogger):
-            sink = MlflowSink(logger.experiment, logger.run_id)
-        else:
-            sink = Sink()
+        sink = (
+            MlflowSink(logger.experiment, logger.run_id)
+            if isinstance(logger, MLFlowLogger)
+            else Sink()
+        )
         self.evaluation.exporter.use_sink(sink)
 
     def on_test_epoch_start(self) -> None:

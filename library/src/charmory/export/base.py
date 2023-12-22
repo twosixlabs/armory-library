@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 
 class Exporter(ABC):
-    def __init__(self):
+    def __init__(self) -> None:
         self.sink: Optional["Sink"] = None
 
     def use_sink(self, sink: "Sink") -> None:
@@ -26,6 +26,8 @@ class Exporter(ABC):
             return None
 
     def _export_metadata(self, chain_name: str, batch_idx: int, batch: "Batch") -> None:
+        assert self.sink, "No sink has been set, unable to export"
+
         targets = batch.targets.numpy()
         predictions = batch.predictions.numpy() if batch.predictions else None
 
