@@ -20,10 +20,7 @@ import charmory.evaluation as ev
 from charmory.export.image_classification import ImageClassificationExporter
 from charmory.metric import PerturbationMetric, PredictionMetric
 from charmory.metrics.perturbation import PerturbationNormMetric
-from charmory.model.image_classification import (
-    ImageClassifier,
-    JaticImageClassificationModel,
-)
+from charmory.model.image_classification import ImageClassifier
 from charmory.perturbation import ArtEvasionAttack, CallablePerturbation
 from charmory.track import track_init_params, track_params
 
@@ -54,13 +51,14 @@ def main(batch_size, export_every_n_batches, num_batches):
     ###
     # Model
     ###
-    model = JaticImageClassificationModel(
-        "vit",
-        track_params(AutoModelForImageClassification.from_pretrained)(
+    model = ImageClassifier(
+        name="ViT",
+        model=track_params(AutoModelForImageClassification.from_pretrained)(
             "farleyknight-org-username/vit-base-mnist"
         ),
+        accessor=BatchedImages.as_torch(),
     )
-    classifier = track_init_params(PyTorchClassifier)(
+    art_model = track_init_params(PyTorchClassifier)(
         model,
         loss=torch.nn.CrossEntropyLoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
@@ -106,7 +104,7 @@ def main(batch_size, export_every_n_batches, num_batches):
     )
 
     pgd = track_init_params(ProjectedGradientDescent)(
-        classifier,
+        art_model,
         batch_size=batch_size,
         eps=0.031,
         eps_step=0.007,
@@ -184,11 +182,7 @@ def main(batch_size, export_every_n_batches, num_batches):
             name="MNIST",
             dataloader=dataloader,
         ),
-        model=ImageClassifier(
-            name="ViT",
-            model=model,
-            accessor=BatchedImages.as_torch(),
-        ),
+        model=model,
         perturbations={
             "benign": [],
             "attack": [pgd_attack],
