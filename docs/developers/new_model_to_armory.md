@@ -89,7 +89,7 @@ lite0_model = EfficientNet.from_pretrained('efficientnet-lite0', weights_path = 
 This is the same code from the last two examples to create a model and classifier variables.
 ```python
 model = JaticImageClassificationModel(  
-    SRRmodel
+    lite0_model
 )
 
 classifier = track_init_params(PyTorchClassifier)(
