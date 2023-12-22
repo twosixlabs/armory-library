@@ -2,8 +2,7 @@
 Base Armory evaluation task
 """
 
-from abc import ABC
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional
 
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
@@ -15,19 +14,13 @@ if TYPE_CHECKING:
     from charmory.batch import Batch
     from charmory.evaluation import Evaluation, PerturbationProtocol
 
-ExportAdapter = Callable[[Any], Any]
-"""An adapter for exported data (e.g., images). """
 
-
-class BaseEvaluationTask(pl.LightningModule, ABC):
+class BaseEvaluationTask(pl.LightningModule):
     """Base Armory evaluation task"""
 
     def __init__(
         self,
         evaluation: "Evaluation",
-        skip_benign: bool = False,
-        skip_attack: bool = False,
-        export_adapter: Optional[ExportAdapter] = None,
         export_every_n_batches: int = 0,
     ):
         """
@@ -35,10 +28,6 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
 
         Args:
             evaluation: Configuration for the evaluation
-            skip_benign: Whether to skip the benign, unperturbed inference
-            skip_attack: Whether to skip the adversarial, perturbed inference
-            export_adapter: Optional, adapter to be applied to inference data
-                prior to exporting to MLflow
             export_every_n_batches: Frequency at which batches will be exported
                 to MLflow. A value of 0 means that no batches will be exported.
                 The data that is exported is task-specific.
@@ -46,9 +35,6 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         super().__init__()
         self.evaluation = evaluation
         self.model = evaluation.model
-        self.skip_benign = skip_benign
-        self.skip_attack = skip_attack
-        self.export_adapter = export_adapter
         self.export_every_n_batches = export_every_n_batches
         self._exporter: Optional[Sink] = None
 
@@ -80,21 +66,6 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
         def reset(self) -> None:
             for metric in self.values():
                 metric.reset()
-
-    ###
-    # Properties
-    ###
-
-    @property
-    def exporter(self) -> Sink:
-        """Sample exporter for the current evaluation run"""
-        if self._exporter is None:
-            logger = self.logger
-            if isinstance(logger, MLFlowLogger):
-                self._exporter = MlflowSink(logger.experiment, logger.run_id)
-            else:
-                self._exporter = Sink()
-        return self._exporter
 
     ###
     # Internal methods
@@ -162,7 +133,12 @@ class BaseEvaluationTask(pl.LightningModule, ABC):
     ###
 
     def setup(self, stage: str) -> None:
-        self.evaluation.exporter.use_sink(self.exporter)
+        logger = self.logger
+        if isinstance(logger, MLFlowLogger):
+            sink = MlflowSink(logger.experiment, logger.run_id)
+        else:
+            sink = Sink()
+        self.evaluation.exporter.use_sink(sink)
 
     def on_test_epoch_start(self) -> None:
         """Resets all metrics"""

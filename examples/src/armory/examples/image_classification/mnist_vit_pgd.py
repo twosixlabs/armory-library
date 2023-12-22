@@ -13,7 +13,7 @@ from transformers import AutoImageProcessor, AutoModelForImageClassification
 
 from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
-from charmory.batch import BatchedImages, DataType, ImageDimensions, NDimArray, Scale
+from charmory.batch import BatchedImages, DataType, ImageDimensions, Scale
 from charmory.data import ImageClassificationDataLoader
 from charmory.engine import EvaluationEngine
 import charmory.evaluation as ev
@@ -25,9 +25,8 @@ from charmory.model.image_classification import (
     JaticImageClassificationModel,
 )
 from charmory.perturbation import ArtEvasionAttack, CallablePerturbation
-from charmory.tasks.image_classification import ImageClassificationTask
+from charmory.tasks.base import BaseEvaluationTask
 from charmory.track import track_init_params, track_params
-from charmory.utils import Unnormalize
 
 
 def get_cli_args():
@@ -84,7 +83,9 @@ def main(batch_size, export_every_n_batches, num_batches):
     dataloader = ImageClassificationDataLoader(
         dataset,
         dim=ImageDimensions.CHW,
-        scale=Scale(dtype=DataType.FLOAT, max=1.0),
+        scale=Scale(
+            dtype=DataType.FLOAT, max=1.0, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)
+        ),
         image_key="image",
         label_key="label",
         batch_size=batch_size,
@@ -203,9 +204,8 @@ def main(batch_size, export_every_n_batches, num_batches):
     ###
     # Engine
     ###
-    task = ImageClassificationTask(
+    task = BaseEvaluationTask(
         evaluation,
-        export_adapter=Unnormalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
         export_every_n_batches=export_every_n_batches,
     )
     engine = EvaluationEngine(task, limit_test_batches=num_batches)

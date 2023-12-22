@@ -60,13 +60,6 @@ class MlflowSink(Sink):
     def log_image(
         self, image: Union[np.ndarray, "PIL.Image.Image"], artifact_path: str
     ):
-        # Make sure image data has channel last
-        if (
-            isinstance(image, np.ndarray)
-            and len(image.shape) == 3
-            and image.shape[0] in (1, 3, 4)
-        ):
-            image = np.transpose(image, (1, 2, 0))
         self.client.log_image(self.run_id, image, artifact_path)
 
     def log_artifact(self, local_path: str, artifact_path: Optional[str] = None):

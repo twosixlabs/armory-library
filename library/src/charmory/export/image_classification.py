@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
-from charmory.batch import BatchedImages, ImageDimensions
+from charmory.batch import BatchedImages, DataType, ImageDimensions, Scale
 from charmory.export.base import Exporter
 
 if TYPE_CHECKING:
@@ -10,7 +10,9 @@ if TYPE_CHECKING:
 class ImageClassificationExporter(Exporter):
     def __init__(self, accessor: Optional[BatchedImages.Accessor] = None):
         super().__init__()
-        self.accessor = accessor or BatchedImages.as_numpy(dim=ImageDimensions.HWC)
+        self.accessor = accessor or BatchedImages.as_numpy(
+            dim=ImageDimensions.HWC, scale=Scale(dtype=DataType.FLOAT, max=1.0)
+        )
 
     def export(self, chain_name: str, batch_idx: int, batch: "Batch") -> None:
         self._export_metadata(chain_name, batch_idx, batch)
