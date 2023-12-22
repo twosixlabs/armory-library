@@ -358,6 +358,32 @@ class _CallableAccessor(_Accessor[RepresentationType]):
         self._set(convertable, data)
 
 
+class DefaultTorchAccessor(_Accessor[RepresentationType]):
+    def __init__(
+        self,
+        dtype: Optional[torch.dtype] = None,
+        device: Optional[torch.device] = None,
+    ):
+        self.dtype = dtype
+        self.device = device
+
+    def to(
+        self,
+        dtype: Optional[torch.dtype] = None,
+        device: Optional[torch.device] = None,
+    ):
+        if dtype is not None:
+            self.dtype = dtype
+        if device is not None:
+            self.device = device
+
+    def get(self, convertable) -> RepresentationType:
+        return convertable.torch(dtype=self.dtype, device=self.device)
+
+    def set(self, convertable, data: RepresentationType):
+        raise NotImplementedError("Cannot mutate type using the default torch accessor")
+
+
 InputType = TypeVar("InputType")
 T = TypeVar("T")
 

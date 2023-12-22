@@ -127,55 +127,43 @@ def main(batch_size, export_every_n_batches, num_batches):
     # Metrics
     ###
     metrics = {
-        "linf_norm": PerturbationMetric(
-            PerturbationNormMetric(ord=torch.inf),
-            BatchedImages.as_torch(),
-        ),
+        "linf_norm": PerturbationMetric(PerturbationNormMetric(ord=torch.inf)),
         "accuracy_avg": PredictionMetric(
-            torchmetrics.classification.Accuracy(task="multiclass", num_classes=10),
-            NDimArray.as_torch(device=torch.device("cuda")),
+            torchmetrics.classification.Accuracy(task="multiclass", num_classes=10)
         ),
         "accuracy_by_class": PredictionMetric(
             torchmetrics.classification.Accuracy(
                 task="multiclass", num_classes=10, average=None
-            ),
-            NDimArray.as_torch(device=torch.device("cuda")),
+            )
         ),
         "precision_avg": PredictionMetric(
-            torchmetrics.classification.Precision(task="multiclass", num_classes=10),
-            NDimArray.as_torch(device=torch.device("cuda")),
+            torchmetrics.classification.Precision(task="multiclass", num_classes=10)
         ),
         "precision_by_class": PredictionMetric(
             torchmetrics.classification.Precision(
                 task="multiclass", num_classes=10, average=None
-            ),
-            NDimArray.as_torch(device=torch.device("cuda")),
+            )
         ),
         "recall_avg": PredictionMetric(
-            torchmetrics.classification.Recall(task="multiclass", num_classes=10),
-            NDimArray.as_torch(device=torch.device("cuda")),
+            torchmetrics.classification.Recall(task="multiclass", num_classes=10)
         ),
         "recall_by_class": PredictionMetric(
             torchmetrics.classification.Recall(
                 task="multiclass", num_classes=10, average=None
-            ),
-            NDimArray.as_torch(device=torch.device("cuda")),
+            )
         ),
         "f1_score_avg": PredictionMetric(
-            torchmetrics.classification.F1Score(task="multiclass", num_classes=10),
-            NDimArray.as_torch(device=torch.device("cuda")),
+            torchmetrics.classification.F1Score(task="multiclass", num_classes=10)
         ),
         "f1_score_by_class": PredictionMetric(
             torchmetrics.classification.F1Score(
                 task="multiclass", num_classes=10, average=None
-            ),
-            NDimArray.as_torch(device=torch.device("cuda")),
+            )
         ),
         "confusion": PredictionMetric(
             torchmetrics.classification.ConfusionMatrix(
                 task="multiclass", num_classes=10
-            ),
-            NDimArray.as_torch(device=torch.device("cuda")),
+            )
         ),
     }
 
