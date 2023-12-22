@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 
-from charmory.batch import Batch, NDimArray
+from charmory.data import Batch, NDimArray
 from charmory.evaluation import ModelProtocol
 
 

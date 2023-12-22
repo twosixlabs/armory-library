@@ -7,7 +7,7 @@ import torch
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 
-import charmory.batch as batch
+import charmory.data as data
 from charmory.track import track_init_params
 
 DatasetOutputAdapter = Callable[..., Mapping[str, Any]]
@@ -24,7 +24,7 @@ class ArmoryDataset(Dataset):
 
     Example::
 
-        from charmory.data import ArmoryDataset
+        from charmory.dataset import ArmoryDataset
 
         def rename_fields(sample):
             # Rename the 'data' field in the sample to 'image'
@@ -61,7 +61,7 @@ class TupleDataset(ArmoryDataset):
 
     Example::
 
-        from charmory.data import TupleDataset
+        from charmory.dataset import TupleDataset
 
         # assuming `dataset` has been defined elsewhere
         print(dataset[0])
@@ -120,10 +120,10 @@ class ImageClassificationDataLoader(DataLoader):
     def __init__(
         self,
         *args,
-        dim: batch.ImageDimensions,
+        dim: data.ImageDimensions,
         image_key: str,
         label_key: str,
-        scale: batch.Scale,
+        scale: data.Scale,
         **kwargs,
     ):
         kwargs.pop("collate_fn", None)
@@ -133,19 +133,19 @@ class ImageClassificationDataLoader(DataLoader):
         self.label_key = label_key
         self.scale = scale
 
-    def _collate(self, samples: Sequence[Mapping[str, Any]]) -> batch.Batch:
+    def _collate(self, samples: Sequence[Mapping[str, Any]]) -> data.Batch:
         collated = {
             key: _collate_by_type([s[key] for s in samples])
             for key in samples[0].keys()
         }
-        images = batch.BatchedImages(
+        images = data.BatchedImages(
             images=_pop_and_cast(collated, self.image_key),
             dim=self.dim,
             scale=self.scale,
         )
-        labels = batch.NDimArray(_pop_and_cast(collated, self.label_key))
-        return batch.ImageClassificationBatch(
+        labels = data.NDimArray(_pop_and_cast(collated, self.label_key))
+        return data.ImageClassificationBatch(
             inputs=images,
             targets=labels,
-            metadata=batch.Metadata(data=collated, perturbations=dict()),
+            metadata=data.Metadata(data=collated, perturbations=dict()),
         )

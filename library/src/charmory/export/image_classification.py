@@ -1,10 +1,7 @@
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
-from charmory.batch import BatchedImages, DataType, ImageDimensions, Scale
+from charmory.data import Batch, BatchedImages, DataType, ImageDimensions, Scale
 from charmory.export.base import Exporter
-
-if TYPE_CHECKING:
-    from charmory.batch import Batch
 
 
 class ImageClassificationExporter(Exporter):
@@ -14,7 +11,7 @@ class ImageClassificationExporter(Exporter):
             dim=ImageDimensions.HWC, scale=Scale(dtype=DataType.FLOAT, max=1.0)
         )
 
-    def export(self, chain_name: str, batch_idx: int, batch: "Batch") -> None:
+    def export(self, chain_name: str, batch_idx: int, batch: Batch) -> None:
         assert self.sink, "No sink has been set, unable to export"
 
         self._export_metadata(chain_name, batch_idx, batch)

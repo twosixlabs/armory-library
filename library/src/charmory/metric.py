@@ -3,16 +3,14 @@ from typing import TYPE_CHECKING, Optional, Self
 
 import torch.nn as nn
 
-from charmory.batch import DefaultTorchAccessor, TorchAccessor
+from charmory.data import Accessor, Batch, DefaultTorchAccessor, TorchAccessor
 
 if TYPE_CHECKING:
     from torchmetrics import Metric as TorchMetric
 
-    from charmory.batch import Accessor, Batch
-
 
 class Metric(nn.Module, ABC):
-    def __init__(self, metric: "TorchMetric", accessor: Optional["Accessor"] = None):
+    def __init__(self, metric: "TorchMetric", accessor: Optional[Accessor] = None):
         super().__init__()
         self.metric = metric
         self.accessor = accessor or DefaultTorchAccessor(device=self.metric.device)
@@ -33,7 +31,7 @@ class Metric(nn.Module, ABC):
         ...
 
     @abstractmethod
-    def update(self, batch: "Batch") -> None:
+    def update(self, batch: Batch) -> None:
         ...
 
 
@@ -41,7 +39,7 @@ class PerturbationMetric(Metric):
     def clone(self):
         return PerturbationMetric(self.metric.clone(), self.accessor)
 
-    def update(self, batch: "Batch") -> None:
+    def update(self, batch: Batch) -> None:
         self.metric.update(
             self.accessor.get(batch.initial_inputs),
             self.accessor.get(batch.inputs),
@@ -52,7 +50,7 @@ class PredictionMetric(Metric):
     def clone(self):
         return PredictionMetric(self.metric.clone(), self.accessor)
 
-    def update(self, batch: "Batch") -> None:
+    def update(self, batch: Batch) -> None:
         if batch.predictions is not None:
             self.metric.update(
                 self.accessor.get(batch.predictions),

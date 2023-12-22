@@ -1,20 +1,19 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Mapping, Optional
+from typing import Mapping, Optional
 
-if TYPE_CHECKING:
-    from charmory.batch import Batch
-    from charmory.export.sink import Sink
+from charmory.data import Batch
+from charmory.export.sink import Sink
 
 
 class Exporter(ABC):
     def __init__(self) -> None:
-        self.sink: Optional["Sink"] = None
+        self.sink: Optional[Sink] = None
 
-    def use_sink(self, sink: "Sink") -> None:
+    def use_sink(self, sink: Sink) -> None:
         self.sink = sink
 
     @abstractmethod
-    def export(self, chain_name: str, batch_idx: int, batch: "Batch") -> None:
+    def export(self, chain_name: str, batch_idx: int, batch: Batch) -> None:
         ...
 
     @staticmethod
@@ -25,7 +24,7 @@ class Exporter(ABC):
             # if it's None or is not a list/sequence/etc, just return None
             return None
 
-    def _export_metadata(self, chain_name: str, batch_idx: int, batch: "Batch") -> None:
+    def _export_metadata(self, chain_name: str, batch_idx: int, batch: Batch) -> None:
         assert self.sink, "No sink has been set, unable to export"
 
         targets = batch.targets.numpy()
@@ -56,5 +55,5 @@ class Exporter(ABC):
 
 
 class NullExporter(Exporter):
-    def export(self, chain_name: str, batch_idx: int, batch: "Batch") -> None:
+    def export(self, chain_name: str, batch_idx: int, batch: Batch) -> None:
         pass

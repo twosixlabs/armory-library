@@ -1,6 +1,6 @@
 from typing import Optional
 
-from charmory.batch import (
+from charmory.data import (
     BatchedImages,
     ImageClassificationBatch,
     NDimArray,

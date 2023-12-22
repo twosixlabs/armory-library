@@ -3,15 +3,13 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Dict, Generic, Optional, TypeVar
 
-from charmory.batch import DefaultNumpyAccessor
+from charmory.data import Accessor, Batch, DefaultNumpyAccessor
 from charmory.evaluation import PerturbationProtocol
 
 if TYPE_CHECKING:
     from art.attacks import EvasionAttack
     import numpy as np
-    import torch
 
-    from charmory.batch import Accessor, Batch
     from charmory.labels import LabelTargeter
 
 
@@ -22,7 +20,7 @@ T = TypeVar("T")
 class CallablePerturbation(PerturbationProtocol, Generic[T]):
     name: str
     perturbation: Callable[[T], T]
-    inputs_accessor: "Accessor[T]"
+    inputs_accessor: Accessor[T]
 
     def apply(self, batch: "Batch"):
         perturbed = self.perturbation(self.inputs_accessor.get(batch.inputs))
@@ -50,10 +48,10 @@ class ArtEvasionAttack(PerturbationProtocol):
     name: str
     """Descriptive name of the attack"""
     attack: "EvasionAttack"
-    inputs_accessor: "Accessor[np.ndarray]" = field(
+    inputs_accessor: Accessor["np.ndarray"] = field(
         default_factory=DefaultNumpyAccessor
     )
-    targets_accessor: "Accessor[np.ndarray]" = field(
+    targets_accessor: Accessor["np.ndarray"] = field(
         default_factory=DefaultNumpyAccessor
     )
     """Evasion attack instance"""

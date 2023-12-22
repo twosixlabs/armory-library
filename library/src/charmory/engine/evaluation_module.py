@@ -8,7 +8,7 @@ import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
 import torch
 
-from charmory.batch import Batch
+from charmory.data import Batch
 from charmory.evaluation import Evaluation, PerturbationProtocol
 from charmory.export.sink import MlflowSink, Sink
 

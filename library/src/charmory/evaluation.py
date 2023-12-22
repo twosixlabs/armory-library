@@ -13,13 +13,12 @@ from typing import (
 )
 
 from armory.metrics.compute import NullProfiler, Profiler
+from charmory.data import Batch
 from charmory.export import Exporter, NullExporter
 from charmory.metric import Metric
 
 if TYPE_CHECKING:
     from torch.utils.data.dataloader import DataLoader
-
-    from charmory.batch import Batch
 
 
 @dataclass
@@ -40,7 +39,7 @@ class ModelProtocol(Protocol):
     name: str
     """Descriptive name of the model"""
 
-    def predict(self, batch: "Batch"):
+    def predict(self, batch: Batch):
         """Executes the model to generate predictions from the given batch"""
         ...
 
@@ -52,7 +51,7 @@ class PerturbationProtocol(Protocol):
     name: str
     """Descriptive name of the perturbation"""
 
-    def apply(self, batch: "Batch") -> None:
+    def apply(self, batch: Batch) -> None:
         """Applies a perturbation to the given batch"""
         ...
 
