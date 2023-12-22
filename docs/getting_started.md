@@ -1,14 +1,36 @@
 # Getting Started
 
-## Lori's Journey
+This tutorial will walk you through the pieces needed to build and execute an
+Armory evaluation. In the process, we'll look at the basic concepts of adversarial
+evaluation and how Armory provides components needed to effect them.
 
-1. PyTorch self-tutorial introduction
+The basic dataflow of Armory-library is shown in this diagram:
 
+![armory-library block diagram](assets/armory-block-diagram.png)
 
+Where the Model and Dataset are the inputs under evaluation and the Attack is an
+adversarial perturbation applied to the Dataset. Typically, the Model and
+Dataset will be provided by the armory-library user and the Attack will be drawn
+from armory-library or the IBM Adversarial Robustness Toolbox (ART).
+In this tutorial we will not deal with the green defense boxes or the
+pink generated adversarial dataset box.
 
-## Prerequisite concepts in an Armory context
+## Dataset
 
-### Dataset
+Armory currently supports image classification and object detection models.
+We look at an image classification example here, with object detection described
+in [Diving Deeper](diving-deeper.md).
+
+The structure of an image classification dataset is simple, consisting of pairs
+of images and labels. Images are 2-dimensional arrays of pixels and will often
+come as PNG or JPEG images. Labels are integers that correspond to the class of
+the image. For example, in the standard MNIST dataset, the images are 28×28 grayscale
+handwritten digits and the labels are integers from 0 to 9. The label represent
+the "ground truth" for the image, or what the model should predict when shown the
+image. Again using MNIST digits, the label associated with a handwritten digit 8
+will be 8; we expect the model to predict the label 8 when shown the image.
+
+![MNIST handwritten 8](assets/mnist-handwritten-8.png)
 
 A dataset is a collection of images (samples) in a sequence-like structure such
 as a tuple, map, or numpy array. Each can have a target (label) assigned.
@@ -215,4 +237,3 @@ takes as input the default specs for this attack.
 
 [art]: https://github.com/Trusted-AI/adversarial-robustness-toolbox
 [paper]: https://arxiv.org/abs/1706.06083
-
