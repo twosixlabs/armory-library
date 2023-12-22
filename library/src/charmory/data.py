@@ -1,6 +1,5 @@
-"""Armory batch objects"""
+"""Armory data types"""
 
-from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import StrEnum, auto
@@ -26,25 +25,6 @@ import numpy as np
 import numpy.typing as npt
 import torch
 from torchvision.ops import box_convert
-
-#
-# torch vs numpy
-# images: HWC vs CHW
-# uint8 (0-255) vs float (0.0-1.0) (vs unbound float?)
-# normalized (-3.0-3.0) vs unnormalized
-# tensor: gpu vs cpu?
-# boxes: XYXY vs XYWH vs CXCYWH
-#
-#
-
-
-def is_supported_type(arg):
-    if isinstance(arg, np.ndarray):
-        return True
-    if isinstance(arg, torch.Tensor):
-        return True
-    return False
-
 
 ###
 # to_numpy
@@ -304,6 +284,15 @@ class _Accessor(Protocol, Generic[RepresentationType]):
         ...
 
 
+@runtime_checkable
+class TorchAccessor(Protocol):
+    def to(
+        self,
+        device: Optional[torch.device] = None,
+    ):
+        ...
+
+
 class Metadata(TypedDict):
     data: Dict[str, Any]
     perturbations: Dict[str, Any]
@@ -332,13 +321,9 @@ Accessor = _Accessor[RepresentationType]
 Batch = _Batch[SupportsConversion, SupportsConversion, SupportsConversion]
 
 
-@runtime_checkable
-class TorchAccessor(Protocol):
-    def to(
-        self,
-        device: Optional[torch.device] = None,
-    ):
-        ...
+###
+# Accessor classes
+###
 
 
 class _CallableAccessor(_Accessor[RepresentationType]):
@@ -423,8 +408,9 @@ class DefaultTorchAccessor(TorchAccessor, _Accessor[RepresentationType]):
             )
 
 
-InputType = TypeVar("InputType")
-T = TypeVar("T")
+###
+# Convertable types
+###
 
 
 class BatchedImages(SupportsConversion):
@@ -583,94 +569,9 @@ class NDimArray(SupportsConversion):
         return to_dtype(to_device(to_torch(self.contents), device), dtype)
 
 
-class Batch2(ABC):
-    @abstractmethod
-    def get_inputs_numpy(self):
-        ...
-
-    @abstractmethod
-    def get_inputs_torch(
-        self,
-        dtype: Optional[torch.dtype] = None,
-        device: Optional[torch.device] = None,
-    ):
-        ...
-
-    @abstractmethod
-    def replace_inputs(self, inputs):
-        ...
-
-    @abstractmethod
-    def get_targets_numpy(self):
-        ...
-
-    @abstractmethod
-    def get_targets_torch(
-        self,
-        dtype: Optional[torch.dtype] = None,
-        device: Optional[torch.device] = None,
-    ):
-        ...
-
-
-class ComputerVisionBatch(Batch2):
-    class Dimensions(StrEnum):
-        CHW = auto()
-        HWC = auto()
-
-    def __init__(self, inputs: Union[np.ndarray, torch.Tensor], dim: Dimensions):
-        self._inputs = inputs
-        self.dim = dim
-
-    def _transpose(self, data, dim: Optional[Dimensions], transpose):
-        if dim is None or dim == self.dim:
-            return data
-        if dim == self.Dimensions.CHW and self.dim == self.Dimensions.HWC:
-            return transpose(data, (0, 3, 1, 2))
-        if dim == self.Dimensions.HWC and self.dim == self.Dimensions.CHW:
-            return transpose(data, (0, 2, 3, 1))
-        raise ValueError(
-            f"Invalid image dimension requested: requested {dim} from batch with {self.dim}"
-        )
-
-    def get_inputs_numpy(self, dim: Optional[Dimensions] = None) -> np.ndarray:
-        if isinstance(self._inputs, np.ndarray):
-            inputs = self._inputs
-        elif isinstance(self._inputs, torch.Tensor):
-            inputs = self._inputs.cpu().numpy()
-        else:
-            raise ValueError(f"Invalid type of batch inputs: {type(self._inputs)}")
-
-        return self._transpose(inputs, dim, np.transpose)
-
-    def get_inputs_torch(
-        self,
-        dtype: Optional[torch.dtype] = None,
-        device: Optional[torch.device] = None,
-        dim: Optional[Dimensions] = None,
-    ) -> torch.Tensor:
-        if isinstance(self._inputs, np.ndarray):
-            inputs = torch.from_numpy(self._inputs)
-        elif isinstance(self._inputs, torch.Tensor):
-            inputs = self._inputs
-        else:
-            raise ValueError(f"Invalid type of batch inputs: {type(self._inputs)}")
-
-        if (dtype is not None and dtype != inputs.dtype) or (
-            device is not None and device != inputs.device
-        ):
-            inputs = inputs.to(dtype=dtype, device=device)
-
-        return self._transpose(inputs, dim, torch.permute)
-
-    def replace_inputs(
-        self,
-        inputs: Union[np.ndarray, torch.Tensor],
-        dim: Optional[Dimensions] = None,
-    ):
-        self._inputs = inputs
-        if dim is not None:
-            self.dim = dim
+###
+# Batch types
+###
 
 
 class ImageClassificationBatch(_Batch[BatchedImages, NDimArray, NDimArray]):
@@ -694,175 +595,117 @@ class ImageClassificationBatch(_Batch[BatchedImages, NDimArray, NDimArray]):
         return len(self.inputs)
 
 
-# def get_targets_numpy(self) -> np.ndarray:
-#     if isinstance(self._targets, np.ndarray):
-#         return self._targets
-#     elif isinstance(self._targets, torch.Tensor):
-#         return self._targets.cpu().numpy()
-#     else:
-#         raise ValueError(f"Invalid type of batch targets: {type(self._targets)}")
+# class ObjectDetectionBatch(ComputerVisionBatch):
+#     class BBoxFormat(StrEnum):
+#         XYXY = auto()
+#         XYWH = auto()
+#         CXCYWH = auto()
 
-# def get_targets_torch(
-#     self,
-#     dtype: Optional[torch.dtype] = None,
-#     device: Optional[torch.device] = None,
-# ) -> torch.Tensor:
-#     if isinstance(self._targets, np.ndarray):
-#         targets = torch.from_numpy(self._targets)
-#     elif isinstance(self._targets, torch.Tensor):
-#         targets = self._targets
-#     else:
-#         raise ValueError(f"Invalid type of batch targets: {type(self._targets)}")
+#     class ObjectsNumpy(TypedDict):
+#         boxes: np.ndarray
+#         labels: np.ndarray
 
-#     if (dtype is not None and dtype != targets.dtype) or (
-#         device is not None and device != targets.device
+#     class ObjectsTorch(TypedDict):
+#         boxes: torch.FloatTensor
+#         labels: torch.IntTensor
+
+#     class PredictionsNumpy(ObjectsNumpy):
+#         scores: np.ndarray
+
+#     class PredictionsTorch(ObjectsTorch):
+#         scores: torch.FloatTensor
+
+#     def __init__(
+#         self,
+#         inputs: Union[np.ndarray, torch.Tensor],
+#         targets: Union[Sequence[ObjectsNumpy], Sequence[ObjectsTorch]],
+#         dim: ComputerVisionBatch.Dimensions,
+#         bboxformat: BBoxFormat,
 #     ):
-#         targets = targets.to(dtype=dtype, device=device)
+#         super().__init__(inputs=inputs, dim=dim)
+#         self._targets = targets
+#         self.targets_bboxformat = bboxformat
+#         self._preds: Union[
+#             None,
+#             Sequence[ObjectDetectionBatch.PredictionsNumpy],
+#             Sequence[ObjectDetectionBatch.PredictionsTorch],
+#         ] = None
+#         self.preds_bboxformat = bboxformat
 
-#     return targets
+#     def get_targets_numpy(
+#         self,
+#         bboxformat: Optional[BBoxFormat] = None,
+#     ) -> Sequence[ObjectsNumpy]:
+#         if len(self._targets) == 0:
+#             return []
 
-# def add_predictions(self, preds: Union[np.ndarray, torch.Tensor]) -> None:
-#     self._preds = preds
+#         if isinstance(self._targets[0]["boxes"], np.ndarray):
+#             if bboxformat is None or bboxformat == self.targets_bboxformat:
+#                 return cast(Sequence[ObjectDetectionBatch.ObjectsNumpy], self._targets)
+#             return [
+#                 self.ObjectsNumpy(
+#                     boxes=box_convert(
+#                         torch.tensor(target["boxes"]),
+#                         self.targets_bboxformat,
+#                         bboxformat,
+#                     ).numpy(),
+#                     labels=target["labels"],
+#                 )
+#                 for target in cast(
+#                     Sequence[ObjectDetectionBatch.ObjectsNumpy], self._targets
+#                 )
+#             ]
+#         elif isinstance(self._targets[0]["boxes"], torch.Tensor):
+#             return [
+#                 self.ObjectsNumpy(
+#                     boxes=target["boxes"].cpu().numpy(),
+#                     labels=target["labels"].cpu().numpy(),
+#                 )
+#                 for target in cast(
+#                     Sequence[ObjectDetectionBatch.ObjectsTorch], self._targets
+#                 )
+#             ]
+#         else:
+#             raise ValueError(
+#                 f"Invalid type of batch targets: {type(self._targets[0]['boxes'])}"
+#             )
 
-# def get_predictions_numpy(self) -> np.ndarray:
-#     if isinstance(self._preds, np.ndarray):
-#         return self._preds
-#     elif isinstance(self._preds, torch.Tensor):
-#         return self._preds.cpu().numpy()
-#     else:
-#         raise ValueError(f"Invalid type of batch predictions: {type(self._preds)}")
+#     def get_targets_torch(
+#         self,
+#         device: Optional[torch.device] = None,
+#     ) -> Sequence[ObjectsTorch]:
+#         if len(self._targets) == 0:
+#             return []
 
-# def get_predictions_torch(
-#     self,
-#     dtype: Optional[torch.dtype] = None,
-#     device: Optional[torch.device] = None,
-# ) -> torch.Tensor:
-#     if isinstance(self._preds, np.ndarray):
-#         preds = torch.from_numpy(self._preds)
-#     elif isinstance(self._preds, torch.Tensor):
-#         preds = self._preds
-#     else:
-#         raise ValueError(f"Invalid type of batch predictions: {type(self._preds)}")
+#         if isinstance(self._targets[0]["boxes"], np.ndarray):
+#             return [
+#                 self.ObjectsTorch(
+#                     boxes=torch.FloatTensor(target["boxes"], device=device),
+#                     labels=torch.IntTensor(target["labels"], device=device),
+#                 )
+#                 for target in cast(
+#                     Sequence[ObjectDetectionBatch.ObjectsNumpy], self._targets
+#                 )
+#             ]
+#         else:
+#             raise ValueError(
+#                 f"Invalid type of batch targets: {type(self._targets[0]['boxes'])}"
+#             )
 
-#     if (dtype is not None and dtype != preds.dtype) or (
-#         device is not None and device != preds.device
-#     ):
-#         preds = preds.to(dtype=dtype, device=device)
+#     def add_predictions(
+#         self,
+#         preds: Union[Sequence[PredictionsNumpy,], Sequence[PredictionsTorch]],
+#         bboxformat: BBoxFormat,
+#     ) -> None:
+#         ...
 
-#     return preds
+#     def get_predictions_numpy(self) -> Sequence[PredictionsNumpy]:
+#         ...
 
-
-class ObjectDetectionBatch(ComputerVisionBatch):
-    class BBoxFormat(StrEnum):
-        XYXY = auto()
-        XYWH = auto()
-        CXCYWH = auto()
-
-    class ObjectsNumpy(TypedDict):
-        boxes: np.ndarray
-        labels: np.ndarray
-
-    class ObjectsTorch(TypedDict):
-        boxes: torch.FloatTensor
-        labels: torch.IntTensor
-
-    class PredictionsNumpy(ObjectsNumpy):
-        scores: np.ndarray
-
-    class PredictionsTorch(ObjectsTorch):
-        scores: torch.FloatTensor
-
-    def __init__(
-        self,
-        inputs: Union[np.ndarray, torch.Tensor],
-        targets: Union[Sequence[ObjectsNumpy], Sequence[ObjectsTorch]],
-        dim: ComputerVisionBatch.Dimensions,
-        bboxformat: BBoxFormat,
-    ):
-        super().__init__(inputs=inputs, dim=dim)
-        self._targets = targets
-        self.targets_bboxformat = bboxformat
-        self._preds: Union[
-            None,
-            Sequence[ObjectDetectionBatch.PredictionsNumpy],
-            Sequence[ObjectDetectionBatch.PredictionsTorch],
-        ] = None
-        self.preds_bboxformat = bboxformat
-
-    def get_targets_numpy(
-        self,
-        bboxformat: Optional[BBoxFormat] = None,
-    ) -> Sequence[ObjectsNumpy]:
-        if len(self._targets) == 0:
-            return []
-
-        if isinstance(self._targets[0]["boxes"], np.ndarray):
-            if bboxformat is None or bboxformat == self.targets_bboxformat:
-                return cast(Sequence[ObjectDetectionBatch.ObjectsNumpy], self._targets)
-            return [
-                self.ObjectsNumpy(
-                    boxes=box_convert(
-                        torch.tensor(target["boxes"]),
-                        self.targets_bboxformat,
-                        bboxformat,
-                    ).numpy(),
-                    labels=target["labels"],
-                )
-                for target in cast(
-                    Sequence[ObjectDetectionBatch.ObjectsNumpy], self._targets
-                )
-            ]
-        elif isinstance(self._targets[0]["boxes"], torch.Tensor):
-            return [
-                self.ObjectsNumpy(
-                    boxes=target["boxes"].cpu().numpy(),
-                    labels=target["labels"].cpu().numpy(),
-                )
-                for target in cast(
-                    Sequence[ObjectDetectionBatch.ObjectsTorch], self._targets
-                )
-            ]
-        else:
-            raise ValueError(
-                f"Invalid type of batch targets: {type(self._targets[0]['boxes'])}"
-            )
-
-    def get_targets_torch(
-        self,
-        device: Optional[torch.device] = None,
-    ) -> Sequence[ObjectsTorch]:
-        if len(self._targets) == 0:
-            return []
-
-        if isinstance(self._targets[0]["boxes"], np.ndarray):
-            return [
-                self.ObjectsTorch(
-                    boxes=torch.FloatTensor(target["boxes"], device=device),
-                    labels=torch.IntTensor(target["labels"], device=device),
-                )
-                for target in cast(
-                    Sequence[ObjectDetectionBatch.ObjectsNumpy], self._targets
-                )
-            ]
-        else:
-            raise ValueError(
-                f"Invalid type of batch targets: {type(self._targets[0]['boxes'])}"
-            )
-
-    def add_predictions(
-        self,
-        preds: Union[Sequence[PredictionsNumpy,], Sequence[PredictionsTorch]],
-        bboxformat: BBoxFormat,
-    ) -> None:
-        ...
-
-    def get_predictions_numpy(self) -> Sequence[PredictionsNumpy]:
-        ...
-
-    def get_predictions_torch(
-        self,
-        dtype: Optional[torch.dtype] = None,
-        device: Optional[torch.device] = None,
-        bboxformat: Optional[BBoxFormat] = None,
-    ) -> Sequence[PredictionsTorch]:
-        ...
+#     def get_predictions_torch(
+#         self,
+#         dtype: Optional[torch.dtype] = None,
+#         device: Optional[torch.device] = None,
+#         bboxformat: Optional[BBoxFormat] = None,
+#     ) -> Sequence[PredictionsTorch]:
+#         ...
