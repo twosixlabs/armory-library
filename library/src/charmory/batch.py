@@ -280,6 +280,12 @@ class SupportsConversion(Protocol):
         ...
 
 
+@runtime_checkable
+class SupportsUpdate(Protocol):
+    def update(self, data: Any) -> None:
+        ...
+
+
 RepresentationType = TypeVar("RepresentationType")
 
 
@@ -394,6 +400,19 @@ class _TorchCallableAccessor(TorchAccessor, _CallableAccessor[RepresentationType
         self._set(convertable, data)
 
 
+class DefaultNumpyAccessor(_Accessor[RepresentationType]):
+    def get(self, convertable) -> RepresentationType:
+        return convertable.numpy()
+
+    def set(self, convertable, data: RepresentationType):
+        if isinstance(convertable, SupportsUpdate):
+            convertable.update(data)
+        else:
+            raise NotImplementedError(
+                "Cannot mutate type using the default torch accessor"
+            )
+
+
 class DefaultTorchAccessor(TorchAccessor, _Accessor[RepresentationType]):
     def __init__(
         self,
@@ -412,7 +431,12 @@ class DefaultTorchAccessor(TorchAccessor, _Accessor[RepresentationType]):
         return convertable.torch(device=self.device)
 
     def set(self, convertable, data: RepresentationType):
-        raise NotImplementedError("Cannot mutate type using the default torch accessor")
+        if isinstance(convertable, SupportsUpdate):
+            convertable.update(data)
+        else:
+            raise NotImplementedError(
+                "Cannot mutate type using the default torch accessor"
+            )
 
 
 InputType = TypeVar("InputType")

@@ -1,19 +1,9 @@
 """Perturbation adaption APIs"""
 
 from dataclasses import dataclass, field
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Generic,
-    Mapping,
-    Optional,
-    Protocol,
-    TypeVar,
-    runtime_checkable,
-)
+from typing import TYPE_CHECKING, Any, Callable, Dict, Generic, Optional, TypeVar
 
+from charmory.batch import DefaultNumpyAccessor
 from charmory.evaluation import PerturbationProtocol
 
 if TYPE_CHECKING:
@@ -39,74 +29,6 @@ class CallablePerturbation(PerturbationProtocol, Generic[T]):
         self.inputs_accessor.set(batch.inputs, perturbed)
 
 
-# @dataclass
-# class NumpyPerturbation(PerturbationProtocol):
-#     """
-#     A generic perturbation for a simple callable (e.g., a transform or
-#     augmentation) that accepts numpy arrays.
-
-#     Example::
-
-#         from charmory.perturbation import NumpyPerturbation
-#         from torchvision.transforms.v2 import GaussianBlur
-
-#         perturb = NumpyPerturbation(
-#             name="blur",
-#             perturbation=GaussianBlur(kernel_size=5),
-#         )
-#     """
-
-#     name: str
-#     """Descriptive name of the perturbation"""
-
-#     perturbation: Callable[["np.ndarray"], "np.ndarray"]
-#     """Callable accepting the input data and returning the perturbed data"""
-
-#     inputs_kwargs: Dict[str, Any] = field(default_factory=dict)
-#     """
-#     Optional, additional keyword arguments to be used with the batch input's
-#     `numpy` method
-#     """
-
-#     def apply(self, batch: "Batch"):
-#         perturbed = self.perturbation(batch.inputs.numpy(**self.inputs_kwargs))
-#         batch.inputs = batch.inputs.clone_with(perturbed, **self.inputs_kwargs)
-
-
-# @dataclass
-# class TorchPerturbation(PerturbationProtocol):
-#     """
-#     A generic perturbation for a simple callable (e.g., a transform or
-#     augmentation) that accepts Torch tensors.
-
-#     Example::
-
-#         from charmory.perturbation import TorchPerturbation
-#         from torchvision.transforms.v2 import GaussianBlur
-
-#         perturb = TorchPerturbation(
-#             name="blur",
-#             perturbation=GaussianBlur(kernel_size=5),
-#         )
-#     """
-
-#     name: str
-#     """Descriptive name of the perturbation"""
-
-#     perturbation: Callable[["torch.Tensor"], "torch.Tensor"]
-#     """Callable accepting the input data and returning the perturbed data"""
-
-#     inputs_kwargs: Dict[str, Any] = field(default_factory=dict)
-#     """
-#     Optional, additional keyword arguments to be used with the batch input's
-#     `torch` method
-#     """
-
-#     def apply(self, batch: Batch):
-#         perturbed = self.perturbation(batch.inputs.torch(**self.inputs_kwargs))
-#         batch.inputs = batch.inputs.clone_with(perturbed, **self.inputs_kwargs)
-
-
 @dataclass
 class ArtEvasionAttack(PerturbationProtocol):
     """
@@ -128,8 +50,12 @@ class ArtEvasionAttack(PerturbationProtocol):
     name: str
     """Descriptive name of the attack"""
     attack: "EvasionAttack"
-    inputs_accessor: "Accessor[np.ndarray]"
-    targets_accessor: Optional["Accessor[np.ndarray]"] = None
+    inputs_accessor: "Accessor[np.ndarray]" = field(
+        default_factory=DefaultNumpyAccessor
+    )
+    targets_accessor: "Accessor[np.ndarray]" = field(
+        default_factory=DefaultNumpyAccessor
+    )
     """Evasion attack instance"""
     generate_kwargs: Dict[str, Any] = field(default_factory=dict)
     """
@@ -147,16 +73,6 @@ class ArtEvasionAttack(PerturbationProtocol):
     Required when the attack is targeted, the label targeter generates the
     target label that is used as the `y` argument to the evasion attack's
     `generate` method.
-    """
-    inputs_kwargs: Dict[str, Any] = field(default_factory=dict)
-    """
-    Optional, additional keyword arguments to be used with the batch input's
-    `numpy` method
-    """
-    targets_kwargs: Dict[str, Any] = field(default_factory=dict)
-    """
-    Optional, additional keyword arguments to be used with the batch target's
-    `numpy` method
     """
 
     def __post_init__(self):
@@ -190,14 +106,12 @@ class ArtEvasionAttack(PerturbationProtocol):
                 assert self.label_targeter
             y_target = self.label_targeter.generate(
                 self.targets_accessor.get(batch.targets)
-                # batch.targets.numpy(**self.targets_kwargs)
             )
         else:
             # If untargeted, use either the natural or benign labels
             # (when set to None, the ART attack handles the benign label)
             y_target = (
                 self.targets_accessor.get(batch.targets)
-                # batch.targets.numpy(**self.targets_kwargs)
                 if self.use_label_for_untargeted
                 else None
             )
@@ -208,5 +122,4 @@ class ArtEvasionAttack(PerturbationProtocol):
             **self.generate_kwargs,
         )
         self.inputs_accessor.set(batch.inputs, perturbed)
-        # batch.inputs = batch.inputs.clone_with(perturbed, **self.inputs_kwargs)
         batch.metadata[f"perturbation.{self.name}"] = dict(y_target=y_target)

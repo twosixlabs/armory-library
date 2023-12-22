@@ -119,7 +119,6 @@ def main(batch_size, export_every_n_batches, num_batches):
     pgd_attack = ArtEvasionAttack(
         name="PGD",
         attack=pgd,
-        inputs_accessor=BatchedImages.as_numpy(),
         use_label_for_untargeted=False,
     )
 
