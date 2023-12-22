@@ -17,12 +17,14 @@ import torchmetrics.classification
 
 from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
-from charmory.data import ArmoryDataLoader
-from charmory.evaluation import Dataset, Evaluation, Metric, Model
+from charmory.data import DataType, ImageDimensions, Images, Scale
+from charmory.dataset import ImageClassificationDataLoader
+from charmory.evaluation import Dataset, Evaluation, PerturbationProtocol
+from charmory.export.image_classification import ImageClassificationExporter
+from charmory.metric import PerturbationMetric, PredictionMetric
 from charmory.metrics.perturbation import PerturbationNormMetric
-from charmory.model.image_classification import JaticImageClassificationModel
-from charmory.perturbation import ArtEvasionAttack, Perturbation
-from charmory.tasks.image_classification import ImageClassificationTask
+from charmory.model.image_classification import ImageClassifier
+from charmory.perturbation import ArtEvasionAttack
 from charmory.track import track_init_params, track_params
 
 _MODELS = {
@@ -90,14 +92,18 @@ def get_cli_args(with_attack: bool):
 
 
 def _load_model(name: str):
-    model = track_params(jatic_toolbox.load_model)(
-        provider="huggingface",
-        model_name=name,
-        task="image-classification",
+    model = ImageClassifier(
+        name=name,
+        model=track_params(jatic_toolbox.load_model)(
+            provider="huggingface",
+            model_name=name,
+            task="image-classification",
+        ),
+        accessor=Images.as_torch(),
     )
 
-    classifier = track_init_params(PyTorchClassifier)(
-        JaticImageClassificationModel(model),
+    art_model = track_init_params(PyTorchClassifier)(
+        model,
         loss=nn.CrossEntropyLoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
         input_shape=(224, 224, 3),
@@ -106,12 +112,7 @@ def _load_model(name: str):
         clip_values=(0.0, 1.0),
     )
 
-    eval_model = Model(
-        name=name,
-        model=classifier,
-    )
-
-    return eval_model, classifier
+    return model, art_model
 
 
 def _load_dataset(batch_size: int, dataset_path: Optional[str] = None):
@@ -152,54 +153,64 @@ def _load_dataset(batch_size: int, dataset_path: Optional[str] = None):
 
     dataset.set_transform(transform_func)
 
-    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
+    dataloader = ImageClassificationDataLoader(
+        dataset,
+        dim=ImageDimensions.CHW,
+        scale=Scale(dtype=DataType.FLOAT, max=1.0),
+        image_key="image",
+        label_key="label",
+        batch_size=batch_size,
+    )
 
     eval_dataset = Dataset(
         name="EuroSAT",
-        x_key="image",
-        y_key="label",
-        test_dataloader=dataloader,
+        dataloader=dataloader,
     )
 
     return eval_dataset
 
 
-def _create_metric():
-    return Metric(
-        profiler=BasicProfiler(),
-        perturbation={
-            "linf_norm": PerturbationNormMetric(ord=torch.inf),
-        },
-        prediction={
-            "accuracy_avg": torchmetrics.classification.Accuracy(
-                task="multiclass", num_classes=10
-            ),
-            "accuracy_by_class": torchmetrics.classification.Accuracy(
+def _create_metrics():
+    return {
+        "linf_norm": PerturbationMetric(PerturbationNormMetric(ord=torch.inf)),
+        "accuracy_avg": PredictionMetric(
+            torchmetrics.classification.Accuracy(task="multiclass", num_classes=10)
+        ),
+        "accuracy_by_class": PredictionMetric(
+            torchmetrics.classification.Accuracy(
                 task="multiclass", num_classes=10, average=None
-            ),
-            "precision_avg": torchmetrics.classification.Precision(
-                task="multiclass", num_classes=10
-            ),
-            "precision_by_class": torchmetrics.classification.Precision(
+            )
+        ),
+        "precision_avg": PredictionMetric(
+            torchmetrics.classification.Precision(task="multiclass", num_classes=10)
+        ),
+        "precision_by_class": PredictionMetric(
+            torchmetrics.classification.Precision(
                 task="multiclass", num_classes=10, average=None
-            ),
-            "recall_avg": torchmetrics.classification.Recall(
-                task="multiclass", num_classes=10
-            ),
-            "recall_by_class": torchmetrics.classification.Recall(
+            )
+        ),
+        "recall_avg": PredictionMetric(
+            torchmetrics.classification.Recall(task="multiclass", num_classes=10)
+        ),
+        "recall_by_class": PredictionMetric(
+            torchmetrics.classification.Recall(
                 task="multiclass", num_classes=10, average=None
-            ),
-            "f1_score_avg": torchmetrics.classification.F1Score(
-                task="multiclass", num_classes=10
-            ),
-            "f1_score_by_class": torchmetrics.classification.F1Score(
+            )
+        ),
+        "f1_score_avg": PredictionMetric(
+            torchmetrics.classification.F1Score(task="multiclass", num_classes=10)
+        ),
+        "f1_score_by_class": PredictionMetric(
+            torchmetrics.classification.F1Score(
                 task="multiclass", num_classes=10, average=None
-            ),
-            "confusion": torchmetrics.classification.ConfusionMatrix(
+            )
+        ),
+        "confusion": PredictionMetric(
+            torchmetrics.classification.ConfusionMatrix(
                 task="multiclass", num_classes=10
-            ),
-        },
-    )
+            )
+        ),
+    }
 
 
 def _create_attack(classifier: PyTorchClassifier, verbose: bool = False, **kwargs):
@@ -232,7 +243,7 @@ def create_evaluation(
 ) -> Evaluation:
     model, classifier = _load_model(_MODELS[model_name])
     dataset = _load_dataset(batch_size=batch_size, dataset_path=dataset_path)
-    perturbations: Dict[str, Iterable[Perturbation]] = dict(benign=[])
+    perturbations: Dict[str, Iterable[PerturbationProtocol]] = dict(benign=[])
     if with_attack:
         perturbations["attack"] = [
             _create_attack(classifier, **_get_attack_kwargs(**kwargs))
@@ -245,23 +256,11 @@ def create_evaluation(
         description=f"EuroSAT classification using {model_name} model with {attack_type} PGD attack",
         author="TwoSix",
         dataset=dataset,
-        metric=_create_metric(),
+        metrics=_create_metrics(),
         model=model,
         perturbations=perturbations,
+        profiler=BasicProfiler(),
+        exporter=ImageClassificationExporter(),
     )
 
     return evaluation
-
-
-def create_evaluation_task(
-    export_every_n_batches: int, with_attack: bool, **kwargs
-) -> ImageClassificationTask:
-    evaluation = create_evaluation(with_attack=with_attack, **kwargs)
-
-    task = ImageClassificationTask(
-        evaluation,
-        export_every_n_batches=export_every_n_batches,
-        skip_attack=not with_attack,
-    )
-
-    return task
