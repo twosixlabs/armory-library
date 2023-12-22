@@ -430,7 +430,7 @@ class DefaultTorchAccessor(TorchAccessor, _Accessor[RepresentationType]):
 ###
 
 
-class BatchedImages(SupportsConversion, SupportsUpdate):
+class Images(SupportsConversion, SupportsUpdate):
     RepresentationTypes = Union[np.ndarray, torch.Tensor]
     Accessor = Union[_Accessor[np.ndarray], _Accessor[torch.Tensor]]
 
@@ -448,7 +448,7 @@ class BatchedImages(SupportsConversion, SupportsUpdate):
         return len(self.images)
 
     def clone(self):
-        return BatchedImages(images=self.images, dim=self.dim, scale=self.scale)
+        return Images(images=self.images, dim=self.dim, scale=self.scale)
 
     def update(
         self,
@@ -550,7 +550,7 @@ class BatchedImages(SupportsConversion, SupportsUpdate):
         return self.to_torch_images(dtype=dtype, device=device)
 
 
-class NDimArray(SupportsConversion):
+class NDimArray(SupportsMutation):
     Accessor = Union[_Accessor[np.ndarray], _Accessor[torch.Tensor]]
 
     def __init__(
@@ -606,10 +606,10 @@ class NDimArray(SupportsConversion):
 ###
 
 
-class ImageClassificationBatch(_Batch[BatchedImages, NDimArray, NDimArray]):
+class ImageClassificationBatch(_Batch[Images, NDimArray, NDimArray]):
     def __init__(
         self,
-        inputs: BatchedImages,
+        inputs: Images,
         targets: NDimArray,
         metadata: Metadata,
         predictions: Optional[NDimArray] = None,
@@ -623,11 +623,11 @@ class ImageClassificationBatch(_Batch[BatchedImages, NDimArray, NDimArray]):
         )
 
     @property
-    def initial_inputs(self) -> BatchedImages:
+    def initial_inputs(self) -> Images:
         return self._initial_inputs
 
     @property
-    def inputs(self) -> BatchedImages:
+    def inputs(self) -> Images:
         return self._inputs
 
     @property

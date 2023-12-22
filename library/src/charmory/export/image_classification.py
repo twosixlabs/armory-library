@@ -1,27 +1,20 @@
 from typing import Optional
 
-from charmory.data import (
-    Accessor,
-    Batch,
-    BatchedImages,
-    DataType,
-    ImageDimensions,
-    Scale,
-)
+from charmory.data import Accessor, Batch, DataType, ImageDimensions, Images, Scale
 from charmory.export.base import Exporter
 
 
 class ImageClassificationExporter(Exporter):
     def __init__(
         self,
-        inputs_accessor: Optional[BatchedImages.Accessor] = None,
+        inputs_accessor: Optional[Images.Accessor] = None,
         predictions_accessor: Optional[Accessor] = None,
         targets_accessor: Optional[Accessor] = None,
     ):
         super().__init__(
             predictions_accessor=predictions_accessor, targets_accessor=targets_accessor
         )
-        self.inputs_accessor = inputs_accessor or BatchedImages.as_numpy(
+        self.inputs_accessor = inputs_accessor or Images.as_numpy(
             dim=ImageDimensions.HWC, scale=Scale(dtype=DataType.FLOAT, max=1.0)
         )
 

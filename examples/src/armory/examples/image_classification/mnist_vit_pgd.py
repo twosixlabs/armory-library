@@ -13,7 +13,7 @@ from transformers import AutoImageProcessor, AutoModelForImageClassification
 
 from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
-from charmory.data import BatchedImages, DataType, ImageDimensions, Scale
+from charmory.data import DataType, ImageDimensions, Images, Scale
 from charmory.dataset import ImageClassificationDataLoader
 from charmory.engine import EvaluationEngine
 import charmory.evaluation as ev
@@ -56,7 +56,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         model=track_params(AutoModelForImageClassification.from_pretrained)(
             "farleyknight-org-username/vit-base-mnist"
         ),
-        accessor=BatchedImages.as_torch(),
+        accessor=Images.as_torch(),
     )
     art_model = track_init_params(PyTorchClassifier)(
         model,
@@ -100,7 +100,7 @@ def main(batch_size, export_every_n_batches, num_batches):
     blur_perturb = CallablePerturbation(
         name="blur",
         perturbation=blur,
-        inputs_accessor=BatchedImages.as_torch(),
+        inputs_accessor=Images.as_torch(),
     )
 
     pgd = track_init_params(ProjectedGradientDescent)(

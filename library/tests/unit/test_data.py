@@ -19,14 +19,14 @@ def deterministic_ndarray(dim, *dims, seed=0):
 @pytest.mark.parametrize(
     "constructor,method,dest_type",
     [
-        (np.array, data.BatchedImages.numpy, np.ndarray),
-        (np.array, data.BatchedImages.torch, torch.Tensor),
-        (torch.tensor, data.BatchedImages.numpy, np.ndarray),
-        (torch.tensor, data.BatchedImages.torch, torch.Tensor),
+        (np.array, data.Images.to_numpy, np.ndarray),
+        (np.array, data.Images.to_torch, torch.Tensor),
+        (torch.tensor, data.Images.to_numpy, np.ndarray),
+        (torch.tensor, data.Images.to_torch, torch.Tensor),
     ],
 )
-def test_BatchedImages_no_alterations(constructor, method, dest_type):
-    images = data.BatchedImages(
+def test_Images_no_alterations(constructor, method, dest_type):
+    images = data.Images(
         images=constructor(deterministic_ndarray(5, 100, 100, 3)),
         dim=data.ImageDimensions.HWC,
         scale=data.Scale(dtype=data.DataType.FLOAT, max=1.0),
@@ -39,16 +39,16 @@ def test_BatchedImages_no_alterations(constructor, method, dest_type):
 @pytest.mark.parametrize(
     "module,method",
     [
-        (np, data.BatchedImages.numpy),
-        (np, data.BatchedImages.torch),
-        (torch, data.BatchedImages.numpy),
-        (torch, data.BatchedImages.torch),
+        (np, data.Images.to_numpy_images),
+        (np, data.Images.to_torch_images),
+        (torch, data.Images.to_numpy_images),
+        (torch, data.Images.to_torch_images),
     ],
 )
-def test_BatchedImages_hwc_to_chw(module, method):
+def test_Images_hwc_to_chw(module, method):
     as_hwc = module.zeros((5, 100, 100, 3))
     as_hwc[3][1][4][1] = 0.59
-    images = data.BatchedImages(
+    images = data.Images(
         images=as_hwc,
         dim=data.ImageDimensions.HWC,
         scale=data.Scale(dtype=data.DataType.FLOAT, max=1.0),
@@ -61,16 +61,16 @@ def test_BatchedImages_hwc_to_chw(module, method):
 @pytest.mark.parametrize(
     "module,method",
     [
-        (np, data.BatchedImages.numpy),
-        (np, data.BatchedImages.torch),
-        (torch, data.BatchedImages.numpy),
-        (torch, data.BatchedImages.torch),
+        (np, data.Images.to_numpy_images),
+        (np, data.Images.to_torch_images),
+        (torch, data.Images.to_numpy_images),
+        (torch, data.Images.to_torch_images),
     ],
 )
-def test_BatchedImages_chw_to_hwc(module, method):
+def test_Images_chw_to_hwc(module, method):
     as_chw = module.zeros((5, 3, 100, 100))
     as_chw[3][1][41][59] = 0.26
-    images = data.BatchedImages(
+    images = data.Images(
         images=as_chw,
         dim=data.ImageDimensions.CHW,
         scale=data.Scale(dtype=data.DataType.FLOAT, max=1.0),
@@ -83,16 +83,16 @@ def test_BatchedImages_chw_to_hwc(module, method):
 @pytest.mark.parametrize(
     "src_module,dest_module,method",
     [
-        (np, np, data.BatchedImages.numpy),
-        (np, torch, data.BatchedImages.torch),
-        (torch, np, data.BatchedImages.numpy),
-        (torch, torch, data.BatchedImages.torch),
+        (np, np, data.Images.to_numpy_images),
+        (np, torch, data.Images.to_torch_images),
+        (torch, np, data.Images.to_numpy_images),
+        (torch, torch, data.Images.to_torch_images),
     ],
 )
-def test_BatchedImages_float_to_uint8(src_module, dest_module, method):
+def test_Images_float_to_uint8(src_module, dest_module, method):
     as_float = src_module.zeros((5, 3, 100, 100))
     as_float[3][1][4][1] = 0.59
-    images = data.BatchedImages(
+    images = data.Images(
         images=as_float,
         dim=data.ImageDimensions.CHW,
         scale=data.Scale(dtype=data.DataType.FLOAT, max=1.0),
@@ -109,16 +109,16 @@ def test_BatchedImages_float_to_uint8(src_module, dest_module, method):
 @pytest.mark.parametrize(
     "src_module,dest_module,method",
     [
-        (np, np, data.BatchedImages.numpy),
-        (np, torch, data.BatchedImages.torch),
-        (torch, np, data.BatchedImages.numpy),
-        (torch, torch, data.BatchedImages.torch),
+        (np, np, data.Images.to_numpy_images),
+        (np, torch, data.Images.to_torch_images),
+        (torch, np, data.Images.to_numpy_images),
+        (torch, torch, data.Images.to_torch_images),
     ],
 )
-def test_BatchedImages_uint8_to_float(src_module, dest_module, method):
+def test_Images_uint8_to_float(src_module, dest_module, method):
     as_uint8 = src_module.zeros((5, 3, 100, 100), dtype=src_module.uint8)
     as_uint8[3][1][4][1] = 59
-    images = data.BatchedImages(
+    images = data.Images(
         images=as_uint8,
         dim=data.ImageDimensions.CHW,
         scale=data.Scale(dtype=data.DataType.UINT8, max=255),
@@ -135,18 +135,18 @@ def test_BatchedImages_uint8_to_float(src_module, dest_module, method):
 @pytest.mark.parametrize(
     "module,method",
     [
-        (np, data.BatchedImages.numpy),
-        (np, data.BatchedImages.torch),
-        (torch, data.BatchedImages.numpy),
-        (torch, data.BatchedImages.torch),
+        (np, data.Images.to_numpy_images),
+        (np, data.Images.to_torch_images),
+        (torch, data.Images.to_numpy_images),
+        (torch, data.Images.to_torch_images),
     ],
 )
-def test_BatchedImages_normalized_hwc_to_unnormalized_hwc(module, method):
+def test_Images_normalized_hwc_to_unnormalized_hwc(module, method):
     normalized = module.zeros((5, 100, 100, 3))
     normalized[3][1][4][0] = 0.18
     normalized[3][1][4][1] = -0.96
     normalized[3][1][4][2] = 0.56
-    images = data.BatchedImages(
+    images = data.Images(
         images=normalized,
         dim=data.ImageDimensions.HWC,
         scale=data.Scale(
@@ -169,18 +169,18 @@ def test_BatchedImages_normalized_hwc_to_unnormalized_hwc(module, method):
 @pytest.mark.parametrize(
     "module,method",
     [
-        (np, data.BatchedImages.numpy),
-        (np, data.BatchedImages.torch),
-        (torch, data.BatchedImages.numpy),
-        (torch, data.BatchedImages.torch),
+        (np, data.Images.to_numpy_images),
+        (np, data.Images.to_torch_images),
+        (torch, data.Images.to_numpy_images),
+        (torch, data.Images.to_torch_images),
     ],
 )
-def test_BatchedImages_unnormalized_hwc_to_normalized_chw(module, method):
+def test_Images_unnormalized_hwc_to_normalized_chw(module, method):
     normalized = module.zeros((5, 100, 100, 3))
     normalized[3][1][4][0] = 0.59
     normalized[3][1][4][1] = 0.26
     normalized[3][1][4][2] = 0.53
-    images = data.BatchedImages(
+    images = data.Images(
         images=normalized,
         dim=data.ImageDimensions.HWC,
         scale=data.Scale(dtype=data.DataType.FLOAT, max=1.0),
@@ -207,18 +207,18 @@ def test_BatchedImages_unnormalized_hwc_to_normalized_chw(module, method):
 @pytest.mark.parametrize(
     "module,method",
     [
-        (np, data.BatchedImages.numpy),
-        (np, data.BatchedImages.torch),
-        (torch, data.BatchedImages.numpy),
-        (torch, data.BatchedImages.torch),
+        (np, data.Images.to_numpy_images),
+        (np, data.Images.to_torch_images),
+        (torch, data.Images.to_numpy_images),
+        (torch, data.Images.to_torch_images),
     ],
 )
-def test_BatchedImages_normalized_chw_to_normalized_hwc(module, method):
+def test_Images_normalized_chw_to_normalized_hwc(module, method):
     normalized = module.zeros((5, 3, 100, 100))
     normalized[3][0][1][4] = 0.18
     normalized[3][1][1][4] = -0.96
     normalized[3][2][1][4] = 0.56
-    images = data.BatchedImages(
+    images = data.Images(
         images=normalized,
         dim=data.ImageDimensions.CHW,
         scale=data.Scale(
@@ -257,12 +257,12 @@ def test_BatchedImages_normalized_chw_to_normalized_hwc(module, method):
         functools.partial(torch.tensor, device=torch.device("cuda")),
     ],
 )
-def test_BatchedImages_to_gpu(constructor):
-    images = data.BatchedImages(
+def test_Images_to_gpu(constructor):
+    images = data.Images(
         images=constructor(deterministic_ndarray(5, 100, 100, 3)),
         dim=data.ImageDimensions.HWC,
         scale=data.Scale(dtype=data.DataType.FLOAT, max=1.0),
     )
-    as_torch = images.torch(device=torch.device("cuda", index=0))
+    as_torch = images.to_torch(device=torch.device("cuda", index=0))
     assert as_torch.device == torch.device("cuda", index=0)
     assert_allclose(as_torch.cpu(), deterministic_ndarray(5, 100, 100, 3))

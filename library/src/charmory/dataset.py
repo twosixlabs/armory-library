@@ -138,7 +138,7 @@ class ImageClassificationDataLoader(DataLoader):
             key: _collate_by_type([s[key] for s in samples])
             for key in samples[0].keys()
         }
-        images = data.BatchedImages(
+        images = data.Images(
             images=_pop_and_cast(collated, self.image_key),
             dim=self.dim,
             scale=self.scale,

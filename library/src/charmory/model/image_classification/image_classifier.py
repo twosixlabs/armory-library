@@ -1,6 +1,6 @@
 from typing import Optional
 
-from charmory.data import Batch, BatchedImages, TorchAccessor
+from charmory.data import Batch, Images, TorchAccessor
 from charmory.evaluation import ModelProtocol
 from charmory.model.base import ArmoryModel, ModelInputAdapter, ModelOutputAdapter
 
@@ -10,7 +10,7 @@ class ImageClassifier(ArmoryModel, ModelProtocol):
         self,
         name: str,
         model,
-        accessor: BatchedImages.Accessor,
+        accessor: Images.Accessor,
         preadapter: Optional[ModelInputAdapter] = None,
         postadapter: Optional[ModelOutputAdapter] = None,
     ):
