@@ -20,7 +20,7 @@ dependencies = [
     "requests",
 
     # engine
-    "adversarial-robustness-toolbox == 1.15.1",
+    "adversarial-robustness-toolbox == 1.16.0",
     "lightning",
     "Pillow",                                   # Data dependencies
     "boto3",                                    # Needed for armory.data.utils
@@ -31,8 +31,10 @@ dependencies = [
     "tensorboardx",
 
     # math
+    # scikit-learn and scipy requirments below are still present in ART v1.16.0
     "scikit-learn < 1.2.0", # ART requires scikit-learn >= 0.22.2, < 1.2.0
     "scipy",                # ART requires scipy >= 1.4.1, < 1.10.1
+
     "numpy",
     "pandas",
     "matplotlib",
