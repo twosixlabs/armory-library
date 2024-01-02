@@ -1,10 +1,6 @@
-from unittest.mock import MagicMock
-
-from art.attacks import EvasionAttack
 import pytest
 
 import charmory.evaluation as evaluation
-from charmory.labels import LabelTargeter
 
 # These tests use fixtures from conftest.py
 
@@ -57,62 +53,10 @@ def test_dataset_init_when_train_dataset(data_loader):
     )
 
 
-def test_attack_init_raises_on_invalid_attack():
-    with pytest.raises(AssertionError, match=r"attack.*instance of"):
-        evaluation.Attack(
-            name="test",
-            attack=42,  # type: ignore
-        )
-
-
-def test_attack_init_raises_when_targeted_and_invalid_label_targeter():
-    with pytest.raises(AssertionError, match=r"label_targeter.*instance of"):
-        attack = MagicMock(spec=EvasionAttack)
-        attack.targeted = True
-        evaluation.Attack(
-            name="test",
-            attack=attack,
-            label_targeter=42,  # type: ignore
-        )
-
-
-def test_attack_init_raises_when_targeted_and_use_label_for_untargeted():
-    with pytest.raises(AssertionError, match=r"targeted.*use_label_for_targeted"):
-        attack = MagicMock(spec=EvasionAttack)
-        attack.targeted = True
-        evaluation.Attack(
-            name="test",
-            attack=attack,
-            label_targeter=MagicMock(spec=LabelTargeter),
-            use_label_for_untargeted=True,
-        )
-
-
-def test_attack_init_when_targeted_and_label_targeter_provided():
-    attack = MagicMock(spec=EvasionAttack)
-    attack.targeted = True
-    evaluation.Attack(
-        name="test",
-        attack=attack,
-        label_targeter=MagicMock(spec=LabelTargeter),
-    )
-
-
-def test_attack_init_raises_when_untargeted_and_label_targeter_provided():
-    with pytest.raises(AssertionError, match=r"untargeted.*label_targeter"):
-        attack = MagicMock(spec=EvasionAttack)
-        attack.targeted = False
-        evaluation.Attack(
-            name="test",
-            attack=attack,
-            label_targeter=MagicMock(spec=LabelTargeter),
-        )
-
-
 def test_evaluation_init(
     evaluation_model,
     evaluation_dataset,
-    evaluation_attack,
+    evaluation_perturbation,
     evaluation_metric,
 ):
     evaluation.Evaluation(
@@ -121,6 +65,6 @@ def test_evaluation_init(
         author=None,
         model=evaluation_model,
         dataset=evaluation_dataset,
-        attack=evaluation_attack,
+        perturbations={"test": [evaluation_perturbation]},
         metric=evaluation_metric,
     )

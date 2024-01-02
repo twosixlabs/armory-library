@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 import os
-from typing import Optional
+from typing import Dict, Iterable, Optional
 
 import albumentations as A
 from art.attacks.evasion import ProjectedGradientDescent
@@ -13,12 +13,15 @@ from jatic_toolbox.interop.huggingface import HuggingFaceVisionDataset
 import numpy as np
 import torch
 import torch.nn as nn
+import torchmetrics.classification
 
 from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
 from charmory.data import ArmoryDataLoader
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
+from charmory.evaluation import Dataset, Evaluation, Metric, Model
+from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.model.image_classification import JaticImageClassificationModel
+from charmory.perturbation import ArtEvasionAttack, Perturbation
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 
@@ -162,11 +165,45 @@ def _load_dataset(batch_size: int, dataset_path: Optional[str] = None):
 
 
 def _create_metric():
-    return Metric(profiler=BasicProfiler())
+    return Metric(
+        profiler=BasicProfiler(),
+        perturbation={
+            "linf_norm": PerturbationNormMetric(ord=torch.inf),
+        },
+        prediction={
+            "accuracy_avg": torchmetrics.classification.Accuracy(
+                task="multiclass", num_classes=10
+            ),
+            "accuracy_by_class": torchmetrics.classification.Accuracy(
+                task="multiclass", num_classes=10, average=None
+            ),
+            "precision_avg": torchmetrics.classification.Precision(
+                task="multiclass", num_classes=10
+            ),
+            "precision_by_class": torchmetrics.classification.Precision(
+                task="multiclass", num_classes=10, average=None
+            ),
+            "recall_avg": torchmetrics.classification.Recall(
+                task="multiclass", num_classes=10
+            ),
+            "recall_by_class": torchmetrics.classification.Recall(
+                task="multiclass", num_classes=10, average=None
+            ),
+            "f1_score_avg": torchmetrics.classification.F1Score(
+                task="multiclass", num_classes=10
+            ),
+            "f1_score_by_class": torchmetrics.classification.F1Score(
+                task="multiclass", num_classes=10, average=None
+            ),
+            "confusion": torchmetrics.classification.ConfusionMatrix(
+                task="multiclass", num_classes=10
+            ),
+        },
+    )
 
 
 def _create_attack(classifier: PyTorchClassifier, verbose: bool = False, **kwargs):
-    return Attack(
+    return ArtEvasionAttack(
         name="PGD",
         attack=track_init_params(ProjectedGradientDescent)(
             classifier,
@@ -195,11 +232,11 @@ def create_evaluation(
 ) -> Evaluation:
     model, classifier = _load_model(_MODELS[model_name])
     dataset = _load_dataset(batch_size=batch_size, dataset_path=dataset_path)
-    attack = (
-        _create_attack(classifier, **_get_attack_kwargs(**kwargs))
-        if with_attack
-        else None
-    )
+    perturbations: Dict[str, Iterable[Perturbation]] = dict(benign=[])
+    if with_attack:
+        perturbations["attack"] = [
+            _create_attack(classifier, **_get_attack_kwargs(**kwargs))
+        ]
 
     attack_type = "generated" if with_attack else "precomputed"
 
@@ -207,10 +244,10 @@ def create_evaluation(
         name=f"eurosat-{model_name}-{attack_type}-pgd",
         description=f"EuroSAT classification using {model_name} model with {attack_type} PGD attack",
         author="TwoSix",
-        attack=attack,
         dataset=dataset,
         metric=_create_metric(),
         model=model,
+        perturbations=perturbations,
     )
 
     return evaluation
@@ -223,7 +260,6 @@ def create_evaluation_task(
 
     task = ImageClassificationTask(
         evaluation,
-        num_classes=10,
         export_every_n_batches=export_every_n_batches,
         skip_attack=not with_attack,
     )

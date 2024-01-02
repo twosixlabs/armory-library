@@ -2,69 +2,14 @@
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Iterable, Optional
 
-from art.attacks import EvasionAttack
 from art.estimators import BaseEstimator
 from torch.utils.data.dataloader import DataLoader
+from torchmetrics.metric import Metric as TorchMetric
 
 from armory.metrics.compute import NullProfiler, Profiler
-from charmory.labels import LabelTargeter
-
-
-@dataclass
-class Attack:
-    """Configuration for the attack to be applied during model evaluation"""
-
-    name: str
-    """Descriptive name of the attack"""
-    attack: EvasionAttack
-    """Evasion attack instance"""
-    generate_kwargs: Dict[str, Any] = field(default_factory=dict)
-    """
-    Optional, additional keyword arguments to be used with the evasion attack's
-    `generate` method
-    """
-    use_label_for_untargeted: bool = False
-    """
-    When the attack is untargeted, set to `True` to use the natural labels as
-    the `y` argument to the evasion attack's `generate` method. When `False`,
-    the `y` argument will be `None`.
-    """
-    label_targeter: Optional[LabelTargeter] = None
-    """
-    Required when the attack is targeted, the label targeter generates the
-    target label that is used as the `y` argument to the evasion attack's
-    `generate` method.
-    """
-
-    def __post_init__(self):
-        assert isinstance(
-            self.attack, EvasionAttack
-        ), "Evaluation attack is not an instance of EvasionAttack"
-
-        if self.targeted:
-            assert isinstance(
-                self.label_targeter, LabelTargeter
-            ), "Evaluation attack's label_targeter is not an instance of LabelTargeter"
-            assert (
-                not self.use_label_for_untargeted
-            ), "Evaluation attack is targeted, use_label_for_targeted cannot be True"
-        else:
-            assert (
-                not self.label_targeter
-            ), "Evaluation attack is untargeted, cannot use a label_targeter"
-
-    @property
-    def targeted(self) -> bool:
-        """
-        Whether the attack is targeted. When an attack is targeted, it attempts
-        to optimize the perturbation such that the model's prediction of the
-        perturbed input matches a desired (targeted) result. When untargeted,
-        the attack may use the natural label as a hint of the prediction result
-        to optimize _away from_.
-        """
-        return self.attack.targeted
+from charmory.perturbation import Perturbation
 
 
 @dataclass
@@ -99,6 +44,16 @@ class Dataset:
 class Metric:
     """Configuration for the metrics collected during model evaluation"""
 
+    perturbation: Dict[str, TorchMetric] = field(default_factory=dict)
+    """
+    Dictionary of metric names to torchmetrics Metric objects for perturbation
+    (x vs perturbed x) metrics
+    """
+    prediction: Dict[str, TorchMetric] = field(default_factory=dict)
+    """
+    Dictionary of metric names to torchmetrics Metric objects for prediction
+    (y vs predicted y) metrics
+    """
     profiler: Profiler = field(default_factory=NullProfiler)
     """Computational performance profiler instance"""
 
@@ -170,8 +125,8 @@ class Evaluation:
     """Configuration for the dataset to be used for evaluation"""
     author: Optional[str]
     """Optional, author to which to attribute evaluation results"""
-    attack: Optional[Attack] = None
-    """Optional, configuration for the attack to be applied during evaluation"""
+    perturbations: Dict[str, Iterable[Perturbation]] = field(default_factory=dict)
+    """Optional, perturbation chains to be applied during evaluation"""
     metric: Metric = field(default_factory=Metric)
     """Optional, configuration for the metrics collected during model evaluation"""
     sysconfig: SysConfig = field(default_factory=SysConfig)

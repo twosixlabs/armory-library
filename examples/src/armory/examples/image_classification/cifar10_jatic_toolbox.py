@@ -5,6 +5,7 @@ This file is unnecessarily complicated for the sake of demonstrating
 interoperability between dataset and model providers. This file is NOT
 a good example of using the JATIC toolbox or Armory.
 """
+from pprint import pprint
 import sys
 
 import art.attacks.evasion
@@ -14,6 +15,7 @@ from jatic_toolbox import load_dataset as load_jatic_dataset
 from jatic_toolbox import load_model as load_jatic_model
 import torch
 import torch.nn as nn
+import torchmetrics.classification
 
 import armory.baseline_models.pytorch.resnet18
 import armory.data.datasets
@@ -22,9 +24,10 @@ from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
-from charmory.experimental.example_results import print_outputs
+from charmory.evaluation import Dataset, Evaluation, Metric, Model
+from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.model.image_classification import JaticImageClassificationModel
+from charmory.perturbation import ArtEvasionAttack
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 from charmory.utils import create_jatic_dataset_transform
@@ -202,7 +205,7 @@ def main():
     # The rest of this file was directly copied from the existing cifar example
     ###
 
-    attack = Attack(
+    attack = ArtEvasionAttack(
         name="PGD",
         attack=track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
             loaded_model,
@@ -220,6 +223,14 @@ def main():
 
     metric = Metric(
         profiler=BasicProfiler(),
+        perturbation={
+            "linf_norm": PerturbationNormMetric(ord=torch.inf),
+        },
+        prediction={
+            "accuracy": torchmetrics.classification.Accuracy(
+                task="multiclass", num_classes=10
+            ),
+        },
     )
 
     evaluation = Evaluation(
@@ -228,17 +239,20 @@ def main():
         author="msw@example.com",
         dataset=dataset,
         model=model,
-        attack=attack,
+        perturbations={
+            "benign": [],
+            "attack": [attack],
+        },
         metric=metric,
     )
 
     task = ImageClassificationTask(
-        evaluation, num_classes=10, export_every_n_batches=args.export_every_n_batches
+        evaluation, export_every_n_batches=args.export_every_n_batches
     )
 
     engine = EvaluationEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()
-    print_outputs(dataset, model, results)
+    pprint(results)
 
     print("JATIC Experiment Complete!")
     return 0

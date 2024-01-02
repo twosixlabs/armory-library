@@ -4,6 +4,7 @@ from art.attacks.evasion import RobustDPatch
 from art.estimators.object_detection import PyTorchYolo
 import datasets
 import torch
+import torchmetrics.detection
 import yolov5
 from yolov5.utils.loss import ComputeLoss
 
@@ -17,6 +18,7 @@ from charmory.experimental.transforms import (
     BboxFormat,
     create_object_detection_transform,
 )
+from charmory.perturbation import ArtEvasionAttack
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
 
@@ -129,12 +131,22 @@ def main(batch_size, export_every_n_batches, num_batches):
             name="YOLOv5m",
             model=detector,
         ),
-        attack=ev.Attack(
-            name="RobustDPatch",
-            attack=attack,
-            use_label_for_untargeted=False,
+        perturbations=dict(
+            benign=[],
+            attack=[
+                ArtEvasionAttack(
+                    name="RobustDPatch",
+                    attack=attack,
+                    use_label_for_untargeted=False,
+                )
+            ],
         ),
-        metric=ev.Metric(profiler=BasicProfiler()),
+        metric=ev.Metric(
+            profiler=BasicProfiler(),
+            prediction={
+                "map": torchmetrics.detection.MeanAveragePrecision(class_metrics=False),
+            },
+        ),
     )
 
     ###

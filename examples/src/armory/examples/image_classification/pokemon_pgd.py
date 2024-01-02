@@ -2,20 +2,24 @@
 Example programmatic entrypoint for scenario execution
 """
 
+from pprint import pprint
 import sys
 
 import art.attacks.evasion
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox import load_dataset as load_jatic_dataset
+import torch
+import torchmetrics.classification
 
 import armory.baseline_models.pytorch.pokemon
 from armory.metrics.compute import BasicProfiler
 import armory.version
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
-from charmory.experimental.example_results import print_outputs
+from charmory.evaluation import Dataset, Evaluation, Metric, Model
 from charmory.experimental.transforms import create_image_classification_transform
+from charmory.metrics.perturbation import PerturbationNormMetric
+from charmory.perturbation import ArtEvasionAttack
 from charmory.tasks.image_classification import ImageClassificationTask
 from charmory.track import track_init_params, track_params
 
@@ -93,7 +97,7 @@ def main(argv: list = sys.argv[1:]):
     # The rest of this file was directly copied from the existing cifar example
     ###
 
-    attack = Attack(
+    attack = ArtEvasionAttack(
         name="PGD",
         attack=track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
             pokemon_model,
@@ -111,6 +115,14 @@ def main(argv: list = sys.argv[1:]):
 
     metric = Metric(
         profiler=BasicProfiler(),
+        perturbation={
+            "linf_norm": PerturbationNormMetric(ord=torch.inf),
+        },
+        prediction={
+            "accuracy": torchmetrics.classification.Accuracy(
+                task="multiclass", num_classes=150
+            ),
+        },
     )
 
     evaluation = Evaluation(
@@ -119,17 +131,18 @@ def main(argv: list = sys.argv[1:]):
         author="msw@example.com",
         dataset=dataset,
         model=model,
-        attack=attack,
+        perturbations={
+            "benign": [],
+            "attack": [attack],
+        },
         metric=metric,
     )
 
-    task = ImageClassificationTask(
-        evaluation, num_classes=150, export_every_n_batches=5
-    )
+    task = ImageClassificationTask(evaluation, export_every_n_batches=5)
     engine = EvaluationEngine(task, limit_test_batches=5)
     results = engine.run()
 
-    print_outputs(dataset, model, results)
+    pprint(results)
 
     print("Pokemon Experiment Complete!")
     return 0
