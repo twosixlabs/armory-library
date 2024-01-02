@@ -376,8 +376,12 @@ def create_object_detection_transform(
             # Re-construct remaining, transformed objects
             obj = dict()
             # Convert boxes if necessary
-            obj[bbox_key] = convert_boxes(
-                res["bboxes"], from_format=format, to_format=target_format
+            obj[bbox_key] = (
+                convert_boxes(
+                    res["bboxes"], from_format=format, to_format=target_format
+                )
+                if res["bboxes"]
+                else res["bboxes"]
             )
             # Add any "label" fields back
             for label_field in kwargs.get("label_fields", []):
