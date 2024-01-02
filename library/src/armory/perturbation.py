@@ -19,7 +19,7 @@ import torch
 if TYPE_CHECKING:
     from art.attacks import EvasionAttack
 
-    from charmory.labels import LabelTargeter
+    from armory.labels import LabelTargeter
 
 
 @runtime_checkable

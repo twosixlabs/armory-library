@@ -5,23 +5,23 @@ Example programmatic entrypoint for scenario execution
 from pprint import pprint
 import sys
 
-import armory.baseline_models.pytorch.pokemon
-import armory.version
 import art.attacks.evasion
 from jatic_toolbox import __version__ as jatic_version
 from jatic_toolbox import load_dataset as load_jatic_dataset
 import torch
 import torchmetrics.classification
 
-from charmory.data import ArmoryDataLoader
-from charmory.engine import EvaluationEngine
-from charmory.evaluation import Dataset, Evaluation, Metric, Model
-from charmory.experimental.transforms import create_image_classification_transform
-from charmory.metrics.compute import BasicProfiler
-from charmory.metrics.perturbation import PerturbationNormMetric
-from charmory.perturbation import ArtEvasionAttack
-from charmory.tasks.image_classification import ImageClassificationTask
-from charmory.track import track_init_params, track_params
+import armory.baseline_models.pytorch.pokemon
+from armory.data import ArmoryDataLoader
+from armory.engine import EvaluationEngine
+from armory.evaluation import Dataset, Evaluation, Metric, Model
+from armory.experimental.transforms import create_image_classification_transform
+from armory.metrics.compute import BasicProfiler
+from armory.metrics.perturbation import PerturbationNormMetric
+from armory.perturbation import ArtEvasionAttack
+from armory.tasks.image_classification import ImageClassificationTask
+from armory.track import track_init_params, track_params
+import armory.version
 
 BATCH_SIZE = 16
 

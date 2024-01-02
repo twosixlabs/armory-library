@@ -28,7 +28,7 @@ import torch
 # so we have to use `typing_extensions` for 3.8 support
 from typing_extensions import ParamSpec
 
-from charmory.logs import log
+from armory.logs import log
 
 # Params are recorded globally in a stack of parameter stores, where the
 # first stack entry is the default, implicit parameter store. Creation of

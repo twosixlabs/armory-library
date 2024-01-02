@@ -6,14 +6,14 @@ import lightning.pytorch.loggers as pl_loggers
 from lightning.pytorch.utilities import rank_zero_only
 from torch import Tensor
 
-import armory.version
-from charmory.tasks.base import BaseEvaluationTask
-from charmory.track import (
+from armory.tasks.base import BaseEvaluationTask
+from armory.track import (
     get_current_params,
     init_tracking_uri,
     track_param,
     track_system_metrics,
 )
+import armory.version
 
 
 class EvaluationResults(TypedDict):

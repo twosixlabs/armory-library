@@ -3,7 +3,6 @@ from pprint import pprint
 import sys
 
 from PIL import Image
-import armory.version
 import art.attacks.evasion
 from art.estimators.object_detection import PyTorchFasterRCNN
 import boto3
@@ -15,26 +14,24 @@ import torch
 import torchmetrics.detection
 from torchvision.transforms._presets import ObjectDetection
 
-from charmory.data import ArmoryDataLoader
-from charmory.engine import EvaluationEngine
-from charmory.evaluation import Dataset, Evaluation, Metric, Model
-from charmory.experimental.patch import AttackWrapper
-from charmory.experimental.transforms import (
-    BboxFormat,
-    create_object_detection_transform,
-)
-from charmory.metrics.compute import BasicProfiler
-from charmory.model.object_detection import JaticObjectDetectionModel
-from charmory.perturbation import ArtEvasionAttack
-from charmory.tasks.object_detection import ObjectDetectionTask
+from armory.data import ArmoryDataLoader
+from armory.engine import EvaluationEngine
+from armory.evaluation import Dataset, Evaluation, Metric, Model
+from armory.experimental.patch import AttackWrapper
+from armory.experimental.transforms import BboxFormat, create_object_detection_transform
+from armory.metrics.compute import BasicProfiler
+from armory.model.object_detection import JaticObjectDetectionModel
+from armory.perturbation import ArtEvasionAttack
+from armory.tasks.object_detection import ObjectDetectionTask
+import armory.version
 
 torch.set_float32_matmul_precision("high")
-import armory.data.datasets
 from datasets import load_from_disk
 from datasets.filesystems import S3FileSystem
 
-from charmory.track import track_init_params
-from charmory.utils import create_jatic_dataset_transform
+import armory.data.datasets
+from armory.track import track_init_params
+from armory.utils import create_jatic_dataset_transform
 
 BATCH_SIZE = 1
 TRAINING_EPOCHS = 20

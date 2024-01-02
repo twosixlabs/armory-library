@@ -8,8 +8,8 @@ from art.estimators import BaseEstimator
 from torch.utils.data.dataloader import DataLoader
 from torchmetrics.metric import Metric as TorchMetric
 
-from charmory.metrics.compute import NullProfiler, Profiler
-from charmory.perturbation import Perturbation
+from armory.metrics.compute import NullProfiler, Profiler
+from armory.perturbation import Perturbation
 
 
 @dataclass

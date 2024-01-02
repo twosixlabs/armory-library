@@ -5,7 +5,6 @@ import os
 from typing import Dict, Iterable, Optional
 
 import albumentations as A
-from armory.examples.utils.args import create_parser
 from art.attacks.evasion import ProjectedGradientDescent
 from art.estimators.classification import PyTorchClassifier
 import datasets
@@ -16,14 +15,15 @@ import torch
 import torch.nn as nn
 import torchmetrics.classification
 
-from charmory.data import ArmoryDataLoader
-from charmory.evaluation import Dataset, Evaluation, Metric, Model
-from charmory.metrics.compute import BasicProfiler
-from charmory.metrics.perturbation import PerturbationNormMetric
-from charmory.model.image_classification import JaticImageClassificationModel
-from charmory.perturbation import ArtEvasionAttack, Perturbation
-from charmory.tasks.image_classification import ImageClassificationTask
-from charmory.track import track_init_params, track_params
+from armory.data import ArmoryDataLoader
+from armory.evaluation import Dataset, Evaluation, Metric, Model
+from armory.examples.utils.args import create_parser
+from armory.metrics.compute import BasicProfiler
+from armory.metrics.perturbation import PerturbationNormMetric
+from armory.model.image_classification import JaticImageClassificationModel
+from armory.perturbation import ArtEvasionAttack, Perturbation
+from armory.tasks.image_classification import ImageClassificationTask
+from armory.track import track_init_params, track_params
 
 _MODELS = {
     "untrained": f"{os.path.dirname(__file__)}/finetuned_eurosat_final/",
