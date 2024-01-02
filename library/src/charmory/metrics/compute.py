@@ -9,7 +9,7 @@ import pstats
 import time
 from typing import Mapping, Protocol, runtime_checkable
 
-from armory.logs import log
+from charmory.logs import log
 
 
 @runtime_checkable

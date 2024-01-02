@@ -8,6 +8,10 @@ a good example of using the JATIC toolbox or Armory.
 from pprint import pprint
 import sys
 
+import armory.baseline_models.pytorch.resnet18
+import armory.data.datasets
+from armory.examples.utils.args import create_parser
+import armory.version
 import art.attacks.evasion
 from art.estimators.classification import PyTorchClassifier
 from jatic_toolbox import __version__ as jatic_version
@@ -17,14 +21,10 @@ import torch
 import torch.nn as nn
 import torchmetrics.classification
 
-import armory.baseline_models.pytorch.resnet18
-import armory.data.datasets
-from armory.examples.utils.args import create_parser
-from armory.metrics.compute import BasicProfiler
-import armory.version
 from charmory.data import ArmoryDataLoader
 from charmory.engine import EvaluationEngine
 from charmory.evaluation import Dataset, Evaluation, Metric, Model
+from charmory.metrics.compute import BasicProfiler
 from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.model.image_classification import JaticImageClassificationModel
 from charmory.perturbation import ArtEvasionAttack

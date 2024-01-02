@@ -2,7 +2,7 @@
 Test cases for compute metrics
 """
 
-from armory.metrics import compute
+from charmory.metrics import compute
 
 # pytestmark = pytest.mark.unit
 

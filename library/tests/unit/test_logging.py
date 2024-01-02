@@ -1,4 +1,4 @@
-from armory.logs import log
+from charmory.logs import log
 
 # test the loguru based logs module for proper pytest caplog behavior
 # there is a modified caplog fixture in tests/conftest.py
