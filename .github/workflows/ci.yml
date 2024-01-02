@@ -10,6 +10,10 @@ on:
     branches:
       - master
 
+  schedule:
+    # run this every day at 7:20am UTC
+    - cron: '20 7 * * *'
+
 jobs:
   code-linting:
     name: 🧹 Code Linting
@@ -51,6 +55,7 @@ jobs:
         run: |
           pip3 install --no-compile .
           pip3 install --no-compile ./library
+          pip3 install --no-compile ./matrix
 
       - name: Test
         run: task test
@@ -85,6 +90,7 @@ jobs:
         # it adds 2-ish minutes to this install step.
         run: |
           pip3 install --no-compile ./library
+          pip3 install --no-compile ./matrix
           pip3 install --no-compile ./examples[huggingface,yolo]
 
       - name: Test
@@ -121,11 +127,17 @@ jobs:
 
 
   build:
-    name: 🔨 Build
+    name: 🔨 Build - ${{ matrix.package }}
     runs-on: ubuntu-latest
     needs:
       - unit-tests
       - integration-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - library
+          - matrix
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -140,12 +152,12 @@ jobs:
           pip install pip>=23
           pip install hatch
 
-      - name: Build Library
-        run: cd library && hatch build --clean --target wheel
+      - name: Build Wheel
+        run: cd ${{ matrix.package }} && hatch build --clean --target wheel
 
-      - name: Upload Library Wheel
+      - name: Upload Wheel
         uses: actions/upload-artifact@v3
         with:
-          name: armory-library-wheel
-          path: library/dist/*.whl
+          name: armory-${{ matrix.package }}-wheel
+          path: ${{ matrix.package }}/dist/*.whl
           retention-days: 7
