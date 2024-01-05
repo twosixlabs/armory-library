@@ -74,6 +74,14 @@ class EvaluationEngine:
         self.run_id = run_id
         self._was_run = False
 
+    @property
+    def metrics(self) -> EvaluationModule.MetricsDict:
+        """
+        The dictionary mapping perturbation chain names to a dictionary mapping
+        metric names to the metric objects.
+        """
+        return self.module.metrics
+
     @rank_zero_only
     def _log_params(self):
         """Log tracked params with MLflow"""

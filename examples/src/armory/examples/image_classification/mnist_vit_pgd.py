@@ -6,7 +6,6 @@ from art.estimators.classification import PyTorchClassifier
 import datasets
 import torch
 import torch.nn
-import torch.utils.data.dataloader
 import torchmetrics.classification
 from torchvision.transforms.v2 import GaussianBlur
 from transformers import AutoImageProcessor, AutoModelForImageClassification
@@ -207,11 +206,11 @@ def main(batch_size, export_every_n_batches, num_batches):
     # Execute
     ###
     pprint(engine.run())
-    pprint(engine.module.metrics.compute())
+    pprint(engine.metrics.compute())
     print("benign")
-    pprint(engine.module.metrics["benign"]["confusion"].compute())
+    pprint(engine.metrics["benign"]["confusion"].compute())
     print("attack")
-    pprint(engine.module.metrics["attack"]["confusion"].compute())
+    pprint(engine.metrics["attack"]["confusion"].compute())
 
 
 if __name__ == "__main__":

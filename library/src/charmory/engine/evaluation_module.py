@@ -151,13 +151,18 @@ class EvaluationModule(pl.LightningModule):
         for chain_name, chain in self.evaluation.perturbations.items():
             chain_batch = batch.clone()
 
-            with torch.enable_grad():
-                self.apply_perturbations(chain_name, chain_batch, chain)
-            self.evaluate(chain_name, chain_batch)
-            self.update_metrics(chain_name, chain_batch)
+            try:
+                with torch.enable_grad():
+                    self.apply_perturbations(chain_name, chain_batch, chain)
+                self.evaluate(chain_name, chain_batch)
+                self.update_metrics(chain_name, chain_batch)
 
-            if self._should_export(batch_idx):
-                self.evaluation.exporter.export(chain_name, batch_idx, chain_batch)
+                if self._should_export(batch_idx):
+                    self.evaluation.exporter.export(chain_name, batch_idx, chain_batch)
+            except BaseException as err:
+                raise RuntimeError(
+                    f"Error performing evaluation of batch #{batch_idx} using chain '{chain_name}': {batch}"
+                ) from err
 
     def on_test_epoch_end(self) -> None:
         """Logs all metric results"""

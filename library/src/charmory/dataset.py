@@ -1,6 +1,6 @@
 """Armory Dataset Classes"""
 
-from typing import Any, Callable, List, Mapping, Sequence
+from typing import Any, Callable, List, Mapping, Sequence, cast
 
 import numpy as np
 import torch
@@ -108,6 +108,10 @@ def _collate_by_type(values: List):
 
 def _pop_and_cast(values, key):
     value = values.pop(key)
+    return _cast(key, value)
+
+
+def _cast(key, value):
     if isinstance(value, np.ndarray) or isinstance(value, torch.Tensor):
         return value
     if isinstance(value, list):
@@ -133,7 +137,9 @@ class ImageClassificationDataLoader(DataLoader):
         self.label_key = label_key
         self.scale = scale
 
-    def _collate(self, samples: Sequence[Mapping[str, Any]]) -> data.Batch:
+    def _collate(
+        self, samples: Sequence[Mapping[str, Any]]
+    ) -> data.ImageClassificationBatch:
         collated = {
             key: _collate_by_type([s[key] for s in samples])
             for key in samples[0].keys()
@@ -147,5 +153,61 @@ class ImageClassificationDataLoader(DataLoader):
         return data.ImageClassificationBatch(
             inputs=images,
             targets=labels,
+            metadata=data.Metadata(data=collated, perturbations=dict()),
+        )
+
+
+@track_init_params
+class ObjectDetectionDataLoader(DataLoader):
+    def __init__(
+        self,
+        *args,
+        boxes_key: str,
+        dim: data.ImageDimensions,
+        format: data.BBoxFormat,
+        image_key: str,
+        labels_key: str,
+        objects_key: str,
+        scale: data.Scale,
+        **kwargs,
+    ):
+        kwargs.pop("collate_fn", None)
+        super().__init__(*args, collate_fn=self._collate, **kwargs)
+        self.boxes_key = boxes_key
+        self.dim = dim
+        self.format = format
+        self.image_key = image_key
+        self.labels_key = labels_key
+        self.objects_key = objects_key
+        self.scale = scale
+
+    def _to_bbox(self, obj):
+        boxes = {
+            "boxes": _pop_and_cast(obj, self.boxes_key),
+            "labels": _pop_and_cast(obj, self.labels_key),
+        }
+        # Add the remaining properties from the object
+        boxes.update({key: _cast(key, value) for key, value in obj.items()})
+        return cast(data.BoundingBoxes.BoxesNumpy, boxes)
+
+    def _collate(
+        self, samples: Sequence[Mapping[str, Any]]
+    ) -> data.ObjectDetectionBatch:
+        collated = {
+            key: _collate_by_type([s[key] for s in samples])
+            for key in samples[0].keys()
+        }
+        images = data.Images(
+            images=_pop_and_cast(collated, self.image_key),
+            dim=self.dim,
+            scale=self.scale,
+        )
+        boxes = data.BoundingBoxes(
+            boxes=[self._to_bbox(obj) for obj in collated.pop(self.objects_key)],
+            format=self.format,
+        )
+        return data.ObjectDetectionBatch(
+            inputs=images,
+            targets=boxes,
             metadata=data.Metadata(data=collated, perturbations=dict()),
         )
