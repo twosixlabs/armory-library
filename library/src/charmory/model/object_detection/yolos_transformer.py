@@ -1,16 +1,24 @@
 """Armory model wrapper for HuggingFace transformer YOLOS models."""
-# from pprint import pprint
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
-import torchvision.transforms
+import torch
 
 if TYPE_CHECKING:
     from transformers.models.yolos import YolosImageProcessor, YolosModel
 
-from charmory.model import ArmoryModel
+from charmory.data import (
+    Accessor,
+    BBoxFormat,
+    BoundingBoxes,
+    DataType,
+    ImageDimensions,
+    Images,
+    Scale,
+)
+from charmory.model.object_detection.object_detector import ObjectDetector
 
 
-class YolosTransformer(ArmoryModel):
+class YolosTransformer(ObjectDetector):
     """
     Model wrapper with pre-applied input and output adapters for HuggingFace
     transformer YOLOS models.
@@ -28,10 +36,11 @@ class YolosTransformer(ArmoryModel):
 
     def __init__(
         self,
+        name: str,
         model: "YolosModel",
         image_processor: "YolosImageProcessor",
-        norm_mean: Tuple[float, float, float] = (0.485, 0.456, 0.406),
-        norm_std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
+        inputs_accessor: Optional[Images.Accessor] = None,
+        predictions_accessor: Optional[Accessor] = None,
         target_size: Tuple[int, int] = (512, 512),
     ):
         """
@@ -41,17 +50,33 @@ class YolosTransformer(ArmoryModel):
             model: YOLOS model being wrapped
             image_processor: HuggingFace YOLOS image processor corresponding to
                 the model
-            norm_mean: Mean values per channel to use for statistical
-                normalization of image data
-            norm_std: Standard deviation values per channel to use for
-                statistical normalization of image data
             target_size: Size (as a `height, width` tuple) of images, used for
                 correct postprocessing and resizing of the bounding box
                 predictions
         """
-        super().__init__(model, preadapter=self._preadapt, postadapter=self._postadapt)
+        super().__init__(
+            name=name,
+            model=model,
+            preadapter=self._preadapt,
+            postadapter=self._postadapt,
+            inputs_accessor=(
+                inputs_accessor
+                or Images.as_torch(
+                    dim=ImageDimensions.CHW,
+                    scale=Scale(
+                        dtype=DataType.FLOAT,
+                        max=1.0,
+                        mean=(0.485, 0.456, 0.406),
+                        std=(0.229, 0.224, 0.225),
+                    ),
+                    dtype=torch.float32,
+                )
+            ),
+            predictions_accessor=(
+                predictions_accessor or BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
+            ),
+        )
         self.image_processor = image_processor
-        self.normalize = torchvision.transforms.Normalize(norm_mean, norm_std)
         self.target_size = target_size
 
     def _preadapt(self, images, targets=None, **kwargs):
@@ -60,8 +85,6 @@ class YolosTransformer(ArmoryModel):
         if targets is not None:
             for target in targets:
                 target["class_labels"] = target["labels"]
-
-        images = self.normalize(images)
 
         return (images, targets), kwargs
 
@@ -75,6 +98,4 @@ class YolosTransformer(ArmoryModel):
             output,
             target_sizes=[self.target_size for _ in range(len(output.pred_boxes))],
         )
-        # pprint(output)
-        # pprint(result)
         return result
