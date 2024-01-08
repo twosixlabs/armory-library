@@ -3,7 +3,7 @@ from art.defences.preprocessor import JpegCompression
 from art.estimators import BaseEstimator
 import pytest
 
-import charmory.utils as utils
+import armory.utils as utils
 
 pytestmark = pytest.mark.unit
 

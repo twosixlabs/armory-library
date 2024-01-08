@@ -10,17 +10,17 @@ import torchmetrics.classification
 from torchvision.transforms.v2 import GaussianBlur
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 
+from armory.data import ArmoryDataLoader
+from armory.engine import EvaluationEngine
+import armory.evaluation as ev
 from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
-from charmory.data import ArmoryDataLoader
-from charmory.engine import EvaluationEngine
-import charmory.evaluation as ev
-from charmory.metrics.perturbation import PerturbationNormMetric
-from charmory.model.image_classification import JaticImageClassificationModel
-from charmory.perturbation import ArtEvasionAttack, TorchTransformPerturbation
-from charmory.tasks.image_classification import ImageClassificationTask
-from charmory.track import track_init_params, track_params
-from charmory.utils import Unnormalize
+from armory.metrics.perturbation import PerturbationNormMetric
+from armory.model.image_classification import JaticImageClassificationModel
+from armory.perturbation import ArtEvasionAttack, TorchTransformPerturbation
+from armory.tasks.image_classification import ImageClassificationTask
+from armory.track import track_init_params, track_params
+from armory.utils import Unnormalize
 
 
 def get_cli_args():

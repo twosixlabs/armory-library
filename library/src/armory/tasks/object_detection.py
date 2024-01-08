@@ -6,8 +6,8 @@ import numpy as np
 import torch
 import torchvision.ops
 
-from charmory.export import draw_boxes_on_image
-from charmory.tasks.base import BaseEvaluationTask
+from armory.export import draw_boxes_on_image
+from armory.tasks.base import BaseEvaluationTask
 
 
 class ObjectDetectionTask(BaseEvaluationTask):

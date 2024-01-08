@@ -3,8 +3,8 @@ from unittest.mock import MagicMock
 from art.attacks import EvasionAttack
 import pytest
 
-from charmory.labels import LabelTargeter
-from charmory.perturbation import ArtEvasionAttack
+from armory.labels import LabelTargeter
+from armory.perturbation import ArtEvasionAttack
 
 pytestmark = pytest.mark.unit
 

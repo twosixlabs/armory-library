@@ -6,7 +6,7 @@ import torchvision.transforms
 if TYPE_CHECKING:
     from transformers.models.yolos import YolosImageProcessor, YolosModel
 
-from charmory.model import ArmoryModel
+from armory.model import ArmoryModel
 
 
 class YolosTransformer(ArmoryModel):

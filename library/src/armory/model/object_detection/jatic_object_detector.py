@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     import jatic_toolbox.protocols
 
-from charmory.model.base import ArmoryModel, ModelInputAdapter
+from armory.model.base import ArmoryModel, ModelInputAdapter
 
 
 class JaticObjectDetectionModel(ArmoryModel):

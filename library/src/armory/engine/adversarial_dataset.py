@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING, Any, Callable, Generator, Mapping, Optional
 
 import numpy as np
 
-from charmory.tasks.base import BaseEvaluationTask
-from charmory.track import get_current_params
+from armory.tasks.base import BaseEvaluationTask
+from armory.track import get_current_params
 
 if TYPE_CHECKING:
     import datasets

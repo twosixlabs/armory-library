@@ -5,7 +5,7 @@ from unittest.mock import Mock, call, patch
 import mlflow
 import pytest
 
-import charmory.track as track
+import armory.track as track
 
 # Not _technically_ a unit test because we're using the real MLFlow API and
 # performing real filesystem I/O, but we're using a temp directory that is

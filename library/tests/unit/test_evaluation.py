@@ -1,6 +1,6 @@
 import pytest
 
-import charmory.evaluation as evaluation
+import armory.evaluation as evaluation
 
 # These tests use fixtures from conftest.py
 

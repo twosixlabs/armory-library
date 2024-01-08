@@ -11,11 +11,11 @@ from lightning.pytorch.loggers import MLFlowLogger
 import numpy as np
 import torch
 
-from charmory.evaluation import Evaluation
-from charmory.export import Exporter, MlflowExporter
+from armory.evaluation import Evaluation
+from armory.export import Exporter, MlflowExporter
 
 if TYPE_CHECKING:
-    from charmory.perturbation import Perturbation
+    from armory.perturbation import Perturbation
 
 ExportAdapter = Callable[[Any], Any]
 """An adapter for exported data (e.g., images). """

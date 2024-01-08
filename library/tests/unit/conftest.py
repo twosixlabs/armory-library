@@ -4,13 +4,13 @@ from art.estimators import BaseEstimator
 import pytest
 from torch.utils.data.dataloader import DataLoader
 
-import charmory.evaluation
-from charmory.perturbation import Perturbation
+import armory.evaluation
+from armory.perturbation import Perturbation
 
 
 @pytest.fixture
 def evaluation_model():
-    return charmory.evaluation.Model(
+    return armory.evaluation.Model(
         name="test",
         model=MagicMock(spec=BaseEstimator),
     )
@@ -23,7 +23,7 @@ def data_loader():
 
 @pytest.fixture
 def evaluation_dataset(data_loader):
-    return charmory.evaluation.Dataset(
+    return armory.evaluation.Dataset(
         name="test",
         test_dataloader=data_loader,
         x_key="data",
@@ -38,12 +38,12 @@ def evaluation_perturbation():
 
 @pytest.fixture
 def evaluation_metric():
-    return charmory.evaluation.Metric()
+    return armory.evaluation.Metric()
 
 
 @pytest.fixture
 def evaluation_sysconfig():
-    return charmory.evaluation.SysConfig(gpus=["all"], use_gpu=True)
+    return armory.evaluation.SysConfig(gpus=["all"], use_gpu=True)
 
 
 @pytest.fixture
@@ -54,7 +54,7 @@ def evaluation(
     evaluation_metric,
     evaluation_sysconfig,
 ):
-    return charmory.evaluation.Evaluation(
+    return armory.evaluation.Evaluation(
         name="test",
         description="test evaluation",
         author=None,
