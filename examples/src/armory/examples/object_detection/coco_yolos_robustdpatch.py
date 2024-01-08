@@ -5,6 +5,7 @@ from art.estimators.object_detection import PyTorchObjectDetector
 import jatic_toolbox
 import numpy as np
 import torch
+import torch.utils.data.dataloader
 import torchmetrics.detection
 from torchvision.transforms.v2 import GaussianBlur
 from transformers import AutoImageProcessor, AutoModelForObjectDetection
@@ -21,7 +22,7 @@ from charmory.experimental.transforms import (
 )
 from charmory.metrics.perturbation import PerturbationNormMetric
 from charmory.model.object_detection import YolosTransformer
-from charmory.perturbation import ArtEvasionAttack, TorchTransformPerturbation
+from charmory.perturbation import ArtEvasionAttack, CallablePerturbation
 from charmory.tasks.object_detection import ObjectDetectionTask
 from charmory.track import track_init_params, track_params
 
@@ -87,11 +88,13 @@ def main(batch_size, export_every_n_batches, num_batches):
             max_size=512,
             # Scale to [0,1]
             float_max_value=255,
+            to_tensor=True,
             format=BboxFormat.COCO,
             label_fields=["label", "id", "iscrowd"],
         )
     )
 
+    # dataloader = torch.utils.data.dataloader.DataLoader(dataset, batch_size=batch_size)
     dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
 
     ###
@@ -102,7 +105,7 @@ def main(batch_size, export_every_n_batches, num_batches):
         kernel_size=5,
     )
 
-    blur_perturb = TorchTransformPerturbation(
+    blur_perturb = CallablePerturbation(
         name="blur",
         perturbation=blur,
     )
@@ -151,7 +154,7 @@ def main(batch_size, export_every_n_batches, num_batches):
 
     eval_model = Model(
         name="faster-rcnn-resnet50",
-        model=detector,
+        model=transformer,
     )
 
     evaluation = Evaluation(

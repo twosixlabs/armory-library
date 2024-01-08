@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import albumentations as A
+from albumentations.pytorch.transforms import ToTensorV2
 import numpy as np
 import torch
 from torchvision.ops import box_convert
@@ -62,6 +63,7 @@ def create_image_transform(
     float_max_value: Optional[Union[int, float]] = False,
     mean: Optional[Tuple[float, float, float]] = None,
     std: Optional[Tuple[float, float, float]] = None,
+    to_tensor: Optional[bool] = False,
     **kwargs,
 ) -> A.Compose:
     """
@@ -112,6 +114,8 @@ def create_image_transform(
         )
     if float_max_value:
         transforms.append(A.ToFloat(max_value=float_max_value))
+    if to_tensor:
+        transforms.append(ToTensorV2())
     if mean is not None and std is not None:
         transforms.append(A.Normalize(mean=mean, std=std))
     return A.Compose(transforms, **kwargs)
@@ -173,8 +177,8 @@ def create_image_bbox_transform(
 
 
 def convert_boxes(
-    boxes: np.ndarray, from_format: BboxFormat, to_format: BboxFormat
-) -> np.ndarray:
+    boxes: torch.Tensor, from_format: BboxFormat, to_format: BboxFormat
+) -> torch.Tensor:
     """
     Convert bounding boxes from one format to another.
 
@@ -195,9 +199,12 @@ def convert_boxes(
     """
     if from_format.value.torchvision == to_format.value.torchvision:
         return boxes
+    # return box_convert(
+    #     torch.tensor(boxes), from_format.value.torchvision, to_format.value.torchvision
+    # ).numpy()
     return box_convert(
         torch.tensor(boxes), from_format.value.torchvision, to_format.value.torchvision
-    ).numpy()
+    )
 
 
 def default_transpose(img: np.ndarray) -> np.ndarray:
@@ -371,10 +378,14 @@ def create_object_detection_transform(
             # Perform transform on the image+boxes
             res = img_bbox_transform(**args)
 
-            transformed[image_key].append(image_from_np(res["image"]))
+            transformed[image_key].append(res["image"])
 
             # Re-construct remaining, transformed objects
             obj = dict()
+            # print("====")
+            # print(type(res["bboxes"]))
+            # print(type(res["bboxes"][0]))
+            # print("====")
             # Convert boxes if necessary
             obj[bbox_key] = (
                 convert_boxes(
@@ -383,9 +394,11 @@ def create_object_detection_transform(
                 if res["bboxes"]
                 else res["bboxes"]
             )
+            # print(obj[bbox_key])
+            # print(type(obj[bbox_key]))
             # Add any "label" fields back
             for label_field in kwargs.get("label_fields", []):
-                obj[label_field] = res[label_field]
+                obj[label_field] = torch.tensor(res[label_field])
             # Perform any field renames as needed
             if rename_object_fields is not None:
                 for old_name, new_name in rename_object_fields.items():
@@ -396,6 +409,11 @@ def create_object_detection_transform(
         if postprocessor is not None:
             transformed = postprocessor(transformed)
 
+        # print(type(transformed[image_key]))
+        # print(type(transformed[image_key][0]))
+        # print(transformed[image_key][0].shape)
+        # print(len(transformed[objects_key]))
+        # print(type(transformed[objects_key][0]))
         return transformed
 
     return transform
