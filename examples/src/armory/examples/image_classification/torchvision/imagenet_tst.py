@@ -26,10 +26,9 @@ import timeit
 from typing import List
 
 from PIL import Image
+from charmory.evaluation import SysConfig
 import pyarrow.parquet as pq
 import torchvision.datasets
-
-from charmory.evaluation import SysConfig
 
 
 class ImageNetTST(torchvision.datasets.VisionDataset):

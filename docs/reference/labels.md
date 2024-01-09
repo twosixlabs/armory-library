@@ -10,4 +10,4 @@ A label is the target/ground truth associated with a single sample. This class i
 - Replacement of object detection labels with fixed integer
 - Transcript from a fixed list with the length closest to that of the input label
 
-::: charmory.labels
+::: armory.labels
