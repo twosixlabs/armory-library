@@ -110,6 +110,7 @@ class EvaluationModule(pl.LightningModule):
                 self.log_metric(f"{name}/{k}", v)
 
         elif isinstance(metric, torch.Tensor):
+            metric = metric.to(torch.float32)
             if len(metric.shape) == 0:
                 self.log(name, metric)
             elif len(metric.shape) == 1:
