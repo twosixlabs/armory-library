@@ -71,13 +71,12 @@ _MODELS = {
     "wide_resnet50_2": wide_resnet50_2,
 }
 
-from charmory.data import ArmoryDataLoader, TupleDataset
-from charmory.evaluation import Attack, Dataset, Evaluation, Metric, Model
-from charmory.tasks.image_classification import ImageClassificationTask
-from charmory.track import track_init_params, track_param
-
+from armory.data import ArmoryDataLoader, TupleDataset
+from armory.engine import EvaluationEngine
+from armory.evaluation import Attack, Dataset, Evaluation, Metric, Model
 from armory.metrics.compute import BasicProfiler
-from charmory.engine import EvaluationEngine
+from armory.tasks.image_classification import ImageClassificationTask
+from armory.track import track_init_params, track_param
 
 
 def _load_model(name: str):
