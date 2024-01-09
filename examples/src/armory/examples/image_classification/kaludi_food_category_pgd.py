@@ -9,17 +9,17 @@ import torch.nn
 import torchmetrics.classification
 from transformers.image_utils import infer_channel_dimension_format
 
+from armory.data import ArmoryDataLoader
+from armory.engine import EvaluationEngine
+from armory.evaluation import Dataset, Evaluation, Metric, Model
 from armory.examples.utils.args import create_parser
 from armory.metrics.compute import BasicProfiler
-from charmory.data import ArmoryDataLoader
-from charmory.engine import EvaluationEngine
-from charmory.evaluation import Dataset, Evaluation, Metric, Model
-from charmory.metrics.perturbation import PerturbationNormMetric
-from charmory.model.image_classification import JaticImageClassificationModel
-from charmory.perturbation import ArtEvasionAttack
-from charmory.tasks.image_classification import ImageClassificationTask
-from charmory.track import track_init_params, track_params
-from charmory.utils import create_jatic_dataset_transform
+from armory.metrics.perturbation import PerturbationNormMetric
+from armory.model.image_classification import JaticImageClassificationModel
+from armory.perturbation import ArtEvasionAttack
+from armory.tasks.image_classification import ImageClassificationTask
+from armory.track import track_init_params, track_params
+from armory.utils import create_jatic_dataset_transform
 
 
 def get_cli_args():
