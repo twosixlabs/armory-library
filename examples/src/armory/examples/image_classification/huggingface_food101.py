@@ -35,9 +35,7 @@ def main(args):
     # Model
     ###
     model = JaticImageClassificationModel(
-        track_params(AutoModelForImageClassification.from_pretrained)(
-            "Kaludi/food-category-classification-v2.0"
-        ),
+        track_params(AutoModelForImageClassification.from_pretrained)("nateraw/food")
     )
 
     classifier = track_init_params(PyTorchClassifier)(
@@ -46,19 +44,15 @@ def main(args):
         optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
         input_shape=(224, 224, 3),
         channels_first=False,
-        nb_classes=12,
+        nb_classes=101,
         clip_values=(0.0, 1.0),
     )
 
     ###
     # Dataset
     ###
-    dataset = datasets.load_dataset(
-        "Kaludi/food-category-classification-v2.0", split="validation"
-    )
-    processor = AutoImageProcessor.from_pretrained(
-        "Kaludi/food-category-classification-v2.0"
-    )
+    dataset = datasets.load_dataset("food101", split="validation")
+    processor = AutoImageProcessor.from_pretrained("nateraw/food")
 
     def transform(sample):
         # Use the HF image processor and convert from BW To RGB
@@ -109,7 +103,7 @@ def main(args):
         },
         prediction={
             "accuracy": torchmetrics.classification.Accuracy(
-                task="multiclass", num_classes=12
+                task="multiclass", num_classes=101
             ),
         },
     )
