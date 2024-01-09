@@ -1,3 +1,4 @@
+import functools
 from pprint import pprint
 
 import art.attacks.evasion
@@ -30,10 +31,7 @@ def get_cli_args():
     return parser.parse_args()
 
 
-def main(args):
-    ###
-    # Model
-    ###
+def load_model():
     model = JaticImageClassificationModel(
         track_params(AutoModelForImageClassification.from_pretrained)("nateraw/food")
     )
@@ -48,54 +46,64 @@ def main(args):
         clip_values=(0.0, 1.0),
     )
 
-    ###
-    # Dataset
-    ###
+    eval_model = Model(
+        name="ViT-finetuned-food101",
+        model=classifier,
+    )
+
+    return eval_model, classifier
+
+
+def transform(processor, sample):
+    # Use the HF image processor and convert from BW To RGB
+    sample["image"] = processor([img.convert("RGB") for img in sample["image"]])[
+        "pixel_values"
+    ]
+    return sample
+
+
+def load_dataset(batch_size: int):
     dataset = datasets.load_dataset("food101", split="validation")
+    assert isinstance(dataset, datasets.Dataset)
+
     processor = AutoImageProcessor.from_pretrained("nateraw/food")
+    dataset.set_transform(functools.partial(transform, processor))
 
-    def transform(sample):
-        # Use the HF image processor and convert from BW To RGB
-        sample["image"] = processor([img.convert("RGB") for img in sample["image"]])[
-            "pixel_values"
-        ]
-        return sample
+    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
 
-    dataset.set_transform(transform)
-
-    dataloader = ArmoryDataLoader(dataset, batch_size=args.batch_size)
-
-    ###
-    # Evaluation
-    ###
     eval_dataset = Dataset(
-        name="food-category-classification",
+        name="food-101",
         x_key="image",
         y_key="label",
         test_dataloader=dataloader,
     )
 
-    eval_model = Model(
-        name="food-category-classification",
-        model=classifier,
+    return eval_dataset
+
+
+def create_attack(classifier: PyTorchClassifier):
+    pgd = track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
+        classifier,
+        batch_size=1,
+        eps=0.031,
+        eps_step=0.007,
+        max_iter=20,
+        num_random_init=1,
+        random_eps=False,
+        targeted=False,
+        verbose=False,
     )
 
     eval_attack = ArtEvasionAttack(
         name="PGD",
-        attack=track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
-            classifier,
-            batch_size=1,
-            eps=0.031,
-            eps_step=0.007,
-            max_iter=20,
-            num_random_init=1,
-            random_eps=False,
-            targeted=False,
-            verbose=False,
-        ),
+        attack=pgd,
         use_label_for_untargeted=True,
     )
 
+    return eval_attack
+
+
+def create_metric():
     eval_metric = Metric(
         profiler=BasicProfiler(),
         perturbation={
@@ -108,17 +116,30 @@ def main(args):
         },
     )
 
+    return eval_metric
+
+
+def main(args):
+    model, art_classifier = load_model()
+    dataset = load_dataset(args.batch_size)
+    attack = create_attack(art_classifier)
+    metric = create_metric()
+
+    ###
+    # Evaluation
+    ###
+
     evaluation = Evaluation(
         name="hf-food101-classification",
         description="Image classification of food-101 from HuggingFace",
-        author="Kaludi",
-        dataset=eval_dataset,
-        model=eval_model,
+        author="TwoSix",
+        dataset=dataset,
+        model=model,
         perturbations={
             "benign": [],
-            "attack": [eval_attack],
+            "attack": [attack],
         },
-        metric=eval_metric,
+        metric=metric,
     )
 
     ###
