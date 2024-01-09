@@ -34,6 +34,9 @@ class YolosTransformer(ObjectDetector):
         transformer = YolosTransformer(model, processor)
     """
 
+    DEFAULT_MEAN = (0.485, 0.456, 0.406)
+    DEFAULT_STD = (0.229, 0.224, 0.225)
+
     def __init__(
         self,
         name: str,
@@ -66,8 +69,8 @@ class YolosTransformer(ObjectDetector):
                     scale=Scale(
                         dtype=DataType.FLOAT,
                         max=1.0,
-                        mean=(0.485, 0.456, 0.406),
-                        std=(0.229, 0.224, 0.225),
+                        mean=self.DEFAULT_MEAN,
+                        std=self.DEFAULT_STD,
                     ),
                     dtype=torch.float32,
                 )

@@ -197,8 +197,8 @@ def main(batch_size, export_every_n_batches, num_batches):
             scale=Scale(
                 dtype=DataType.FLOAT,
                 max=1.0,
-                mean=(0.485, 0.456, 0.406),
-                std=(0.229, 0.224, 0.225),
+                mean=YolosTransformer.DEFAULT_MEAN,
+                std=YolosTransformer.DEFAULT_STD,
             ),
             dtype=np.float32,
         ),
