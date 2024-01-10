@@ -1,3 +1,8 @@
+"""
+Example Armory evaluation of food-101 image classification against projected
+gradient descent (PGD) adversarial perturbation
+"""
+
 from pprint import pprint
 
 import art.attacks.evasion
