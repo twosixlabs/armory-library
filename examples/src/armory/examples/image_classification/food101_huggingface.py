@@ -1,88 +1,139 @@
-import functools
 from pprint import pprint
 
 import art.attacks.evasion
-from art.estimators.classification import PyTorchClassifier
-import datasets
+import art.estimators.classification
 import torch
 import torch.nn
 import torchmetrics.classification
-from transformers import AutoImageProcessor, AutoModelForImageClassification
+import transformers
 
-from armory.data import ArmoryDataLoader
-from armory.engine import EvaluationEngine
-from armory.evaluation import Dataset, Evaluation, Metric, Model
-from armory.examples.utils.args import create_parser
-from armory.metrics.compute import BasicProfiler
-from armory.metrics.perturbation import PerturbationNormMetric
-from armory.model.image_classification import JaticImageClassificationModel
-from armory.perturbation import ArtEvasionAttack
-from armory.tasks.image_classification import ImageClassificationTask
-from armory.track import track_init_params, track_params
+import armory.data
+import armory.engine
+import armory.evaluation
+import armory.metrics.compute
+import armory.metrics.perturbation
+import armory.model.image_classification
+import armory.perturbation
+import armory.tasks.image_classification
+import armory.track
 
 
-def get_cli_args():
+def parse_cli_args():
+    """Parse command-line arguments"""
+    from armory.examples.utils.args import create_parser
+
     parser = create_parser(
-        description="Perform image classification of food-101 from HuggingFace",
+        description="Perform image classification of food-101",
         batch_size=16,
         export_every_n_batches=5,
         num_batches=5,
+    )
+    parser.add_argument(
+        "--dataset", choices=["huggingface", "torchvision"], default="huggingface"
     )
     return parser.parse_args()
 
 
 def load_model():
-    model = JaticImageClassificationModel(
-        track_params(AutoModelForImageClassification.from_pretrained)("nateraw/food")
+    """Load model from HuggingFace"""
+    hf_model = armory.track.track_params(
+        transformers.AutoModelForImageClassification.from_pretrained
+    )("nateraw/food")
+
+    armory_model = armory.model.image_classification.JaticImageClassificationModel(
+        hf_model
     )
 
-    classifier = track_init_params(PyTorchClassifier)(
-        model,
+    art_classifier = armory.track.track_init_params(
+        art.estimators.classification.PyTorchClassifier
+    )(
+        armory_model,
         loss=torch.nn.CrossEntropyLoss(),
-        optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
+        optimizer=torch.optim.Adam(armory_model.parameters(), lr=0.003),
         input_shape=(224, 224, 3),
         channels_first=False,
         nb_classes=101,
         clip_values=(0.0, 1.0),
     )
 
-    eval_model = Model(
+    evaluation_model = armory.evaluation.Model(
         name="ViT-finetuned-food101",
-        model=classifier,
+        model=art_classifier,
     )
 
-    return eval_model, classifier
+    return evaluation_model, art_classifier
 
 
 def transform(processor, sample):
-    # Use the HF image processor and convert from BW To RGB
+    """Use the HF image processor and convert from BW To RGB"""
     sample["image"] = processor([img.convert("RGB") for img in sample["image"]])[
         "pixel_values"
     ]
     return sample
 
 
-def load_dataset(batch_size: int):
-    dataset = datasets.load_dataset("food101", split="validation")
-    assert isinstance(dataset, datasets.Dataset)
+def load_huggingface_dataset(batch_size: int):
+    """Load food-101 dataset from HuggingFace"""
+    import functools
 
-    processor = AutoImageProcessor.from_pretrained("nateraw/food")
-    dataset.set_transform(functools.partial(transform, processor))
+    import datasets
 
-    dataloader = ArmoryDataLoader(dataset, batch_size=batch_size)
+    hf_dataset = datasets.load_dataset("food101", split="validation")
+    assert isinstance(hf_dataset, datasets.Dataset)
 
-    eval_dataset = Dataset(
+    hf_processor = transformers.AutoImageProcessor.from_pretrained("nateraw/food")
+    hf_dataset.set_transform(functools.partial(transform, hf_processor))
+
+    dataloader = armory.data.ArmoryDataLoader(hf_dataset, batch_size=batch_size)
+
+    evaluation_dataset = armory.evaluation.Dataset(
         name="food-101",
         x_key="image",
         y_key="label",
         test_dataloader=dataloader,
     )
 
-    return eval_dataset
+    return evaluation_dataset
 
 
-def create_attack(classifier: PyTorchClassifier):
-    pgd = track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
+def load_torchvision_dataset(batch_size: int, sysconfig: armory.evaluation.SysConfig):
+    """Load food-101 dataset from TorchVision"""
+    from torchvision import datasets
+    from torchvision import transforms as T
+
+    tv_dataset = datasets.Food101(
+        root=str(sysconfig.dataset_cache),
+        split="test",
+        download=True,
+        transform=T.Compose(
+            [
+                T.Resize(size=(224, 224)),
+                T.ToTensor(),
+            ]
+        ),
+    )
+
+    armory_dataset = armory.data.TupleDataset(
+        tv_dataset,
+        x_key="image",
+        y_key="label",
+    )
+
+    dataloader = armory.data.ArmoryDataLoader(armory_dataset, batch_size=batch_size)
+
+    evaluation_dataset = armory.evaluation.Dataset(
+        name="food-101",
+        x_key="image",
+        y_key="label",
+        test_dataloader=dataloader,
+    )
+
+    return evaluation_dataset
+
+
+def create_attack(classifier: art.estimators.classification.PyTorchClassifier):
+    """Creates the PGD attack"""
+    pgd = armory.track.track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
         classifier,
         batch_size=1,
         eps=0.031,
@@ -94,20 +145,23 @@ def create_attack(classifier: PyTorchClassifier):
         verbose=False,
     )
 
-    eval_attack = ArtEvasionAttack(
+    evaluation_attack = armory.perturbation.ArtEvasionAttack(
         name="PGD",
         attack=pgd,
         use_label_for_untargeted=True,
     )
 
-    return eval_attack
+    return evaluation_attack
 
 
 def create_metric():
-    eval_metric = Metric(
-        profiler=BasicProfiler(),
+    """Create evaluation metrics"""
+    evaluation_metric = armory.evaluation.Metric(
+        profiler=armory.metrics.compute.BasicProfiler(),
         perturbation={
-            "linf_norm": PerturbationNormMetric(ord=torch.inf),
+            "linf_norm": armory.metrics.perturbation.PerturbationNormMetric(
+                ord=torch.inf
+            ),
         },
         prediction={
             "accuracy": torchmetrics.classification.Accuracy(
@@ -116,18 +170,24 @@ def create_metric():
         },
     )
 
-    return eval_metric
+    return evaluation_metric
 
 
 def main(args):
+    """Perform evaluation"""
+    sysconfig = armory.evaluation.SysConfig()
     model, art_classifier = load_model()
-    dataset = load_dataset(args.batch_size)
+    dataset = (
+        load_huggingface_dataset(args.batch_size)
+        if args.dataset == "huggingface"
+        else load_torchvision_dataset(args.batch_size, sysconfig)
+    )
     attack = create_attack(art_classifier)
     metric = create_metric()
 
-    evaluation = Evaluation(
-        name="hf-food101-classification",
-        description="Image classification of food-101 from HuggingFace",
+    evaluation = armory.evaluation.Evaluation(
+        name=f"food101-classification-{args.dataset}",
+        description=f"Image classification of food-101 from {args.dataset}",
         author="TwoSix",
         dataset=dataset,
         model=model,
@@ -136,16 +196,17 @@ def main(args):
             "attack": [attack],
         },
         metric=metric,
+        sysconfig=sysconfig,
     )
 
-    task = ImageClassificationTask(
+    task = armory.tasks.image_classification.ImageClassificationTask(
         evaluation, export_every_n_batches=args.export_every_n_batches
     )
-    engine = EvaluationEngine(task, limit_test_batches=args.num_batches)
+    engine = armory.engine.EvaluationEngine(task, limit_test_batches=args.num_batches)
     results = engine.run()
 
     pprint(results)
 
 
 if __name__ == "__main__":
-    main(get_cli_args())
+    main(parse_cli_args())
