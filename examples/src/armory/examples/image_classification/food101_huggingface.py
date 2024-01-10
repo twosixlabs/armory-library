@@ -125,10 +125,6 @@ def main(args):
     attack = create_attack(art_classifier)
     metric = create_metric()
 
-    ###
-    # Evaluation
-    ###
-
     evaluation = Evaluation(
         name="hf-food101-classification",
         description="Image classification of food-101 from HuggingFace",
@@ -141,10 +137,6 @@ def main(args):
         },
         metric=metric,
     )
-
-    ###
-    # Engine
-    ###
 
     task = ImageClassificationTask(
         evaluation, export_every_n_batches=args.export_every_n_batches

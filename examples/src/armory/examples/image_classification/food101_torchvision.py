@@ -128,10 +128,6 @@ def main(args):
     attack = create_attack(art_classifier)
     metric = create_metric()
 
-    ###
-    # Evaluation
-    ###
-
     evaluation = Evaluation(
         name="tv-food101-classification",
         description="Image classification of food-101 from TorchVision",
@@ -145,10 +141,6 @@ def main(args):
         metric=metric,
         sysconfig=sysconfig,
     )
-
-    ###
-    # Engine
-    ###
 
     task = ImageClassificationTask(
         evaluation, export_every_n_batches=args.export_every_n_batches
