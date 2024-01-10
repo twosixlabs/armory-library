@@ -72,6 +72,12 @@ jobs:
           - name: Image Classification
             dir: examples/src/armory/examples/image_classification
             script: mnist_vit_pgd.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
+          - name: Image Classification Food-101 HuggingFace
+            dir: examples/src/armory/examples/image_classification
+            script: food101.py --batch-size 2 --num-batches 1 --export-every-n-batches 1 --dataset huggingface
+          - name: Image Classification Food-101 TorchVision
+            dir: examples/src/armory/examples/image_classification
+            script: food101.py --batch-size 2 --num-batches 1 --export-every-n-batches 1 --dataset torchvision
           - name: Object Detection
             dir: examples/src/armory/examples/object_detection
             script: license_plates_yolov5_robustdpatch.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
