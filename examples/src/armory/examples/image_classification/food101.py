@@ -7,6 +7,7 @@ from pprint import pprint
 
 import art.attacks.evasion
 import art.estimators.classification
+import numpy as np
 import torch
 import torch.nn
 import torchmetrics.classification
@@ -128,7 +129,8 @@ def load_torchvision_dataset(
         transform=T.Compose(
             [
                 T.Resize(size=(224, 224)),
-                T.ToTensor(),
+                T.ToTensor(),  # HWC->CHW and scales to 0-1
+                T.Lambda(np.asarray),
             ]
         ),
     )
