@@ -34,6 +34,15 @@ def parse_cli_args():
         num_batches=5,
     )
     parser.add_argument(
+        "--shuffle",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--seed",
+        default=None,
+        type=int,
+    )
+    parser.add_argument(
         "--dataset", choices=["huggingface", "torchvision"], default="huggingface"
     )
     return parser.parse_args()
@@ -77,7 +86,7 @@ def transform(processor, sample):
     return sample
 
 
-def load_huggingface_dataset(batch_size: int):
+def load_huggingface_dataset(batch_size: int, shuffle: bool):
     """Load food-101 dataset from HuggingFace"""
     import functools
 
@@ -86,10 +95,14 @@ def load_huggingface_dataset(batch_size: int):
     hf_dataset = datasets.load_dataset("food101", split="validation")
     assert isinstance(hf_dataset, datasets.Dataset)
 
+    labels = hf_dataset.features["label"].names
+
     hf_processor = transformers.AutoImageProcessor.from_pretrained("nateraw/food")
     hf_dataset.set_transform(functools.partial(transform, hf_processor))
 
-    dataloader = armory.data.ArmoryDataLoader(hf_dataset, batch_size=batch_size)
+    dataloader = armory.data.ArmoryDataLoader(
+        hf_dataset, batch_size=batch_size, shuffle=shuffle
+    )
 
     evaluation_dataset = armory.evaluation.Dataset(
         name="food-101",
@@ -98,10 +111,12 @@ def load_huggingface_dataset(batch_size: int):
         test_dataloader=dataloader,
     )
 
-    return evaluation_dataset
+    return evaluation_dataset, labels
 
 
-def load_torchvision_dataset(batch_size: int, sysconfig: armory.evaluation.SysConfig):
+def load_torchvision_dataset(
+    batch_size: int, shuffle: bool, sysconfig: armory.evaluation.SysConfig
+):
     """Load food-101 dataset from TorchVision"""
     from torchvision import datasets
     from torchvision import transforms as T
@@ -118,13 +133,17 @@ def load_torchvision_dataset(batch_size: int, sysconfig: armory.evaluation.SysCo
         ),
     )
 
+    labels = tv_dataset.classes
+
     armory_dataset = armory.data.TupleDataset(
         tv_dataset,
         x_key="image",
         y_key="label",
     )
 
-    dataloader = armory.data.ArmoryDataLoader(armory_dataset, batch_size=batch_size)
+    dataloader = armory.data.ArmoryDataLoader(
+        armory_dataset, batch_size=batch_size, shuffle=shuffle
+    )
 
     evaluation_dataset = armory.evaluation.Dataset(
         name="food-101",
@@ -133,7 +152,7 @@ def load_torchvision_dataset(batch_size: int, sysconfig: armory.evaluation.SysCo
         test_dataloader=dataloader,
     )
 
-    return evaluation_dataset
+    return evaluation_dataset, labels
 
 
 def create_attack(classifier: art.estimators.classification.PyTorchClassifier):
@@ -180,12 +199,15 @@ def create_metric():
 
 def main(args):
     """Perform evaluation"""
+    if args.seed is not None:
+        torch.manual_seed(args.seed)
+
     sysconfig = armory.evaluation.SysConfig()
     model, art_classifier = load_model()
-    dataset = (
-        load_huggingface_dataset(args.batch_size)
+    dataset, _ = (
+        load_huggingface_dataset(args.batch_size, args.shuffle)
         if args.dataset == "huggingface"
-        else load_torchvision_dataset(args.batch_size, sysconfig)
+        else load_torchvision_dataset(args.batch_size, args.shuffle, sysconfig)
     )
     attack = create_attack(art_classifier)
     metric = create_metric()
