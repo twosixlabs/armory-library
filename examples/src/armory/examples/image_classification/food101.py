@@ -22,6 +22,7 @@ import armory.model.image_classification
 import armory.perturbation
 import armory.tasks.image_classification
 import armory.track
+import armory.utils
 
 
 def parse_cli_args():
@@ -44,7 +45,10 @@ def parse_cli_args():
         type=int,
     )
     parser.add_argument(
-        "--dataset", choices=["huggingface", "torchvision"], default="huggingface"
+        "--dataset",
+        dest="dataset_src",
+        choices=["huggingface", "torchvision"],
+        default="huggingface",
     )
     return parser.parse_args()
 
@@ -53,7 +57,7 @@ def load_model():
     """Load model from HuggingFace"""
     hf_model = armory.track.track_params(
         transformers.AutoModelForImageClassification.from_pretrained
-    )("nateraw/food")
+    )(pretrained_model_name_or_path="nateraw/food")
 
     armory_model = armory.model.image_classification.JaticImageClassificationModel(
         hf_model
@@ -130,6 +134,7 @@ def load_torchvision_dataset(
             [
                 T.Resize(size=(224, 224)),
                 T.ToTensor(),  # HWC->CHW and scales to 0-1
+                T.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
                 T.Lambda(np.asarray),
             ]
         ),
@@ -199,24 +204,25 @@ def create_metric():
     return evaluation_metric
 
 
-def main(args):
+@armory.track.track_params(prefix="main")
+def main(batch_size, export_every_n_batches, num_batches, dataset_src, seed, shuffle):
     """Perform evaluation"""
-    if args.seed is not None:
-        torch.manual_seed(args.seed)
+    if seed is not None:
+        torch.manual_seed(seed)
 
     sysconfig = armory.evaluation.SysConfig()
     model, art_classifier = load_model()
     dataset, _ = (
-        load_huggingface_dataset(args.batch_size, args.shuffle)
-        if args.dataset == "huggingface"
-        else load_torchvision_dataset(args.batch_size, args.shuffle, sysconfig)
+        load_huggingface_dataset(batch_size, shuffle)
+        if dataset_src == "huggingface"
+        else load_torchvision_dataset(batch_size, shuffle, sysconfig)
     )
     attack = create_attack(art_classifier)
     metric = create_metric()
 
     evaluation = armory.evaluation.Evaluation(
-        name=f"food101-classification-{args.dataset}",
-        description=f"Image classification of food-101 from {args.dataset}",
+        name=f"food101-classification-{dataset_src}",
+        description=f"Image classification of food-101 from {dataset_src}",
         author="TwoSix",
         dataset=dataset,
         model=model,
@@ -229,13 +235,17 @@ def main(args):
     )
 
     task = armory.tasks.image_classification.ImageClassificationTask(
-        evaluation, export_every_n_batches=args.export_every_n_batches
+        evaluation,
+        export_every_n_batches=export_every_n_batches,
+        export_adapter=armory.utils.Unnormalize(
+            mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)
+        ),
     )
-    engine = armory.engine.EvaluationEngine(task, limit_test_batches=args.num_batches)
+    engine = armory.engine.EvaluationEngine(task, limit_test_batches=num_batches)
     results = engine.run()
 
     pprint(results)
 
 
 if __name__ == "__main__":
-    main(parse_cli_args())
+    main(**vars(parse_cli_args()))
