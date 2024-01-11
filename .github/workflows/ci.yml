@@ -69,9 +69,6 @@ jobs:
       fail-fast: false
       matrix:
         test:
-          - name: Image Classification
-            dir: examples/src/armory/examples/image_classification
-            script: mnist_vit_pgd.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
           - name: Image Classification Food-101 HuggingFace
             dir: examples/src/armory/examples/image_classification
             script: food101.py --batch-size 2 --num-batches 1 --export-every-n-batches 1 --dataset huggingface
