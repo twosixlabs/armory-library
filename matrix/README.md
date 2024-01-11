@@ -1,4 +1,4 @@
-![charmory logo](../docs/assets/charmory.png)
+![armory logo](../docs/assets/armory-logo.png)
 
 ---
 

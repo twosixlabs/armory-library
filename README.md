@@ -1,4 +1,4 @@
-![charmory logo](docs/assets/armory-logo.png)
+![armory logo](docs/assets/armory-logo.png)
 
 ---
 
@@ -15,7 +15,7 @@
 Armory-library is a pure Python library which allows the measurement of ML systems in
 the face of adversarial attacks. It takes the years of experience gained and techniques
 discovered under the [DARPA GARD program][gardproject] and makes it available to the
-general user.
+general ML user.
 
 
 # Installation & Configuration
@@ -36,34 +36,14 @@ To install the examples, run:
 pip install armory-examples
 ```
 
-This will install the example code in your current Python environment and will add
-a command `armory-examples`. This will list the available examples and allow you
-to run them. For example:
-
-```bash
-$ armory-examples
-mnist-vit-pgd
-…
-$ armory-examples mnist-vit-pgd
-# runs the example mnist-vit-pgd evaluation
-```
-
 The [example source code][example-src], along with the [Armory-library
 documentation](docs/index.md) is a good place to learn how to construct your own
 evaluations using armory-library.
 
-# Getting Started
-
-For those unfamiliar with machine learning topics in general, this is a notebook
-with a more-detailed explanation of the various objects involved in this work.
-It will walk through such topics as where to get datasets and models, and how to
-set up an evaluation. The notebook can be run for free on Google Colab.
-
-[![Open In Colab][colab-badge]][colab-getting-started]
 
 # Quick Look
 
-We have provided an sample notebook using Armory to evaluate an MNIST classifier
+We have provided an sample notebook using Armory to evaluate a food101 classifier
 in the presence of a Project Gradient Descent (PGD) attack. The notebook can be
 run for free on Google Colab to get a taste of how Armory works.
 
@@ -107,7 +87,6 @@ Defense Advanced Research Projects Agency (DARPA) or JATIC.
 [style-url]: https://github.com/ambv/black
 [gardproject]: https://www.gardproject.org
 [colab-badge]: https://colab.research.google.com/assets/colab-badge.svg
-[colab-getting-started]: https://colab.research.google.com/github/twosixlabs/armory-library/blob/master/docs/getting_started.ipynb
-[colab-url]: https://colab.research.google.com/github/twosixlabs/armory-library/blob/master/examples/notebooks/armory_colab_example.ipynb
+[colab-url]: https://colab.research.google.com/github/twosixlabs/armory-library/blob/master/examples/notebooks/image_classification_food101.ipynb
 [example-src]: https://github.com/twosixlabs/armory-library/tree/master/examples/src/armory/examples
 [GARD-Armory]: https://github.com/twosixlabs/armory
