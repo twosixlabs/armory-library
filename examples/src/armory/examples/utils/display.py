@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import tempfile
 from typing import List
@@ -9,6 +10,10 @@ import numpy as np
 
 from armory.evaluation import SysConfig
 from armory.track import init_tracking_uri
+
+
+def suppress_artifact_progress_bar():
+    os.environ["MLFLOW_ENABLE_ARTIFACTS_PROGRESS_BAR"] = "False"
 
 
 def get_mlflow_client():
@@ -30,6 +35,7 @@ def get_predicted_label(filepath: Path, labels: List[str]):
 def display_image_classification_results(
     run_id: str, batch_idx: int, batch_size: int, chains: List[str], labels: List[str]
 ):
+    suppress_artifact_progress_bar()
     client = get_mlflow_client()
 
     fig, axes = plt.subplots(
@@ -63,4 +69,3 @@ def display_image_classification_results(
 
     fig.suptitle(f"Batch {batch_idx}")
     fig.tight_layout()
-    return fig
