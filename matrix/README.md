@@ -1,4 +1,4 @@
-![armory logo](../docs/assets/armory-logo.png)
+![armory-matrix logo](../docs/assets/armory-matrix-logo.png)
 
 ---
 
