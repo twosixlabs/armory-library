@@ -37,15 +37,6 @@ def parse_cli_args():
         export_every_n_batches=5,
         num_batches=20,
     )
-    parser.add_argument(
-        "--shuffle",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--seed",
-        default=None,
-        type=int,
-    )
     return parser.parse_args()
 
 
