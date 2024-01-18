@@ -10,6 +10,10 @@ on:
     branches:
       - master
 
+  schedule:
+    # run this every day at 7:20am UTC
+    - cron: '20 7 * * *'
+
 jobs:
   code-linting:
     name: 🧹 Code Linting
@@ -65,12 +69,18 @@ jobs:
       fail-fast: false
       matrix:
         test:
-          - name: Image Classification
+          - name: Image Classification Food-101 HuggingFace
             dir: examples/src/armory/examples/image_classification
-            script: mnist_vit_pgd.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
-          - name: Object Detection
+            script: food101.py --batch-size 2 --num-batches 1 --export-every-n-batches 1 --dataset huggingface
+          - name: Image Classification Food-101 TorchVision
+            dir: examples/src/armory/examples/image_classification
+            script: food101.py --batch-size 2 --num-batches 1 --export-every-n-batches 1 --dataset torchvision
+          - name: Object Detection License Plates YOLOS
             dir: examples/src/armory/examples/object_detection
-            script: license_plates_yolov5_robustdpatch.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
+            script: license_plates_yolos.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
+          - name: Object Detection License Plates YOLOv5
+            dir: examples/src/armory/examples/object_detection
+            script: license_plates_yolov5.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
         python-version: ["3.8"]
     steps:
       - name: Checkout

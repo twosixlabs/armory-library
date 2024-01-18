@@ -5,7 +5,7 @@ from numpy.testing import assert_allclose
 import pytest
 import torch
 
-import charmory.data as data
+import armory.data as data
 
 pytestmark = pytest.mark.unit
 

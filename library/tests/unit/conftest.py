@@ -3,12 +3,12 @@ from unittest.mock import MagicMock
 import pytest
 from torch.utils.data.dataloader import DataLoader
 
-import charmory.evaluation
+import armory.evaluation
 
 
 @pytest.fixture
 def evaluation_model():
-    return MagicMock(spec=charmory.evaluation.ModelProtocol)
+    return MagicMock(spec=armory.evaluation.ModelProtocol)
 
 
 @pytest.fixture
@@ -18,7 +18,7 @@ def data_loader():
 
 @pytest.fixture
 def evaluation_dataset(data_loader):
-    return charmory.evaluation.Dataset(
+    return armory.evaluation.Dataset(
         name="test",
         dataloader=data_loader,
     )
@@ -26,17 +26,17 @@ def evaluation_dataset(data_loader):
 
 @pytest.fixture
 def evaluation_perturbation():
-    return MagicMock(spec=charmory.evaluation.PerturbationProtocol)
+    return MagicMock(spec=armory.evaluation.PerturbationProtocol)
 
 
 @pytest.fixture
 def evaluation_metric():
-    return MagicMock(spec=charmory.evaluation.Metric)
+    return MagicMock(spec=armory.evaluation.Metric)
 
 
 @pytest.fixture
 def evaluation_sysconfig():
-    return charmory.evaluation.SysConfig()
+    return armory.evaluation.SysConfig()
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def evaluation(
     evaluation_metric,
     evaluation_sysconfig,
 ):
-    return charmory.evaluation.Evaluation(
+    return armory.evaluation.Evaluation(
         name="test",
         description="test evaluation",
         author=None,

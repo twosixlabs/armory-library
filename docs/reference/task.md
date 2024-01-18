@@ -7,8 +7,8 @@ The Image Classification task can additionally be created with the total number 
 
 The Object Detection task can additionally be created with an option to track Mean Average Precision (MAP) metrics per class, with a minimum prediction score for a detection bounding box to be drawn on the exported sample, a maximum intersection-over-union value for non-maximum suppression filtering of detection bounding boxes, and a minimum prediction score, with all predictions lower than this being ignored.
 
-::: charmory.tasks.base.BaseEvaluationTask
+::: armory.tasks.base.BaseEvaluationTask
 
-::: charmory.tasks.image_classification.ImageClassificationTask
+::: armory.tasks.image_classification.ImageClassificationTask
 
-::: charmory.tasks.object_detection.ObjectDetectionTask
+::: armory.tasks.object_detection.ObjectDetectionTask

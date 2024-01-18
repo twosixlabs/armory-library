@@ -7,4 +7,4 @@ A variety of utilities to aid in evaluation tasks. Includes:
 - A transform that can be applied to JATIC-wrapped datasets using a preprocessor from a JATIC-wrapped model
 - A check for whether a given estimator has any pre- or post-processor defenses applied to it
 
-::: charmory.utils
+::: armory.utils

@@ -4,4 +4,4 @@ A dataset is a collection of images, i.e. the sample set, in a sequence-like str
 - Tuples datasets which can be turned into a map
 - PyTorch datasets needing to be turned into numpy arrays
 
-::: charmory.data
+::: armory.data

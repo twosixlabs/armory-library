@@ -31,4 +31,15 @@ def create_parser(
         help="Number of batches to process",
         type=int,
     )
+    parser.add_argument(
+        "--shuffle",
+        action="store_true",
+        help="Shuffle the dataset",
+    )
+    parser.add_argument(
+        "--seed",
+        default=None,
+        help="Randomization seed (when shuffling the dataset)",
+        type=int,
+    )
     return parser
