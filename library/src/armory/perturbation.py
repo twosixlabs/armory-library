@@ -3,8 +3,8 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Dict, Generic, Optional, TypeVar
 
-from charmory.data import Accessor, Batch, DefaultNumpyAccessor
-from charmory.evaluation import PerturbationProtocol
+from armory.data import Accessor, Batch, DefaultNumpyAccessor
+from armory.evaluation import PerturbationProtocol
 
 if TYPE_CHECKING:
     from art.attacks import EvasionAttack
