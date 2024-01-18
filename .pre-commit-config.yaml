@@ -33,6 +33,7 @@ repos:
             examples/src/.*|
             matrix/src/.*
           )$
+  # Notebooks
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.7.0
     hooks:
@@ -45,6 +46,11 @@ repos:
             tutorials/notebooks/.*|
             examples/notebooks/.*
           )$
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.6.1
+    hooks:
+      - id: nbstripout
+  # Misc
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:

@@ -69,3 +69,40 @@ def display_image_classification_results(
 
     fig.suptitle(f"Batch {batch_idx}")
     fig.tight_layout()
+
+
+def display_object_detection_results(
+    run_id: str, batch_idx: int, batch_size: int, chains: List[str]
+):
+    suppress_artifact_progress_bar()
+    client = get_mlflow_client()
+
+    fig, axes = plt.subplots(
+        nrows=batch_size,
+        ncols=len(chains),
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmppath = Path(tmpdir)
+
+        for sample_idx in range(batch_size):
+            for chain_idx, chain in enumerate(chains):
+                image_filename = f"batch_{batch_idx}_ex_{sample_idx}_{chain}.png"
+                client.download_artifacts(run_id, image_filename, tmpdir)
+                image = plt.imread(tmppath / image_filename)
+
+                json_filename = f"batch_{batch_idx}_ex_{sample_idx}_{chain}.txt"
+                client.download_artifacts(run_id, json_filename, tmpdir)
+
+                ax = axes[sample_idx][chain_idx]
+                if sample_idx == 0:
+                    ax.set_title(chain)
+                if chain_idx == 0:
+                    ax.set_ylabel(f"Sample {sample_idx}")
+                ax.imshow(image)
+                ax.tick_params(
+                    bottom=False, left=False, labelbottom=False, labelleft=False
+                )
+
+    fig.suptitle(f"Batch {batch_idx}")
+    fig.tight_layout()

@@ -36,15 +36,6 @@ def parse_cli_args():
         num_batches=5,
     )
     parser.add_argument(
-        "--shuffle",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--seed",
-        default=None,
-        type=int,
-    )
-    parser.add_argument(
         "--dataset",
         dest="dataset_src",
         choices=["huggingface", "torchvision"],
