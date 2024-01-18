@@ -7,6 +7,7 @@ from typing import Any, Iterable, Mapping
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
 import torch
+import tqdm
 
 from charmory.data import Batch
 from charmory.evaluation import Evaluation, PerturbationProtocol
@@ -149,7 +150,10 @@ class EvaluationModule(pl.LightningModule):
         """
         Performs evaluations of the model for each configured perturbation chain
         """
-        for chain_name, chain in self.evaluation.perturbations.items():
+        pbar = tqdm.tqdm(self.evaluation.perturbations.items(), position=1, leave=False)
+        for chain_name, chain in pbar:
+            pbar.set_description(f"Evaluating {chain_name}")
+
             chain_batch = batch.clone()
 
             try:
