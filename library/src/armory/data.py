@@ -291,8 +291,8 @@ def to_bbox_format(
 
     return box_convert(
         boxes=to_torch(data),
-        in_fmt=from_format,
-        out_fmt=to_format,
+        in_fmt=from_format.name.lower(),
+        out_fmt=to_format.name.lower(),
     )
 
 
