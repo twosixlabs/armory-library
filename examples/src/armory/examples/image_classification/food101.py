@@ -14,13 +14,15 @@ import torchmetrics.classification
 import transformers
 
 import armory.data
+import armory.dataset
 import armory.engine
 import armory.evaluation
+import armory.export.image_classification
+import armory.metric
 import armory.metrics.compute
 import armory.metrics.perturbation
 import armory.model.image_classification
 import armory.perturbation
-import armory.tasks.image_classification
 import armory.track
 import armory.utils
 
@@ -50,8 +52,10 @@ def load_model():
         transformers.AutoModelForImageClassification.from_pretrained
     )(pretrained_model_name_or_path="nateraw/food")
 
-    armory_model = armory.model.image_classification.JaticImageClassificationModel(
-        hf_model
+    armory_model = armory.model.image_classification.ImageClassifier(
+        name="ViT-finetuned-food101",
+        model=hf_model,
+        accessor=armory.data.Images.as_torch(),
     )
 
     art_classifier = armory.track.track_init_params(
@@ -66,12 +70,7 @@ def load_model():
         clip_values=(0.0, 1.0),
     )
 
-    evaluation_model = armory.evaluation.Model(
-        name="ViT-finetuned-food101",
-        model=art_classifier,
-    )
-
-    return evaluation_model, art_classifier
+    return armory_model, art_classifier
 
 
 def transform(processor, sample):
@@ -96,15 +95,24 @@ def load_huggingface_dataset(batch_size: int, shuffle: bool):
     hf_processor = transformers.AutoImageProcessor.from_pretrained("nateraw/food")
     hf_dataset.set_transform(functools.partial(transform, hf_processor))
 
-    dataloader = armory.data.ArmoryDataLoader(
-        hf_dataset, batch_size=batch_size, shuffle=shuffle
+    dataloader = armory.dataset.ImageClassificationDataLoader(
+        hf_dataset,
+        dim=armory.data.ImageDimensions.CHW,
+        scale=armory.data.Scale(
+            dtype=armory.data.DataType.FLOAT,
+            max=1.0,
+            mean=(0.5, 0.5, 0.5),
+            std=(0.5, 0.5, 0.5),
+        ),
+        image_key="image",
+        label_key="label",
+        batch_size=batch_size,
+        shuffle=shuffle,
     )
 
     evaluation_dataset = armory.evaluation.Dataset(
         name="food-101",
-        x_key="image",
-        y_key="label",
-        test_dataloader=dataloader,
+        dataloader=dataloader,
     )
 
     return evaluation_dataset, labels
@@ -133,21 +141,30 @@ def load_torchvision_dataset(
 
     labels = tv_dataset.classes
 
-    armory_dataset = armory.data.TupleDataset(
+    armory_dataset = armory.dataset.TupleDataset(
         tv_dataset,
         x_key="image",
         y_key="label",
     )
 
-    dataloader = armory.data.ArmoryDataLoader(
-        armory_dataset, batch_size=batch_size, shuffle=shuffle
+    dataloader = armory.dataset.ImageClassificationDataLoader(
+        armory_dataset,
+        dim=armory.data.ImageDimensions.CHW,
+        scale=armory.data.Scale(
+            dtype=armory.data.DataType.FLOAT,
+            max=1.0,
+            mean=(0.5, 0.5, 0.5),
+            std=(0.5, 0.5, 0.5),
+        ),
+        image_key="image",
+        label_key="label",
+        batch_size=batch_size,
+        shuffle=shuffle,
     )
 
     evaluation_dataset = armory.evaluation.Dataset(
         name="food-101",
-        x_key="image",
-        y_key="label",
-        test_dataloader=dataloader,
+        dataloader=dataloader,
     )
 
     return evaluation_dataset, labels
@@ -176,23 +193,16 @@ def create_attack(classifier: art.estimators.classification.PyTorchClassifier):
     return evaluation_attack
 
 
-def create_metric():
+def create_metrics():
     """Create evaluation metrics"""
-    evaluation_metric = armory.evaluation.Metric(
-        profiler=armory.metrics.compute.BasicProfiler(),
-        perturbation={
-            "linf_norm": armory.metrics.perturbation.PerturbationNormMetric(
-                ord=torch.inf
-            ),
-        },
-        prediction={
-            "accuracy": torchmetrics.classification.Accuracy(
-                task="multiclass", num_classes=101
-            ),
-        },
-    )
-
-    return evaluation_metric
+    return {
+        "linf_norm": armory.metric.PerturbationMetric(
+            armory.metrics.perturbation.PerturbationNormMetric(ord=torch.inf),
+        ),
+        "accuracy": armory.metric.PredictionMetric(
+            torchmetrics.classification.Accuracy(task="multiclass", num_classes=101),
+        ),
+    }
 
 
 @armory.track.track_params(prefix="main")
@@ -209,7 +219,7 @@ def main(batch_size, export_every_n_batches, num_batches, dataset_src, seed, shu
         else load_torchvision_dataset(batch_size, shuffle, sysconfig)
     )
     attack = create_attack(art_classifier)
-    metric = create_metric()
+    metrics = create_metrics()
 
     evaluation = armory.evaluation.Evaluation(
         name=f"food101-classification-{dataset_src}",
@@ -221,18 +231,17 @@ def main(batch_size, export_every_n_batches, num_batches, dataset_src, seed, shu
             "benign": [],
             "attack": [attack],
         },
-        metric=metric,
+        metrics=metrics,
+        exporter=armory.export.image_classification.ImageClassificationExporter(),
+        profiler=armory.metrics.compute.BasicProfiler(),
         sysconfig=sysconfig,
     )
 
-    task = armory.tasks.image_classification.ImageClassificationTask(
+    engine = armory.engine.EvaluationEngine(
         evaluation,
         export_every_n_batches=export_every_n_batches,
-        export_adapter=armory.utils.Unnormalize(
-            mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)
-        ),
+        limit_test_batches=num_batches,
     )
-    engine = armory.engine.EvaluationEngine(task, limit_test_batches=num_batches)
     results = engine.run()
 
     pprint(results)
