@@ -11,7 +11,6 @@ from typing import (
     Generic,
     Optional,
     Protocol,
-    Self,
     Sequence,
     Tuple,
     TypedDict,
@@ -390,7 +389,7 @@ class _Batch(Protocol, Generic[InputsType, TargetsType, PredictionsType]):
     def predictions(self) -> PredictionsType:
         ...
 
-    def clone(self) -> Self:
+    def clone(self):
         ...
 
     def __len__(self) -> int:

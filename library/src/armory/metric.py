@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional, Self
+from typing import TYPE_CHECKING, Optional
 
 import torch.nn as nn
 
@@ -27,7 +27,7 @@ class Metric(nn.Module, ABC):
         self.metric.reset()
 
     @abstractmethod
-    def clone(self) -> Self:
+    def clone(self) -> "Metric":
         ...
 
     @abstractmethod
