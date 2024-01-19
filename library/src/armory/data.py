@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from dataclasses import dataclass
-from enum import StrEnum, auto
+from enum import Enum, auto
 from functools import partial, singledispatch
 from typing import (
     Any,
@@ -120,7 +120,7 @@ def to_device(arg: torch.Tensor, device: Optional[torch.device]):
 ###
 
 
-class ImageDimensions(StrEnum):
+class ImageDimensions(Enum):
     CHW = auto()
     HWC = auto()
 
@@ -238,7 +238,7 @@ def _(arg: torch.Tensor, dtype: Optional[torch.dtype]):
 ###
 
 
-class DataType(StrEnum):
+class DataType(Enum):
     UINT8 = auto()
     FLOAT = auto()
 
@@ -278,7 +278,7 @@ def convert_scale(data, from_scale: Scale, to_scale: Optional[Scale] = None):
 ###
 
 
-class BBoxFormat(StrEnum):
+class BBoxFormat(Enum):
     XYXY = auto()
     XYWH = auto()
     CXCYWH = auto()
