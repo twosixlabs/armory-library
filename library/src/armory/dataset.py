@@ -24,7 +24,7 @@ class ArmoryDataset(Dataset):
 
     Example::
 
-        from charmory.dataset import ArmoryDataset
+        from armory.dataset import ArmoryDataset
 
         def rename_fields(sample):
             # Rename the 'data' field in the sample to 'image'
@@ -61,7 +61,7 @@ class TupleDataset(ArmoryDataset):
 
     Example::
 
-        from charmory.dataset import TupleDataset
+        from armory.dataset import TupleDataset
 
         # assuming `dataset` has been defined elsewhere
         print(dataset[0])
@@ -121,6 +121,24 @@ def _cast(key, value):
 
 @track_init_params
 class ImageClassificationDataLoader(DataLoader):
+    """
+    Data loader for image classification datasets.
+
+    Example::
+
+        import armory.data
+        from armory.dataset import ImageClassificationDataLoader
+
+        # assuming `dataset` has been defined elsewhere
+        dataloader = ImageClassificationDataLoader(
+            dataset,
+            dim=armory.data.ImageDimensions.CHW,
+            image_key="image",
+            label_key="label",
+            scale=armory.data.Scale(dtype=armory.data.DataType.FLOAT, max=1.0),
+        )
+    """
+
     def __init__(
         self,
         *args,
@@ -130,6 +148,21 @@ class ImageClassificationDataLoader(DataLoader):
         scale: data.Scale,
         **kwargs,
     ):
+        """
+        Initializes the data loader.
+
+        Args:
+            *args: All positional arguments will be forwarded to the
+                `torch.utils.data.dataloader.DataLoader` class.
+            dim: Image dimensions format (either CHW or HWC) of the image data
+                in the samples returned by the dataset.
+            image_key: Key in the dataset sample dictionary for the image data.
+            label_key: Key in the dataset sample dictionary for the natural labels.
+            scale: Scale (i.e., data type, max value, normalization parameters)
+                of the image data values in the samples returned by the dataset.
+            **kwargs: All other keyword arguments will be forwarded to the
+                `torch.utils.data.dataloader.DataLoader` class.
+        """
         kwargs.pop("collate_fn", None)
         super().__init__(*args, collate_fn=self._collate, **kwargs)
         self.dim = dim
@@ -159,6 +192,27 @@ class ImageClassificationDataLoader(DataLoader):
 
 @track_init_params
 class ObjectDetectionDataLoader(DataLoader):
+    """
+    data loader for object detection datasets.
+
+    Example::
+
+        import armory.data
+        from armory.dataset import ObjectDetectionDataLoader
+
+        # assuming `dataset` has been defined elsewhere
+        dataloader = ObjectDetectionDataLoader(
+            dataset,
+            boxes_key="boxes",
+            dim=armory.data.ImageDimensions.HWC,
+            format=armory.data.BBoxFormat.XYWH,
+            image_key="image",
+            labels_key="category",
+            objects_key="objects",
+            scale=armory.data.Scale(dtype=armory.data.DataType.FLOAT, max=1.0),
+        )
+    """
+
     def __init__(
         self,
         *args,
@@ -171,6 +225,25 @@ class ObjectDetectionDataLoader(DataLoader):
         scale: data.Scale,
         **kwargs,
     ):
+        """
+        Initializes the data loader.
+
+        Args:
+            *args: All positional arguments will be forwarded to the
+                `torch.utils.data.dataloader.DataLoader` class.
+            boxes_key: Key in each object dictionary for the bounding boxes.
+            dim: Image dimensions format (either CHW or HWC) of the image data
+                in the samples returned by the dataset.
+            format: Bounding box format (e.g., XYXY, XYWH) of the boxes for the
+                objects in the samples returned by the dataset.
+            image_key: Key in the dataset sample dictionary for the image data.
+            label_key: Key in each object dictionary for the natural labels.
+            objects_key: Key in the dataset sample dictionary for the objects.
+            scale: Scale (i.e., data type, max value, normalization parameters)
+                of the image data values in the samples returned by the dataset.
+            **kwargs: All other keyword arguments will be forwarded to the
+                `torch.utils.data.dataloader.DataLoader` class.
+        """
         kwargs.pop("collate_fn", None)
         super().__init__(*args, collate_fn=self._collate, **kwargs)
         self.boxes_key = boxes_key

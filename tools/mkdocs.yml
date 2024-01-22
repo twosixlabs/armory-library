@@ -40,7 +40,7 @@ nav:
   - Exporting Data: exporting_data.md
   - API Reference:
     - Ingestion and Adaptation:
-      - Datasets: reference/data.md
+      - Datasets: reference/dataset.md
       - Transforms: reference/transforms.md
       - Models: reference/model.md
     - Evaluation:
