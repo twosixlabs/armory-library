@@ -49,7 +49,6 @@ nav:
       - Metrics: reference/metric.md
       - Exporters: reference/export.md
       - Profilers: reference/profiler.md
-    - Tasks: reference/task.md
     - Engines: reference/engine.md
     - Tracking: reference/track.md
     - Utilities: reference/utils.md
