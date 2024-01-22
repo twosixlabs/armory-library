@@ -46,6 +46,8 @@ nav:
     - Evaluation:
       - Configuration: reference/evaluation.md
       - Label Targeters: reference/labels.md
+      - Metrics: reference/metric.md
+      - Exporters: reference/export.md
       - Profilers: reference/profiler.md
     - Tasks: reference/task.md
     - Engines: reference/engine.md

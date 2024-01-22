@@ -5,12 +5,30 @@ from armory.export.base import Exporter
 
 
 class ImageClassificationExporter(Exporter):
+    """An exporter for image classification samples."""
+
     def __init__(
         self,
         inputs_accessor: Optional[Images.Accessor] = None,
         predictions_accessor: Optional[Accessor] = None,
         targets_accessor: Optional[Accessor] = None,
     ):
+        """
+        Initializes the exporter.
+
+        Args:
+            inputs_accessor: Optional, data exporter used to obtain low-level
+                image data from the highly-structured inputs contained in
+                exported batches. By default, a NumPy images accessor is used.
+            predictions_accessor: Optional, data exporter used to obtain
+                low-level predictions data from the highly-structured
+                predictions contained in exported batches. By default, a generic
+                NumPy accessor is used.
+            targets_accessor: Optional, data exporter used to obtain low-level
+                ground truth targets data from the high-ly structured targets
+                contained in exported batches. By default, a generic NumPy
+                accessor is used.
+        """
         super().__init__(
             predictions_accessor=predictions_accessor, targets_accessor=targets_accessor
         )

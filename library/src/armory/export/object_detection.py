@@ -70,6 +70,8 @@ def draw_boxes_on_image(
 
 
 class ObjectDetectionExporter(Exporter):
+    """An exporter for object detection samples."""
+
     def __init__(
         self,
         score_threshold: float = 0.5,
@@ -77,6 +79,25 @@ class ObjectDetectionExporter(Exporter):
         predictions_accessor: Optional[BoundingBoxes.Accessor] = None,
         targets_accessor: Optional[BoundingBoxes.Accessor] = None,
     ):
+        """
+        Initializes the exporter.
+
+        Args:
+            score_threshold: Optional, minimum score for object detection
+                predictions to be included as drawn bounding boxes in the
+                exported images. Defaults to 0.5.
+            inputs_accessor: Optional, data exporter used to obtain low-level
+                image data from the highly-structured inputs contained in
+                exported batches. By default, a NumPy images accessor is used.
+            predictions_accessor: Optional, data exporter used to obtain
+                low-level predictions data from the highly-structured
+                predictions contained in exported batches. By default, an XYXY
+                NumPy bounding box accessor is used.
+            targets_accessor: Optional, data exporter used to obtain low-level
+                ground truth targets data from the high-ly structured targets
+                contained in exported batches. By default, an XYXY NumPy
+                bounding box accessor is used.
+        """
         super().__init__(
             predictions_accessor=(
                 predictions_accessor or BoundingBoxes.as_numpy(format=BBoxFormat.XYXY)
