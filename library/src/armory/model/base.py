@@ -23,7 +23,7 @@ class ArmoryModel(nn.Module):
 
     Example:
 
-        from charmory.model import ArmoryModel
+        from armory.model import ArmoryModel
 
         def preadapter(images, *args, **kwargs):
             # Apply some transform to images

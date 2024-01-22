@@ -26,12 +26,16 @@ class YolosTransformer(ObjectDetector):
     Example::
 
         from transformers import AutoImageProcessor, AutoModelForObjectDetection
-        from charmory.model.object_detection import YolosTransformer
+        from armory.model.object_detection import YolosTransformer
 
         model = AutoModelForObjectDetection.from_pretrained(CHECKPOINT)
         processor = AutoImageProcessor.from_pretrained(CHECKPOINT)
 
-        transformer = YolosTransformer(model, processor)
+        transformer = YolosTransformer(
+            name="My model",
+            model=model,
+            image_processor=processor,
+        )
     """
 
     DEFAULT_MEAN = (0.485, 0.456, 0.406)
@@ -50,12 +54,20 @@ class YolosTransformer(ObjectDetector):
         Initializes the model wrapper.
 
         Args:
-            model: YOLOS model being wrapped
+            name: Name of the model.
+            model: YOLOS model being wrapped.
             image_processor: HuggingFace YOLOS image processor corresponding to
-                the model
+                the model.
+            inputs_accessor: Optional, data accessor used to obtain low-level
+                image data from the highly-structured image inputs contained in
+                object detection batches. Defaults to an accessor compatible
+                with typical YOLOS models.
+            predictions_accessor: Optional, data accessor used to update the
+                object detection predictions in the batch. Defaults to an
+                accessor compatible with typical YOLOS models.
             target_size: Size (as a `height, width` tuple) of images, used for
                 correct postprocessing and resizing of the bounding box
-                predictions
+                predictions.
         """
         super().__init__(
             name=name,
