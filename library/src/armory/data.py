@@ -31,6 +31,9 @@ from torchvision.ops import box_convert
 
 @singledispatch
 def debug(arg) -> str:
+    """
+    Creates a string message describing the argument, useful for debug logging.
+    """
     return repr(arg)
 
 
@@ -65,6 +68,7 @@ def _(arg: torch.Tensor):
 
 @singledispatch
 def to_numpy(arg) -> np.ndarray:
+    """Converts the argument to a NumPy array."""
     raise ValueError(f"Unsupported data type: {type(arg)}")
 
 
@@ -85,6 +89,7 @@ def _(arg: torch.Tensor):
 
 @singledispatch
 def to_torch(arg) -> torch.Tensor:
+    """Converts the argument to a PyTorch tensor."""
     raise ValueError(f"Unsupported data type: {type(arg)}")
 
 
@@ -109,6 +114,10 @@ def _(arg: list):
 
 
 def to_device(arg: torch.Tensor, device: Optional[torch.device]):
+    """
+    Moves the given PyTorch tensor to the given device, if one is specified and
+    does not already match the tensor's current device.
+    """
     if device is not None and device != arg.device:
         return arg.to(device=device)
     return arg
@@ -120,8 +129,18 @@ def to_device(arg: torch.Tensor, device: Optional[torch.device]):
 
 
 class ImageDimensions(Enum):
+    """The format of a 3-dimensional data array containing image data."""
+
     CHW = auto()
+    """
+    Images whose n-dim array shape is (C, H, W) with the first dimension being
+    the channels and the last two are the height and width.
+    """
     HWC = auto()
+    """
+    Images whose n-dim array shape is (H, W, C) with the last dimension being
+    the channels and the first two are the height and width.
+    """
 
 
 def _transpose(
@@ -142,6 +161,11 @@ def _transpose(
 def convert_dim(
     data, from_dim: ImageDimensions, to_dim: Optional[ImageDimensions] = None
 ):
+    """
+    Converts image data from the original dimension format to the new dimension
+    format, if one is specified and does not already match the image data's
+    current dimension format.
+    """
     raise ValueError(f"Unsupported data type: {type(data)}")
 
 
@@ -176,6 +200,9 @@ def _(data: torch.Tensor) -> torch.Tensor:
 
 
 def normalize(data, mean, std):
+    """
+    Normalizes the given image data using the given mean and standard deviation.
+    """
     normalized = _copy(data)
     for image in normalized:
         for c, m, s in zip(image, mean, std):
@@ -185,6 +212,10 @@ def normalize(data, mean, std):
 
 
 def unnormalize(data, mean, std):
+    """
+    Unnormalizes the given normalized image data using the given mean and
+    standard deviation.
+    """
     unnormalized = _copy(data)
     for image in unnormalized:
         for c, m, s in zip(image, mean, std):
@@ -200,6 +231,7 @@ def unnormalize(data, mean, std):
 
 @singledispatch
 def to_float(arg):
+    """Converts the dtype of the argument to float."""
     raise ValueError(f"Unsupported data type: {type(arg)}")
 
 
@@ -215,6 +247,7 @@ def _(arg: torch.Tensor):
 
 @singledispatch
 def to_dtype(arg, dtype):
+    """Converts the dtype of the argument to the given dtype"""
     raise ValueError(f"Unsupported data type: {type(arg)}")
 
 
@@ -238,23 +271,38 @@ def _(arg: torch.Tensor, dtype: Optional[torch.dtype]):
 
 
 class DataType(Enum):
+    """Data type for image data values."""
+
     UINT8 = auto()
+    """Unsigned 8-bit integer."""
     FLOAT = auto()
+    """Floating point."""
 
 
 @dataclass
 class Scale:
+    """Image data scaling parameters."""
+
     dtype: DataType
+    """The data type of the image data values."""
     max: Union[int, float]
+    """The maximum value of the (unnormalized) image data values."""
     mean: Optional[Tuple[float, ...]] = None
+    """If normalized, the mean used for normalization."""
     std: Optional[Tuple[float, ...]] = None
+    """If normalized, the standard deviation used for normalization."""
 
     @property
     def is_normalized(self) -> bool:
+        """Whether the image data has been normalized."""
         return self.mean is not None and self.std is not None
 
 
 def convert_scale(data, from_scale: Scale, to_scale: Optional[Scale] = None):
+    """
+    Converts image data from the original scale to the new scale, if one is
+    specified and does not already match the image data's current scale.
+    """
     if to_scale is None or to_scale == from_scale:
         return data
 
@@ -278,14 +326,24 @@ def convert_scale(data, from_scale: Scale, to_scale: Optional[Scale] = None):
 
 
 class BBoxFormat(Enum):
+    """The format of bounding box coordinates."""
+
     XYXY = auto()
+    """Coordinates are the upper left X and Y and lower right X and Y"""
     XYWH = auto()
+    """Coordinates are the upper left X and Y and the width and height"""
     CXCYWH = auto()
+    """Coordinates are the center X and Y and the widht and height"""
 
 
 def to_bbox_format(
     data, from_format: BBoxFormat, to_format: Optional[BBoxFormat] = None
 ):
+    """
+    Converts bounding boxes from the original coordinate format to the new
+    format, if one is specified and does not already match the bounding box's
+    current coordinate format.
+    """
     if to_format is None or to_format == from_format:
         return data
 
@@ -323,11 +381,16 @@ class SupportsConversion(Protocol):
 
 @runtime_checkable
 class SupportsUpdate(Protocol):
+    """A type whose low-level data representation can be updated"""
+
     def update(self, data: Any) -> None:
+        """Updates the value to that of the given low-level data representation"""
         ...
 
 
 class SupportsMutation(SupportsConversion, SupportsUpdate, Protocol):
+    """A type whose data can be converted and updated"""
+
     pass
 
 
@@ -351,14 +414,22 @@ class _Accessor(Protocol, Generic[RepresentationType]):
 
 @runtime_checkable
 class TorchAccessor(Protocol):
+    """A data accessor that can be moved to a torch device"""
+
     def to(
         self,
         device: Optional[torch.device] = None,
     ):
+        """Moves the accessor to the given device, if one is specified"""
         ...
 
 
 class Metadata(TypedDict):
+    """
+    Metadata about the source data or perturbations that have been applied to a
+    batch.
+    """
+
     data: Dict[str, Any]
     perturbations: Dict[str, Any]
 
@@ -397,7 +468,15 @@ class _Batch(Protocol, Generic[InputsType, TargetsType, PredictionsType]):
 
 
 Accessor = _Accessor[RepresentationType]
+"""
+A pre-configured means of accessing or mutating the representation data of
+a convertable type.
+"""
+
 Batch = _Batch[SupportsConversion, SupportsConversion, SupportsMutation]
+"""
+A collated sequence of samples to be processed simultaneously.
+"""
 
 
 ###
@@ -449,6 +528,8 @@ class _TorchCallableAccessor(TorchAccessor, _Accessor[RepresentationType]):
 
 
 class DefaultNumpyAccessor(_Accessor[RepresentationType]):
+    """A generic accessor to retrieve NumPy representations of data"""
+
     def get(self, convertable) -> RepresentationType:
         return convertable.to_numpy()
 
@@ -462,6 +543,8 @@ class DefaultNumpyAccessor(_Accessor[RepresentationType]):
 
 
 class DefaultTorchAccessor(TorchAccessor, _Accessor[RepresentationType]):
+    """A generic accessor to retrieve PyTorch Tensor representations of data"""
+
     def __init__(
         self,
         device: Optional[torch.device] = None,
@@ -493,6 +576,8 @@ class DefaultTorchAccessor(TorchAccessor, _Accessor[RepresentationType]):
 
 
 class Images(SupportsConversion, SupportsUpdate):
+    """Computer vision model inputs"""
+
     RepresentationTypes = Union[np.ndarray, torch.Tensor]
     Accessor = Union[_Accessor[np.ndarray], _Accessor[torch.Tensor]]
 
@@ -502,6 +587,14 @@ class Images(SupportsConversion, SupportsUpdate):
         dim: ImageDimensions,
         scale: Scale,
     ):
+        """
+        Initializes the image data.
+
+        Args:
+            images: Low-level representation of images
+            dim: Image dimension format
+            scale: Image data scale
+        """
         self.images = images
         self.dim = dim
         self.scale = scale
@@ -521,6 +614,14 @@ class Images(SupportsConversion, SupportsUpdate):
         dim: Optional[ImageDimensions] = None,
         scale: Optional[Scale] = None,
     ):
+        """
+        Updates the image data.
+
+        Args:
+            images: New low-level representation of images
+            dim: Optional, image dimension format if changed
+            scale: Optional, image data scale if changed
+        """
         self.images = images
         if dim is not None:
             self.dim = dim
@@ -557,6 +658,24 @@ class Images(SupportsConversion, SupportsUpdate):
         scale: Optional[Scale] = None,
         dtype: Optional[npt.DTypeLike] = None,
     ) -> _Accessor[np.ndarray]:
+        """
+        Creates a NumPy accessor for images. The returned accessor will
+        produce/accept NumPy arrays of the specified dimension and scale.
+
+        Args:
+            dim: Optional, the image dimension format in which to represent the
+                images. If none specified, the dimensions will be unchanged from
+                the current dimension format when images are accessed.
+            scale: Optional, the image data scale in which to represent the
+                images. If none specified, the data scale will be unchanged from
+                the current data scale when images are accessed.
+            dtype: Optional, the NumPy dtype in which to represent the images.
+                If none specified, the dtype will be unchanged when images are
+                accessed.
+
+        Return:
+            Data accessor instance
+        """
         return _CallableAccessor(
             get=partial(cls.to_numpy_images, dim=dim, scale=scale, dtype=dtype),
             set=partial(cls.update, dim=dim, scale=scale),
@@ -568,6 +687,22 @@ class Images(SupportsConversion, SupportsUpdate):
         scale: Optional[Scale] = None,
         dtype: Optional[npt.DTypeLike] = None,
     ) -> np.ndarray:
+        """
+        Creates a NumPy array representation of the images.
+
+        Args:
+            dim: Optional, the image dimension format in which to represent the
+                images. If none specified, the dimensions will be unchanged from
+                the current dimension format.
+            scale: Optional, the image data scale in which to represent the
+                images. If none specified, the data scale will be unchanged from
+                the current data scale.
+            dtype: Optional, the NumPy dtype in which to represent the images.
+                If none specified, the dtype will be unchanged.
+
+        Return:
+            NumPy array representation of the image data
+        """
         images = self._convert_dim_and_scale(self.images, dim, scale)
         images = to_numpy(images)
         images = to_dtype(images, dtype)
@@ -577,6 +712,16 @@ class Images(SupportsConversion, SupportsUpdate):
         self,
         dtype: Optional[npt.DTypeLike] = None,
     ) -> np.ndarray:
+        """
+        Creates a NumPy array representation of the images.
+
+        Args:
+            dtype: Optional, the NumPy dtype in which to represent the images.
+                If none specified, the dtype will be unchanged.
+
+        Return:
+            NumPy array representation of the image data
+        """
         return self.to_numpy_images(dtype=dtype)
 
     @classmethod
@@ -587,6 +732,27 @@ class Images(SupportsConversion, SupportsUpdate):
         dtype: Optional[torch.dtype] = None,
         device: Optional[torch.device] = None,
     ) -> _Accessor[torch.Tensor]:
+        """
+        Creates a PyTorch tensor accessor for images. The returned accessor will
+        produce/accept PyTorch tensors of the specified dimension and scale.
+
+        Args:
+            dim: Optional, the image dimension format in which to represent the
+                images. If none specified, the dimensions will be unchanged from
+                the current dimension format when images are accessed.
+            scale: Optional, the image data scale in which to represent the
+                images. If none specified, the data scale will be unchanged from
+                the current data scale when images are accessed.
+            dtype: Optional, the PyTorch dtype in which to represent the images.
+                If none specified, the dtype will be unchanged when images are
+                accessed.
+            device: Optional, the PyTorch device on which to represent the images.
+                If none specified, the data will be unmoved from the originating
+                device when images are accessed.
+
+        Return:
+            Data accessor instance
+        """
         return _TorchCallableAccessor[torch.Tensor](
             get=partial(cls.to_torch_images, dim=dim, scale=scale, dtype=dtype),
             set=partial(cls.update, dim=dim, scale=scale),
@@ -600,6 +766,25 @@ class Images(SupportsConversion, SupportsUpdate):
         dtype: Optional[torch.dtype] = None,
         device: Optional[torch.device] = None,
     ) -> torch.Tensor:
+        """
+        Creates a PyTorch tensor representation of the images.
+
+        Args:
+            dim: Optional, the image dimension format in which to represent the
+                images. If none specified, the dimensions will be unchanged from
+                the current dimension format.
+            scale: Optional, the image data scale in which to represent the
+                images. If none specified, the data scale will be unchanged from
+                the current data scale.
+            dtype: Optional, the PyTorch dtype in which to represent the images.
+                If none specified, the dtype will be unchanged.
+            device: Optional, the PyTorch device on which to represent the images.
+                If none specified, the data will be unmoved from the originating
+                device.
+
+        Return:
+            PyTorch tensor representation of the image data
+        """
         # Convert to torch and move to device first before performing conversions
         images = to_torch(self.images)
         images = to_device(images, device)
@@ -612,16 +797,37 @@ class Images(SupportsConversion, SupportsUpdate):
         dtype: Optional[torch.dtype] = None,
         device: Optional[torch.device] = None,
     ) -> torch.Tensor:
+        """
+        Creates a PyTorch tensor representation of the images.
+
+        Args:
+            dtype: Optional, the PyTorch dtype in which to represent the images.
+                If none specified, the dtype will be unchanged.
+            device: Optional, the PyTorch device on which to represent the images.
+                If none specified, the data will be unmoved from the originating
+                device.
+
+        Return:
+            PyTorch tensor representation of the image data
+        """
         return self.to_torch_images(dtype=dtype, device=device)
 
 
 class NDimArray(SupportsMutation):
+    """Variable-dimension data array"""
+
     Accessor = Union[_Accessor[np.ndarray], _Accessor[torch.Tensor]]
 
     def __init__(
         self,
         contents: Union[np.ndarray, torch.Tensor],
     ):
+        """
+        Initializes the data array.
+
+        Args:
+            contents: Low-level representation of data array
+        """
         self.contents = contents
 
     def __repr__(self) -> str:
@@ -631,6 +837,12 @@ class NDimArray(SupportsMutation):
         return NDimArray(self.contents)
 
     def update(self, contents: Union[np.ndarray, torch.Tensor]):
+        """
+        Updates the data array.
+
+        Args:
+            contents: New low-level representation of data array
+        """
         self.contents = contents
 
     @classmethod
@@ -638,6 +850,18 @@ class NDimArray(SupportsMutation):
         cls,
         dtype: Optional[npt.DTypeLike] = None,
     ) -> _Accessor[np.ndarray]:
+        """
+        Creates a NumPy accessor for the array. The returned accessor will
+        produce/accept NumPy arrays.
+
+        Args:
+            dtype: Optional, the NumPy dtype in which to represent the array.
+                If none specified, the dtype will be unchanged when arrays are
+                accessed.
+
+        Return:
+            Data accessor instance
+        """
         return _CallableAccessor(
             get=partial(cls.to_numpy, dtype=dtype),
             set=partial(cls.update),
@@ -647,6 +871,16 @@ class NDimArray(SupportsMutation):
         self,
         dtype: Optional[npt.DTypeLike] = None,
     ) -> np.ndarray:
+        """
+        Creates a NumPy array representation of the data array.
+
+        Args:
+            dtype: Optional, the NumPy dtype in which to represent the array.
+                If none specified, the dtype will be unchanged.
+
+        Return:
+            NumPy array representation of the data array
+        """
         return to_dtype(to_numpy(self.contents), dtype)
 
     @classmethod
@@ -655,6 +889,21 @@ class NDimArray(SupportsMutation):
         dtype: Optional[torch.dtype] = None,
         device: Optional[torch.device] = None,
     ) -> _Accessor[torch.Tensor]:
+        """
+        Creates a PyTorch tensor accessor for the array. The returned accessor
+        will produce/accept PyTorch tensors.
+
+        Args:
+            dtype: Optional, the PyTorch dtype in which to represent the array.
+                If none specified, the dtype will be unchanged when arrays are
+                accessed.
+            device: Optional, the PyTorch device on which to represent the array.
+                If none specified, the data will be unmoved from the originating
+                device when arrays are accessed.
+
+        Return:
+            Data accessor instance
+        """
         return _TorchCallableAccessor[torch.Tensor](
             get=partial(cls.to_torch, dtype=dtype),
             set=partial(cls.update),
@@ -666,16 +915,35 @@ class NDimArray(SupportsMutation):
         dtype: Optional[torch.dtype] = None,
         device: Optional[torch.device] = None,
     ) -> torch.Tensor:
+        """
+        Creates a PyTorch tensor representation of the array.
+
+        Args:
+            dtype: Optional, the PyTorch dtype in which to represent the array.
+                If none specified, the dtype will be unchanged.
+            device: Optional, the PyTorch device on which to represent the array.
+                If none specified, the data will be unmoved from the originating
+                device.
+
+        Return:
+            PyTorch tensor representation of the data array
+        """
         return to_dtype(to_device(to_torch(self.contents), device), dtype)
 
 
 class BoundingBoxes(SupportsMutation):
+    """Object detection targets or predictions"""
+
     class BoxesNumpy(TypedDict):
+        """NumPy representation of bounding boxes"""
+
         boxes: np.ndarray
         labels: np.ndarray
         scores: Optional[np.ndarray]
 
     class BoxesTorch(TypedDict):
+        """PyTorch tensor representation of bounding boxes"""
+
         boxes: torch.Tensor
         labels: torch.Tensor
         scores: Optional[torch.Tensor]
@@ -688,6 +956,13 @@ class BoundingBoxes(SupportsMutation):
         boxes: RepresentationTypes,
         format: BBoxFormat,
     ):
+        """
+        Initializes the bounding boxes.
+
+        Args:
+            boxes: Low-level representation of bounding boxes
+            format: Bounding box coordinate format
+        """
         self.boxes = boxes
         self.format = format
 
@@ -710,6 +985,13 @@ class BoundingBoxes(SupportsMutation):
         boxes: RepresentationTypes,
         format: Optional[BBoxFormat] = None,
     ):
+        """
+        Updates the bounding boxes.
+
+        Args:
+            boxes: New low-level representation of bounding boxes
+            format: Optional, bounding box coordinate format if changed
+        """
         self.boxes = boxes
         if format is not None:
             self.format = format
@@ -722,6 +1004,28 @@ class BoundingBoxes(SupportsMutation):
         label_dtype: Optional[npt.DTypeLike] = None,
         score_dtype: Optional[npt.DTypeLike] = None,
     ) -> _Accessor[Sequence[BoxesNumpy]]:
+        """
+        Creates a NumPy accessor for bounding boxes. The returned accessor will
+        produce/accept NumPy-based objects of the specified format.
+
+        Args:
+            format: Optional, the bounding box coordinate format in which to
+                represent the bounding boxes. If none specified, the coordinate
+                format will be unchanged from the current coordinate format when
+                bounding boxes are accessed.
+            box_dtype: Optional, the NumPy dtype in which to represent the
+                bounding box coordinates. If none specified, the dtype will be
+                unchanged when bounding boxes are accessed.
+            label_dtype: Optional, the NumPy dtype in which to represent the
+                object labels. If none specified, the dtype will be unchanged
+                when bounding boxes are accessed.
+            score_dtype: Optional, the NumPy dtype in which to represent the
+                prediction scores. If none specified, the dtype will be
+                unchanged when bounding boxes are accessed.
+
+        Return:
+            Data accessor instance
+        """
         return _CallableAccessor(
             get=partial(
                 cls.to_numpy_boxes,
@@ -740,6 +1044,25 @@ class BoundingBoxes(SupportsMutation):
         label_dtype: Optional[npt.DTypeLike] = None,
         score_dtype: Optional[npt.DTypeLike] = None,
     ) -> Sequence[BoxesNumpy]:
+        """
+        Creates a NumPy-based representation of the bounding boxes.
+
+        Args:
+            format: Optional, the bounding box coordinate format in which to
+                represent the bounding boxes. If none specified, the coordinate
+                format will be unchanged from the current coordinate format.
+            box_dtype: Optional, the NumPy dtype in which to represent the
+                bounding box coordinates. If none specified, the dtype will be
+                unchanged.
+            label_dtype: Optional, the NumPy dtype in which to represent the
+                object labels. If none specified, the dtype will be unchanged.
+            score_dtype: Optional, the NumPy dtype in which to represent the
+                prediction scores. If none specified, the dtype will be
+                unchanged.
+
+        Return:
+            NumPy-based representation of the bounding boxes
+        """
         return [
             self.BoxesNumpy(
                 boxes=to_dtype(
@@ -757,6 +1080,17 @@ class BoundingBoxes(SupportsMutation):
         ]
 
     def to_numpy(self, dtype: Optional[npt.DTypeLike] = None) -> Sequence[BoxesNumpy]:
+        """
+        Creates a NumPy-based representation of the bounding boxes.
+
+        Args:
+            dtype: Optional, the NumPy dtype in which to represent the
+                bounding box coordinates. If none specified, the dtype will be
+                unchanged.
+
+        Return:
+            NumPy-based representation of the bounding boxes
+        """
         return self.to_numpy_boxes(box_dtype=dtype)
 
     @classmethod
@@ -768,6 +1102,32 @@ class BoundingBoxes(SupportsMutation):
         score_dtype: Optional[torch.dtype] = None,
         device: Optional[torch.device] = None,
     ) -> _Accessor[Sequence[BoxesTorch]]:
+        """
+        Creates a PyTorch tensor accessor for bounding boxes. The returned
+        accessor will produce/accept PyTorch tensor-based objects of the
+        specified format.
+
+        Args:
+            format: Optional, the bounding box coordinate format in which to
+                represent the bounding boxes. If none specified, the coordinate
+                format will be unchanged from the current coordinate format when
+                bounding boxes are accessed.
+            box_dtype: Optional, the PyTorch dtype in which to represent the
+                bounding box coordinates. If none specified, the dtype will be
+                unchanged when bounding boxes are accessed.
+            label_dtype: Optional, the PyTorch dtype in which to represent the
+                object labels. If none specified, the dtype will be unchanged
+                when bounding boxes are accessed.
+            score_dtype: Optional, the PyTorch dtype in which to represent the
+                prediction scores. If none specified, the dtype will be
+                unchanged when bounding boxes are accessed.
+            device: Optional, the PyTorch device on which to represent the
+                bounding boxes.  If none specified, the data will be unmoved
+                from the originating device when images are accessed.
+
+        Return:
+            Data accessor instance
+        """
         return _TorchCallableAccessor(
             get=partial(
                 cls.to_torch_boxes,
@@ -788,6 +1148,28 @@ class BoundingBoxes(SupportsMutation):
         score_dtype: Optional[torch.dtype] = None,
         device: Optional[torch.device] = None,
     ) -> Sequence[BoxesTorch]:
+        """
+        Creates a PyTorch tensor-based representation of the bounding boxes.
+
+        Args:
+            format: Optional, the bounding box coordinate format in which to
+                represent the bounding boxes. If none specified, the coordinate
+                format will be unchanged from the current coordinate format.
+            box_dtype: Optional, the PyTorch dtype in which to represent the
+                bounding box coordinates. If none specified, the dtype will be
+                unchanged.
+            label_dtype: Optional, the PyTorch dtype in which to represent the
+                object labels. If none specified, the dtype will be unchanged.
+            score_dtype: Optional, the PyTorch dtype in which to represent the
+                prediction scores. If none specified, the dtype will be
+                unchanged.
+            device: Optional, the PyTorch device on which to represent the
+                bounding boxes.  If none specified, the data will be unmoved
+                from the originating device.
+
+        Return:
+            PyTorch tensor-based representation of the bounding boxes
+        """
         return [
             self.BoxesTorch(
                 boxes=to_dtype(
@@ -813,6 +1195,20 @@ class BoundingBoxes(SupportsMutation):
         dtype: Optional[torch.dtype] = None,
         device: Optional[torch.device] = None,
     ) -> Sequence[BoxesTorch]:
+        """
+        Creates a PyTorch tensor-based representation of the bounding boxes.
+
+        Args:
+            dtype: Optional, the PyTorch dtype in which to represent the
+                bounding box coordinates. If none specified, the dtype will be
+                unchanged.
+            device: Optional, the PyTorch device on which to represent the
+                bounding boxes.  If none specified, the data will be unmoved
+                from the originating device.
+
+        Return:
+            PyTorch tensor-based representation of the bounding boxes
+        """
         return self.to_torch_boxes(box_dtype=dtype, device=device)
 
 
@@ -822,6 +1218,8 @@ class BoundingBoxes(SupportsMutation):
 
 
 class ImageClassificationBatch(_Batch[Images, NDimArray, NDimArray]):
+    """A batch of images and classified label/category predictions"""
+
     def __init__(
         self,
         inputs: Images,
@@ -829,6 +1227,16 @@ class ImageClassificationBatch(_Batch[Images, NDimArray, NDimArray]):
         metadata: Metadata,
         predictions: Optional[NDimArray] = None,
     ):
+        """
+        Initializes the batch.
+
+        Args:
+            inputs: Images to be classified
+            targets: Ground truth labels/categories of each image in the batch
+            metadata: Additional metadata about the samples in the batch
+            predictions: Optional, the predicted labels/categories of each image
+                in the batch
+        """
         self._initial_inputs = inputs.clone()
         self._inputs = inputs
         self._targets = targets
@@ -873,6 +1281,8 @@ class ImageClassificationBatch(_Batch[Images, NDimArray, NDimArray]):
 
 
 class ObjectDetectionBatch(_Batch[Images, BoundingBoxes, BoundingBoxes]):
+    """A batch of images and detected object bounding box predictions"""
+
     def __init__(
         self,
         inputs: Images,
@@ -880,6 +1290,16 @@ class ObjectDetectionBatch(_Batch[Images, BoundingBoxes, BoundingBoxes]):
         metadata: Metadata,
         predictions: Optional[BoundingBoxes] = None,
     ):
+        """
+        Initializes the batch.
+
+        Args:
+            inputs: Images in which to detect objects
+            targets: Ground truth objects in each image in the batch
+            metadata: Additional metadata about the samples in the batch
+            predictions: Optional, the predicted object bounding boxes in each
+                image in the batch
+        """
         self._initial_inputs = inputs.clone()
         self._inputs = inputs
         self._targets = targets

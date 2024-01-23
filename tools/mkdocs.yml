@@ -51,4 +51,5 @@ nav:
       - Profilers: reference/profiler.md
     - Engines: reference/engine.md
     - Tracking: reference/track.md
+    - Data Types: reference/data.md
     - Utilities: reference/utils.md
