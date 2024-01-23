@@ -199,9 +199,6 @@ def convert_boxes(
     """
     if from_format.value.torchvision == to_format.value.torchvision:
         return boxes
-    # return box_convert(
-    #     torch.tensor(boxes), from_format.value.torchvision, to_format.value.torchvision
-    # ).numpy()
     return box_convert(
         torch.tensor(boxes), from_format.value.torchvision, to_format.value.torchvision
     )
@@ -378,14 +375,10 @@ def create_object_detection_transform(
             # Perform transform on the image+boxes
             res = img_bbox_transform(**args)
 
-            transformed[image_key].append(res["image"])
+            transformed[image_key].append(image_from_np(res["image"]))
 
             # Re-construct remaining, transformed objects
             obj = dict()
-            # print("====")
-            # print(type(res["bboxes"]))
-            # print(type(res["bboxes"][0]))
-            # print("====")
             # Convert boxes if necessary
             obj[bbox_key] = (
                 convert_boxes(
@@ -394,11 +387,9 @@ def create_object_detection_transform(
                 if res["bboxes"]
                 else res["bboxes"]
             )
-            # print(obj[bbox_key])
-            # print(type(obj[bbox_key]))
             # Add any "label" fields back
             for label_field in kwargs.get("label_fields", []):
-                obj[label_field] = torch.tensor(res[label_field])
+                obj[label_field] = res[label_field]
             # Perform any field renames as needed
             if rename_object_fields is not None:
                 for old_name, new_name in rename_object_fields.items():
@@ -409,11 +400,6 @@ def create_object_detection_transform(
         if postprocessor is not None:
             transformed = postprocessor(transformed)
 
-        # print(type(transformed[image_key]))
-        # print(type(transformed[image_key][0]))
-        # print(transformed[image_key][0].shape)
-        # print(len(transformed[objects_key]))
-        # print(type(transformed[objects_key][0]))
         return transformed
 
     return transform
