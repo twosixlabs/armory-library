@@ -151,12 +151,9 @@ class ArtPatchAttack(ArtEvasionAttack):
     `apply_patch` method
     """
 
-    patch: Optional["np.ndarray"] = None
-    patch_mask: Optional["np.ndarray"] = None
-
     def _generate(self, x: "np.ndarray", batch: Batch):
         y_target = self._generate_y_target(batch)
-        self.patch, self.patch_mask = self.attack.generate(
+        self.patch = self.attack.generate(
             x=x,
             y=y_target,
             **self.generate_kwargs,
@@ -175,6 +172,4 @@ class ArtPatchAttack(ArtEvasionAttack):
             self._generate(x, batch)
         perturbed = self.attack.apply_patch(x=x, **self.apply_patch_kwargs)
         self.inputs_accessor.set(batch.inputs, perturbed)
-        batch.metadata["perturbations"][self.name] = dict(
-            patch=self.patch, patch_mask=self.patch_mask
-        )
+        batch.metadata["perturbations"][self.name] = dict(patch=self.patch)
