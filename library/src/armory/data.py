@@ -3,7 +3,7 @@
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum, auto
-from functools import partial, singledispatch
+from functools import partial
 from typing import (
     Any,
     Callable,
@@ -25,92 +25,47 @@ import torch
 from torchvision.ops import box_convert
 
 ###
-# Debug/repr
+# Conversion/utility functions
 ###
 
 
-@singledispatch
 def debug(arg) -> str:
     """
     Creates a string message describing the argument, useful for debug logging.
     """
+    if isinstance(arg, np.ndarray):
+        return f"<numpy.ndarray: shape={arg.shape} dtype={arg.dtype}>"
+    if isinstance(arg, torch.Tensor):
+        return f"<torch.Tensor: shape={arg.shape} dtype={arg.dtype}>"
+    if isinstance(arg, dict):
+        return "{" + ", ".join([f"'{k}': {debug(v)}" for k, v in arg.items()]) + "}"
+    if isinstance(arg, list):
+        return (
+            f"[{debug(arg[0])}], ..., {debug(arg[-1])}]"
+            if len(arg) > 2
+            else "[" + ", ".join([debug(i) for i in arg]) + "]"
+        )
     return repr(arg)
 
 
-@debug.register
-def _(arg: list):
-    return (
-        f"[{debug(arg[0])}], ..., {debug(arg[-1])}]"
-        if len(arg) > 2
-        else "[" + ", ".join([debug(i) for i in arg]) + "]"
-    )
-
-
-@debug.register
-def _(arg: dict):
-    return "{" + ", ".join([f"'{k}': {debug(v)}" for k, v in arg.items()]) + "}"
-
-
-@debug.register
-def _(arg: np.ndarray):
-    return f"<numpy.ndarray: shape={arg.shape} dtype={arg.dtype}>"
-
-
-@debug.register
-def _(arg: torch.Tensor):
-    return f"<torch.Tensor: shape={arg.shape} dtype={arg.dtype}>"
-
-
-###
-# to_numpy
-###
-
-
-@singledispatch
 def to_numpy(arg) -> np.ndarray:
     """Converts the argument to a NumPy array."""
+    if isinstance(arg, np.ndarray):
+        return arg
+    if isinstance(arg, torch.Tensor):
+        return arg.cpu().numpy()
     raise ValueError(f"Unsupported data type: {type(arg)}")
 
 
-@to_numpy.register
-def _(arg: np.ndarray):
-    return arg
-
-
-@to_numpy.register
-def _(arg: torch.Tensor):
-    return arg.cpu().numpy()
-
-
-###
-# to_torch
-###
-
-
-@singledispatch
 def to_torch(arg) -> torch.Tensor:
     """Converts the argument to a PyTorch tensor."""
+    if isinstance(arg, np.ndarray):
+        return torch.from_numpy(arg)
+    if isinstance(arg, torch.Tensor):
+        return arg
+    if isinstance(arg, list):
+        return torch.as_tensor(arg)
     raise ValueError(f"Unsupported data type: {type(arg)}")
-
-
-@to_torch.register
-def _(arg: np.ndarray):
-    return torch.from_numpy(arg)
-
-
-@to_torch.register
-def _(arg: torch.Tensor):
-    return arg
-
-
-@to_torch.register
-def _(arg: list):
-    return torch.as_tensor(arg)
-
-
-###
-# (torch) to_device
-###
 
 
 def to_device(arg: torch.Tensor, device: Optional[torch.device]):
@@ -157,7 +112,6 @@ def _transpose(
     )
 
 
-@singledispatch
 def convert_dim(
     data, from_dim: ImageDimensions, to_dim: Optional[ImageDimensions] = None
 ):
@@ -166,17 +120,11 @@ def convert_dim(
     format, if one is specified and does not already match the image data's
     current dimension format.
     """
+    if isinstance(data, np.ndarray):
+        return _transpose(data, from_dim, to_dim, np.transpose)
+    if isinstance(data, torch.Tensor):
+        return _transpose(data, from_dim, to_dim, torch.permute)
     raise ValueError(f"Unsupported data type: {type(data)}")
-
-
-@convert_dim.register
-def _(data: np.ndarray, from_dim, to_dim) -> np.ndarray:
-    return _transpose(data, from_dim, to_dim, np.transpose)
-
-
-@convert_dim.register
-def _(data: torch.Tensor, from_dim, to_dim) -> torch.Tensor:
-    return _transpose(data, from_dim, to_dim, torch.permute)
 
 
 ###
@@ -184,19 +132,12 @@ def _(data: torch.Tensor, from_dim, to_dim) -> torch.Tensor:
 ###
 
 
-@singledispatch
 def _copy(data):
+    if isinstance(data, np.ndarray):
+        return data.copy()
+    if isinstance(data, torch.Tensor):
+        return data.clone()
     raise ValueError(f"Unsupported data type: {type(data)}")
-
-
-@_copy.register
-def _(data: np.ndarray) -> np.ndarray:
-    return data.copy()
-
-
-@_copy.register
-def _(data: torch.Tensor) -> torch.Tensor:
-    return data.clone()
 
 
 def normalize(data, mean, std):
@@ -229,40 +170,26 @@ def unnormalize(data, mean, std):
 ###
 
 
-@singledispatch
-def to_float(arg):
+def to_float_dtype(arg):
     """Converts the dtype of the argument to float."""
+    if isinstance(arg, np.ndarray):
+        return arg.astype(dtype=np.float32)
+    if isinstance(arg, torch.Tensor):
+        return arg.to(dtype=torch.float32)
     raise ValueError(f"Unsupported data type: {type(arg)}")
 
 
-@to_float.register
-def _(arg: np.ndarray):
-    return arg.astype(dtype=np.float32)
-
-
-@to_float.register
-def _(arg: torch.Tensor):
-    return arg.to(dtype=torch.float32)
-
-
-@singledispatch
 def to_dtype(arg, dtype):
     """Converts the dtype of the argument to the given dtype"""
+    if isinstance(arg, np.ndarray):
+        if dtype is not None and dtype != arg.dtype:
+            return arg.astype(dtype=dtype)
+        return arg
+    if isinstance(arg, torch.Tensor):
+        if dtype is not None and dtype != arg.dtype:
+            return arg.to(dtype=dtype)
+        return arg
     raise ValueError(f"Unsupported data type: {type(arg)}")
-
-
-@to_dtype.register
-def _(arg: np.ndarray, dtype: Optional[npt.DTypeLike]):
-    if dtype is not None and dtype != arg.dtype:
-        return arg.astype(dtype=dtype)
-    return arg
-
-
-@to_dtype.register
-def _(arg: torch.Tensor, dtype: Optional[torch.dtype]):
-    if dtype is not None and dtype != arg.dtype:
-        return arg.to(dtype=dtype)
-    return arg
 
 
 ###
@@ -306,7 +233,7 @@ def convert_scale(data, from_scale: Scale, to_scale: Optional[Scale] = None):
     if to_scale is None or to_scale == from_scale:
         return data
 
-    data = to_float(data)
+    data = to_float_dtype(data)
 
     if from_scale.is_normalized:
         data = unnormalize(data, from_scale.mean, from_scale.std)
