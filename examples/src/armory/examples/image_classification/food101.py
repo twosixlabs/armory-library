@@ -45,8 +45,7 @@ def parse_cli_args():
         default="huggingface",
     )
     parser.add_argument(
-        "--chain",
-        dest="chains",
+        "--chains",
         choices=["benign", "pgd", "patch"],
         default=["benign", "pgd"],
         nargs="*",
@@ -219,7 +218,7 @@ def create_adversarial_patch_attack(
         scale_max=1.0,
         learning_rate=0.01,
         max_iter=500,
-        batch_size=1,
+        batch_size=batch_size,
         patch_shape=(3, 224, 224),
     )
 
