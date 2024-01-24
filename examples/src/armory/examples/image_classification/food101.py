@@ -45,6 +45,13 @@ def parse_cli_args():
         default="huggingface",
     )
     parser.add_argument(
+        "--chain",
+        dest="chains",
+        choices=["benign", "pgd", "patch"],
+        default=["benign", "pgd"],
+        nargs="*",
+    )
+    parser.add_argument(
         "--patch-batch-size",
         default=None,
         type=int,
@@ -247,6 +254,7 @@ def main(
     dataset_src,
     seed,
     shuffle,
+    chains,
     patch_batch_size,
 ):
     """Perform evaluation"""
@@ -260,15 +268,27 @@ def main(
         if dataset_src == "huggingface"
         else load_torchvision_dataset(batch_size, shuffle, sysconfig)
     )
-    pgd = create_pgd_attack(art_classifier)
-    if patch_batch_size is None:
-        patch_batch_size = batch_size
-    patch = create_adversarial_patch_attack(art_classifier, batch_size=patch_batch_size)
+    perturbations = dict()
     metrics = create_metrics()
     profiler = armory.metrics.compute.BasicProfiler()
 
-    with profiler.measure("patch/generate"):
-        patch.generate(next(iter(dataset.dataloader)))
+    if "benign" in chains:
+        perturbations["benign"] = []
+
+    if "pgd" in chains:
+        pgd = create_pgd_attack(art_classifier)
+        perturbations["pgd"] = [pgd]
+
+    if "patch" in chains:
+        if patch_batch_size is None:
+            patch_batch_size = batch_size
+        patch = create_adversarial_patch_attack(
+            art_classifier, batch_size=patch_batch_size
+        )
+        perturbations["patch"] = [patch]
+
+        with profiler.measure("patch/generate"):
+            patch.generate(next(iter(dataset.dataloader)))
 
     evaluation = armory.evaluation.Evaluation(
         name=f"food101-classification-{dataset_src}",
@@ -276,11 +296,7 @@ def main(
         author="TwoSix",
         dataset=dataset,
         model=model,
-        perturbations={
-            "benign": [],
-            "pgd": [pgd],
-            "patch": [patch],
-        },
+        perturbations=perturbations,
         metrics=metrics,
         exporter=armory.export.image_classification.ImageClassificationExporter(),
         profiler=profiler,
