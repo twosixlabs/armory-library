@@ -25,9 +25,9 @@ def get_mlflow_client():
 def get_predicted_label(filepath: Path, labels: List[str]):
     with open(filepath, "r") as infile:
         data = json.load(infile)
-        if "y_predicted" not in data:
+        if "predictions" not in data:
             return "unknown"
-        y_predicted = data["y_predicted"]
+        y_predicted = data["predictions"]
         index = np.argmax(y_predicted)
         return f"{labels[index]} ({index})"
 
