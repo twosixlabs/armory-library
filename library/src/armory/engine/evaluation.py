@@ -2,6 +2,7 @@
 from typing import Mapping, Optional, TypedDict
 
 import lightning.pytorch as pl
+from lightning.pytorch.callbacks.progress import RichProgressBar
 import lightning.pytorch.loggers as pl_loggers
 from lightning.pytorch.utilities import rank_zero_only
 from torch import Tensor
@@ -61,6 +62,7 @@ class EvaluationEngine:
         self.trainer = pl.Trainer(
             inference_mode=False,
             logger=self._logger,
+            callbacks=[RichProgressBar()],
             **kwargs,
         )
         self.run_id = run_id
