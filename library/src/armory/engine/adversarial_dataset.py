@@ -1,9 +1,8 @@
 """Armory engine to create adversarial datasets"""
 from typing import TYPE_CHECKING, Any, Callable, Generator, Mapping, Optional
 
-import numpy as np
-
-from armory.tasks.base import BaseEvaluationTask
+from armory.engine.evaluation_module import EvaluationModule
+from armory.evaluation import Evaluation
 from armory.track import get_current_params
 
 if TYPE_CHECKING:
@@ -39,7 +38,8 @@ class AdversarialDatasetEngine:
 
     def __init__(
         self,
-        task: BaseEvaluationTask,
+        evaluation: Evaluation,
+        chain_name: str,
         output_dir: Optional[str] = None,
         adapter: Optional[SampleAdapter] = None,
         features: Optional["datasets.Features"] = None,
@@ -49,14 +49,16 @@ class AdversarialDatasetEngine:
         Initializes the engine.
 
         Args:
-            task: Armory evaluation task from which to generate the dataset
+            evaluation: Configuration for the evaluation
             output_dir: Optional, directory to which to write the generated dataset
             adapter: Optional, adapter to perform additional modifications to samples
             features: Optional, dataset features
             num_batches: Optional, number of batches from the original dataset to
                 attack and include in the generated dataset
         """
-        self.task = task
+        self.evaluation = evaluation
+        self.chain_name = chain_name
+        self.module = EvaluationModule(evaluation)
         self.output_dir = output_dir
         self.features = features
         self.adapter: SampleAdapter = (
@@ -90,14 +92,16 @@ class AdversarialDatasetEngine:
         attack, and yields the pre-attacked samples.
         """
         batch_idx = 0
-        for ds_batch in iter(self.task.evaluation.dataset.test_dataloader):
-            task_batch = self.task.create_batch("", ds_batch, batch_idx)
-            self.task.apply_attack(task_batch)
-            assert isinstance(task_batch.x_perturbed, np.ndarray)
+        for batch in iter(self.evaluation.dataset.dataloader):
+            self.module.apply_perturbations(
+                self.chain_name, batch, self.evaluation.perturbations[self.chain_name]
+            )
 
-            for idx in range(len(task_batch.x_perturbed)):
-                sample = {key: val[idx] for key, val in ds_batch.items()}
-                sample[self.task.evaluation.dataset.x_key] = task_batch.x_perturbed[idx]
+            for idx in range(len(batch)):
+                sample = {key: val[idx] for key, val in batch.metadata["data"].items()}
+                # TODO dynamic keys, accessors
+                sample["image"] = batch.inputs.numpy()
+                sample["label"] = batch.targets.numpy()
                 yield self.adapter(sample)
 
             batch_idx += 1

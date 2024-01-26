@@ -1,4 +1,8 @@
 # Evaluation Configuration
-An evaluation is the complete testing of a model/attack. This class contains the configuration of the entire evaluation, to include details about the attack, dataset, evaluation, collected metrics, model, and host system configuration.
+
+An [evaluation](#armory.evaluation.Evaluation) completely defines how Armory
+will evaluate a model. It includes the data to be used, the perturbations that
+will be applied to the data, and what metrics will be collected on the model
+outputs.
 
 ::: armory.evaluation

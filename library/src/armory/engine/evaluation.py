@@ -7,7 +7,8 @@ import lightning.pytorch.loggers as pl_loggers
 from lightning.pytorch.utilities import rank_zero_only
 from torch import Tensor
 
-from armory.tasks.base import BaseEvaluationTask
+from armory.engine.evaluation_module import EvaluationModule
+from armory.evaluation import Evaluation
 from armory.track import (
     get_current_params,
     init_tracking_uri,
@@ -34,31 +35,38 @@ class EvaluationEngine:
 
         from charmory.engine import EvaluationEngine
 
-        # assuming `task` has been defined using a `charmory.tasks` class
-        engine = EvaluationEngine(task)
+        # assuming `evaluation` has been defined using `charmory.evaluation.Evaluation`
+        engine = EvaluationEngine(evaluation)
         results = engine.run()
     """
 
     def __init__(
-        self, task: BaseEvaluationTask, run_id: Optional[str] = None, **kwargs
+        self,
+        evaluation: Evaluation,
+        export_every_n_batches: int = 0,
+        run_id: Optional[str] = None,
+        **kwargs,
     ):
         """
         Initializes the engine.
 
         Args:
-            task: Armory evaluation task to perform model inference and
-                application of adversarial attacks
+            evaluation: Configuration for the evaluation
+            export_every_n_batches: Frequency at which batches will be exported
+                to MLflow. A value of 0 means that no batches will be exported.
+                The data that is exported is task-specific.
             run_id: Optional, MLflow run ID to which to record evaluation results
             **kwargs: All other keyword arguments will be forwarded to the
                 `lightning.pytorch.Trainer` class.
         """
-        self.task = task
+        self.evaluation = evaluation
         self._logger = pl_loggers.MLFlowLogger(
-            experiment_name=self.task.evaluation.name,
-            tags={"mlflow.note.content": self.task.evaluation.description},
-            tracking_uri=init_tracking_uri(self.task.evaluation.sysconfig.armory_home),
+            experiment_name=evaluation.name,
+            tags={"mlflow.note.content": evaluation.description},
+            tracking_uri=init_tracking_uri(evaluation.sysconfig.armory_home),
             run_id=run_id,
         )
+        self.module = EvaluationModule(evaluation, export_every_n_batches)
         self.trainer = pl.Trainer(
             inference_mode=False,
             logger=self._logger,
@@ -67,6 +75,14 @@ class EvaluationEngine:
         )
         self.run_id = run_id
         self._was_run = False
+
+    @property
+    def metrics(self) -> EvaluationModule.MetricsDict:
+        """
+        The dictionary mapping perturbation chain names to a dictionary mapping
+        metric names to the metric objects.
+        """
+        return self.module.metrics
 
     @rank_zero_only
     def _log_params(self):
@@ -88,9 +104,9 @@ class EvaluationEngine:
         assert self.run_id, "No run ID was created by the MLflow logger"
         with track_system_metrics(self.run_id):
             self.trainer.test(
-                self.task, dataloaders=self.task.evaluation.dataset.test_dataloader
+                self.module, dataloaders=self.evaluation.dataset.dataloader
             )
         return EvaluationResults(
-            compute=self.task.evaluation.metric.profiler.results(),
+            compute=self.evaluation.profiler.results(),
             metrics=self.trainer.callback_metrics,
         )
