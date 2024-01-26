@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import albumentations as A
+from albumentations.pytorch.transforms import ToTensorV2
 import numpy as np
 import torch
 from torchvision.ops import box_convert
@@ -62,6 +63,7 @@ def create_image_transform(
     float_max_value: Optional[Union[int, float]] = False,
     mean: Optional[Tuple[float, float, float]] = None,
     std: Optional[Tuple[float, float, float]] = None,
+    to_tensor: Optional[bool] = False,
     **kwargs,
 ) -> A.Compose:
     """
@@ -112,6 +114,8 @@ def create_image_transform(
         )
     if float_max_value:
         transforms.append(A.ToFloat(max_value=float_max_value))
+    if to_tensor:
+        transforms.append(ToTensorV2())
     if mean is not None and std is not None:
         transforms.append(A.Normalize(mean=mean, std=std))
     return A.Compose(transforms, **kwargs)
@@ -173,8 +177,8 @@ def create_image_bbox_transform(
 
 
 def convert_boxes(
-    boxes: np.ndarray, from_format: BboxFormat, to_format: BboxFormat
-) -> np.ndarray:
+    boxes: torch.Tensor, from_format: BboxFormat, to_format: BboxFormat
+) -> torch.Tensor:
     """
     Convert bounding boxes from one format to another.
 
@@ -197,7 +201,7 @@ def convert_boxes(
         return boxes
     return box_convert(
         torch.tensor(boxes), from_format.value.torchvision, to_format.value.torchvision
-    ).numpy()
+    )
 
 
 def default_transpose(img: np.ndarray) -> np.ndarray:

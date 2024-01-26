@@ -22,6 +22,7 @@ dependencies = [
     # engine
     "adversarial-robustness-toolbox == 1.16.0",
     "lightning",
+    "tqdm",
     "Pillow",                                   # Data dependencies
     "boto3",                                    # Needed for armory.data.utils
     "botocore",                                 # Needed for armory.data.utils

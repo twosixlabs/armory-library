@@ -1,108 +1,34 @@
 """Perturbation adaption APIs"""
 
 from dataclasses import dataclass, field
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Mapping,
-    Optional,
-    Protocol,
-    Tuple,
-    runtime_checkable,
-)
+from typing import TYPE_CHECKING, Any, Callable, Dict, Generic, Optional, TypeVar
 
-import numpy as np
-import torch
+from armory.data import Accessor, Batch, DefaultNumpyAccessor
+from armory.evaluation import PerturbationProtocol
 
 if TYPE_CHECKING:
     from art.attacks import EvasionAttack
+    import numpy as np
 
     from armory.labels import LabelTargeter
 
 
-@runtime_checkable
-class Perturbation(Protocol):
-    """A perturbation that can be applied to dataset batches"""
-
-    name: str
-    """Descriptive name of the perturbation"""
-
-    def apply(
-        self, data: np.ndarray, batch
-    ) -> Tuple[np.ndarray, Optional[Mapping[str, Any]]]:
-        """
-        Applies a perturbation to the given batch of sample data.
-
-        Args:
-            data: (N,*) data array where N is the batch size
-            batch: Additional batch metadata
-                (see :class:`charmory.tasks.base.BaseEvaluationTask.Batch`)
-
-        Returns: Tuple of perturbed data and optional perturbation metadata to
-            be recorded with exported batches
-        """
-        ...
+T = TypeVar("T")
 
 
 @dataclass
-class CallablePerturbation(Perturbation):
-    """
-    A generic perturbation for a simple callable (e.g., a transform or
-    augmentation).
-
-    Example::
-
-        from charmory.perturbation import CallablePerturbation
-        from torchvision.transforms.v2 import GaussianBlur
-
-        perturb = CallablePerturbation(
-            name="blur",
-            perturbation=GaussianBlur(kernel_size=5),
-        )
-    """
-
+class CallablePerturbation(PerturbationProtocol, Generic[T]):
     name: str
-    """Descriptive name of the perturbation"""
-    perturbation: Callable[[np.ndarray], np.ndarray]
-    """Callable accepting the input data and returning the perturbed data"""
+    perturbation: Callable[[T], T]
+    inputs_accessor: Accessor[T]
 
-    def apply(
-        self, data: np.ndarray, batch
-    ) -> Tuple[np.ndarray, Optional[Mapping[str, Any]]]:
-        return self.perturbation(data), None
+    def apply(self, batch: "Batch"):
+        perturbed = self.perturbation(self.inputs_accessor.get(batch.inputs))
+        self.inputs_accessor.set(batch.inputs, perturbed)
 
 
 @dataclass
-class TorchTransformPerturbation(Perturbation):
-    """
-    A generic perturbation for a torchvision transform.
-
-    Example::
-
-        from charmory.perturbation import TorchPerturbation
-        from torchvision.transforms.v2 import GaussianBlur
-
-        perturb = TorchPerturbation(
-            name="blur",
-            perturbation=GaussianBlur(kernel_size=5),
-        )
-    """
-
-    name: str
-    """Descriptive name of the perturbation"""
-    perturbation: Callable[[torch.Tensor], torch.Tensor]
-    """Callable accepting the input data and returning the perturbed data"""
-
-    def apply(
-        self, data: np.ndarray, batch
-    ) -> Tuple[np.ndarray, Optional[Mapping[str, Any]]]:
-        return self.perturbation(torch.Tensor(data)).numpy(), None
-
-
-@dataclass
-class ArtEvasionAttack(Perturbation):
+class ArtEvasionAttack(PerturbationProtocol):
     """
     A perturbation using an evasion attack from the Adversarial Robustness
     Toolbox (ART).
@@ -122,6 +48,12 @@ class ArtEvasionAttack(Perturbation):
     name: str
     """Descriptive name of the attack"""
     attack: "EvasionAttack"
+    inputs_accessor: Accessor["np.ndarray"] = field(
+        default_factory=DefaultNumpyAccessor
+    )
+    targets_accessor: Accessor["np.ndarray"] = field(
+        default_factory=DefaultNumpyAccessor
+    )
     """Evasion attack instance"""
     generate_kwargs: Dict[str, Any] = field(default_factory=dict)
     """
@@ -165,18 +97,27 @@ class ArtEvasionAttack(Perturbation):
         """
         return self.attack.targeted
 
-    def apply(self, x: np.ndarray, batch) -> Tuple[np.ndarray, Mapping[str, Any]]:
+    def apply(self, batch: "Batch"):
         # If targeted, use the label targeter to generate the target label
         if self.targeted:
             if TYPE_CHECKING:
                 assert self.label_targeter
-            y_target = self.label_targeter.generate(batch.y)
+            y_target = self.label_targeter.generate(
+                self.targets_accessor.get(batch.targets)
+            )
         else:
             # If untargeted, use either the natural or benign labels
             # (when set to None, the ART attack handles the benign label)
-            y_target = batch.y if self.use_label_for_untargeted else None
+            y_target = (
+                self.targets_accessor.get(batch.targets)
+                if self.use_label_for_untargeted
+                else None
+            )
 
-        return (
-            self.attack.generate(x=x, y=y_target, **self.generate_kwargs),
-            dict(y_target=y_target),
+        perturbed = self.attack.generate(
+            x=self.inputs_accessor.get(batch.inputs),
+            y=y_target,
+            **self.generate_kwargs,
         )
+        self.inputs_accessor.set(batch.inputs, perturbed)
+        batch.metadata["perturbations"][self.name] = dict(y_target=y_target)

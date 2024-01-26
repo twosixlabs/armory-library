@@ -2,6 +2,7 @@
 
 from typing import Any, Callable, Dict, Optional, Tuple
 
+import torch
 import torch.nn as nn
 
 Args = Tuple[Any, ...]
@@ -22,7 +23,7 @@ class ArmoryModel(nn.Module):
 
     Example:
 
-        from charmory.model import ArmoryModel
+        from armory.model import ArmoryModel
 
         def preadapter(images, *args, **kwargs):
             # Apply some transform to images
@@ -33,11 +34,17 @@ class ArmoryModel(nn.Module):
             return output
 
         # assuming `model` has been defined elsewhere
-        wrapper = ArmoryModel(model, preadapter=preadapter, postadapter=postadapter)
+        wrapper = ArmoryModel(
+            "MyModel",
+            model,
+            preadapter=preadapter,
+            postadapter=postadapter,
+        )
     """
 
     def __init__(
         self,
+        name: str,
         model,
         preadapter: Optional[ModelInputAdapter] = None,
         postadapter: Optional[ModelOutputAdapter] = None,
@@ -46,14 +53,21 @@ class ArmoryModel(nn.Module):
         Initializes the model wrapper.
 
         Args:
+            name: Name of the model
             model: Model being wrapped
             preadapter: Optional, model input adapter
             postadapter: Optional, model output adapter
         """
         super().__init__()
+        self.name = name
         self._preadapter = preadapter
         self._model = model
         self._postadapter = postadapter
+        self.device = torch.device("cpu")
+
+    def _apply(self, fn, *args, **kwargs):
+        super()._apply(fn, *args, **kwargs)
+        self.device = fn(torch.zeros(1)).device
 
     def forward(self, *args, **kwargs):
         """
