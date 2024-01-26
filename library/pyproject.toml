@@ -45,9 +45,6 @@ dependencies = [
     "torchaudio >= 2.0.1",
     "torchvision >= 0.15.1",
 
-    # tensorflow
-    "tf-models-official",
-    "tensorflow >= 2.11.0",
 
     # tracking
     "mlflow",
