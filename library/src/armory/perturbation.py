@@ -8,6 +8,7 @@ from armory.evaluation import PerturbationProtocol
 
 if TYPE_CHECKING:
     from art.attacks import EvasionAttack
+    from art.defences.preprocessor import Preprocessor
     import numpy as np
 
     from armory.labels import LabelTargeter
@@ -25,6 +26,24 @@ class CallablePerturbation(PerturbationProtocol, Generic[T]):
     def apply(self, batch: "Batch"):
         perturbed = self.perturbation(self.inputs_accessor.get(batch.inputs))
         self.inputs_accessor.set(batch.inputs, perturbed)
+
+
+@dataclass
+class ArtPreprocessorDefence(PerturbationProtocol):
+    name: str
+    defence: "Preprocessor"
+    inputs_accessor: Accessor["np.ndarray"] = field(
+        default_factory=DefaultNumpyAccessor
+    )
+    # targets_accessor: Optional[Accessor["np.ndarray"]] = None
+
+    def apply(self, batch: Batch):
+        # y_target = self._generate_y_target(batch)
+        perturbed_x, perturbed_y = self.defence(
+            x=self.inputs_accessor.get(batch.inputs),
+        )
+        self.inputs_accessor.set(batch.inputs, perturbed_x)
+        # batch.metadata["perturbations"][self.name] = dict(y_target=y_target)
 
 
 @dataclass
