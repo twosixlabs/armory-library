@@ -117,7 +117,7 @@ def prepare_dataset(paths: CachePaths = CachePaths()):
     print("Done creating dataset cache")
 
 
-def load_dataset(paths: CachePaths = CachePaths()):
+def load_dataset(paths: CachePaths = CachePaths()) -> datasets.DatasetDict:
     if not paths.dataset_path.exists():
         raise RuntimeError(
             "Dataset has not been cached, run `prepare_dataset` to download and cache the dataset first"
