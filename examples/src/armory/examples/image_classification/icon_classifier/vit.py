@@ -1,9 +1,8 @@
 import evaluate
 import numpy as np
-from torchvision.transforms import (
+from torchvision.transforms import (  # RandomResizedCrop,
     Compose,
     Normalize,
-    RandomResizedCrop,
     Resize,
     ToTensor,
 )
@@ -27,7 +26,7 @@ size = (
     if "shortest_edge" in image_processor.size
     else (image_processor.size["height"], image_processor.size["width"])
 )
-train_transforms = Compose([RandomResizedCrop(size), ToTensor(), normalize])
+train_transforms = Compose([Resize(size), ToTensor(), normalize])
 eval_transforms = Compose([Resize(size), ToTensor(), normalize])
 
 accuracy = evaluate.load("accuracy")
@@ -55,11 +54,11 @@ def compute_metrics(eval_pred):
 
 
 def output_path(sysconfig: SysConfig):
-    return sysconfig.armory_home / "models" / "vit-finetuned-icon645-out"
+    return sysconfig.armory_home / "models" / "vit-finetuned-icon645-nocrop-out"
 
 
 def weights_path(sysconfig: SysConfig):
-    return sysconfig.armory_home / "models" / "vit-finetuned-icon645"
+    return sysconfig.armory_home / "models" / "vit-finetuned-icon645-nocrop"
 
 
 def finetune(sysconfig: SysConfig = SysConfig()):
@@ -94,7 +93,7 @@ def finetune(sysconfig: SysConfig = SysConfig()):
         per_device_train_batch_size=4,
         gradient_accumulation_steps=4,
         per_device_eval_batch_size=4,
-        num_train_epochs=24,
+        num_train_epochs=18,
         warmup_ratio=0.1,
         logging_steps=10,
         load_best_model_at_end=True,
