@@ -43,6 +43,17 @@ def parse_cli_args():
         choices=["huggingface", "torchvision"],
         default="huggingface",
     )
+    parser.add_argument(
+        "--chains",
+        choices=["benign", "pgd", "patch"],
+        default=["benign", "pgd"],
+        nargs="*",
+    )
+    parser.add_argument(
+        "--patch-batch-size",
+        default=None,
+        type=int,
+    )
     return parser.parse_args()
 
 
@@ -64,8 +75,8 @@ def load_model():
         armory_model,
         loss=torch.nn.CrossEntropyLoss(),
         optimizer=torch.optim.Adam(armory_model.parameters(), lr=0.003),
-        input_shape=(224, 224, 3),
-        channels_first=False,
+        input_shape=(3, 224, 224),
+        channels_first=True,
         nb_classes=101,
         clip_values=(0.0, 1.0),
     )
@@ -170,7 +181,7 @@ def load_torchvision_dataset(
     return evaluation_dataset, labels
 
 
-def create_attack(classifier: art.estimators.classification.PyTorchClassifier):
+def create_pgd_attack(classifier: art.estimators.classification.PyTorchClassifier):
     """Creates the PGD attack"""
     pgd = armory.track.track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
         classifier,
@@ -193,6 +204,34 @@ def create_attack(classifier: art.estimators.classification.PyTorchClassifier):
     return evaluation_attack
 
 
+def create_adversarial_patch_attack(
+    classifier: art.estimators.classification.PyTorchClassifier,
+    batch_size: int,
+):
+    """Creates the adversarial patch attack"""
+
+    patch = armory.track.track_init_params(art.attacks.evasion.AdversarialPatch)(
+        classifier,
+        rotation_max=22.5,
+        scale_min=0.4,
+        scale_max=1.0,
+        learning_rate=0.01,
+        max_iter=500,
+        batch_size=batch_size,
+        patch_shape=(3, 224, 224),
+    )
+
+    evaluation_attack = armory.perturbation.ArtPatchAttack(
+        name="AdversarialPatch",
+        attack=patch,
+        use_label_for_untargeted=False,
+        generate_every_batch=False,
+        apply_patch_kwargs={"scale": 0.5},
+    )
+
+    return evaluation_attack
+
+
 def create_metrics():
     """Create evaluation metrics"""
     return {
@@ -206,7 +245,16 @@ def create_metrics():
 
 
 @armory.track.track_params(prefix="main")
-def main(batch_size, export_every_n_batches, num_batches, dataset_src, seed, shuffle):
+def main(
+    batch_size,
+    export_every_n_batches,
+    num_batches,
+    dataset_src,
+    seed,
+    shuffle,
+    chains,
+    patch_batch_size,
+):
     """Perform evaluation"""
     if seed is not None:
         torch.manual_seed(seed)
@@ -218,8 +266,27 @@ def main(batch_size, export_every_n_batches, num_batches, dataset_src, seed, shu
         if dataset_src == "huggingface"
         else load_torchvision_dataset(batch_size, shuffle, sysconfig)
     )
-    attack = create_attack(art_classifier)
+    perturbations = dict()
     metrics = create_metrics()
+    profiler = armory.metrics.compute.BasicProfiler()
+
+    if "benign" in chains:
+        perturbations["benign"] = []
+
+    if "pgd" in chains:
+        pgd = create_pgd_attack(art_classifier)
+        perturbations["pgd"] = [pgd]
+
+    if "patch" in chains:
+        if patch_batch_size is None:
+            patch_batch_size = batch_size
+        patch = create_adversarial_patch_attack(
+            art_classifier, batch_size=patch_batch_size
+        )
+        perturbations["patch"] = [patch]
+
+        with profiler.measure("patch/generate"):
+            patch.generate(next(iter(dataset.dataloader)))
 
     evaluation = armory.evaluation.Evaluation(
         name=f"food101-classification-{dataset_src}",
@@ -227,13 +294,10 @@ def main(batch_size, export_every_n_batches, num_batches, dataset_src, seed, shu
         author="TwoSix",
         dataset=dataset,
         model=model,
-        perturbations={
-            "benign": [],
-            "attack": [attack],
-        },
+        perturbations=perturbations,
         metrics=metrics,
         exporter=armory.export.image_classification.ImageClassificationExporter(),
-        profiler=armory.metrics.compute.BasicProfiler(),
+        profiler=profiler,
         sysconfig=sysconfig,
     )
 

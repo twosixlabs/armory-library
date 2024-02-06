@@ -19,7 +19,6 @@ import armory.data
 import armory.dataset
 import armory.engine
 import armory.evaluation
-import armory.experimental.patch
 import armory.export.object_detection
 import armory.metric
 import armory.metrics.compute
@@ -129,12 +128,12 @@ def load_dataset(batch_size: int, shuffle: bool):
     return evaluation_dataset
 
 
-def create_attack(detector):
+def create_attack(detector, batch_size: int = 1):
     dpatch = armory.track.track_init_params(art.attacks.evasion.RobustDPatch)(
         detector,
         patch_shape=(3, 50, 50),
         patch_location=(231, 231),  # middle of 512x512
-        batch_size=1,
+        batch_size=batch_size,
         sample_size=10,
         learning_rate=0.01,
         max_iter=20,
@@ -142,10 +141,11 @@ def create_attack(detector):
         verbose=False,
     )
 
-    evaluation_attack = armory.perturbation.ArtEvasionAttack(
+    evaluation_attack = armory.perturbation.ArtPatchAttack(
         name="RobustDPatch",
-        attack=armory.experimental.patch.AttackWrapper(dpatch),
+        attack=dpatch,
         use_label_for_untargeted=False,
+        generate_every_batch=True,
     )
 
     return evaluation_attack
@@ -172,7 +172,7 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     model, art_detector = load_model()
 
     dataset = load_dataset(batch_size, shuffle)
-    attack = create_attack(art_detector)
+    attack = create_attack(art_detector, batch_size)
     metrics = create_metrics()
 
     evaluation = armory.evaluation.Evaluation(
