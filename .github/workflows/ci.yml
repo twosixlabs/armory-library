@@ -83,6 +83,11 @@ jobs:
             script: license_plates_yolov5.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
         python-version: ["3.8"]
     steps:
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
       - name: Checkout
         uses: actions/checkout@v3
 
