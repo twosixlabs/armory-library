@@ -113,8 +113,9 @@ def load_huggingface_dataset(batch_size: int, shuffle: bool):
 
     import datasets
 
-    hf_dataset = datasets.load_dataset("food101", split="validation")
-    assert isinstance(hf_dataset, datasets.Dataset)
+    hf_dataset = datasets.load_dataset("food101")
+    assert isinstance(hf_dataset, datasets.DatasetDict)
+    hf_dataset = hf_dataset["validation"]
 
     labels = hf_dataset.features["label"].names
 
