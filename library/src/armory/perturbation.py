@@ -30,20 +30,35 @@ class CallablePerturbation(PerturbationProtocol, Generic[T]):
 
 @dataclass
 class ArtPreprocessorDefence(PerturbationProtocol):
+    """
+    A perturbation using a preprocessor defense from the Adversarial Robustness
+    Toolbox (ART).
+
+    Example::
+
+        from art.defences.preprocessor import JpegCompression
+        from charmory.perturbation import ArtPreprocessorDefence
+
+        perturb = ArtPreprocessorDefence(
+            name="JPEGCompression",
+            defence=JpegCompression(),
+        )
+    """
+
     name: str
+    """Descriptive name of the defence"""
     defence: "Preprocessor"
+    """ART preprocessor defence"""
     inputs_accessor: Accessor["np.ndarray"] = field(
         default_factory=DefaultNumpyAccessor
     )
-    # targets_accessor: Optional[Accessor["np.ndarray"]] = None
+    """Accessor to use for obtaining low-level model inputs from batches"""
 
     def apply(self, batch: Batch):
-        # y_target = self._generate_y_target(batch)
-        perturbed_x, perturbed_y = self.defence(
+        perturbed_x, _ = self.defence(
             x=self.inputs_accessor.get(batch.inputs),
         )
         self.inputs_accessor.set(batch.inputs, perturbed_x)
-        # batch.metadata["perturbations"][self.name] = dict(y_target=y_target)
 
 
 @dataclass
