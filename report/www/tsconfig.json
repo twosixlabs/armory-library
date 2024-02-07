@@ -1,0 +1,19 @@
+/* This file is in support of VS Code, it is not used for runtime */
+{
+    "compilerOptions": {
+        "target": "es2020",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+
+        "allowJs": true,
+        "checkJs": true,
+        "strict": true,
+        "noEmit": true,
+
+        "baseUrl": "./",
+
+        // Allow modules to `export default`
+        "esModuleInterop": true
+    },
+    "include": ["assets/**/*.js", "assets/**/*.d.ts"]
+}

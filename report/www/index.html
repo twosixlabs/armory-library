@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang=""en">
+<head>
+    <title>Armory Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        /** Two Six brand color palette */
+                        'twosix-blue': '#1e41dd',
+                        'twosix-green': '#24d4a0',
+                        'twosix-grey': '#889ea9',
+                        'twosix-navy': '#002643',
+                        'twosix-black': '01121e',
+                    }
+                }
+            }
+        }
+    </script>
+    <script type="importmap">
+        {
+            "imports": {
+                "pinia": "https://unpkg.com/pinia@2.1.7/dist/pinia.esm-browser.js",
+                "vue": "https://unpkg.com/vue@3.3.11/dist/vue.esm-browser.js"
+            }
+        }
+    </script>
+    <script type="module">
+        import { createPinia } from 'pinia';
+        import { createApp } from 'vue';
+
+        const pinia = createPinia();
+        createApp().use(pinia).mount("#app");
+    </script>
+</head>
+<body id="app">
+    <header class="relative top-0">
+        <div class="container mx-auto p-3">
+            <h1 class="border-b-2 border-zinc-400 font-medium pb-3 text-xl text-zinc-500 uppercase">
+                Armory Report
+            </h1>
+        </div>
+    </header>
+    <main class="container flex flex-grow mx-auto">
+        <p>Hello world</p>
+    </main>
+    <footer class="sticky top-[100vh]">
+        <div class="container mx-auto p-3">
+            <div class="border-t-2 border-zinc-400 flex justify-between mx-auto pt-3">
+                <div>
+                    <img src="./assets/img/armory.png" alt="Armory" class="h-20" />
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

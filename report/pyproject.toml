@@ -24,8 +24,8 @@ requires = ["hatchling", "hatch-vcs"]
 ignore-vcs = false
 reproducible = true
 directory = "dist"
-sources = ["src"]
-include = ["src/", "LICENSE", "pyproject.toml", "README.md"]
+sources = ["src", "www"]
+include = ["src/", "www/", "LICENSE", "pyproject.toml", "README.md"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
