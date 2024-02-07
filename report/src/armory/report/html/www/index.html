@@ -35,25 +35,19 @@
         createApp().use(pinia).mount("#app");
     </script>
 </head>
-<body id="app">
+<body id="app" class="bg-zinc-100 min-h-screen text-zinc-900">
     <header class="relative top-0">
-        <div class="container mx-auto p-3">
-            <h1 class="border-b-2 border-zinc-400 font-medium pb-3 text-xl text-zinc-500 uppercase">
-                Armory Report
+        <div class="bg-zinc-200 border-b-2 border-zinc-400 flex justify-between gap-3 mb-3 p-3">
+            <h1 class="font-medium text-xl my-auto text-twosix-black uppercase">
+                Evaluation Report
             </h1>
+            <div>
+                <img src="./assets/img/armory.png" alt="Armory" class="h-12" />
+            </div>
         </div>
     </header>
     <main class="container flex flex-grow mx-auto">
         <p>Hello world</p>
     </main>
-    <footer class="sticky top-[100vh]">
-        <div class="container mx-auto p-3">
-            <div class="border-t-2 border-zinc-400 flex justify-between mx-auto pt-3">
-                <div>
-                    <img src="./assets/img/armory.png" alt="Armory" class="h-20" />
-                </div>
-            </div>
-        </div>
-    </footer>
 </body>
 </html>
