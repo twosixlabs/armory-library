@@ -23,21 +23,28 @@
         {
             "imports": {
                 "pinia": "https://unpkg.com/pinia@2.1.7/dist/pinia.esm-browser.js",
-                "vue": "https://unpkg.com/vue@3.3.11/dist/vue.esm-browser.js"
+                "vue": "https://unpkg.com/vue@3.3.11/dist/vue.esm-browser.js",
+                "vue-demi": "https://unpkg.com/vue-demi@0.14.6/lib/index.mjs",
+                "@vue/devtools-api": "https://unpkg.com/@vue/devtools-api@6.5.1/lib/esm"
             }
         }
     </script>
     <script type="module">
         import { createPinia } from 'pinia';
         import { createApp } from 'vue';
+        import RunsList from './assets/js/components/runs-list.js';
 
         const pinia = createPinia();
-        createApp().use(pinia).mount("#app");
+        createApp({
+            components: {
+                RunsList,
+            },
+        }).use(pinia).mount("#app");
     </script>
 </head>
 <body id="app" class="bg-zinc-100 min-h-screen text-zinc-900">
     <header class="relative top-0">
-        <div class="bg-zinc-200 border-b-2 border-zinc-400 flex justify-between gap-3 mb-3 p-3">
+        <div class="bg-zinc-200 border-b-2 border-zinc-400 flex justify-between gap-3 p-3">
             <h1 class="font-medium text-xl my-auto text-twosix-black uppercase">
                 Evaluation Report
             </h1>
@@ -46,8 +53,18 @@
             </div>
         </div>
     </header>
-    <main class="container flex flex-grow mx-auto">
-        <p>Hello world</p>
+    <main class="flex flex-grow mx-auto">
+        <div class="mr-3 p-3 w-72">
+            <h2 class="font-medium text-lg text-twosix-black uppercase">
+                Runs
+            </h2>
+            <runs-list></runs-list>
+        </div>
+        <div class="flex-grow p-2">
+            <h2 class="font-medium text-lg text-twosix-black uppercase">
+                Details
+            </h2>
+        </div>
     </main>
 </body>
 </html>
