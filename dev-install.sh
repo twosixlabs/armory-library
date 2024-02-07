@@ -25,4 +25,5 @@ $PYTHON -m pip install --upgrade pip
 $PYTHON -m pip install --editable .
 $PYTHON -m pip install --editable library
 $PYTHON -m pip install --editable matrix
+$PYTHON -m pip install --editable report
 $PYTHON -m pip install --editable examples[all]
