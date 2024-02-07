@@ -1,7 +1,10 @@
+import json
 import pathlib
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import importlib_resources
+
+import armory.report.common as common
 
 if TYPE_CHECKING:
     import argparse
@@ -19,6 +22,10 @@ def configure_args(parser: "argparse.ArgumentParser"):
         default="./public",
         help="Directory in which to place generated HTML files",
     )
+    parser.add_argument(
+        "--experiment",
+        help="ID of the MLFlow experiment for which to report",
+    )
 
 
 def copy_resources(srcdir: "Traversable", outdir: pathlib.Path):
@@ -34,7 +41,16 @@ def copy_resources(srcdir: "Traversable", outdir: pathlib.Path):
                 outfile.write(entry.read_bytes())
 
 
-def generate(out: str, **kwargs):
+def generate(out: str, experiment: Optional[str], **kwargs):
+    outpath = pathlib.Path(out)
+    outpath.mkdir(parents=True, exist_ok=True)
+
+    if experiment:
+        data = common.dump_experiment(experiment)
+        with open(outpath / "data.json", "w") as outfile:
+            json.dump(data, outfile, indent=2, sort_keys=True)
+        return
+
     print(f"Producing HTML output in {out}...")
-    copy_resources(importlib_resources.files(__package__) / "www", pathlib.Path(out))
+    copy_resources(importlib_resources.files(__package__) / "www", outpath)
     print("Done")
