@@ -56,14 +56,14 @@ repos:
     hooks:
       # JSON formatting/validation
       - id: check-json
-        exclude: "report/www/tsconfig.json"
+        exclude: ".*/tsconfig.json"
       - id: pretty-format-json
         args:
           - "--indent=4"
         exclude: |
           (?x)^(
             .*ipynb|
-            report/www/tsconfig.json
+            .*/tsconfig.json
           )$
       # By default, prevents files greater than 500kb
       # add arg "--maxkb=xxxx" to change the threshold
