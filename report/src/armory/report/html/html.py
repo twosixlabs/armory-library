@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from importlib_resources.abc import Traversable
 
 
-BLACKLIST = ["tsconfig.json", "tailwind.config.js"]
+BLACKLIST = ["armory-evaluation-data.js", "tsconfig.json", "tailwind.config.js"]
 
 
 def configure_args(parser: "argparse.ArgumentParser"):
@@ -47,9 +47,11 @@ def generate(out: str, experiment: Optional[str], **kwargs):
 
     if experiment:
         data = common.dump_experiment(experiment)
-        with open(outpath / "data.json", "w") as outfile:
-            json.dump(data, outfile, indent=2, sort_keys=True)
-        return
+        with open(outpath / "armory-evaluation-data.js", "w") as outfile:
+            jsdata = json.dumps(data, indent=2, sort_keys=True)
+            outfile.write(f"export default {jsdata};")
+    else:
+        raise RuntimeError("No experiment or runs provided. Unable to generate report.")
 
     print(f"Producing HTML output in {out}...")
     copy_resources(importlib_resources.files(__package__) / "www", outpath)

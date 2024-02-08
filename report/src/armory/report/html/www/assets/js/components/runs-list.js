@@ -1,20 +1,20 @@
 import { storeToRefs } from 'pinia';
 import { ref } from 'vue';
+import { useEvaluationData } from '../stores/evaluation-data.js';
 import { useSelectedRuns } from '../stores/selected-runs.js';
 
 export default {
     setup() {
+        const evaluation = useEvaluationData();
         const selected = useSelectedRuns();
         const { runs: selectedRuns } = storeToRefs(selected);
-
-        const runs = ["run-1", "run-2", "run-3"];
 
         const selectAllRef = ref(null);
         selected.$subscribe((mutation, state) => {
             if (state.runs.length == 0) {
                 selectAllRef.value.checked = false;
                 selectAllRef.value.indeterminate = false;
-            } else if (state.runs.length == runs.length) {
+            } else if (state.runs.length == evaluation.runs.length) {
                 selectAllRef.value.checked = true;
                 selectAllRef.value.indeterminate = false;
             } else {
@@ -24,14 +24,14 @@ export default {
         });
 
         const toggleSelectAll = () => {
-            if (selected.runs.length < runs.length) {
-                selected.selectRuns(runs);
+            if (selected.runs.length < evaluation.runs.length) {
+                selected.selectRuns(evaluation.runNames);
             } else {
                 selected.selectRuns([]);
             }
         };
 
-        return { runs, selected, selectedRuns, selectAllRef, toggleSelectAll };
+        return { evaluation, selected, selectedRuns, selectAllRef, toggleSelectAll };
     },
     template: `
         <div class="flex flex-col">
@@ -46,7 +46,7 @@ export default {
                     Select all
                 </label>
             </div>
-            <div v-for="run in runs" :key="run" class="flex flex-row">
+            <div v-for="run in evaluation.runNames" :key="run" class="flex flex-row">
                 <input
                     :id="run"
                     :checked="selectedRuns.includes(run)"
