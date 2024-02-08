@@ -2,8 +2,12 @@ import { storeToRefs } from 'pinia';
 import { ref } from 'vue';
 import { useEvaluationData } from '../stores/evaluation-data.js';
 import { useSelectedRuns } from '../stores/selected-runs.js';
+import Heading from './heading.js';
 
 export default {
+    components: {
+        Heading,
+    },
     setup() {
         const evaluation = useEvaluationData();
         const selected = useSelectedRuns();
@@ -35,6 +39,7 @@ export default {
     },
     template: `
         <div class="flex flex-col">
+            <heading>Runs</heading>
             <div class="flex flex-row">
                 <input
                     @change.prevent="toggleSelectAll"
