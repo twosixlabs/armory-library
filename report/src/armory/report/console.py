@@ -28,6 +28,13 @@ def configure_args(parser: "argparse.ArgumentParser"):
         help="Decimal precision for metrics",
         type=int,
     )
+    parser.add_argument(
+        "--params",
+        default=[],
+        dest="parameters",
+        help="Pattern(s) for parameters to be included in report",
+        nargs="*",
+    )
 
 
 def get_matching_run_data(data, data_key: str, patterns: List[str]) -> List[str]:
@@ -41,21 +48,31 @@ def get_matching_run_data(data, data_key: str, patterns: List[str]) -> List[str]
     return sorted(keys)
 
 
-def create_metrics_table(data, patterns: List[str], precision: int):
-    metric_keys = get_matching_run_data(data, "metrics", patterns)
+def create_multirun_table(
+    data, metrics: List[str], metrics_precision: int, parameters: List[str]
+):
+    metric_keys = get_matching_run_data(data, "metrics", metrics)
+    param_keys = get_matching_run_data(data, "params", parameters)
 
-    table = Table(title="Evaluation Metrics")
-
+    table = Table(title=data["experiment"]["name"])
     table.add_column("Run", no_wrap=True)
     for key in metric_keys:
-        table.add_column(key)
+        table.add_column(key, style="green")
+    for key in param_keys:
+        table.add_column(key, style="magenta")
 
     for run in data["runs"]:
         cols = [run["info"]["run_name"]]
         for key in metric_keys:
             metric = run["data"]["metrics"].get(key)
             if metric is not None:
-                cols.append(f"{metric:.{precision}}")
+                cols.append(f"{metric:.{metrics_precision}}")
+            else:
+                cols.append("")
+        for key in param_keys:
+            param = run["data"]["params"].get(key)
+            if param is not None:
+                cols.append(str(param))
             else:
                 cols.append("")
         table.add_row(*cols)
@@ -65,8 +82,9 @@ def create_metrics_table(data, patterns: List[str], precision: int):
 
 def generate(
     experiment: Optional[str],
-    metrics: Optional[List[str]],
+    metrics: Optional[List[str]] = None,
     metrics_precision: int = 3,
+    parameters: Optional[List[str]] = None,
     **kwargs,
 ):
     if experiment:
@@ -76,5 +94,12 @@ def generate(
 
     console = Console()
 
-    if metrics:
-        console.print(create_metrics_table(data, metrics, metrics_precision))
+    if len(data["runs"]) > 0:
+        console.print(
+            create_multirun_table(
+                data,
+                metrics=metrics or [],
+                metrics_precision=metrics_precision,
+                parameters=parameters or [],
+            )
+        )
