@@ -34,12 +34,14 @@
         import { createPinia } from 'pinia';
         import { createApp } from 'vue';
         import NavBar from './assets/js/components/nav-bar.js';
+        import Router from './assets/js/components/router.js';
         import RunsList from './assets/js/components/runs-list.js';
 
         const pinia = createPinia();
         createApp({
             components: {
                 NavBar,
+                Router,
                 RunsList,
             },
         }).use(pinia).mount("#app");
@@ -59,9 +61,7 @@
             <runs-list></runs-list>
         </div>
         <div class="flex-grow p-2">
-            <h2 class="font-medium text-lg text-twosix-black uppercase">
-                Details
-            </h2>
+            <router></router>
         </div>
     </main>
 </body>
