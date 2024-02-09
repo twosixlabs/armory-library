@@ -1,5 +1,9 @@
 export default {
     props: {
+        active: {
+            type: Boolean,
+            default: false,
+        },
         disabled: {
             type: Boolean,
             default: false,
@@ -9,7 +13,8 @@ export default {
     computed: {
         classes() {
             return {
-                'bg-twosix-grey': !this.disabled,
+                'bg-twosix-blue': this.active,
+                'bg-twosix-grey': !this.disabled && !this.active,
                 'bg-zinc-300': this.disabled,
             };
         },

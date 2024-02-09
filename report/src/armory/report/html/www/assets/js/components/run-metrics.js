@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import Button from '../components/button.js';
 import {
     Table,
     TableBody,
@@ -31,6 +32,7 @@ const reorganizeMetrics = (flatMetrics) => {
 
 export default {
     components: {
+        Button,
         Table,
         TableBody,
         TableCell,
@@ -46,18 +48,35 @@ export default {
         const route = useRoute();
         const router = useRouter();
 
+        const baseline = computed({
+            get() {
+                return route.query.baseline;
+            },
+            set(baseline) {
+                router.push({ query: { ...route.query, baseline }});
+            },
+        });
+        
+        const toggleBaseline = (chain) => {
+            if (baseline.value == chain) {
+                baseline.value = "";
+            } else {
+                baseline.value = chain;
+            }
+        };
+
         const precision = computed({
             get() {
                 return route.query.precision || 3;
             },
             set(precision) {
-                router.push({ query: { precision } });
+                router.push({ query: { ...route.query, precision } });
             },
         });
 
         const [metricsByChain, allMetrics] = reorganizeMetrics(props.metrics);
 
-        return { allMetrics, metricsByChain, precision };
+        return { allMetrics, baseline, metricsByChain, precision, toggleBaseline };
     },
     template: `
         <div class="my-2">
@@ -79,6 +98,7 @@ export default {
                     <TableHeader v-for="metric in allMetrics" :key="metric">
                         {{ metric }}
                     </TableHeader>
+                    <TableHeader></TableHeader>
                 </tr>
             </TableHead>
             <TableBody>
@@ -88,6 +108,14 @@ export default {
                     </TableRowHeader>
                     <TableCell v-for="metric in allMetrics" :key="metric">
                         {{ entry[1][metric].toFixed(precision) }}
+                    </TableCell>
+                    <TableCell>
+                        <Button
+                            :active="baseline == entry[0]"
+                            @click="toggleBaseline(entry[0])"
+                        >
+                            Baseline
+                        </Button>
                     </TableCell>
                 </TableRow>
             </TableBody>
