@@ -41,7 +41,6 @@
         import { createApp } from 'vue';
         import NavBar from './assets/js/components/nav-bar.js';
         import Router from './assets/js/components/router.js';
-        import RunsList from './assets/js/components/runs-list.js';
 
         dayjs.extend(duration);
         dayjs.extend(relativeTime);
@@ -51,7 +50,6 @@
             components: {
                 NavBar,
                 Router,
-                RunsList,
             },
         }).use(pinia).mount("#app");
     </script>
@@ -62,13 +60,8 @@
             <nav-bar></nav-bar>
         </div>
     </header>
-    <main class="flex flex-grow mx-auto">
-        <div class="mr-3 p-3 w-72">
-            <runs-list></runs-list>
-        </div>
-        <div class="flex-grow p-2">
-            <router></router>
-        </div>
+    <main class="flex justify-center mt-3">
+        <router></router>
     </main>
 </body>
 </html>
