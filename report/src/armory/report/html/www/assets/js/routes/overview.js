@@ -1,6 +1,6 @@
 import { storeToRefs } from 'pinia';
 import { computed, ref } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import Button from '../components/button.js';
 import { useEvaluationData } from '../stores/evaluation-data.js';
 import { useSelectedRuns } from '../stores/selected-runs.js';
@@ -39,6 +39,7 @@ export default {
         RouterLink,
     },
     setup() {
+        const router = useRouter();
         const evaluation = useEvaluationData();
         const selected = useSelectedRuns();
         const { runs: selectedRuns } = storeToRefs(selected);
@@ -59,7 +60,7 @@ export default {
 
         const toggleSelectAll = () => {
             if (selected.runs.length < evaluation.runs.length) {
-                selected.selectRuns(evaluation.runNames);
+                selected.selectRuns(evaluation.allRunIds);
             } else {
                 selected.selectRuns([]);
             }
@@ -71,8 +72,16 @@ export default {
             },
         });
 
+        const goToCompare = () => router.push({
+            path: '/compare',
+            query: {
+                runs: selected.runs,
+            },
+        });
+
         return {
             evaluation,
+            goToCompare,
             humanizeDuration,
             humanizeTime,
             multipleSelected,
@@ -108,11 +117,11 @@ export default {
                     </tr>
                 </thead>
                 <tbody>
-                    <row v-for="run in evaluation.runs" :key="run.info.run_name">
+                    <row v-for="run in evaluation.runs" :key="run.info.run_id">
                         <cell>
                             <input
-                                :id="run.info.run_name"
-                                :checked="selectedRuns.includes(run.info.run_name)"
+                                :id="run.info.run_id"
+                                :checked="selectedRuns.includes(run.info.run_id)"
                                 @change.prevent="selected.multiSelect(run)"
                                 class="hover:cursor-pointer"
                                 type="checkbox"
@@ -136,7 +145,12 @@ export default {
                 </tbody>
             </table>
             <div class="flex justify-end my-3">
-                <Button :disabled="!multipleSelected">Compare</Button>
+                <Button
+                    @click="goToCompare"
+                    :disabled="!multipleSelected"
+                >
+                    Compare
+                </Button>
             </div>
         </div>
     `,

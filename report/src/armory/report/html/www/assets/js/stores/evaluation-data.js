@@ -5,6 +5,9 @@ import { useSelectedRuns } from './selected-runs.js';
 export const useEvaluationData = defineStore('evaluation-data', {
     state: () => armoryEvaluationData,
     getters: {
+        allRunIds(state) {
+            return state.runs.map((run) => run.info.run_id);
+        },
         runNames(state) {
             return state.runs.map((run) => run.info.run_name);
         },
