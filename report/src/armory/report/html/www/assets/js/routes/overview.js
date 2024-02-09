@@ -1,5 +1,6 @@
 import { storeToRefs } from 'pinia';
 import { computed, ref } from 'vue';
+import { RouterLink } from 'vue-router';
 import Button from '../components/button.js';
 import { useEvaluationData } from '../stores/evaluation-data.js';
 import { useSelectedRuns } from '../stores/selected-runs.js';
@@ -35,6 +36,7 @@ export default {
         Cell,
         HeaderCell,
         Row,
+        RouterLink,
     },
     setup() {
         const evaluation = useEvaluationData();
@@ -117,12 +119,12 @@ export default {
                             />
                         </cell>
                         <cell>
-                            <a
-                                :href="'?route=run&run=' + run.info.run_name"
+                            <router-link
+                                :to="'/run/' + run.info.run_id"
                                 class="hover:cursor-pointer text-twosix-blue"
                             >
                                 {{ run.info.run_name }}
-                            </a>
+                            </router-link>
                         </cell>
                         <cell>
                             {{ run.info.start_time && humanizeTime(run.info.start_time) }}
