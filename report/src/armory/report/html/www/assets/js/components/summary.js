@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { computed } from 'vue';
 import { useEvaluationData } from '../stores/evaluation-data.js';
 import Heading from './heading.js';
@@ -10,7 +11,7 @@ const Field = {
         <dt class="uppercase">
             {{ title }}
         </dt>
-        <dd class="ml-2">
+        <dd class="ml-4">
             <slot></slot>
         </dd>
     `,
@@ -47,10 +48,13 @@ export default {
             }
         });
 
-        return { info, title };
+        const formatDuration = (duration) => dayjs.duration(duration).format('HH:mm:ss');
+        const formatTime = (time) => `${dayjs(time).toISOString()} (${dayjs(time).fromNow()})`;
+
+        return { formatDuration, formatTime, info, title };
     },
     template: `
-        <heading>{{ title }}</heading>
+        <heading class="mb-2">{{ title }}</heading>
         <dl>
             <Field title="Run ID">
                 {{ info?.run_id }}
@@ -59,10 +63,10 @@ export default {
                 {{ info?.status }}
             </Field>
             <Field title="Started">
-                {{ info?.start_time }}
+                {{ info && formatTime(info.start_time) }}
             </Field>
             <Field title="Duration">
-                {{ info && info.end_time - info.start_time }}
+                {{ info && formatDuration(info.end_time - info.start_time) }}
             </Field>
         </dl>
     `,

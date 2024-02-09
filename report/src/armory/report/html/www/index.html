@@ -22,6 +22,9 @@
     <script type="importmap">
         {
             "imports": {
+                "dayjs": "https://unpkg.com/dayjs@1.11.10/esm/index.js",
+                "dayjs-duration": "https://unpkg.com/dayjs@1.11.10/esm/plugin/duration/index.js",
+                "dayjs-relative-time": "https://unpkg.com/dayjs@1.11.10/esm/plugin/relativeTime/index.js",
                 "pinia": "https://unpkg.com/pinia@2.1.7/dist/pinia.esm-browser.js",
                 "vue": "https://unpkg.com/vue@3.3.11/dist/vue.esm-browser.js",
                 "vue-demi": "https://unpkg.com/vue-demi@0.14.6/lib/index.mjs",
@@ -31,11 +34,17 @@
         }
     </script>
     <script type="module">
+        import dayjs from 'dayjs';
+        import duration from 'dayjs-duration';
+        import relativeTime from 'dayjs-relative-time';
         import { createPinia } from 'pinia';
         import { createApp } from 'vue';
         import NavBar from './assets/js/components/nav-bar.js';
         import Router from './assets/js/components/router.js';
         import RunsList from './assets/js/components/runs-list.js';
+
+        dayjs.extend(duration);
+        dayjs.extend(relativeTime);
 
         const pinia = createPinia();
         createApp({
