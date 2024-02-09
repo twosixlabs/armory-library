@@ -1,11 +1,13 @@
 import { computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Heading from '../components/heading.js';
+import RunMetrics from '../components/run-metrics.js';
 import { useEvaluationData } from '../stores/evaluation-data.js';
 
 export default {
     components: {
         Heading,
+        RunMetrics,
     },
     setup() {
         const route = useRoute();
@@ -26,6 +28,7 @@ export default {
     template: `
         <div class="container">
             <heading>{{ run?.info.run_name }}</heading>
+            <run-metrics v-if="run" :metrics="run.data.metrics"></run-metrics>
         </div>
     `,
 };

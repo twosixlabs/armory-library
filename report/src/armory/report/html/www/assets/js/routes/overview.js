@@ -2,41 +2,28 @@ import { storeToRefs } from 'pinia';
 import { computed, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import Button from '../components/button.js';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '../components/table.js';
 import { useEvaluationData } from '../stores/evaluation-data.js';
 import { useSelectedRuns } from '../stores/selected-runs.js';
 import { humanizeDuration, humanizeTime } from '../utils/format.js';
 
-const HeaderCell = {
-    template: `
-        <th scope="col" class="px-6 py-3">
-            <slot></slot>
-        </th>
-    `,
-};
-
-const Row = {
-    template: `
-        <tr class="border-b even:bg-zinc-50">
-            <slot></slot>
-        </tr>
-    `,
-};
-
-const Cell = {
-    template: `
-        <td class="px-6 py-4">
-            <slot></slot>
-        </td>
-    `,
-};
-
 export default {
     components: {
         Button,
-        Cell,
-        HeaderCell,
-        Row,
         RouterLink,
+        Table,
+        TableBody,
+        TableCell,
+        TableHead,
+        TableHeader,
+        TableRow,
     },
     setup() {
         const router = useRouter();
@@ -93,10 +80,10 @@ export default {
     },
     template: `
         <div class="flex flex-col flex-grow mx-3">
-            <table class="w-full text-sm text-left">
-                <thead class="text-xs uppercase bg-zinc-200">
+            <Table>
+                <TableHead>
                     <tr>
-                        <header-cell class="rounded-tl-lg flex">
+                        <TableHeader class="rounded-tl-lg flex">
                             <input
                                 @change.prevent="toggleSelectAll"
                                 ref="selectAllRef"
@@ -110,15 +97,15 @@ export default {
                             >
                                 Select all
                             </label>
-                        </header-cell>
-                        <header-cell>Name</header-cell>
-                        <header-cell>Started</header-cell>
-                        <header-cell class="rounded-tr-lg">Duration</header-cell>
+                        </TableHeader>
+                        <TableHeader>Name</TableHeader>
+                        <TableHeader>Started</TableHeader>
+                        <TableHeader class="rounded-tr-lg">Duration</TableHeader>
                     </tr>
-                </thead>
-                <tbody>
-                    <row v-for="run in evaluation.runs" :key="run.info.run_id">
-                        <cell>
+                </TableHead>
+                <TableBody>
+                    <TableRow v-for="run in evaluation.runs" :key="run.info.run_id">
+                        <TableCell>
                             <input
                                 :id="run.info.run_id"
                                 :checked="selectedRuns.includes(run.info.run_id)"
@@ -126,24 +113,24 @@ export default {
                                 class="hover:cursor-pointer"
                                 type="checkbox"
                             />
-                        </cell>
-                        <cell>
+                        </TableCell>
+                        <TableCell>
                             <router-link
                                 :to="'/run/' + run.info.run_id"
                                 class="hover:cursor-pointer text-twosix-blue"
                             >
                                 {{ run.info.run_name }}
                             </router-link>
-                        </cell>
-                        <cell>
+                        </TableCell>
+                        <TableCell>
                             {{ run.info.start_time && humanizeTime(run.info.start_time) }}
-                        </cell>
-                        <cell>
+                        </TableCell>
+                        <TableCell>
                             {{ run.info.start_time && run.info.end_time && humanizeDuration(run.info.end_time - run.info.start_time) }}
-                        </cell>
-                    </row>
-                </tbody>
-            </table>
+                        </TableCell>
+                    </TableRow>
+                </TableBody>
+            </Table>
             <div class="flex justify-end my-3">
                 <Button
                     @click="goToCompare"
