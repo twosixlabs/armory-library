@@ -1,6 +1,7 @@
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import Button from '../components/button.js';
+import Button from './button.js';
+import { ChevronDownIcon } from './icons.js';
 import {
     Table,
     TableBody,
@@ -9,7 +10,11 @@ import {
     TableHeader,
     TableRow,
     TableRowHeader,
-} from '../components/table.js';
+} from './table.js';
+
+const BETTER_THAN_BASELINE = 1;
+const SAME_AS_BASELINE = 0;
+const WORSE_THAN_BASELINE = -1;
 
 const reorganizeMetrics = (flatMetrics) => {
     const byChain = {};
@@ -42,14 +47,14 @@ const MetricCell = {
     setup(props) {
         const classes = computed(() => ({
             cell: {
-                "text-green-700": props.comparison > 0,
-                "text-red-700": props.comparison < 0,
+                "text-green-700": props.comparison == BETTER_THAN_BASELINE,
+                "text-red-700": props.comparison == WORSE_THAN_BASELINE,
             },
             span: {
-                "border-r-[1rem]": props.comparison != 0,
-                "border-green-700": props.comparison > 0,
-                "border-red-700": props.comparison < 0,
-                "pr-1": props.comparison != 0,
+                "border-r-[1rem]": props.comparison != SAME_AS_BASELINE,
+                "border-green-700": props.comparison == BETTER_THAN_BASELINE,
+                "border-red-700": props.comparison == WORSE_THAN_BASELINE,
+                "pr-1": props.comparison != SAME_AS_BASELINE,
             },
         }));
         return { classes };
@@ -66,6 +71,7 @@ const MetricCell = {
 export default {
     components: {
         Button,
+        ChevronDownIcon,
         MetricCell,
         Table,
         TableBody,
@@ -112,15 +118,23 @@ export default {
 
         const compareToBaseline = (chain, metric, value) => {
             if (!baseline.value || baseline.value == chain) {
-                return 0;
+                return SAME_AS_BASELINE;
             }
             const baselineValue = metricsByChain[baseline.value][metric];
             if (baselineValue == undefined) {
-                return 0;
+                return SAME_AS_BASELINE;
             }
-            if (baselineValue < value) return 1;
-            if (baselineValue > value) return -1;
-            return 0;
+            if (baselineValue < value) {
+                return route.query[`metric.${metric}`] == "high" ? BETTER_THAN_BASELINE : WORSE_THAN_BASELINE;
+            }
+            if (baselineValue > value) {
+                return route.query[`metric.${metric}`] == "high" ? WORSE_THAN_BASELINE : BETTER_THAN_BASELINE;
+            }
+            return SAME_AS_BASELINE;
+        };
+
+        const setMetricType = (metric, metricType) => {
+            router.push({ query: { ...route.query, [`metric.${metric}`]: metricType }});
         };
 
         return {
@@ -129,6 +143,7 @@ export default {
             compareToBaseline,
             metricsByChain,
             precision,
+            setMetricType,
             toggleBaseline,
         };
     },
@@ -150,7 +165,27 @@ export default {
                 <tr>
                     <TableHeader>Chain</TableHeader>
                     <TableHeader v-for="metric in allMetrics" :key="metric">
-                        {{ metric }}
+                        <div class="items-center flex gap-2">
+                            {{ metric }}
+                            <div class="dropdown">
+                                <Button minimal tabindex="0">
+                                    <ChevronDownIcon></ChevronDownIcon>
+                                </Button>
+                                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                                    <li><a>Hide</a></li>
+                                    <li>
+                                        <a @click="setMetricType(metric, 'low')">
+                                            Lower is better
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a @click="setMetricType(metric, 'high')">
+                                            Higher is better
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </TableHeader>
                     <TableHeader></TableHeader>
                 </tr>
