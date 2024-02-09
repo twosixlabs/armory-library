@@ -35,6 +35,17 @@ const reorganizeMetrics = (flatMetrics) => {
     return [byChain, allMetrics];
 };
 
+const addTo = (maybeArray, value) => {
+    if (Array.isArray(maybeArray)) {
+        maybeArray.push(value);
+        return maybeArray;
+    }
+    if (maybeArray) {
+        return [maybeArray, value];
+    }
+    return [value];
+}
+
 const MetricCell = {
     components: {
         TableCell,
@@ -116,6 +127,19 @@ export default {
 
         const [metricsByChain, allMetrics] = reorganizeMetrics(props.metrics);
 
+        const visibleMetrics = computed(() => {
+            if (route.query.hide) {
+                return [...allMetrics].filter((m) => !route.query.hide.includes(m));
+            }
+            return allMetrics;
+        });
+
+        const hideMetric = (metric) => {
+            const hide = addTo(route.query.hide, metric);
+            hide.push(metric);
+            router.push({ query: { ...route.query, hide } });
+        };
+
         const compareToBaseline = (chain, metric, value) => {
             if (!baseline.value || baseline.value == chain) {
                 return SAME_AS_BASELINE;
@@ -138,13 +162,14 @@ export default {
         };
 
         return {
-            allMetrics,
             baseline,
             compareToBaseline,
+            hideMetric,
             metricsByChain,
             precision,
             setMetricType,
             toggleBaseline,
+            visibleMetrics,
         };
     },
     template: `
@@ -164,7 +189,7 @@ export default {
             <TableHead>
                 <tr>
                     <TableHeader>Chain</TableHeader>
-                    <TableHeader v-for="metric in allMetrics" :key="metric">
+                    <TableHeader v-for="metric in visibleMetrics" :key="metric">
                         <div class="items-center flex gap-2">
                             {{ metric }}
                             <div class="dropdown">
@@ -172,7 +197,11 @@ export default {
                                     <ChevronDownIcon></ChevronDownIcon>
                                 </Button>
                                 <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
-                                    <li><a>Hide</a></li>
+                                    <li>
+                                        <a @click="hideMetric(metric)">
+                                            Hide
+                                        </a>
+                                    </li>
                                     <li>
                                         <a @click="setMetricType(metric, 'low')">
                                             Lower is better
@@ -196,7 +225,7 @@ export default {
                         {{ entry[0] }}
                     </TableRowHeader>
                     <MetricCell
-                        v-for="metric in allMetrics"
+                        v-for="metric in visibleMetrics"
                         :comparison="compareToBaseline(entry[0], metric, entry[1][metric])"
                         :key="metric"
                         :precision="precision"
