@@ -1,6 +1,8 @@
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { useMetricsSettings } from '../stores/metrics-settings.js';
+import ChainColumnDropdown from './chain-column-dropdown.js';
+import HiddenChainsDropdown from './hidden-chains-dropdown.js';
 import HiddenMetricsDropdown from './hidden-metrics-dropdown.js';
 import MetricColumnDropdown from './metric-column-dropdown.js';
 import {
@@ -13,7 +15,7 @@ import {
     TableRowHeader,
 } from './table.js';
 
-const reorganizeMetrics = (runs, hiddenMetrics) => {
+const reorganizeMetrics = (runs, hiddenMetrics, hiddenChains) => {
     const byRun = {};
     const allMetrics = new Set();
     for (const run of runs) {
@@ -28,7 +30,7 @@ const reorganizeMetrics = (runs, hiddenMetrics) => {
         if (segments.length == 2 && segments[0] != "system") {
             const chain = segments[0];
             const metric = segments[1];
-            if (hiddenMetrics.includes(metric)) {
+            if (hiddenMetrics.includes(metric) || hiddenChains.includes(chain)) {
                 // skip
             } else if (metric in columns) {
                 columns[metric].push(chain);
@@ -42,6 +44,8 @@ const reorganizeMetrics = (runs, hiddenMetrics) => {
 
 export default {
     components: {
+        ChainColumnDropdown,
+        HiddenChainsDropdown,
         HiddenMetricsDropdown,
         MetricColumnDropdown,
         Table,
@@ -57,9 +61,15 @@ export default {
     },
     setup(props) {
         const metricsSettings = useMetricsSettings();
-        const { precision, hiddenMetrics } = storeToRefs(metricsSettings);
+        const {
+            precision,
+            hiddenChains,
+            hiddenMetrics,
+        } = storeToRefs(metricsSettings);
 
-        const metrics = computed(() => reorganizeMetrics(props.runs, hiddenMetrics.value));
+        const metrics = computed(() => 
+            reorganizeMetrics(props.runs, hiddenMetrics.value, hiddenChains.value)
+        );
 
         return {
             hiddenMetrics,
@@ -70,6 +80,7 @@ export default {
     template: `
         <div class="items-center flex flex-row gap-2 my-2">
             <HiddenMetricsDropdown></HiddenMetricsDropdown>
+            <HiddenChainsDropdown></HiddenChainsDropdown>
             <span class="border-l-2 pl-2">
                 Precision
             </span>
@@ -105,7 +116,10 @@ export default {
                             :key="chain"
                             class="[writing-mode:vertical-lr] border-l-2 border-white"
                         >
-                            {{ chain }}
+                            <div class="flex gap-2 justify-between">
+                                {{ chain }}
+                                <ChainColumnDropdown :chain="chain" class="[writing-mode:horizontal-tb]"></ChainColumnDropdown>
+                            </div>
                         </TableHeader>
                     </template>
                 </tr>

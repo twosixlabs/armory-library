@@ -59,42 +59,76 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
     // -- metric visibility
 
     const hiddenMetrics = computed(() => {
-        const hide = route.value.query.hide;
-        if (hide == undefined) {
+        const hideMetric = route.value.query.hideMetric;
+        if (hideMetric == undefined) {
             return evaluationData.settings.hide_metrics || [];
         }
-        if (Array.isArray(hide)) {
-            return hide;
+        if (Array.isArray(hideMetric)) {
+            return hideMetric;
         }
-        if (hide) {
-            return [hide];
+        if (hideMetric) {
+            return [hideMetric];
         }
         return [];
     });
 
     function toggleMetric(metric) {
-        let hide = [...hiddenMetrics.value]; // make a copy
-        if (hide.includes(metric)) {
-            const index = hide.indexOf(metric);
-            hide.splice(index, 1);
-            if (hide.length == 0) {
-                hide.push("");
+        let hideMetric = [...hiddenMetrics.value]; // make a copy
+        if (hideMetric.includes(metric)) {
+            const index = hideMetric.indexOf(metric);
+            hideMetric.splice(index, 1);
+            if (hideMetric.length == 0) {
+                hideMetric.push("");
             }
         } else {
-            hide.push(metric);
-            hide = hide.filter((h) => h != "");
+            hideMetric.push(metric);
+            hideMetric = hideMetric.filter((h) => h != "");
         }
 
-        updateQuery({ hide });
+        updateQuery({ hideMetric });
+    }
+
+    // -- chain visibility
+
+    const hiddenChains = computed(() => {
+        const hideChain = route.value.query.hideChain;
+        if (hideChain == undefined) {
+            return evaluationData.settings.hide_chains || [];
+        }
+        if (Array.isArray(hideChain)) {
+            return hideChain;
+        }
+        if (hideChain) {
+            return [hideChain];
+        }
+        return [];
+    });
+
+    function toggleChain(chain) {
+        let hideChain = [...hiddenChains.value]; // make a copy
+        if (hideChain.includes(chain)) {
+            const index = hideChain.indexOf(chain);
+            hideChain.splice(index, 1);
+            if (hideChain.length == 0) {
+                hideChain.push("");
+            }
+        } else {
+            hideChain.push(chain);
+            hideChain = hideChain.filter((h) => h != "");
+        }
+
+        updateQuery({ hideChain });
     }
 
     return {
         baseline,
         getMetricType,
+        hiddenChains,
         hiddenMetrics,
         precision,
         setMetricType,
         toggleBaseline,
+        toggleChain,
         toggleMetric,
     };
 });
