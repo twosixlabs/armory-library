@@ -1,5 +1,8 @@
 import { storeToRefs } from 'pinia';
+import { computed } from 'vue';
 import { useMetricsSettings } from '../stores/metrics-settings.js';
+import HiddenMetricsDropdown from './hidden-metrics-dropdown.js';
+import MetricColumnDropdown from './metric-column-dropdown.js';
 import {
     Table,
     TableBody,
@@ -10,7 +13,7 @@ import {
     TableRowHeader,
 } from './table.js';
 
-const reorganizeMetrics = (runs) => {
+const reorganizeMetrics = (runs, hiddenMetrics) => {
     const byRun = {};
     const allMetrics = new Set();
     for (const run of runs) {
@@ -25,18 +28,22 @@ const reorganizeMetrics = (runs) => {
         if (segments.length == 2 && segments[0] != "system") {
             const chain = segments[0];
             const metric = segments[1];
-            if (metric in columns) {
+            if (hiddenMetrics.includes(metric)) {
+                // skip
+            } else if (metric in columns) {
                 columns[metric].push(chain);
             } else {
                 columns[metric] = [chain];
             }
         }
     }
-    return [byRun, columns];
+    return { byRun, columns };
 };
 
 export default {
     components: {
+        HiddenMetricsDropdown,
+        MetricColumnDropdown,
         Table,
         TableBody,
         TableCell,
@@ -50,14 +57,19 @@ export default {
     },
     setup(props) {
         const metricsSettings = useMetricsSettings();
-        const { precision } = storeToRefs(metricsSettings);
+        const { precision, hiddenMetrics } = storeToRefs(metricsSettings);
 
-        const [metricsByRun, columns] = reorganizeMetrics(props.runs);
+        const metrics = computed(() => reorganizeMetrics(props.runs, hiddenMetrics.value));
 
-        return { columns, metricsByRun, precision };
+        return {
+            hiddenMetrics,
+            metrics,
+            precision,
+        };
     },
     template: `
         <div class="items-center flex flex-row gap-2 my-2">
+            <HiddenMetricsDropdown></HiddenMetricsDropdown>
             <span class="border-l-2 pl-2">
                 Precision
             </span>
@@ -74,17 +86,20 @@ export default {
                 <tr>
                     <TableHeader class="text-center">Run</TableHeader>
                     <TableHeader
-                        v-for="(chains, metric) in columns"
+                        v-for="(chains, metric) in metrics.columns"
                         :key="metric"
                         :colspan="chains.length"
                         class="border-l-2 border-white text-center"
                     >
-                        {{ metric }}
+                        <div class="items-center flex gap-2 justify-center">
+                            {{ metric }}
+                            <MetricColumnDropdown :metric="metric"></MetricColumnDropdown>
+                        </div>
                     </TableHeader>
                 </tr>
                 <tr>
                     <TableHeader></TableHeader>
-                    <template v-for="(chains, metric) in columns" :key="metric">
+                    <template v-for="(chains, metric) in metrics.columns" :key="metric">
                         <TableHeader
                             v-for="chain in chains"
                             :key="chain"
@@ -96,11 +111,11 @@ export default {
                 </tr>
             </TableHead>
             <TableBody>
-                <TableRow v-for="(runMetrics, runName) in metricsByRun" :key="runName">
+                <TableRow v-for="(runMetrics, runName) in metrics.byRun" :key="runName">
                     <TableRowHeader>
                         {{ runName }}
                     </TableRowHeader>
-                    <template v-for="(chains, metric) in columns">
+                    <template v-for="(chains, metric) in metrics.columns">
                         <TableCell v-for="chain in chains" :key="chain">
                             {{ runMetrics[chain + "/" + metric].toFixed(precision) }}
                         </TableCell>
