@@ -1,3 +1,4 @@
+import CompareMetrics from '../components/compare-metrics.js';
 import Placeholder from '../components/placeholder.js';
 import RunMetrics from '../components/run-metrics.js';
 import RunParameters from '../components/run-parameters.js';
@@ -25,7 +26,7 @@ export const routes = [
         component: MultipleRuns,
         children: [
             { path: '', redirect: { name: 'compare-runs-metrics' } },
-            { path: 'metrics', name: 'compare-runs-metrics', component: Placeholder },
+            { path: 'metrics', name: 'compare-runs-metrics', component: CompareMetrics },
             { path: 'diff', name: 'compare-runs-diff', component: Placeholder },
         ],
     },
