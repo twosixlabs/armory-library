@@ -1,23 +1,25 @@
 import { computed, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import Heading from '../components/heading.js';
 import RunMetrics from '../components/run-metrics.js';
 import { useEvaluationData } from '../stores/evaluation-data.js';
 
 export default {
+    props: {
+        id: String,
+    },
     components: {
         Heading,
         RunMetrics,
     },
-    setup() {
-        const route = useRoute();
+    setup(props) {
         const router = useRouter();
 
         const evaluationData = useEvaluationData();
         const run = computed(() => evaluationData.runs.filter(
-            (run) => run.info.run_id == route.params.id
+            (run) => run.info.run_id == props.id
         )[0]);
-        watch(run, (newRun, oldRun) => {
+        watch(run, (newRun) => {
             if (!newRun) {
                 router.push({ path: '/' });
             }
