@@ -46,6 +46,24 @@ const addTo = (maybeArray, value) => {
     return [value];
 }
 
+const removeFrom = (maybeArray, value) => {
+    if (Array.isArray(maybeArray)) {
+        const copy = [...maybeArray];
+        if (copy.includes(value)) {
+            const index = copy.indexOf(value);
+            copy.splice(index, 1);
+        }
+        if (copy.length == 0) {
+            return undefined;
+        }
+        return copy;
+    }
+    if (maybeArray == value) {
+        return undefined;
+    }
+    return maybeArray;
+}
+
 const MetricCell = {
     components: {
         TableCell,
@@ -134,9 +152,23 @@ export default {
             return allMetrics;
         });
 
+        const hiddenMetrics = computed(() => {
+            if (Array.isArray(route.query.hide)) {
+                return route.query.hide;
+            }
+            if (route.query.hide) {
+                return [route.query.hide];
+            }
+            return [];
+        });
+
+        const showMetric = (metric) => {
+            const hide = removeFrom(route.query.hide, metric);
+            router.push({ query: { ...route.query, hide } });
+        };
+
         const hideMetric = (metric) => {
             const hide = addTo(route.query.hide, metric);
-            hide.push(metric);
             router.push({ query: { ...route.query, hide } });
         };
 
@@ -164,17 +196,30 @@ export default {
         return {
             baseline,
             compareToBaseline,
+            hiddenMetrics,
             hideMetric,
             metricsByChain,
             precision,
             setMetricType,
+            showMetric,
             toggleBaseline,
             visibleMetrics,
         };
     },
     template: `
-        <div class="my-2">
-            <span class="mr-2">
+        <div class="items-center flex flex-row gap-2 my-2">
+            <div class="dropdown">
+                <Button :disabled="hiddenMetrics.length == 0" tabindex="0">
+                    Columns
+                    <ChevronDownIcon></ChevronDownIcon>
+                </Button>
+                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                    <li v-for="metric in hiddenMetrics" :key="metric">
+                        <a @click="showMetric(metric)">{{ metric }}</a>
+                    </li>
+                </ul>
+            </div>
+            <span class="border-l-2 pl-2">
                 Precision
             </span>
             <input
