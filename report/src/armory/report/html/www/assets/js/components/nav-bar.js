@@ -7,7 +7,7 @@ export default {
     template: `
         <div class="flex flex-row">
             <h1 class="font-medium text-xl mr-4 my-auto text-twosix-black uppercase">
-                <router-link to="{ name: 'index' }">
+                <router-link :to="{ name: 'index' }">
                     Evaluation Report
                 </router-link>
             </h1>

@@ -116,7 +116,7 @@ export default {
                         </TableCell>
                         <TableCell>
                             <router-link
-                                :to="{ name: 'single-run', params: { id: run.info.run_id } }"
+                                :to="{ name: 'single-run-metrics', params: { id: run.info.run_id } }"
                                 class="hover:cursor-pointer text-twosix-blue"
                             >
                                 {{ run.info.run_name }}

@@ -1,7 +1,6 @@
 import { computed, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { RouterLink, RouterView, useRouter } from 'vue-router';
 import Heading from '../components/heading.js';
-import RunMetrics from '../components/run-metrics.js';
 import { useEvaluationData } from '../stores/evaluation-data.js';
 
 export default {
@@ -10,7 +9,8 @@ export default {
     },
     components: {
         Heading,
-        RunMetrics,
+        RouterLink,
+        RouterView,
     },
     setup(props) {
         const router = useRouter();
@@ -30,7 +30,33 @@ export default {
     template: `
         <div class="container">
             <heading>{{ run?.info.run_name }}</heading>
-            <run-metrics v-if="run" :metrics="run.data.metrics"></run-metrics>
+            <div role="tablist" class="tabs tabs-lifted">
+                <router-link
+                    :to="{ name: 'single-run-metrics' }"
+                    role="tab"
+                    class="tab"
+                    active-class="tab-active"
+                >
+                    Metrics
+                </router-link>
+                <router-link
+                    :to="{ name: 'single-run-params' }"
+                    role="tab"
+                    class="tab"
+                    active-class="tab-active"
+                >
+                    Parameters
+                </router-link>
+                <router-link
+                    :to="{ name: 'single-run-pipeline' }"
+                    role="tab"
+                    class="tab"
+                    active-class="tab-active"
+                >
+                    Pipeline
+                </router-link>
+            </div>
+            <router-view v-if="run" :run="run"></router-view>
         </div>
     `,
 };

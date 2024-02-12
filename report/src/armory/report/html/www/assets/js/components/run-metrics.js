@@ -87,7 +87,7 @@ export default {
         TableRowHeader,
     },
     props: {
-        metrics: Object,
+        run: Object,
     },
     setup(props) {
         const metricsSettings = useMetricsSettings();
@@ -101,7 +101,7 @@ export default {
             precision,
         } = storeToRefs(metricsSettings);
 
-        const [metricsByChain, allMetrics] = reorganizeMetrics(props.metrics);
+        const [metricsByChain, allMetrics] = reorganizeMetrics(props.run.data.metrics);
 
         const visibleMetrics = computed(() => {
             if (hiddenMetrics.value) {
