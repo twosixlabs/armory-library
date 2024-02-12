@@ -1,6 +1,6 @@
 import json
 import pathlib
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import importlib_resources
 
@@ -26,6 +26,26 @@ def configure_args(parser: "argparse.ArgumentParser"):
         "--experiment",
         help="ID of the MLFlow experiment for which to report",
     )
+    parser.add_argument(
+        "--baseline-chain",
+        help="Perturbation chain to which to compare all other chains",
+    )
+    parser.add_argument(
+        "--hide-metrics",
+        help="Metrics to be hidden by default in the report",
+        nargs="*",
+    )
+    parser.add_argument(
+        "--metric-precision",
+        default=3,
+        help="Default decimal precision for metrics",
+        type=int,
+    )
+    parser.add_argument(
+        "--metric-types",
+        help="Type of metric (high or low is better) in the form of ':'-separated key-value pairs (e.g., 'accuracy:high')",
+        nargs="*",
+    )
 
 
 def copy_resources(srcdir: "Traversable", outdir: pathlib.Path):
@@ -41,12 +61,28 @@ def copy_resources(srcdir: "Traversable", outdir: pathlib.Path):
                 outfile.write(entry.read_bytes())
 
 
-def generate(out: str, experiment: Optional[str], **kwargs):
+def generate(
+    out: str,
+    experiment: Optional[str],
+    baseline_chain: Optional[str],
+    hide_metrics: List[str],
+    metric_precision: int,
+    metric_types: List[str],
+    **kwargs,
+):
     outpath = pathlib.Path(out)
     outpath.mkdir(parents=True, exist_ok=True)
 
     if experiment:
         data = common.dump_experiment(experiment)
+        data["settings"] = dict(
+            baseline_chain=baseline_chain,
+            hide_metrics=hide_metrics,
+            metric_precision=metric_precision,
+            metric_types={
+                kv[0]: kv[1] for kv in [kv.split(":") for kv in metric_types]
+            },
+        )
         with open(outpath / "armory-evaluation-data.js", "w") as outfile:
             jsdata = json.dumps(data, indent=2, sort_keys=True)
             outfile.write(f"export default {jsdata};")

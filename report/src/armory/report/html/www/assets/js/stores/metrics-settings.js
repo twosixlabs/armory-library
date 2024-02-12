@@ -1,8 +1,11 @@
 import { defineStore } from 'pinia';
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useEvaluationData } from './evaluation-data.js';
 
 export const useMetricsSettings = defineStore('metrics-settings', () => {
+    const evaluationData = useEvaluationData();
+
     const router = useRouter();
     const route = router.currentRoute;
     const updateQuery = (query) => {
@@ -12,10 +15,13 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
         }, { replace: true }).catch((err) => console.log(err));
     };
 
-    // -- baseline metric
+    // -- baseline chain
 
     const baseline = computed({
         get() {
+            if (route.value.query.baseline == undefined) {
+                return evaluationData.settings.baseline_chain;
+            }
             return route.value.query.baseline;
         },
         set(baseline) {
@@ -35,7 +41,7 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
 
     const precision = computed({
         get() {
-            const p = route.value.query.precision;
+            const p = route.value.query.precision || evaluationData.settings.metric_precision;
             return p ? Number.parseInt(p) : 3;
         },
         set(precision) {
@@ -46,7 +52,7 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
     // -- metric comparison type
 
     function getMetricType(metric) {
-        return route.value.query[`metric.${metric}`] || "high";
+        return route.value.query[`metric.${metric}`] || evaluationData.settings.metric_types[metric] || "high";
     }
 
     function setMetricType(metric, metricType) {
@@ -57,6 +63,9 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
 
     const hiddenMetrics = computed(() => {
         const hide = route.value.query.hide;
+        if (hide == undefined) {
+            return evaluationData.settings.hide_metrics || [];
+        }
         if (Array.isArray(hide)) {
             return hide;
         }
@@ -67,30 +76,18 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
     });
 
     function toggleMetric(metric) {
-        let hide = route.value.query.hide;
-        console.log({ metric, hide })
-        if (Array.isArray(hide)) {
-            hide = [...hide]; // make a copy
-            if (hide.includes(metric)) {
-                const index = hide.indexOf(metric);
-                console.log('removing from array', index)
-                hide.splice(index, 1);
-                if (hide.length == 0) {
-                    hide = undefined;
-                }
-            } else {
-                console.log('adding to array')
-                hide.push(metric);
+        let hide = [...hiddenMetrics.value]; // make a copy
+        if (hide.includes(metric)) {
+            const index = hide.indexOf(metric);
+            hide.splice(index, 1);
+            if (hide.length == 0) {
+                hide.push("");
             }
-        } else if (hide == metric) { // remove value as single entry
-            hide = undefined;
-        } else if (hide) { // add value to existing single entry
-            hide = [hide, metric];
-        } else { // set value as single entry
-            hide = [metric];
+        } else {
+            hide.push(metric);
+            hide = hide.filter((h) => h != "");
         }
 
-        console.log('new', { hide })
         updateQuery({ hide });
     }
 
