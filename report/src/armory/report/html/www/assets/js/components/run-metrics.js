@@ -1,3 +1,4 @@
+import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { useMetricsSettings } from '../stores/metrics-settings.js';
 import Button from './button.js';
@@ -85,15 +86,18 @@ export default {
         metrics: Object,
     },
     setup(props) {
+        const metricsSettings = useMetricsSettings();
         const {
-            baseline,
             getMetricType,
-            hiddenMetrics,
-            precision,
             setMetricType,
             toggleBaseline,
             toggleMetric,
-        } = useMetricsSettings();
+        } = metricsSettings;
+        const {
+            baseline,
+            hiddenMetrics,
+            precision,
+        } = storeToRefs(metricsSettings);
 
         const [metricsByChain, allMetrics] = reorganizeMetrics(props.metrics);
 

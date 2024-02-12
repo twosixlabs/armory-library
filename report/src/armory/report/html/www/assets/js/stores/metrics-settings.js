@@ -1,7 +1,8 @@
+import { defineStore } from 'pinia';
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 
-export const useMetricsSettings = () => {
+export const useMetricsSettings = defineStore('metrics-settings', () => {
     const router = useRouter();
     const route = router.currentRoute;
     const updateQuery = (query) => {
@@ -102,4 +103,4 @@ export const useMetricsSettings = () => {
         toggleBaseline,
         toggleMetric,
     };
-};
+});
