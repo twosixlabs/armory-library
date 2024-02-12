@@ -1,5 +1,5 @@
 import { computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useMetricsSettings } from '../stores/metrics-settings.js';
 import Button from './button.js';
 import { ChevronDownIcon } from './icons.js';
 import {
@@ -34,35 +34,6 @@ const reorganizeMetrics = (flatMetrics) => {
     }
     return [byChain, allMetrics];
 };
-
-const addTo = (maybeArray, value) => {
-    if (Array.isArray(maybeArray)) {
-        maybeArray.push(value);
-        return maybeArray;
-    }
-    if (maybeArray) {
-        return [maybeArray, value];
-    }
-    return [value];
-}
-
-const removeFrom = (maybeArray, value) => {
-    if (Array.isArray(maybeArray)) {
-        const copy = [...maybeArray];
-        if (copy.includes(value)) {
-            const index = copy.indexOf(value);
-            copy.splice(index, 1);
-        }
-        if (copy.length == 0) {
-            return undefined;
-        }
-        return copy;
-    }
-    if (maybeArray == value) {
-        return undefined;
-    }
-    return maybeArray;
-}
 
 const MetricCell = {
     components: {
@@ -114,63 +85,24 @@ export default {
         metrics: Object,
     },
     setup(props) {
-        const route = useRoute();
-        const router = useRouter();
-
-        const baseline = computed({
-            get() {
-                return route.query.baseline;
-            },
-            set(baseline) {
-                router.push({ query: { ...route.query, baseline }});
-            },
-        });
-        
-        const toggleBaseline = (chain) => {
-            if (baseline.value == chain) {
-                baseline.value = "";
-            } else {
-                baseline.value = chain;
-            }
-        };
-
-        const precision = computed({
-            get() {
-                return route.query.precision ? Number.parseInt(route.query.precision) : 3;
-            },
-            set(precision) {
-                router.push({ query: { ...route.query, precision } });
-            },
-        });
+        const {
+            baseline,
+            getMetricType,
+            hiddenMetrics,
+            precision,
+            setMetricType,
+            toggleBaseline,
+            toggleMetric,
+        } = useMetricsSettings();
 
         const [metricsByChain, allMetrics] = reorganizeMetrics(props.metrics);
 
         const visibleMetrics = computed(() => {
-            if (route.query.hide) {
-                return [...allMetrics].filter((m) => !route.query.hide.includes(m));
+            if (hiddenMetrics.value) {
+                return [...allMetrics].filter((m) => !hiddenMetrics.value.includes(m));
             }
             return allMetrics;
         });
-
-        const hiddenMetrics = computed(() => {
-            if (Array.isArray(route.query.hide)) {
-                return route.query.hide;
-            }
-            if (route.query.hide) {
-                return [route.query.hide];
-            }
-            return [];
-        });
-
-        const showMetric = (metric) => {
-            const hide = removeFrom(route.query.hide, metric);
-            router.push({ query: { ...route.query, hide } });
-        };
-
-        const hideMetric = (metric) => {
-            const hide = addTo(route.query.hide, metric);
-            router.push({ query: { ...route.query, hide } });
-        };
 
         const compareToBaseline = (chain, metric, value) => {
             if (!baseline.value || baseline.value == chain) {
@@ -181,32 +113,28 @@ export default {
                 return SAME_AS_BASELINE;
             }
             if (baselineValue < value) {
-                return route.query[`metric.${metric}`] == "high" ? BETTER_THAN_BASELINE : WORSE_THAN_BASELINE;
+                return getMetricType(metric) == "high" ? BETTER_THAN_BASELINE : WORSE_THAN_BASELINE; 
             }
             if (baselineValue > value) {
-                return route.query[`metric.${metric}`] == "high" ? WORSE_THAN_BASELINE : BETTER_THAN_BASELINE;
+                return getMetricType(metric) == "high" ? WORSE_THAN_BASELINE : BETTER_THAN_BASELINE;
             }
             return SAME_AS_BASELINE;
-        };
-
-        const setMetricType = (metric, metricType) => {
-            router.push({ query: { ...route.query, [`metric.${metric}`]: metricType }});
         };
 
         return {
             baseline,
             compareToBaseline,
             hiddenMetrics,
-            hideMetric,
             metricsByChain,
             precision,
             setMetricType,
-            showMetric,
             toggleBaseline,
+            toggleMetric,
             visibleMetrics,
         };
     },
     template: `
+        {{ hiddenMetrics }}
         <div class="items-center flex flex-row gap-2 my-2">
             <div class="dropdown">
                 <Button :disabled="hiddenMetrics.length == 0" tabindex="0">
@@ -215,7 +143,7 @@ export default {
                 </Button>
                 <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
                     <li v-for="metric in hiddenMetrics" :key="metric">
-                        <a @click="showMetric(metric)">{{ metric }}</a>
+                        <a @click="toggleMetric(metric)">{{ metric }}</a>
                     </li>
                 </ul>
             </div>
@@ -243,7 +171,7 @@ export default {
                                 </Button>
                                 <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
                                     <li>
-                                        <a @click="hideMetric(metric)">
+                                        <a @click="toggleMetric(metric)">
                                             Hide
                                         </a>
                                     </li>
