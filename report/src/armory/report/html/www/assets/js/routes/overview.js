@@ -60,7 +60,7 @@ export default {
         });
 
         const goToCompare = () => router.push({
-            name: 'compare-runs',
+            name: 'compare-runs-metrics',
             query: {
                 runs: selected.runs,
             },

@@ -19,5 +19,14 @@ export const routes = [
             { path: 'pipeline', name: 'single-run-pipeline', component: Placeholder },
         ],
     },
-    { path: '/compare', name: 'compare-runs', component: MultipleRuns },
+    {
+        path: '/compare',
+        name: 'compare-runs',
+        component: MultipleRuns,
+        children: [
+            { path: '', redirect: { name: 'compare-runs-metrics' } },
+            { path: 'metrics', name: 'compare-runs-metrics', component: Placeholder },
+            { path: 'diff', name: 'compare-runs-diff', component: Placeholder },
+        ],
+    },
 ];

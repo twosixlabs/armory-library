@@ -1,12 +1,54 @@
-import { useRoute } from 'vue-router';
+import { computed, watch } from 'vue';
+import { RouterLink, RouterView, useRouter } from 'vue-router';
+import Heading from '../components/heading.js';
+import { useEvaluationData } from '../stores/evaluation-data.js';
 
 export default {
+    components: {
+        Heading,
+        RouterLink,
+        RouterView,
+    },
     setup() {
-        const route = useRoute();
-        const runId = route.query.runs;
-        return { runId };
+        const router = useRouter();
+        const runIds = router.currentRoute.value.query.runs;
+
+        const evaluationData = useEvaluationData();
+        const runs = computed(() => evaluationData.runs.filter(
+            (run) => runIds.includes(run.info.run_id)
+        ));
+        watch(runs, (newRuns) => {
+            if (!newRuns) {
+                router.push({ name: 'index' });
+            }
+        });
+
+        return { runs };
     },
     template: `
-        <p>comparing {{ runId }}</p>
+        <div class="container">
+            <heading>
+                Comparing {{ runs.length }} runs
+            </heading>
+            <div role="tablist" class="tabs tabs-lifted">
+                <router-link
+                    :to="{ name: 'compare-runs-metrics' }"
+                    role="tab"
+                    class="tab"
+                    active-class="tab-active"
+                >
+                    Metrics
+                </router-link>
+                <router-link
+                    :to="{ name: 'compare-runs-diff' }"
+                    role="tab"
+                    class="tab"
+                    active-class="tab-active"
+                >
+                    Diff
+                </router-link>
+            </div>
+            <router-view v-if="runs.length" :runs="runs"></router-view>
+        </div>
     `,
 };
