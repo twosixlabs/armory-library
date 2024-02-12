@@ -11,19 +11,24 @@ export default {
     },
     setup() {
         const router = useRouter();
-        const runIds = router.currentRoute.value.query.runs;
+        const runIds = computed(() => router.currentRoute.value.query.runs || []);
+        watch(runIds, (newRunIds) => {
+            if (newRunIds.length < 2) {
+                router.push({ name: 'index' });
+            }
+        }, { immediate: true });
 
         const evaluationData = useEvaluationData();
         const runs = computed(() => evaluationData.runs.filter(
-            (run) => runIds.includes(run.info.run_id)
+            (run) => runIds.value.includes(run.info.run_id)
         ));
         watch(runs, (newRuns) => {
-            if (!newRuns) {
+            if (newRuns.length < 2) {
                 router.push({ name: 'index' });
             }
-        });
+        }, { immediate: true });
 
-        return { runs };
+        return { runs, runIds };
     },
     template: `
         <div class="container">
@@ -32,7 +37,7 @@ export default {
             </heading>
             <div role="tablist" class="tabs tabs-lifted">
                 <router-link
-                    :to="{ name: 'compare-runs-metrics' }"
+                    :to="{ name: 'compare-runs-metrics', query: { runs: runIds } }"
                     role="tab"
                     class="tab"
                     active-class="tab-active"
@@ -40,7 +45,7 @@ export default {
                     Metrics
                 </router-link>
                 <router-link
-                    :to="{ name: 'compare-runs-diff' }"
+                    :to="{ name: 'compare-runs-diff', query: { runs: runIds } }"
                     role="tab"
                     class="tab"
                     active-class="tab-active"
