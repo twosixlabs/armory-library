@@ -2,7 +2,9 @@ import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { useMetricsSettings } from '../stores/metrics-settings.js';
 import Button from './button.js';
+import HiddenMetricsDropdown from './hidden-metrics-dropdown.js';
 import { ChevronDownIcon } from './icons.js';
+import MetricColumnDropdown from './metric-column-dropdown.js';
 import {
     Table,
     TableBody,
@@ -73,7 +75,9 @@ export default {
     components: {
         Button,
         ChevronDownIcon,
+        HiddenMetricsDropdown,
         MetricCell,
+        MetricColumnDropdown,
         Table,
         TableBody,
         TableCell,
@@ -89,9 +93,7 @@ export default {
         const metricsSettings = useMetricsSettings();
         const {
             getMetricType,
-            setMetricType,
             toggleBaseline,
-            toggleMetric,
         } = metricsSettings;
         const {
             baseline,
@@ -128,29 +130,15 @@ export default {
         return {
             baseline,
             compareToBaseline,
-            hiddenMetrics,
             metricsByChain,
             precision,
-            setMetricType,
             toggleBaseline,
-            toggleMetric,
             visibleMetrics,
         };
     },
     template: `
-        {{ hiddenMetrics }}
         <div class="items-center flex flex-row gap-2 my-2">
-            <div class="dropdown">
-                <Button :disabled="hiddenMetrics.length == 0" tabindex="0">
-                    Columns
-                    <ChevronDownIcon></ChevronDownIcon>
-                </Button>
-                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
-                    <li v-for="metric in hiddenMetrics" :key="metric">
-                        <a @click="toggleMetric(metric)">{{ metric }}</a>
-                    </li>
-                </ul>
-            </div>
+            <HiddenMetricsDropdown></HiddenMetricsDropdown>
             <span class="border-l-2 pl-2">
                 Precision
             </span>
@@ -169,28 +157,7 @@ export default {
                     <TableHeader v-for="metric in visibleMetrics" :key="metric">
                         <div class="items-center flex gap-2">
                             {{ metric }}
-                            <div class="dropdown">
-                                <Button minimal tabindex="0">
-                                    <ChevronDownIcon></ChevronDownIcon>
-                                </Button>
-                                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
-                                    <li>
-                                        <a @click="toggleMetric(metric)">
-                                            Hide
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a @click="setMetricType(metric, 'low')">
-                                            Lower is better
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a @click="setMetricType(metric, 'high')">
-                                            Higher is better
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
+                            <MetricColumnDropdown :metric="metric"></MetricColumnDropdown>
                         </div>
                     </TableHeader>
                     <TableHeader></TableHeader>
