@@ -21,7 +21,7 @@ export default {
         )[0]);
         watch(run, (newRun) => {
             if (!newRun) {
-                router.push({ path: '/' });
+                router.push({ name: 'index' });
             }
         });
 

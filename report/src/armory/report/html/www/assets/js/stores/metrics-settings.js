@@ -9,10 +9,7 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
     const router = useRouter();
     const route = router.currentRoute;
     const updateQuery = (query) => {
-        router.push({
-            path: route.value.path,
-            query: { ...route.value.query, ...query },
-        }, { replace: true }).catch((err) => console.log(err));
+        router.push({ query: { ...route.value.query, ...query } }, { replace: true });
     };
 
     // -- baseline chain

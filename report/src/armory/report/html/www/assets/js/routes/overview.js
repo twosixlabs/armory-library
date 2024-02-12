@@ -60,7 +60,7 @@ export default {
         });
 
         const goToCompare = () => router.push({
-            path: '/compare',
+            name: 'compare-runs',
             query: {
                 runs: selected.runs,
             },
@@ -116,7 +116,7 @@ export default {
                         </TableCell>
                         <TableCell>
                             <router-link
-                                :to="'/run/' + run.info.run_id"
+                                :to="{ name: 'single-run', params: { id: run.info.run_id } }"
                                 class="hover:cursor-pointer text-twosix-blue"
                             >
                                 {{ run.info.run_name }}
