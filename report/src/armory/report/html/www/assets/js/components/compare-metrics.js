@@ -1,3 +1,4 @@
+import { storeToRefs } from 'pinia';
 import { useMetricsSettings } from '../stores/metrics-settings.js';
 import {
     Table,
@@ -49,12 +50,25 @@ export default {
     },
     setup(props) {
         const metricsSettings = useMetricsSettings();
+        const { precision } = storeToRefs(metricsSettings);
 
         const [metricsByRun, columns] = reorganizeMetrics(props.runs);
 
-        return { columns, metricsByRun };
+        return { columns, metricsByRun, precision };
     },
     template: `
+        <div class="items-center flex flex-row gap-2 my-2">
+            <span class="border-l-2 pl-2">
+                Precision
+            </span>
+            <input
+                v-model="precision"
+                class="appearance-none border border-zinc-300 focus:border-zinc-400 focus:outline-none leading-6 pl-3 pr-2 py-1.5 rounded-md w-20"
+                min="0"
+                max="9"
+                type="number"
+            />
+        </div>
         <Table>
             <TableHead>
                 <tr>
@@ -88,7 +102,7 @@ export default {
                     </TableRowHeader>
                     <template v-for="(chains, metric) in columns">
                         <TableCell v-for="chain in chains" :key="chain">
-                            {{ runMetrics[chain + "/" + metric].toFixed(3) }}
+                            {{ runMetrics[chain + "/" + metric].toFixed(precision) }}
                         </TableCell>
                     </template>
                 </TableRow>
