@@ -54,9 +54,47 @@ export default {
         runs: Object,
     },
     setup(props) {
+        const metricsSettings = useMetricsSettings();
         const metrics = computed(() => getMetrics(props.runs));
         const parameters = computed(() => getParameters(props.runs));
-        return { metrics, parameters };
+
+        const getMetricRowClass = (chain, metric) => {
+            const values = new Set();
+            for (const run of props.runs) {
+                const value = run.data.metrics[chain + "/" + metric];
+                if (value != undefined) {
+                    values.add(value.toFixed(metricsSettings.precision))
+                } else {
+                    values.add(null);
+                }
+            }
+
+            const num = [...values].length;
+            return {
+                'even:bg-zinc-50': num <= 1,
+                'bg-twosix-green': num > 1,
+            };
+        };
+
+        const getParamRowClass = (param) => {
+            const values = new Set();
+            for (const run of props.runs) {
+                values.add(run.data.params[param]);
+            }
+
+            const num = [...values].length;
+            return {
+                'even:bg-zinc-50': num <= 1,
+                'bg-twosix-green': num > 1,
+            };
+        }
+
+        return {
+            getMetricRowClass,
+            getParamRowClass,
+            metrics,
+            parameters,
+        };
     },
     template: `
         <Table>
@@ -86,7 +124,10 @@ export default {
                             </span>
                         </TableRowHeader>
                     </TableRow>
-                    <TableRow v-for="chain in chains">
+                    <tr
+                        v-for="chain in chains"
+                        :class="getMetricRowClass(chain, metric)"
+                    >
                         <TableRowHeader>
                             <span class="ml-8">
                                 {{ chain }}
@@ -98,16 +139,17 @@ export default {
                         >
                             {{ run.data.metrics[chain + "/" + metric].toFixed(3) }}
                         </TableCell>
-                    </TableRow>
+                    </tr>
                 </template>
                 <TableRow>
                     <TableRowHeader :colspan="runs.length + 1">
                         Parameters
                     </TableRowHeader>
                 </TableRow>
-                <TableRow
+                <tr
                     v-for="parameter in parameters"
                     :key="parameter"
+                    :class="getParamRowClass(parameter)"
                 >
                     <TableRowHeader>
                         <span class="ml-4">
@@ -121,7 +163,7 @@ export default {
                     >
                         {{ run.data.params[parameter] }}
                     </TableCell>
-                </TableRow>
+                </tr>
             </TableBody>
         </Table>
     `,
