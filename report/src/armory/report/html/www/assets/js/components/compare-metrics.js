@@ -1,5 +1,6 @@
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
+import { RouterLink } from 'vue-router';
 import { useMetricsSettings } from '../stores/metrics-settings.js';
 import Button from './button.js';
 import ChainColumnDropdown from './chain-column-dropdown.js';
@@ -50,6 +51,7 @@ export default {
         HiddenChainsDropdown,
         HiddenMetricsDropdown,
         MetricColumnDropdown,
+        RouterLink,
         Table,
         TableBody,
         TableCell,
@@ -137,7 +139,12 @@ export default {
             <TableBody>
                 <TableRow v-for="(run, runId) in metrics.byRunId" :key="runId">
                     <TableRowHeader>
-                        {{ run.info.run_name }}
+                        <router-link
+                            :to="{ name: 'single-run-metrics', params: { id: run.info.run_id } }"
+                            class="text-twosix-blue"
+                        >
+                            {{ run.info.run_name }}
+                        </router-link>
                     </TableRowHeader>
                     <template v-for="(chains, metric) in metrics.columns">
                         <TableCell v-for="chain in chains" :key="chain">
