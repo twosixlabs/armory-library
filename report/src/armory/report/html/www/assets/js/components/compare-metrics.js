@@ -17,13 +17,13 @@ import {
 } from './table.js';
 
 const reorganizeMetrics = (runs, hiddenMetrics, hiddenChains) => {
-    const byRun = {};
+    const byRunId = {};
     const allMetrics = new Set();
     for (const run of runs) {
-        for (const [name, value] of Object.entries(run.data.metrics)) {
+        for (const name of Object.keys(run.data.metrics)) {
             allMetrics.add(name);
         }
-        byRun[run.info.run_name] = run.data.metrics;
+        byRunId[run.info.run_id] = run;
     }
     const columns = {};
     for (const key of allMetrics) {
@@ -40,7 +40,7 @@ const reorganizeMetrics = (runs, hiddenMetrics, hiddenChains) => {
             }
         }
     }
-    return { byRun, columns };
+    return { byRunId, columns };
 };
 
 export default {
@@ -135,19 +135,19 @@ export default {
                 </tr>
             </TableHead>
             <TableBody>
-                <TableRow v-for="(runMetrics, runName) in metrics.byRun" :key="runName">
+                <TableRow v-for="(run, runId) in metrics.byRunId" :key="runId">
                     <TableRowHeader>
-                        {{ runName }}
+                        {{ run.info.run_name }}
                     </TableRowHeader>
                     <template v-for="(chains, metric) in metrics.columns">
                         <TableCell v-for="chain in chains" :key="chain">
-                            {{ runMetrics[chain + "/" + metric].toFixed(precision) }}
+                            {{ run.data.metrics[chain + "/" + metric].toFixed(precision) }}
                         </TableCell>
                     </template>
                     <TableCell>
                         <Button
-                            :active="baselineRun == runName"
-                            @click="toggleBaselineRun(runName)"
+                            :active="baselineRun == runId"
+                            @click="toggleBaselineRun(runId)"
                         >
                             Baseline
                         </Button>
