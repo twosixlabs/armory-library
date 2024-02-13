@@ -1,5 +1,6 @@
 import CompareMetrics from '../components/compare-metrics.js';
 import Placeholder from '../components/placeholder.js';
+import RunDiff from '../components/run-diff.js';
 import RunMetrics from '../components/run-metrics.js';
 import RunParameters from '../components/run-parameters.js';
 import Overview from './overview.js';
@@ -27,7 +28,7 @@ export const routes = [
         children: [
             { path: '', redirect: { name: 'compare-runs-metrics' } },
             { path: 'metrics', name: 'compare-runs-metrics', component: CompareMetrics },
-            { path: 'diff', name: 'compare-runs-diff', component: Placeholder },
+            { path: 'diff', name: 'compare-runs-diff', component: RunDiff },
         ],
     },
 ];
