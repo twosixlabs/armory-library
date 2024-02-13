@@ -14,23 +14,45 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
 
     // -- baseline chain
 
-    const baseline = computed({
+    const baselineChain = computed({
         get() {
-            if (route.value.query.baseline == undefined) {
+            if (route.value.query.baselineChain == undefined) {
                 return evaluationData.settings.baseline_chain;
             }
-            return route.value.query.baseline;
+            return route.value.query.baselineChain;
         },
-        set(baseline) {
-            updateQuery({ baseline });
+        set(baselineChain) {
+            updateQuery({ baselineChain });
         },
     });
 
-    function toggleBaseline(name) {
-        if (baseline.value == name) {
-            baseline.value = "";
+    function toggleBaselineChain(name) {
+        if (baselineChain.value == name) {
+            baselineChain.value = "";
         } else {
-            baseline.value = name;
+            baselineChain.value = name;
+        }
+    };
+
+    // -- baseline run
+
+    const baselineRun = computed({
+        get() {
+            if (route.value.query.baselineRun == undefined) {
+                return evaluationData.settings.baseline_run;
+            }
+            return route.value.query.baselineRun;
+        },
+        set(baselineRun) {
+            updateQuery({ baselineRun });
+        },
+    });
+
+    function toggleBaselineRun(name) {
+        if (baselineRun.value == name) {
+            baselineRun.value = "";
+        } else {
+            baselineRun.value = name;
         }
     };
 
@@ -121,13 +143,15 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
     }
 
     return {
-        baseline,
+        baselineChain,
+        baselineRun,
         getMetricType,
         hiddenChains,
         hiddenMetrics,
         precision,
         setMetricType,
-        toggleBaseline,
+        toggleBaselineChain,
+        toggleBaselineRun,
         toggleChain,
         toggleMetric,
     };

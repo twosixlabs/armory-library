@@ -1,6 +1,7 @@
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { useMetricsSettings } from '../stores/metrics-settings.js';
+import Button from './button.js';
 import ChainColumnDropdown from './chain-column-dropdown.js';
 import HiddenChainsDropdown from './hidden-chains-dropdown.js';
 import HiddenMetricsDropdown from './hidden-metrics-dropdown.js';
@@ -44,6 +45,7 @@ const reorganizeMetrics = (runs, hiddenMetrics, hiddenChains) => {
 
 export default {
     components: {
+        Button,
         ChainColumnDropdown,
         HiddenChainsDropdown,
         HiddenMetricsDropdown,
@@ -62,6 +64,10 @@ export default {
     setup(props) {
         const metricsSettings = useMetricsSettings();
         const {
+            toggleBaselineRun,
+        } = metricsSettings;
+        const {
+            baselineRun,
             precision,
             hiddenChains,
             hiddenMetrics,
@@ -72,9 +78,11 @@ export default {
         );
 
         return {
+            baselineRun,
             hiddenMetrics,
             metrics,
             precision,
+            toggleBaselineRun,
         };
     },
     template: `
@@ -100,13 +108,14 @@ export default {
                         v-for="(chains, metric) in metrics.columns"
                         :key="metric"
                         :colspan="chains.length"
-                        class="border-l-2 border-white text-center"
+                        class="border-x-2 border-white text-center"
                     >
                         <div class="items-center flex gap-2 justify-center">
                             {{ metric }}
                             <MetricColumnDropdown :metric="metric"></MetricColumnDropdown>
                         </div>
                     </TableHeader>
+                    <TableHeader></TableHeader>
                 </tr>
                 <tr>
                     <TableHeader></TableHeader>
@@ -114,7 +123,7 @@ export default {
                         <TableHeader
                             v-for="chain in chains"
                             :key="chain"
-                            class="[writing-mode:vertical-lr] border-l-2 border-white"
+                            class="[writing-mode:vertical-lr] border-x-2 border-white"
                         >
                             <div class="flex gap-2 justify-between">
                                 {{ chain }}
@@ -122,6 +131,7 @@ export default {
                             </div>
                         </TableHeader>
                     </template>
+                    <TableHeader></TableHeader>
                 </tr>
             </TableHead>
             <TableBody>
@@ -134,6 +144,14 @@ export default {
                             {{ runMetrics[chain + "/" + metric].toFixed(precision) }}
                         </TableCell>
                     </template>
+                    <TableCell>
+                        <Button
+                            :active="baselineRun == runName"
+                            @click="toggleBaselineRun(runName)"
+                        >
+                            Baseline
+                        </Button>
+                    </TableCell>
                 </TableRow>
             </TableBody>
         </Table>

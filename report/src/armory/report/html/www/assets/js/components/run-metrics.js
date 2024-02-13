@@ -93,10 +93,10 @@ export default {
         const metricsSettings = useMetricsSettings();
         const {
             getMetricType,
-            toggleBaseline,
+            toggleBaselineChain,
         } = metricsSettings;
         const {
-            baseline,
+            baselineChain,
             hiddenMetrics,
             precision,
         } = storeToRefs(metricsSettings);
@@ -111,10 +111,10 @@ export default {
         });
 
         const compareToBaseline = (chain, metric, value) => {
-            if (!baseline.value || baseline.value == chain) {
+            if (!baselineChain.value || baselineChain.value == chain) {
                 return SAME_AS_BASELINE;
             }
-            const baselineValue = metricsByChain[baseline.value][metric];
+            const baselineValue = metricsByChain[baselineChain.value][metric];
             if (baselineValue == undefined) {
                 return SAME_AS_BASELINE;
             }
@@ -128,11 +128,11 @@ export default {
         };
 
         return {
-            baseline,
+            baselineChain,
             compareToBaseline,
             metricsByChain,
             precision,
-            toggleBaseline,
+            toggleBaselineChain,
             visibleMetrics,
         };
     },
@@ -177,8 +177,8 @@ export default {
                     ></MetricCell>
                     <TableCell>
                         <Button
-                            :active="baseline == entry[0]"
-                            @click="toggleBaseline(entry[0])"
+                            :active="baselineChain == entry[0]"
+                            @click="toggleBaselineChain(entry[0])"
                         >
                             Baseline
                         </Button>
