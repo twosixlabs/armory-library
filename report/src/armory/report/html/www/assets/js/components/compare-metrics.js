@@ -6,6 +6,12 @@ import Button from './button.js';
 import ChainColumnDropdown from './chain-column-dropdown.js';
 import HiddenChainsDropdown from './hidden-chains-dropdown.js';
 import HiddenMetricsDropdown from './hidden-metrics-dropdown.js';
+import {
+    BETTER_THAN_BASELINE,
+    SAME_AS_BASELINE,
+    WORSE_THAN_BASELINE,
+    MetricCell,
+} from './metric-cell.js';
 import MetricColumnDropdown from './metric-column-dropdown.js';
 import {
     Table,
@@ -50,6 +56,7 @@ export default {
         ChainColumnDropdown,
         HiddenChainsDropdown,
         HiddenMetricsDropdown,
+        MetricCell,
         MetricColumnDropdown,
         RouterLink,
         Table,
@@ -66,6 +73,7 @@ export default {
     setup(props) {
         const metricsSettings = useMetricsSettings();
         const {
+            getMetricType,
             toggleBaselineRun,
         } = metricsSettings;
         const {
@@ -79,8 +87,29 @@ export default {
             reorganizeMetrics(props.runs, hiddenMetrics.value, hiddenChains.value)
         );
 
+        const getMetricValue = (run, chain, metric) => run.data.metrics[chain + "/" + metric];
+
+        const compareToBaseline = (runId, chain, metric, value) => {
+            if (!baselineRun.value || baselineRun.value == runId) {
+                return SAME_AS_BASELINE
+            }
+            const baselineValue = metrics.value.byRunId[baselineRun.value].data.metrics[chain + "/" + metric];
+            if (baselineValue == undefined) {
+                return SAME_AS_BASELINE;
+            }
+            if (baselineValue < value) {
+                return getMetricType(metric) == "high" ? BETTER_THAN_BASELINE : WORSE_THAN_BASELINE;
+            }
+            if (baselineValue > value) {
+                return getMetricType(metric) == "high" ? WORSE_THAN_BASELINE : BETTER_THAN_BASELINE;
+            }
+            return SAME_AS_BASELINE;
+        };
+
         return {
             baselineRun,
+            compareToBaseline,
+            getMetricValue,
             hiddenMetrics,
             metrics,
             precision,
@@ -147,9 +176,13 @@ export default {
                         </router-link>
                     </TableRowHeader>
                     <template v-for="(chains, metric) in metrics.columns">
-                        <TableCell v-for="chain in chains" :key="chain">
-                            {{ run.data.metrics[chain + "/" + metric].toFixed(precision) }}
-                        </TableCell>
+                        <MetricCell
+                            v-for="chain in chains"
+                            :comparison="compareToBaseline(runId, chain, metric, getMetricValue(run, chain, metric))"
+                            :key="chain"
+                            :precision="precision"
+                            :value="getMetricValue(run, chain, metric)"
+                        ></MetricCell>
                     </template>
                     <TableCell>
                         <Button

@@ -4,6 +4,12 @@ import { useMetricsSettings } from '../stores/metrics-settings.js';
 import Button from './button.js';
 import HiddenMetricsDropdown from './hidden-metrics-dropdown.js';
 import { ChevronDownIcon } from './icons.js';
+import {
+    BETTER_THAN_BASELINE,
+    SAME_AS_BASELINE,
+    WORSE_THAN_BASELINE,
+    MetricCell,
+} from './metric-cell.js';
 import MetricColumnDropdown from './metric-column-dropdown.js';
 import {
     Table,
@@ -14,10 +20,6 @@ import {
     TableRow,
     TableRowHeader,
 } from './table.js';
-
-const BETTER_THAN_BASELINE = 1;
-const SAME_AS_BASELINE = 0;
-const WORSE_THAN_BASELINE = -1;
 
 const reorganizeMetrics = (flatMetrics) => {
     const byChain = {};
@@ -36,39 +38,6 @@ const reorganizeMetrics = (flatMetrics) => {
         }
     }
     return [byChain, allMetrics];
-};
-
-const MetricCell = {
-    components: {
-        TableCell,
-    },
-    props: {
-        comparison: Number,
-        precision: Number,
-        value: Number,
-    },
-    setup(props) {
-        const classes = computed(() => ({
-            cell: {
-                "text-green-700": props.comparison == BETTER_THAN_BASELINE,
-                "text-red-700": props.comparison == WORSE_THAN_BASELINE,
-            },
-            span: {
-                "border-r-[1rem]": props.comparison != SAME_AS_BASELINE,
-                "border-green-700": props.comparison == BETTER_THAN_BASELINE,
-                "border-red-700": props.comparison == WORSE_THAN_BASELINE,
-                "pr-1": props.comparison != SAME_AS_BASELINE,
-            },
-        }));
-        return { classes };
-    },
-    template: `
-        <TableCell :class="classes.cell">
-            <span :class="classes.span">
-                {{ value.toFixed(precision) }}
-            </span>
-        </TableCell>
-    `,
 };
 
 export default {
