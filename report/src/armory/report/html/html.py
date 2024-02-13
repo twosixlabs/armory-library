@@ -31,6 +31,15 @@ def configure_args(parser: "argparse.ArgumentParser"):
         help="Perturbation chain to which to compare all other chains",
     )
     parser.add_argument(
+        "--baseline-run",
+        help="Run ID to which to compare all other runs",
+    )
+    parser.add_argument(
+        "--hide-chains",
+        help="Perturbation chains to be hidden by default in the report",
+        nargs="*",
+    )
+    parser.add_argument(
         "--hide-metrics",
         help="Metrics to be hidden by default in the report",
         nargs="*",
@@ -65,6 +74,8 @@ def generate(
     out: str,
     experiment: Optional[str],
     baseline_chain: Optional[str],
+    baseline_run: Optional[str],
+    hide_chains: List[str],
     hide_metrics: List[str],
     metric_precision: int,
     metric_types: List[str],
@@ -77,6 +88,8 @@ def generate(
         data = common.dump_experiment(experiment)
         data["settings"] = dict(
             baseline_chain=baseline_chain,
+            baseline_run=baseline_run,
+            hide_chains=hide_chains,
             hide_metrics=hide_metrics,
             metric_precision=metric_precision,
             metric_types={
