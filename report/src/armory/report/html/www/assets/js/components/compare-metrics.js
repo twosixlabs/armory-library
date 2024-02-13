@@ -13,6 +13,8 @@ import {
     MetricCell,
 } from './metric-cell.js';
 import MetricColumnDropdown from './metric-column-dropdown.js';
+import ParameterColumnDropdown from './parameter-column-dropdown.js';
+import ParametersDropdown from './parameters-dropdown.js';
 import {
     Table,
     TableBody,
@@ -26,9 +28,13 @@ import {
 const reorganizeMetrics = (runs, hiddenMetrics, hiddenChains) => {
     const byRunId = {};
     const allMetrics = new Set();
+    const parameters = new Set();
     for (const run of runs) {
         for (const name of Object.keys(run.data.metrics)) {
             allMetrics.add(name);
+        }
+        for (const name of Object.keys(run.data.params)) {
+            parameters.add(name);
         }
         byRunId[run.info.run_id] = run;
     }
@@ -47,7 +53,7 @@ const reorganizeMetrics = (runs, hiddenMetrics, hiddenChains) => {
             }
         }
     }
-    return { byRunId, columns };
+    return { byRunId, columns, parameters };
 };
 
 export default {
@@ -58,6 +64,8 @@ export default {
         HiddenMetricsDropdown,
         MetricCell,
         MetricColumnDropdown,
+        ParameterColumnDropdown,
+        ParametersDropdown,
         RouterLink,
         Table,
         TableBody,
@@ -79,6 +87,7 @@ export default {
         const {
             baselineRun,
             precision,
+            showParameters,
             hiddenChains,
             hiddenMetrics,
         } = storeToRefs(metricsSettings);
@@ -113,6 +122,7 @@ export default {
             hiddenMetrics,
             metrics,
             precision,
+            showParameters,
             toggleBaselineRun,
         };
     },
@@ -120,6 +130,7 @@ export default {
         <div class="items-center flex flex-row gap-2 my-2">
             <HiddenMetricsDropdown></HiddenMetricsDropdown>
             <HiddenChainsDropdown></HiddenChainsDropdown>
+            <ParametersDropdown :parameters="metrics.parameters"></ParametersDropdown>
             <span class="border-l-2 pl-2">
                 Precision
             </span>
@@ -146,6 +157,7 @@ export default {
                             <MetricColumnDropdown :metric="metric"></MetricColumnDropdown>
                         </div>
                     </TableHeader>
+                    <TableHeader v-for="param in showParameters" :key="param"></TableHeader>
                     <TableHeader></TableHeader>
                 </tr>
                 <tr>
@@ -162,6 +174,19 @@ export default {
                             </div>
                         </TableHeader>
                     </template>
+                    <TableHeader
+                        v-for="param in showParameters"
+                        :key="param"
+                        class="[writing-mode:vertical-lr]"
+                    >
+                        <div class="flex gap-2 justify-between">
+                            {{ param }}
+                            <ParameterColumnDropdown
+                                :parameter="param"
+                                class="[writing-mode:horizontal-tb]"
+                            ></ParameterColumnDropdown>
+                        </div>
+                    </TableHeader>
                     <TableHeader></TableHeader>
                 </tr>
             </TableHead>
@@ -184,6 +209,12 @@ export default {
                             :value="getMetricValue(run, chain, metric)"
                         ></MetricCell>
                     </template>
+                    <TableCell
+                        v-for="param in showParameters"
+                        :key="param"
+                    >
+                        {{ run.data.params[param] }}
+                    </TableCell>
                     <TableCell>
                         <Button
                             :active="baselineRun == runId"

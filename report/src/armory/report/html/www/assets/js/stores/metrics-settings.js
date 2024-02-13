@@ -86,7 +86,7 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
             return evaluationData.settings.hide_metrics || [];
         }
         if (Array.isArray(hideMetric)) {
-            return hideMetric;
+            return hideMetric.filter((m) => m != "");
         }
         if (hideMetric) {
             return [hideMetric];
@@ -118,7 +118,7 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
             return evaluationData.settings.hide_chains || [];
         }
         if (Array.isArray(hideChain)) {
-            return hideChain;
+            return hideChain.filter((c) => c != "");
         }
         if (hideChain) {
             return [hideChain];
@@ -142,6 +142,38 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
         updateQuery({ hideChain });
     }
 
+    // -- parameter visibility
+
+    const showParameters = computed(() => {
+        const showParameter = route.value.query.showParameter;
+        if (showParameter == undefined) {
+            return evaluationData.settings.show_parameter || [];
+        }
+        if (Array.isArray(showParameter)) {
+            return showParameter.filter((p) => p != "");
+        }
+        if (showParameter) {
+            return [showParameter];
+        }
+        return [];
+    });
+
+    function toggleParameter(parameter) {
+        let showParameter = [...showParameters.value]; // make a copy
+        if (showParameter.includes(parameter)) {
+            const index = showParameter.indexOf(parameter);
+            showParameter.splice(index, 1);
+            if (showParameter.length == 0) {
+                showParameter.push("");
+            }
+        } else {
+            showParameter.push(parameter);
+            showParameter = showParameter.filter((h) => h != "");
+        }
+
+        updateQuery({ showParameter });
+    }
+
     return {
         baselineChain,
         baselineRun,
@@ -150,9 +182,11 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
         hiddenMetrics,
         precision,
         setMetricType,
+        showParameters,
         toggleBaselineChain,
         toggleBaselineRun,
         toggleChain,
         toggleMetric,
+        toggleParameter,
     };
 });
