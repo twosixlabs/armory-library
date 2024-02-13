@@ -3,33 +3,22 @@ Instantiate our package's logger
 """
 
 
-import atexit
-from collections import Counter
 import logging
 
 from rich.logging import RichHandler
 
-modules = Counter(a=1, b=2)
+# TODO: a different possible strategy would be to set up handlers for each
+# module that wants to log to the console such that messages from, for example,
+# h5py could have its own level set and logging package would handle this natively
+
+IGNOREABLE_PACKAGES = """botocore tensorflow s3transfer botocode urllib3 h5py
+    git fsspec boto3 filelock hooks awsrequesti auth""".split()
 
 
-def show_module_counts():
-    print(modules.most_common())
-
-
-atexit.register(show_module_counts)
-
-
-IGNORE_PACKAGES = (
-    "botocore tensorflow s3transfer botocode urllib3 h5py git fspec".split()
-)
-
-
-def origin_filter(record):
+def origin_filter(record) -> bool:
+    """discard log messages if they originate from ignorable packages"""
     package, _, _ = record.name.partition(".")
-    if package in IGNORE_PACKAGES:
-        return False
-    modules[record.name] += 1
-    return True
+    return package not in IGNOREABLE_PACKAGES
 
 
 def configure_root_logger():
