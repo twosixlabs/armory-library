@@ -1,3 +1,4 @@
+import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useMetricsSettings } from '../stores/metrics-settings.js';
@@ -55,6 +56,8 @@ export default {
     },
     setup(props) {
         const metricsSettings = useMetricsSettings();
+        const { precision } = storeToRefs(metricsSettings);
+
         const metrics = computed(() => getMetrics(props.runs));
         const parameters = computed(() => getParameters(props.runs));
 
@@ -94,9 +97,22 @@ export default {
             getParamRowClass,
             metrics,
             parameters,
+            precision,
         };
     },
     template: `
+        <div class="items-center flex flex-row gap-2 my-2">
+            <span>
+                Precision
+            </span>
+            <input
+                v-model="precision"
+                class="appearance-none border border-zinc-300 focus:border-zinc-400 focus:outline-none leading-6 pl-3 pr-2 py-1.5 rounded-md w-20"
+                min="0"
+                max="9"
+                type="number"
+            />
+        </div>
         <Table>
             <TableHead>
                 <tr>
@@ -137,7 +153,7 @@ export default {
                             v-for="run in runs"
                             :key="run.info.run_id"
                         >
-                            {{ run.data.metrics[chain + "/" + metric].toFixed(3) }}
+                            {{ run.data.metrics[chain + "/" + metric].toFixed(precision) }}
                         </TableCell>
                     </tr>
                 </template>
