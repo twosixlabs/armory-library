@@ -8,6 +8,7 @@ from armory.evaluation import PerturbationProtocol
 
 if TYPE_CHECKING:
     from art.attacks import EvasionAttack
+    from art.defences.preprocessor import Preprocessor
     import numpy as np
 
     from armory.labels import LabelTargeter
@@ -25,6 +26,39 @@ class CallablePerturbation(PerturbationProtocol, Generic[T]):
     def apply(self, batch: "Batch"):
         perturbed = self.perturbation(self.inputs_accessor.get(batch.inputs))
         self.inputs_accessor.set(batch.inputs, perturbed)
+
+
+@dataclass
+class ArtPreprocessorDefence(PerturbationProtocol):
+    """
+    A perturbation using a preprocessor defense from the Adversarial Robustness
+    Toolbox (ART).
+
+    Example::
+
+        from art.defences.preprocessor import JpegCompression
+        from charmory.perturbation import ArtPreprocessorDefence
+
+        perturb = ArtPreprocessorDefence(
+            name="JPEGCompression",
+            defence=JpegCompression(),
+        )
+    """
+
+    name: str
+    """Descriptive name of the defence"""
+    defence: "Preprocessor"
+    """ART preprocessor defence"""
+    inputs_accessor: Accessor["np.ndarray"] = field(
+        default_factory=DefaultNumpyAccessor
+    )
+    """Accessor to use for obtaining low-level model inputs from batches"""
+
+    def apply(self, batch: Batch):
+        perturbed_x, _ = self.defence(
+            x=self.inputs_accessor.get(batch.inputs),
+        )
+        self.inputs_accessor.set(batch.inputs, perturbed_x)
 
 
 @dataclass

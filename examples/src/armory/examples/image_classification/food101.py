@@ -4,8 +4,10 @@ gradient descent (PGD) adversarial perturbation
 """
 
 from pprint import pprint
+from typing import Optional
 
 import art.attacks.evasion
+import art.defences.preprocessor
 import art.estimators.classification
 import numpy as np
 import torch
@@ -26,6 +28,18 @@ import armory.perturbation
 import armory.track
 import armory.utils
 
+normalized_scale = armory.data.Scale(
+    dtype=armory.data.DataType.FLOAT,
+    max=1.0,
+    mean=(0.5, 0.5, 0.5),
+    std=(0.5, 0.5, 0.5),
+)
+
+unnormalized_scale = armory.data.Scale(
+    dtype=armory.data.DataType.FLOAT,
+    max=1.0,
+)
+
 
 def parse_cli_args():
     """Parse command-line arguments"""
@@ -45,8 +59,8 @@ def parse_cli_args():
     )
     parser.add_argument(
         "--chains",
-        choices=["benign", "pgd", "patch"],
-        default=["benign", "pgd"],
+        choices=["benign", "pgd", "patch", "defended"],
+        default=["benign", "pgd", "defended"],
         nargs="*",
     )
     parser.add_argument(
@@ -66,7 +80,7 @@ def load_model():
     armory_model = armory.model.image_classification.ImageClassifier(
         name="ViT-finetuned-food101",
         model=hf_model,
-        accessor=armory.data.Images.as_torch(),
+        accessor=armory.data.Images.as_torch(scale=normalized_scale),
     )
 
     art_classifier = armory.track.track_init_params(
@@ -78,7 +92,7 @@ def load_model():
         input_shape=(3, 224, 224),
         channels_first=True,
         nb_classes=101,
-        clip_values=(0.0, 1.0),
+        clip_values=(-1.0, 1.0),
     )
 
     return armory_model, art_classifier
@@ -109,12 +123,7 @@ def load_huggingface_dataset(batch_size: int, shuffle: bool):
     dataloader = armory.dataset.ImageClassificationDataLoader(
         hf_dataset,
         dim=armory.data.ImageDimensions.CHW,
-        scale=armory.data.Scale(
-            dtype=armory.data.DataType.FLOAT,
-            max=1.0,
-            mean=(0.5, 0.5, 0.5),
-            std=(0.5, 0.5, 0.5),
-        ),
+        scale=normalized_scale,
         image_key="image",
         label_key="label",
         batch_size=batch_size,
@@ -161,12 +170,7 @@ def load_torchvision_dataset(
     dataloader = armory.dataset.ImageClassificationDataLoader(
         armory_dataset,
         dim=armory.data.ImageDimensions.CHW,
-        scale=armory.data.Scale(
-            dtype=armory.data.DataType.FLOAT,
-            max=1.0,
-            mean=(0.5, 0.5, 0.5),
-            std=(0.5, 0.5, 0.5),
-        ),
+        scale=normalized_scale,
         image_key="image",
         label_key="label",
         batch_size=batch_size,
@@ -186,8 +190,8 @@ def create_pgd_attack(classifier: art.estimators.classification.PyTorchClassifie
     pgd = armory.track.track_init_params(art.attacks.evasion.ProjectedGradientDescent)(
         classifier,
         batch_size=1,
-        eps=0.031,
-        eps_step=0.007,
+        eps=0.003,
+        eps_step=0.0007,
         max_iter=20,
         num_random_init=1,
         random_eps=False,
@@ -199,6 +203,7 @@ def create_pgd_attack(classifier: art.estimators.classification.PyTorchClassifie
         name="PGD",
         attack=pgd,
         use_label_for_untargeted=True,
+        inputs_accessor=armory.data.Images.as_numpy(scale=normalized_scale),
     )
 
     return evaluation_attack
@@ -225,11 +230,35 @@ def create_adversarial_patch_attack(
         name="AdversarialPatch",
         attack=patch,
         use_label_for_untargeted=False,
+        inputs_accessor=armory.data.Images.as_numpy(scale=normalized_scale),
         generate_every_batch=False,
         apply_patch_kwargs={"scale": 0.5},
     )
 
     return evaluation_attack
+
+
+def create_compression_defence(
+    classifier: Optional[art.estimators.classification.PyTorchClassifier] = None,
+):
+    jpeg_compression = armory.track.track_init_params(
+        art.defences.preprocessor.JpegCompression
+    )(
+        clip_values=(0.0, 1.0),
+        quality=50,
+        channels_first=True,
+    )
+
+    if classifier is not None:
+        armory.utils.apply_art_preprocessor_defense(classifier, jpeg_compression)
+
+    perturbation = armory.perturbation.ArtPreprocessorDefence(
+        name="JPEG_compression",
+        defence=jpeg_compression,
+        inputs_accessor=armory.data.Images.as_numpy(scale=unnormalized_scale),
+    )
+
+    return perturbation
 
 
 def create_metrics():
@@ -273,9 +302,15 @@ def main(
     if "benign" in chains:
         perturbations["benign"] = []
 
-    if "pgd" in chains:
+    if "pgd" in chains or "defended" in chains:
         pgd = create_pgd_attack(art_classifier)
-        perturbations["pgd"] = [pgd]
+
+        if "pgd" in chains:
+            perturbations["pgd"] = [pgd]
+
+        if "defended" in chains:
+            compression = create_compression_defence()
+            perturbations["defended"] = [pgd, compression]
 
     if "patch" in chains:
         if patch_batch_size is None:
