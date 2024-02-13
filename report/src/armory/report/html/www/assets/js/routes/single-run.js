@@ -48,6 +48,14 @@ export default {
                     Parameters
                 </router-link>
                 <router-link
+                    :to="{ name: 'single-run-artifacts' }"
+                    role="tab"
+                    class="tab"
+                    active-class="tab-active"
+                >
+                    Artifacts
+                </router-link>
+                <router-link
                     :to="{ name: 'single-run-pipeline' }"
                     role="tab"
                     class="tab"
