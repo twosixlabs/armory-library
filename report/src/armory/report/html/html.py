@@ -45,6 +45,11 @@ def configure_args(parser: "argparse.ArgumentParser"):
         nargs="*",
     )
     parser.add_argument(
+        "--show-parameters",
+        help="Parameters to be shown by default in the report",
+        nargs="*",
+    )
+    parser.add_argument(
         "--metric-precision",
         default=3,
         help="Default decimal precision for metrics",
@@ -77,6 +82,7 @@ def generate(
     baseline_run: Optional[str],
     hide_chains: List[str],
     hide_metrics: List[str],
+    show_parameters: List[str],
     metric_precision: int,
     metric_types: List[str],
     **kwargs,
@@ -91,6 +97,7 @@ def generate(
             baseline_run=baseline_run,
             hide_chains=hide_chains,
             hide_metrics=hide_metrics,
+            show_parameters=show_parameters,
             metric_precision=metric_precision,
             metric_types={
                 kv[0]: kv[1] for kv in [kv.split(":") for kv in metric_types]

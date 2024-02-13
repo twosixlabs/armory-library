@@ -157,8 +157,14 @@ export default {
                             <MetricColumnDropdown :metric="metric"></MetricColumnDropdown>
                         </div>
                     </TableHeader>
-                    <TableHeader v-for="param in showParameters" :key="param"></TableHeader>
-                    <TableHeader></TableHeader>
+                    <TableHeader
+                        :colspan="showParameters.length"
+                        v-if="showParameters.length"
+                        class="text-center"
+                    >
+                        Parameters
+                    </TableHeader>
+                    <TableHeader class="border-l-2 border-white"></TableHeader>
                 </tr>
                 <tr>
                     <TableHeader></TableHeader>
@@ -187,7 +193,7 @@ export default {
                             ></ParameterColumnDropdown>
                         </div>
                     </TableHeader>
-                    <TableHeader></TableHeader>
+                    <TableHeader class="border-l-2 border-white"></TableHeader>
                 </tr>
             </TableHead>
             <TableBody>

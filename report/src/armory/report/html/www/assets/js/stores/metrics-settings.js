@@ -147,7 +147,7 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
     const showParameters = computed(() => {
         const showParameter = route.value.query.showParameter;
         if (showParameter == undefined) {
-            return evaluationData.settings.show_parameter || [];
+            return evaluationData.settings.show_parameters || [];
         }
         if (Array.isArray(showParameter)) {
             return showParameter.filter((p) => p != "");
