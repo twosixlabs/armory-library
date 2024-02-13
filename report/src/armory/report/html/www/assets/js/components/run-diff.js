@@ -122,7 +122,12 @@ export default {
                         :key="run.info.run_id"
                         class="[writing-mode:vertical-lr]"
                     >
-                        {{ run.info.run_name }}
+                        <router-link
+                            :to="{ name: 'single-run-metrics', params: { id: run.info.run_id } }"
+                            class="text-twosix-blue"
+                        >
+                            {{ run.info.run_name }}
+                        </router-link>
                     </TableHeader>
                 </tr>
             </TableHead>
