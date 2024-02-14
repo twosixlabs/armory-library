@@ -1,7 +1,7 @@
 import json
 import os
 import pathlib
-from typing import List
+from typing import List, Optional
 
 import mlflow.client
 
@@ -45,3 +45,40 @@ def dump_runs(run_ids: List[str]):
     else:
         data["experiment"] = None
     return data
+
+
+def dump_artifacts(
+    run_id: str,
+    batches: List[str],
+    max_samples: Optional[int],
+    extension: str,
+    outdir: pathlib.Path,
+):
+    artifacts = dict()
+    outdir.mkdir(parents=True, exist_ok=True)
+    client = create_client()
+
+    for artifact in client.list_artifacts(run_id):
+        segments = artifact.path.split("_", 4)
+        if len(segments) != 5:
+            continue
+        (_, batch, _, sample, remainder) = segments
+        if batch not in batches:
+            continue
+        if max_samples and int(sample) >= max_samples:
+            continue
+
+        segments = remainder.split(".", 1)
+        if len(segments) != 2:
+            continue
+        (chain, ext) = segments
+        if ext != extension:
+            continue
+
+        artifacts.setdefault(chain, dict())
+        artifacts[chain].setdefault(batch, dict())
+        artifacts[chain][batch][sample] = artifact.path
+
+        client.download_artifacts(run_id, artifact.path, str(outdir))
+
+    return artifacts

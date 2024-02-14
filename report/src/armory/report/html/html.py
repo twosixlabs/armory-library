@@ -60,6 +60,16 @@ def configure_args(parser: "argparse.ArgumentParser"):
         help="Type of metric (high or low is better) in the form of ':'-separated key-value pairs (e.g., 'accuracy:high')",
         nargs="*",
     )
+    parser.add_argument(
+        "--export-batches",
+        help="Batches from which to include exported samples",
+        nargs="*",
+    )
+    parser.add_argument(
+        "--max-samples",
+        help="Maximum number of samples to include from each batch",
+        type=int,
+    )
 
 
 def copy_resources(srcdir: "Traversable", outdir: pathlib.Path):
@@ -85,6 +95,8 @@ def generate(
     show_parameters: List[str],
     metric_precision: int,
     metric_types: List[str],
+    export_batches: List[str],
+    max_samples: Optional[int],
     **kwargs,
 ):
     outpath = pathlib.Path(out)
@@ -103,6 +115,16 @@ def generate(
                 kv[0]: kv[1] for kv in [kv.split(":") for kv in metric_types]
             },
         )
+        if export_batches:
+            for run in data["runs"]:
+                run["artifacts"] = common.dump_artifacts(
+                    run_id=run["info"]["run_id"],
+                    batches=export_batches,
+                    max_samples=max_samples,
+                    extension="png",
+                    outdir=outpath / "assets/img" / run["info"]["run_id"],
+                )
+
         with open(outpath / "armory-evaluation-data.js", "w") as outfile:
             jsdata = json.dumps(data, indent=2, sort_keys=True)
             outfile.write(f"export default {jsdata};")
