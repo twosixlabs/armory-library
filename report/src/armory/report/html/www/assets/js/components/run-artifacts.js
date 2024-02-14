@@ -3,29 +3,36 @@ export default {
         run: Object,
     },
     template: `
-        <div class="gap-2 flex my-2">
+        <div class="flex gap-2 items-center my-2">
+            <span>Chains</span>
             <select class="select select-bordered select-sm w-40">
                 <option disabled>First chain?</option>
                 <option selected>benign</option>
                 <option>attacked</option>
                 <option>defended</option>
             </select>
-            vs
+            <span>vs</span>
             <select class="select select-bordered select-sm w-40">
                 <option disabled>Second chain?</option>
                 <option>benign</option>
                 <option>attacked</option>
                 <option selected>defended</option>
             </select>
+            <span class="border-l-2 pl-2">
+                Batch
+            </span>
             <select class="select select-bordered select-sm w-40">
-                <option disabled selected>Which batch?</option>
-                <option>batch 5</option>
-                <option>batch 10</option>
+                <option disabled>Which batch?</option>
+                <option selected>5</option>
+                <option>10</option>
             </select>
+            <span class="border-l-2 pl-2">
+                Sample
+            </span>
             <select class="select select-bordered select-sm w-40">
-                <option disabled selected>Which sample?</option>
-                <option>sample 1</option>
-                <option>sample 2</option>
+                <option disabled>Which sample?</option>
+                <option>1</option>
+                <option selected>2</option>
             </select>
         </div>
         <div class="diff aspect-square mx-auto max-w-xl">

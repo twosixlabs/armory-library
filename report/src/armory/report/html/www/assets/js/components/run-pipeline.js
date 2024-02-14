@@ -134,7 +134,7 @@ export default {
         Split,
     },
     template: `
-        <div class="flex">
+        <div class="flex flex-row justify-center mt-2">
             <div class="flex flex-col items-center">
                 <Box output type="dataset">Dataset</Box>
                 <Split :num="3">
@@ -151,6 +151,50 @@ export default {
                         <Box input type="model">Model</Box>
                     </Chain>
                 </Split>
+            </div>
+            <div class="border-l-2 mx-4"></div>
+            <div class="flex flex-col">
+                <div class="flex items-center justify-center">
+                    <select class="select select-bordered select-sm w-40">
+                        <option disabled>First chain?</option>
+                        <option selected>benign</option>
+                        <option>attacked</option>
+                        <option>defended</option>
+                    </select>
+                    <div class="flex flex-col items-center">
+                        <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
+                        Label: 38
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
+                        Label: 38
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
+                        Label: 38
+                    </div>
+                </div>
+                <div class="border-t-2 my-2"></div>
+                <div class="flex items-center justify-center">
+                    <select class="select select-bordered select-sm w-40">
+                        <option disabled>First chain?</option>
+                        <option>benign</option>
+                        <option selected>attacked</option>
+                        <option>defended</option>
+                    </select>
+                    <div class="flex flex-col items-center">
+                        <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
+                        Label: 7
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
+                        Label: 16
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
+                        Label: 38
+                    </div>
+                </div>
             </div>
         </div>
     `,
