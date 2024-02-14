@@ -18,8 +18,8 @@ const DownLine = {
 
 const TopLeftCorner = {
     template: `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 80 24" stroke-width="2" stroke="currentColor" class="w-20 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M40 24V1H80" />
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 112 24" stroke-width="2" stroke="currentColor" class="w-28 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M56 24V1H112" />
         </svg>
     `,
 };
@@ -34,16 +34,16 @@ const TopGap = {
 
 const TopMiddle = {
     template: `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 80 24" stroke-width="2" stroke="currentColor" class="w-20 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M0 1H80M40 1V24" />
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 112 24" stroke-width="2" stroke="currentColor" class="w-28 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M0 1H112M56 1V24" />
         </svg>
     `,
 };
 
 const TopRightCorner = {
     template: `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 80 24" stroke-width="2" stroke="currentColor" class="w-20 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M40 24V1H0" />
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 112 24" stroke-width="2" stroke="currentColor" class="w-28 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M56 24V1H0" />
         </svg>
     `,
 };
@@ -64,8 +64,8 @@ const Split = {
             <template v-for="i in num-2">
                 <TopGap></TopGap>
                 <TopMiddle></TopMiddle>
-                <TopGap></TopGap>
             </template>
+            <TopGap v-if="num > 2"></TopGap>
             <TopRightCorner></TopRightCorner>
         </div>
         <div class="flex gap-8">
@@ -80,7 +80,11 @@ const Chain = {
     },
     template: `
         <div class="flex flex-col items-center">
-            {{ name }}
+            <div class="tooltip" :data-tip="name">
+                <div class="max-w-28 overflow-hidden text-ellipsis">
+                    {{ name }}
+                </div>
+            </div>
             <slot></slot>
         </div>
     `,
@@ -88,11 +92,11 @@ const Chain = {
 
 const Box = {
     props: {
-        info: String,
         input: {
             type: Boolean,
             default: false,
         },
+        name: String,
         type: String,
         output: {
             type: Boolean,
@@ -115,11 +119,16 @@ const Box = {
         return { classes };
     },
     template: `
-        <div class="flex flex-col items-center w-20">
+        <div class="flex flex-col items-center w-28">
             <DownArrow v-if="input"></DownArrow>
-            <div class="tooltip tooltip-right" :data-tip="info">
-                <div :class="classes" class="border-2 flex flex-col items-center justify-center h-20 p-2 rounded-lg shadow w-20">
-                    <slot></slot>
+            <div class="tooltip tooltip-right" :data-tip="name">
+                <div :class="classes" class="border-2 flex flex-col items-center justify-center h-28 p-2 rounded-lg shadow w-28">
+                    <span class="text-xs uppercase">
+                        {{ type }}
+                    </span>
+                    <span class="max-h-24 overflow-hidden text-ellipsis w-24">
+                        {{ name }}
+                    </span>
                 </div>
             </div>
             <DownLine v-if="output"></DownLine>
@@ -129,29 +138,36 @@ const Box = {
 
 export default {
     props: {
-        runs: Object,
+        run: Object,
     },
     components: {
         Box,
         Chain,
         Split,
     },
+    setup(props) {
+        const numChains = computed(() => Object.keys(props.run.evaluation.perturbations).length);
+        return { numChains };
+    },
     template: `
         <div class="flex flex-row justify-center mt-2">
             <div class="flex flex-col items-center">
-                <Box output type="dataset">Dataset</Box>
-                <Split :num="3">
-                    <Chain name="benign">
-                        <Box input type="model" info="ViT">Model</Box>
-                    </Chain>
-                    <Chain name="attacked">
-                        <Box input type="perturbation" info="PGD">Attack</Box>
-                        <Box input type="model" info="ViT">Model</Box>
-                    </Chain>
-                    <Chain name="defended">
-                        <Box input type="perturbation" info="PGD">Attack</Box>
-                        <Box input type="perturbation" info="JPEG Compression">Defense</Box>
-                        <Box input type="model" info="ViT">Model</Box>
+                <Box :name="run.evaluation.dataset.name" output type="dataset">
+                </Box>
+                <Split :num="numChains">
+                    <Chain
+                        v-for="(perturbations, chain) of run.evaluation.perturbations"
+                        :key="chain"
+                        :name="chain"
+                    >
+                        <Box
+                            v-for="{ name } in perturbations"
+                            :key="name"
+                            :name="name"
+                            input
+                            type="perturbation"
+                        ></Box>
+                        <Box :name="run.evaluation.model.name" input type="model"></Box>
                     </Chain>
                 </Split>
             </div>
