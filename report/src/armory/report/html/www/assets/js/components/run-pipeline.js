@@ -88,6 +88,7 @@ const Chain = {
 
 const Box = {
     props: {
+        info: String,
         input: {
             type: Boolean,
             default: false,
@@ -116,8 +117,10 @@ const Box = {
     template: `
         <div class="flex flex-col items-center w-20">
             <DownArrow v-if="input"></DownArrow>
-            <div :class="classes" class="border-2 flex flex-col items-center justify-center h-20 p-2 rounded-lg shadow w-20">
-                <slot></slot>
+            <div class="tooltip tooltip-right" :data-tip="info">
+                <div :class="classes" class="border-2 flex flex-col items-center justify-center h-20 p-2 rounded-lg shadow w-20">
+                    <slot></slot>
+                </div>
             </div>
             <DownLine v-if="output"></DownLine>
         </div>
@@ -139,22 +142,22 @@ export default {
                 <Box output type="dataset">Dataset</Box>
                 <Split :num="3">
                     <Chain name="benign">
-                        <Box input type="model">Model</Box>
+                        <Box input type="model" info="ViT">Model</Box>
                     </Chain>
                     <Chain name="attacked">
-                        <Box input type="perturbation">Attack</Box>
-                        <Box input type="model">Model</Box>
+                        <Box input type="perturbation" info="PGD">Attack</Box>
+                        <Box input type="model" info="ViT">Model</Box>
                     </Chain>
                     <Chain name="defended">
-                        <Box input type="perturbation">Attack</Box>
-                        <Box input type="perturbation">Defense</Box>
-                        <Box input type="model">Model</Box>
+                        <Box input type="perturbation" info="PGD">Attack</Box>
+                        <Box input type="perturbation" info="JPEG Compression">Defense</Box>
+                        <Box input type="model" info="ViT">Model</Box>
                     </Chain>
                 </Split>
             </div>
             <div class="border-l-2 mx-4"></div>
             <div class="flex flex-col">
-                <div class="flex items-center justify-center">
+                <div class="flex gap-2 items-center justify-center">
                     <select class="select select-bordered select-sm w-40">
                         <option disabled>First chain?</option>
                         <option selected>benign</option>
@@ -162,12 +165,12 @@ export default {
                         <option>defended</option>
                     </select>
                     <div class="flex flex-col items-center">
-                        <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
-                        Label: 38
+                        <img alt="benign" src="./assets/img/batch_14_ex_0_benign_no_defense.png" />
+                        Label: 35
                     </div>
                     <div class="flex flex-col items-center">
-                        <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
-                        Label: 38
+                        <img alt="benign" src="./assets/img/batch_14_ex_4_benign_no_defense.png" />
+                        Label: 9
                     </div>
                     <div class="flex flex-col items-center">
                         <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
@@ -175,7 +178,7 @@ export default {
                     </div>
                 </div>
                 <div class="border-t-2 my-2"></div>
-                <div class="flex items-center justify-center">
+                <div class="flex gap-2 items-center justify-center">
                     <select class="select select-bordered select-sm w-40">
                         <option disabled>First chain?</option>
                         <option>benign</option>
@@ -183,16 +186,16 @@ export default {
                         <option>defended</option>
                     </select>
                     <div class="flex flex-col items-center">
-                        <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
-                        Label: 7
+                        <img alt="benign" src="./assets/img/batch_14_ex_0_benign_no_defense.png" />
+                        <span class="text-red-600">Label: 7</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <img alt="benign" src="./assets/img/batch_14_ex_4_benign_no_defense.png" />
+                        <span class="text-red-600">Label: 16</span>
                     </div>
                     <div class="flex flex-col items-center">
                         <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
-                        Label: 16
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
-                        Label: 38
+                        <span class="text-green-600">Label: 38</span>
                     </div>
                 </div>
             </div>
