@@ -12,19 +12,23 @@ export const useArtifactSettings = defineStore('artifact-settings', () => {
         router.push({ query: { ...route.value.query, ...query } }, { replace: true });
     };
 
-    const createSetting = (key) => computed({
+    const createSetting = (key, defaultKey) => computed({
         get() {
-            return route.value.query[key] || "";
+            const value = route.value.query[key];
+            if (value == undefined && defaultKey) {
+                return evaluationData.settings[defaultKey];
+            }
+            return value || "";
         },
         set(value) {
             updateQuery({ [key]: value });
         },
     });
 
-    const lhsChain = createSetting("lhsChain");
-    const rhsChain = createSetting("rhsChain");
-    const batch = createSetting("batch");
-    const sample = createSetting("sample");
+    const lhsChain = createSetting("lhsChain", "lhs_chain");
+    const rhsChain = createSetting("rhsChain", "rhs_chain");
+    const batch = createSetting("batch", "batch");
+    const sample = createSetting("sample", "sample");
 
     return {
         lhsChain,

@@ -70,6 +70,24 @@ def configure_args(parser: "argparse.ArgumentParser"):
         help="Maximum number of samples to include from each batch",
         type=int,
     )
+    parser.add_argument(
+        "--lhs-chain",
+        help="Default chain to be shown on left side of artifact comparison",
+    )
+    parser.add_argument(
+        "--rhs-chain",
+        help="Default chain to be shown on right side of artifact comparison",
+    )
+    parser.add_argument(
+        "--batch",
+        help="Default batch for artifact comparison",
+        type=int,
+    )
+    parser.add_argument(
+        "--sample",
+        help="Default sample for artifact comparison",
+        type=int,
+    )
 
 
 def copy_resources(srcdir: "Traversable", outdir: pathlib.Path):
@@ -97,6 +115,10 @@ def generate(
     metric_types: List[str],
     export_batches: List[str],
     max_samples: Optional[int],
+    lhs_chain: Optional[str],
+    rhs_chain: Optional[str],
+    batch: Optional[int],
+    sample: Optional[int],
     **kwargs,
 ):
     outpath = pathlib.Path(out)
@@ -114,6 +136,10 @@ def generate(
             metric_types={
                 kv[0]: kv[1] for kv in [kv.split(":") for kv in metric_types]
             },
+            lhs_chain=lhs_chain,
+            rhs_chain=rhs_chain,
+            batch=batch,
+            sample=sample,
         )
         if export_batches:
             for run in data["runs"]:
