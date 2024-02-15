@@ -23,6 +23,12 @@ def configure_args(parser: "argparse.ArgumentParser"):
         help="Directory in which to place generated HTML files",
     )
     parser.add_argument(
+        "--task",
+        choices=["image-classification", "object-detection"],
+        help="ML objective performed by the model during the evaluation",
+        required=True,
+    )
+    parser.add_argument(
         "--experiment",
         help="ID of the MLFlow experiment for which to report",
     )
@@ -110,6 +116,7 @@ def copy_resources(srcdir: "Traversable", outdir: pathlib.Path):
 
 def generate(
     out: str,
+    task: str,
     experiment: Optional[str],
     baseline_chain: Optional[str],
     baseline_run: Optional[str],
@@ -127,8 +134,11 @@ def generate(
     evaluation: Optional[str],
     **kwargs,
 ):
+    print(f"Producing HTML output in {out}...")
+
     outpath = pathlib.Path(out)
     outpath.mkdir(parents=True, exist_ok=True)
+    copy_resources(importlib_resources.files(__package__) / "www", outpath)
 
     if experiment:
         data = common.dump_experiment(experiment)
@@ -146,6 +156,7 @@ def generate(
             rhs_chain=rhs_chain,
             batch=batch,
             sample=sample,
+            task=task,
         )
 
         if export_batches:
@@ -170,6 +181,4 @@ def generate(
     else:
         raise RuntimeError("No experiment or runs provided. Unable to generate report.")
 
-    print(f"Producing HTML output in {out}...")
-    copy_resources(importlib_resources.files(__package__) / "www", outpath)
     print("Done")
