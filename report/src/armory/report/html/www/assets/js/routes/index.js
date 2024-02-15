@@ -1,5 +1,6 @@
 import CompareMetrics from '../components/compare-metrics.js';
 import RunArtifacts from '../components/run-artifacts.js';
+import RunDetails from '../components/run-details.js';
 import RunDiff from '../components/run-diff.js';
 import RunMetrics from '../components/run-metrics.js';
 import RunParameters from '../components/run-parameters.js';
@@ -14,9 +15,10 @@ export const routes = [
         path: '/run/:id',
         name: 'single-run',
         component: SingleRun,
+        redirect: { name: 'single-run-details' },
         props: true,
         children: [
-            { path: '', redirect: { name: 'single-run-metrics' } },
+            { path: '', name: 'single-run-details', component: RunDetails },
             { path: 'metrics', name: 'single-run-metrics', component: RunMetrics },
             { path: 'parameters', name: 'single-run-params', component: RunParameters },
             { path: 'pipeline', name: 'single-run-pipeline', component: RunPipeline },

@@ -200,7 +200,7 @@ export default {
                 <TableRow v-for="(run, runId) in metrics.byRunId" :key="runId">
                     <TableRowHeader>
                         <router-link
-                            :to="{ name: 'single-run-metrics', params: { id: run.info.run_id } }"
+                            :to="{ name: 'single-run', params: { id: run.info.run_id } }"
                             class="text-twosix-blue"
                         >
                             {{ run.info.run_name }}

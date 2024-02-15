@@ -32,6 +32,14 @@ export default {
             <heading>{{ run?.info.run_name }}</heading>
             <div role="tablist" class="tabs tabs-lifted">
                 <router-link
+                    :to="{ name: 'single-run-details' }"
+                    role="tab"
+                    class="tab"
+                    exact-active-class="tab-active"
+                >
+                    Details
+                </router-link>
+                <router-link
                     :to="{ name: 'single-run-metrics' }"
                     role="tab"
                     class="tab"
