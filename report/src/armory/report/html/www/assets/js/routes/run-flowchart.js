@@ -171,50 +171,6 @@ export default {
                     </Chain>
                 </Split>
             </div>
-            <div class="border-l-2 mx-4"></div>
-            <div class="flex flex-col">
-                <div class="flex gap-2 items-center justify-center">
-                    <select class="select select-bordered select-sm w-40">
-                        <option disabled>First chain?</option>
-                        <option selected>benign</option>
-                        <option>attacked</option>
-                        <option>defended</option>
-                    </select>
-                    <div class="flex flex-col items-center">
-                        <img alt="benign" src="./assets/img/batch_14_ex_0_benign_no_defense.png" />
-                        Label: 35
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <img alt="benign" src="./assets/img/batch_14_ex_4_benign_no_defense.png" />
-                        Label: 9
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
-                        Label: 38
-                    </div>
-                </div>
-                <div class="border-t-2 my-2"></div>
-                <div class="flex gap-2 items-center justify-center">
-                    <select class="select select-bordered select-sm w-40">
-                        <option disabled>First chain?</option>
-                        <option>benign</option>
-                        <option selected>attacked</option>
-                        <option>defended</option>
-                    </select>
-                    <div class="flex flex-col items-center">
-                        <img alt="benign" src="./assets/img/batch_14_ex_0_benign_no_defense.png" />
-                        <span class="text-red-600">Label: 7</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <img alt="benign" src="./assets/img/batch_14_ex_4_benign_no_defense.png" />
-                        <span class="text-red-600">Label: 16</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <img alt="benign" src="./assets/img/batch_14_ex_5_benign_no_defense.png" />
-                        <span class="text-green-600">Label: 38</span>
-                    </div>
-                </div>
-            </div>
         </div>
         <div v-if="!run.evaluation" class="bg-red-100 border-2 border-red-200 flex justify-center my-10 mx-40 p-4 rounded-md">
             The selected run does not have an evaluation pipeline definition.
