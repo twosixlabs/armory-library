@@ -10,7 +10,7 @@ export default {
     },
     setup(props) {
         const lhsImage = computed(() => {
-            const file = props.run.artifacts[props.lhsChain]?.[props.batch]?.[props.sample];
+            const file = props.run.artifacts[props.lhsChain]?.[props.batch]?.[props.sample]?.file;
             if (file) {
                 return `./assets/img/${props.run.info.run_id}/${file}`;
             }
@@ -18,7 +18,7 @@ export default {
         });
 
         const rhsImage = computed(() => {
-            const file = props.run.artifacts[props.rhsChain]?.[props.batch]?.[props.sample];
+            const file = props.run.artifacts[props.rhsChain]?.[props.batch]?.[props.sample]?.file;
             if (file) {
                 return `./assets/img/${props.run.info.run_id}/${file}`;
             }
