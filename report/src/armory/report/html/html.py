@@ -88,6 +88,11 @@ def configure_args(parser: "argparse.ArgumentParser"):
         help="Default sample for artifact comparison",
         type=int,
     )
+    parser.add_argument(
+        "--evaluation",
+        help="Path to evaluation description JSON file",
+        type=str,
+    )
 
 
 def copy_resources(srcdir: "Traversable", outdir: pathlib.Path):
@@ -119,6 +124,7 @@ def generate(
     rhs_chain: Optional[str],
     batch: Optional[int],
     sample: Optional[int],
+    evaluation: Optional[str],
     **kwargs,
 ):
     outpath = pathlib.Path(out)
@@ -141,6 +147,7 @@ def generate(
             batch=batch,
             sample=sample,
         )
+
         if export_batches:
             for run in data["runs"]:
                 run["artifacts"] = common.dump_artifacts(
@@ -150,6 +157,12 @@ def generate(
                     extension="png",
                     outdir=outpath / "assets/img" / run["info"]["run_id"],
                 )
+
+        if evaluation:
+            with open(evaluation, "r") as infile:
+                eval_json = json.load(infile)["evaluation"]
+            for run in data["runs"]:
+                run["evaluation"] = eval_json
 
         with open(outpath / "armory-evaluation-data.js", "w") as outfile:
             jsdata = json.dumps(data, indent=2, sort_keys=True)

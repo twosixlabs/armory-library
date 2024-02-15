@@ -1,4 +1,4 @@
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 
 const DownArrow = {
     template: `
@@ -150,7 +150,7 @@ export default {
         return { numChains };
     },
     template: `
-        <div class="flex flex-row justify-center mt-2">
+        <div v-if="run.evaluation" class="flex flex-row justify-center mt-2">
             <div class="flex flex-col items-center">
                 <Box :name="run.evaluation.dataset.name" output type="dataset">
                 </Box>
@@ -215,6 +215,9 @@ export default {
                     </div>
                 </div>
             </div>
+        </div>
+        <div v-if="!run.evaluation" class="bg-red-100 border-2 border-red-200 flex justify-center my-10 mx-40 p-4 rounded-md">
+            The selected run does not have an evaluation pipeline definition.
         </div>
     `,
 };
