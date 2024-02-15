@@ -56,20 +56,20 @@ export default {
                     Parameters
                 </router-link>
                 <router-link
-                    :to="{ name: 'single-run-artifacts' }"
+                    :to="{ name: 'single-run-samples' }"
                     role="tab"
                     class="tab"
                     active-class="tab-active"
                 >
-                    Artifacts
+                    Samples
                 </router-link>
                 <router-link
-                    :to="{ name: 'single-run-pipeline' }"
+                    :to="{ name: 'single-run-flowchart' }"
                     role="tab"
                     class="tab"
                     active-class="tab-active"
                 >
-                    Pipeline
+                    Flowchart
                 </router-link>
             </div>
             <router-view v-if="run" :run="run"></router-view>

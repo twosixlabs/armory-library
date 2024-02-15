@@ -1,12 +1,12 @@
 import CompareMetrics from './compare-metrics.js';
 import MultipleRuns from './multiple-runs.js';
 import Overview from './overview.js';
-import RunArtifacts from './run-artifacts.js';
 import RunDetails from './run-details.js';
 import RunDiff from './run-diff.js';
+import RunFlowchart from './run-flowchart.js';
 import RunMetrics from './run-metrics.js';
 import RunParameters from './run-parameters.js';
-import RunPipeline from './run-pipeline.js';
+import RunSamples from './run-samples.js';
 import SingleRun from './single-run.js';
 
 export const routes = [
@@ -19,10 +19,10 @@ export const routes = [
         props: true,
         children: [
             { path: '', name: 'single-run-details', component: RunDetails },
+            { path: 'flowchart', name: 'single-run-flowchart', component: RunFlowchart },
             { path: 'metrics', name: 'single-run-metrics', component: RunMetrics },
             { path: 'parameters', name: 'single-run-params', component: RunParameters },
-            { path: 'pipeline', name: 'single-run-pipeline', component: RunPipeline },
-            { path: 'artifacts', name: 'single-run-artifacts', component: RunArtifacts },
+            { path: 'samples', name: 'single-run-samples', component: RunSamples },
         ],
     },
     {
