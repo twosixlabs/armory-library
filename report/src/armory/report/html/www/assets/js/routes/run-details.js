@@ -1,11 +1,5 @@
 import { computed } from 'vue';
 import {
-    formatDuration,
-    formatTime,
-    humanizeDuration,
-    humanizeTime,
-} from '../utils/format.js';
-import {
     Table,
     TableBody,
     TableCell,
@@ -13,7 +7,13 @@ import {
     TableHeader,
     TableRow,
     TableRowHeader,
-} from './table.js';
+} from '../components/table.js';
+import {
+    formatDuration,
+    formatTime,
+    humanizeDuration,
+    humanizeTime,
+} from '../utils/format.js';
 
 export default {
     components: {

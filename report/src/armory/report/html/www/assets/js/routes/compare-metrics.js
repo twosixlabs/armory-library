@@ -1,20 +1,19 @@
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useMetricsSettings } from '../stores/metrics-settings.js';
-import Button from './button.js';
-import ChainColumnDropdown from './chain-column-dropdown.js';
-import HiddenChainsDropdown from './hidden-chains-dropdown.js';
-import HiddenMetricsDropdown from './hidden-metrics-dropdown.js';
+import Button from '../components/button.js';
+import ChainColumnDropdown from '../components/chain-column-dropdown.js';
+import HiddenChainsDropdown from '../components/hidden-chains-dropdown.js';
+import HiddenMetricsDropdown from '../components/hidden-metrics-dropdown.js';
 import {
     BETTER_THAN_BASELINE,
     SAME_AS_BASELINE,
     WORSE_THAN_BASELINE,
     MetricCell,
-} from './metric-cell.js';
-import MetricColumnDropdown from './metric-column-dropdown.js';
-import ParameterColumnDropdown from './parameter-column-dropdown.js';
-import ParametersDropdown from './parameters-dropdown.js';
+} from '../components/metric-cell.js';
+import MetricColumnDropdown from '../components/metric-column-dropdown.js';
+import ParameterColumnDropdown from '../components/parameter-column-dropdown.js';
+import ParametersDropdown from '../components/parameters-dropdown.js';
 import {
     Table,
     TableBody,
@@ -23,7 +22,8 @@ import {
     TableHeader,
     TableRow,
     TableRowHeader,
-} from './table.js';
+} from '../components/table.js';
+import { useMetricsSettings } from '../stores/metrics-settings.js';
 
 const reorganizeMetrics = (runs, hiddenMetrics, hiddenChains) => {
     const byRunId = {};

@@ -1,16 +1,15 @@
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
-import { useMetricsSettings } from '../stores/metrics-settings.js';
-import Button from './button.js';
-import HiddenMetricsDropdown from './hidden-metrics-dropdown.js';
-import { ChevronDownIcon } from './icons.js';
+import Button from '../components/button.js';
+import HiddenMetricsDropdown from '../components/hidden-metrics-dropdown.js';
+import { ChevronDownIcon } from '../components/icons.js';
 import {
     BETTER_THAN_BASELINE,
     SAME_AS_BASELINE,
     WORSE_THAN_BASELINE,
     MetricCell,
-} from './metric-cell.js';
-import MetricColumnDropdown from './metric-column-dropdown.js';
+} from '../components/metric-cell.js';
+import MetricColumnDropdown from '../components/metric-column-dropdown.js';
 import {
     Table,
     TableBody,
@@ -19,7 +18,8 @@ import {
     TableHeader,
     TableRow,
     TableRowHeader,
-} from './table.js';
+} from '../components/table.js';
+import { useMetricsSettings } from '../stores/metrics-settings.js';
 
 const reorganizeMetrics = (flatMetrics) => {
     const byChain = {};

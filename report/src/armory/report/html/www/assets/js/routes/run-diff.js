@@ -1,7 +1,6 @@
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useMetricsSettings } from '../stores/metrics-settings.js';
 import {
     Table,
     TableBody,
@@ -10,7 +9,8 @@ import {
     TableHeader,
     TableRow,
     TableRowHeader,
-} from './table.js';
+} from '../components/table.js';
+import { useMetricsSettings } from '../stores/metrics-settings.js';
 
 const getMetrics = (runs) => {
     const allMetrics = new Set();

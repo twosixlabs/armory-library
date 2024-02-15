@@ -1,7 +1,7 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import Button from './button.js';
-import { XMarkIcon } from './icons.js';
+import Button from '../components/button.js';
+import { XMarkIcon } from '../components/icons.js';
 import {
     Table,
     TableBody,
@@ -10,7 +10,7 @@ import {
     TableHeader,
     TableRow,
     TableRowHeader,
-} from './table.js';
+} from '../components/table.js';
 
 export default {
     components: {

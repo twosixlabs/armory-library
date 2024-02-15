@@ -1,13 +1,13 @@
-import CompareMetrics from '../components/compare-metrics.js';
-import RunArtifacts from '../components/run-artifacts.js';
-import RunDetails from '../components/run-details.js';
-import RunDiff from '../components/run-diff.js';
-import RunMetrics from '../components/run-metrics.js';
-import RunParameters from '../components/run-parameters.js';
-import RunPipeline from '../components/run-pipeline.js';
-import Overview from './overview.js';
-import SingleRun from './single-run.js';
+import CompareMetrics from './compare-metrics.js';
 import MultipleRuns from './multiple-runs.js';
+import Overview from './overview.js';
+import RunArtifacts from './run-artifacts.js';
+import RunDetails from './run-details.js';
+import RunDiff from './run-diff.js';
+import RunMetrics from './run-metrics.js';
+import RunParameters from './run-parameters.js';
+import RunPipeline from './run-pipeline.js';
+import SingleRun from './single-run.js';
 
 export const routes = [
     { path: '/', name: 'index', component: Overview },
