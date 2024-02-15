@@ -1,5 +1,4 @@
-import { storeToRefs } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import Button from '../components/button.js';
 import {
@@ -11,7 +10,6 @@ import {
     TableRow,
 } from '../components/table.js';
 import { useEvaluationData } from '../stores/evaluation-data.js';
-import { useSelectedRuns } from '../stores/selected-runs.js';
 import { humanizeDuration, humanizeTime } from '../utils/format.js';
 
 export default {
@@ -28,15 +26,15 @@ export default {
     setup() {
         const router = useRouter();
         const evaluation = useEvaluationData();
-        const selected = useSelectedRuns();
-        const { runs: selectedRuns } = storeToRefs(selected);
 
+        const selectedRuns = ref([]);
         const selectAllRef = ref(null);
-        selected.$subscribe((mutation, state) => {
-            if (state.runs.length == 0) {
+
+        watch(selectedRuns, (newSelectedRuns) => {
+            if (newSelectedRuns.length == 0) {
                 selectAllRef.value.checked = false;
                 selectAllRef.value.indeterminate = false;
-            } else if (state.runs.length == evaluation.runs.length) {
+            } else if (newSelectedRuns.length == evaluation.runs.length) {
                 selectAllRef.value.checked = true;
                 selectAllRef.value.indeterminate = false;
             } else {
@@ -46,10 +44,10 @@ export default {
         });
 
         const toggleSelectAll = () => {
-            if (selected.runs.length < evaluation.runs.length) {
-                selected.selectRuns(evaluation.allRunIds);
+            if (selectedRuns.value.length < evaluation.runs.length) {
+                selectedRuns.value = [...evaluation.allRunIds];
             } else {
-                selected.selectRuns([]);
+                selectedRuns.value = [];
             }
         };
 
@@ -62,7 +60,7 @@ export default {
         const goToCompare = () => router.push({
             name: 'compare-runs-metrics',
             query: {
-                runs: selected.runs,
+                runs: selectedRuns.value,
             },
         });
 
@@ -72,7 +70,6 @@ export default {
             humanizeDuration,
             humanizeTime,
             multipleSelected,
-            selected,
             selectedRuns,
             selectAllRef,
             toggleSelectAll,
@@ -107,9 +104,9 @@ export default {
                     <TableRow v-for="run in evaluation.runs" :key="run.info.run_id">
                         <TableCell>
                             <input
+                                v-model="selectedRuns"
                                 :id="run.info.run_id"
-                                :checked="selectedRuns.includes(run.info.run_id)"
-                                @change.prevent="selected.multiSelect(run)"
+                                :value="run.info.run_id"
                                 class="hover:cursor-pointer"
                                 type="checkbox"
                             />
