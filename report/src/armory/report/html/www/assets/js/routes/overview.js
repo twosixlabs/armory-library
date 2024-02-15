@@ -131,7 +131,7 @@ export default {
                     </TableRow>
                 </TableBody>
             </Table>
-            <div class="flex justify-end my-3">
+            <div class="my-3">
                 <Button
                     @click="goToCompare"
                     :disabled="!multipleSelected"
