@@ -27,7 +27,7 @@ export default {
         const router = useRouter();
         const evaluation = useEvaluationData();
 
-        const selectedRuns = ref([]);
+        const selectedRuns = ref([...evaluation.allRunIds]);
         const selectAll = computed({
             get() {
                 return selectedRuns.value.length == evaluation.runs.length;
