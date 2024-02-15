@@ -1,12 +1,22 @@
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
+import ImageClassificationSample from '../components/image-classification-sample.js';
 import { useArtifactSettings } from '../stores/artifact-settings.js';
+import { useEvaluationData } from '../stores/evaluation-data.js';
 
 export default {
+    components: {
+        ImageClassificationSample,
+    },
     props: {
         run: Object,
     },
     setup(props) {
+        const evaluationData = useEvaluationData();
+        const taskSpecificComponent = computed(() => ({
+            'image-classification': ImageClassificationSample,
+        }[evaluationData.settings.task]));
+
         const keys = computed(() => {
             const chains = new Set();
             const batches = new Set();
@@ -29,30 +39,13 @@ export default {
 
         const { batch, lhsChain, rhsChain, sample } = storeToRefs(useArtifactSettings());
 
-        const lhsImage = computed(() => {
-            const file = props.run.artifacts[lhsChain.value]?.[batch.value]?.[sample.value];
-            if (file) {
-                return `./assets/img/${props.run.info.run_id}/${file}`;
-            }
-            return "";
-        });
-
-        const rhsImage = computed(() => {
-            const file = props.run.artifacts[rhsChain.value]?.[batch.value]?.[sample.value];
-            if (file) {
-                return `./assets/img/${props.run.info.run_id}/${file}`;
-            }
-            return "";
-        });
-
         return {
             batch,
             keys,
             lhsChain,
-            lhsImage,
             rhsChain,
-            rhsImage,
             sample,
+            taskSpecificComponent,
         };
     },
     template: `
@@ -90,17 +83,13 @@ export default {
                 </option>
             </select>
         </div>
-        <div
-            v-if="lhsImage && rhsImage"
-            class="diff aspect-square mx-auto max-w-xl"
-        >
-            <div class="diff-item-1">
-                <img :src="rhsImage" />
-            </div>
-            <div class="diff-item-2">
-                <img :src="lhsImage" />
-            </div>
-            <div class="diff-resizer"></div>
-        </div>
+        <component
+            :is="taskSpecificComponent"
+            :batch="batch"
+            :lhsChain="lhsChain"
+            :rhsChain="rhsChain"
+            :run="run"
+            :sample="sample"
+        ></component>
     `,
 };
