@@ -1,4 +1,5 @@
 import { computed } from 'vue';
+import { argmax } from '../utils/argmax.js';
 
 export default {
     props: {
@@ -16,6 +17,16 @@ export default {
             }
             return "";
         });
+        const lhsTarget = computed(() => 
+            props.run.artifacts[props.lhsChain]?.[props.batch]?.[props.sample]?.targets
+        );
+        const lhsPrediction = computed(() => {
+            const preds = props.run.artifacts[props.lhsChain]?.[props.batch]?.[props.sample]?.predictions;
+            if (Array.isArray(preds)) {
+                return argmax(preds);
+            }
+            return preds;
+        });
 
         const rhsImage = computed(() => {
             const file = props.run.artifacts[props.rhsChain]?.[props.batch]?.[props.sample]?.file;
@@ -24,13 +35,33 @@ export default {
             }
             return "";
         });
+        const rhsTarget = computed(() => 
+            props.run.artifacts[props.rhsChain]?.[props.batch]?.[props.sample]?.targets
+        );
+        const rhsPrediction = computed(() => {
+            const preds = props.run.artifacts[props.rhsChain]?.[props.batch]?.[props.sample]?.predictions;
+            if (Array.isArray(preds)) {
+                return argmax(preds);
+            }
+            return preds;
+        });
 
-        return { lhsImage, rhsImage };
+        return {
+            lhsImage,
+            lhsPrediction,
+            lhsTarget,
+            rhsImage,
+            rhsPrediction,
+            rhsTarget,
+        };
     },
     template: `
-        <div v-if="lhsImage && rhsImage" class="flex gap-2 items-center justify-center">
-            <div>Predicted Label: 38</div>
-            <div class="diff aspect-square max-w-xl">
+        <div class="flex gap-4 items-center justify-center">
+            <div class="flex flex-col">
+                <span>Target: {{ lhsTarget }}</span>
+                <span>Prediction: {{ lhsPrediction }}</span>
+            </div>
+            <div v-if="lhsImage && rhsImage" class="diff aspect-square max-w-xl">
                 <div class="diff-item-1">
                     <img :src="rhsImage" />
                 </div>
@@ -39,7 +70,10 @@ export default {
                 </div>
                 <div class="diff-resizer"></div>
             </div>
-            <div>Predicted Label: 37</div>
+            <div class="flex flex-col">
+                <span>Target: {{ rhsTarget }}</span>
+                <span>Prediction: {{ rhsPrediction }}</span>
+            </div>
         </div>
     `,
 };
