@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import Button from '../components/button.js';
 import {
@@ -28,34 +28,22 @@ export default {
         const evaluation = useEvaluationData();
 
         const selectedRuns = ref([]);
-        const selectAllRef = ref(null);
-
-        watch(selectedRuns, (newSelectedRuns) => {
-            if (newSelectedRuns.length == 0) {
-                selectAllRef.value.checked = false;
-                selectAllRef.value.indeterminate = false;
-            } else if (newSelectedRuns.length == evaluation.runs.length) {
-                selectAllRef.value.checked = true;
-                selectAllRef.value.indeterminate = false;
-            } else {
-                selectAllRef.value.checked = false;
-                selectAllRef.value.indeterminate = true;
-            }
-        });
-
-        const toggleSelectAll = () => {
-            if (selectedRuns.value.length < evaluation.runs.length) {
-                selectedRuns.value = [...evaluation.allRunIds];
-            } else {
-                selectedRuns.value = [];
-            }
-        };
-
-        const multipleSelected = computed({
+        const selectAll = computed({
             get() {
-                return selectedRuns.value.length > 1;
+                return selectedRuns.value.length == evaluation.runs.length;
             },
+            set(select) {
+                if (select) {
+                    selectedRuns.value = [...evaluation.allRunIds];
+                } else {
+                    selectedRuns.value = [];
+                }
+            }
         });
+        const partialSelection = computed(() => 
+            selectedRuns.value.length > 0 && selectedRuns.value.length < evaluation.runs.length
+        );
+        const multipleSelected = computed(() => selectedRuns.value.length > 1);
 
         const goToCompare = () => router.push({
             name: 'compare-runs-metrics',
@@ -70,9 +58,9 @@ export default {
             humanizeDuration,
             humanizeTime,
             multipleSelected,
+            partialSelection,
             selectedRuns,
-            selectAllRef,
-            toggleSelectAll,
+            selectAll,
         };
     },
     template: `
@@ -82,8 +70,8 @@ export default {
                     <tr>
                         <TableHeader class="rounded-tl-lg flex">
                             <input
-                                @change.prevent="toggleSelectAll"
-                                ref="selectAllRef"
+                                v-model="selectAll"
+                                :indeterminate.prop="partialSelection"
                                 class="self-start"
                                 id="select-all"
                                 type="checkbox"
