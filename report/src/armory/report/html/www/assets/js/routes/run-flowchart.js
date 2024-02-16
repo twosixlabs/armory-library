@@ -1,78 +1,224 @@
-import { computed, watch } from 'vue';
+import { computed } from 'vue';
+
+const Paths = {
+    props: {
+        height: Number,
+        paths: Object,
+        width: Number,
+    },
+    setup(props) {
+        const classes = computed(() => [
+            `h-[${props.height}px]`,
+            `w-[${props.width}px]`,
+        ]);
+        const viewbox = computed(() => `0 0 ${props.width} ${props.height}`);
+        return { classes, viewbox };
+    },
+    template: `
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            :viewBox="viewbox"
+            stroke-width="2"
+            stroke="currentColor"
+            :class="classes">
+            <path
+                v-for="path in paths"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                :d="paths"
+            />
+        </svg>
+    `,
+};
 
 const DownArrow = {
+    components: {
+        Paths,
+    },
+    props: {
+        arrowHeadLength: {
+            default: 4,
+            type: Number,
+        },
+        height: {
+            default: 24,
+            type: Number,
+        },
+        width: {
+            default: 10,
+            type: Number,
+        }
+    },
+    setup(props) {
+        const paths = computed(() => {
+            const len = props.arrowHeadLength;
+            const mid = props.width / 2;
+            const arrowLeft = mid - len;
+            const arrowRight = mid + len;
+            const bottom = props.height - 1;
+            const arrowTop = bottom - len;
+            return [
+                `M ${arrowLeft} ${arrowTop} ${mid} ${bottom}`,
+                `M ${arrowRight} ${arrowTop} ${mid} ${bottom}`,
+                `M ${mid} ${bottom} V 0`,
+            ];
+        });
+        return { paths };
+    },
     template: `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M16 19 12 23m0 0-4-4M12 23V0" />
-        </svg>
+        <Paths :height="height" :paths="paths" :width="width" />
     `,
 };
 
 const DownLine = {
+    components: {
+        Paths,
+    },
+    props: {
+        height: {
+            default: 24,
+            type: Number,
+        },
+        width: {
+            default: 4,
+            type: Number,
+        }
+    },
+    setup(props) {
+        const paths = computed(() => [`M ${props.width / 2} 0 V ${props.height}`]);
+        return { paths };
+    },
     template: `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-            <path stroke-linecap="butt" stroke-linejoin="butt" d="M12 24V0" />
-        </svg>
-    `,
-};
-
-const TopLeftCorner = {
-    template: `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 112 24" stroke-width="2" stroke="currentColor" class="w-28 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M56 24V1H112" />
-        </svg>
-    `,
-};
-
-const TopGap = {
-    template: `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 2" stroke-width="2" stroke="currentColor" class="w-8 h-0.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M0 1H32" />
-        </svg>
-    `,
-};
-
-const TopMiddle = {
-    template: `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 112 24" stroke-width="2" stroke="currentColor" class="w-28 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M0 1H112M56 1V24" />
-        </svg>
-    `,
-};
-
-const TopRightCorner = {
-    template: `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 112 24" stroke-width="2" stroke="currentColor" class="w-28 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M56 24V1H0" />
-        </svg>
+        <Paths :height="height" :paths="paths" :width="width" />
     `,
 };
 
 const Split = {
+    components: {
+        Paths,
+    },
     props: {
+        boxWidth: Number,
+        gapWidth: Number,
+        height: Number,
+        invert: {
+            default: false,
+            type: Boolean,
+        },
         num: Number,
     },
-    components: {
-        TopGap,
-        TopMiddle,
-        TopLeftCorner,
-        TopRightCorner,
+    setup(props) {
+        const width = computed(() =>
+            props.boxWidth * props.num + props.gapWidth * (props.num - 1)
+        );
+        const paths = computed(() => {
+            const halfBoxWidth = props.boxWidth / 2;
+            const lineHeight = props.invert ? props.height - 1 : 1;
+
+            const horizontal = `M ${halfBoxWidth} ${lineHeight} H ${width.value - halfBoxWidth}`;
+            const verticals = [...Array(props.num)].map((_, index) => (
+                halfBoxWidth + (props.boxWidth + props.gapWidth) * index
+            )).map((x) => `M ${x} 1 V ${props.height - 1}`);
+
+            return [horizontal, ...verticals];
+        });
+        return { paths, width };
     },
     template: `
-        <div class="flex">
-            <TopLeftCorner></TopLeftCorner>
-            <template v-for="i in num-2">
-                <TopGap></TopGap>
-                <TopMiddle></TopMiddle>
-            </template>
-            <TopGap v-if="num > 2"></TopGap>
-            <TopRightCorner></TopRightCorner>
-        </div>
-        <div class="flex gap-8">
-            <slot></slot>
-        </div>
+        <Paths
+            :height="height"
+            :paths="paths"
+            :width="width"
+        />
     `,
 };
+
+const LineToBottom = {
+    components: {
+        Paths,
+    },
+    props: {
+        boxHeight: {
+            default: 112,
+            type: Number,
+        },
+        gapHeight: {
+            default: 24,
+            type: Number,
+        },
+        fill: Number,
+        width: {
+            default: 4,
+            type: Number,
+        },
+    },
+    setup(props) {
+        const height = computed(() =>
+            (props.boxHeight + props.gapHeight) * props.fill
+        );
+        const paths = computed(() => [
+            `M ${props.width / 2} 0 V ${height.value}`,
+        ]);
+        return { height, paths };
+    },
+    template: `
+        <Paths
+            :height="height"
+            :paths="paths"
+            :width="width"
+        />
+    `,
+};
+
+const Parallel = {
+    components: {
+        Split,
+    },
+    props: {
+        boxWidth: {
+            default: 112,
+            type: Number,
+        },
+        gapWidth: {
+            default: 32,
+            type: Number,
+        },
+        join: {
+            default: false,
+            type: Boolean,
+        },
+        num: Number,
+        splitHeight: {
+            default: 24,
+            type: Number,
+        },
+    },
+    setup(props) {
+        const gap = computed(() => `gap-[${props.gapWidth}px]`);
+        return { gap };
+    },
+    template: `
+        <Split
+            :boxWidth="boxWidth"
+            :gapWidth="gapWidth"
+            :height="splitHeight"
+            :num="num"
+        />
+        <div class="flex" :class="gap">
+            <slot></slot>
+        </div>
+        <Split
+            v-if="join"
+            :boxWidth="boxWidth"
+            :gapWidth="gapWidth"
+            :height="splitHeight"
+            :num="num"
+            invert
+        />
+    `,
+};
+
 
 const Chain = {
     props: {
@@ -115,6 +261,8 @@ const Box = {
             'border-red-400': props.type == "perturbation",
             'bg-blue-300': props.type == "model",
             'border-blue-400': props.type == "model",
+            'bg-yellow-200': props.type == "metric",
+            'border-yellow-300': props.type == "metric",
         }));
         return { classes };
     },
@@ -143,18 +291,22 @@ export default {
     components: {
         Box,
         Chain,
-        Split,
+        LineToBottom,
+        Parallel,
     },
     setup(props) {
         const numChains = computed(() => Object.keys(props.run.evaluation.perturbations).length);
-        return { numChains };
+        const maxNumPerturbations = computed(
+            () => Math.max(...Object.values(props.run.evaluation.perturbations).map(p => p.length))
+        );
+        return { maxNumPerturbations, numChains };
     },
     template: `
-        <div v-if="run.evaluation" class="flex flex-row justify-center mt-2">
+        <div v-if="run.evaluation" class="flex flex-row justify-center my-2">
             <div class="flex flex-col items-center">
                 <Box :name="run.evaluation.dataset.name" output type="dataset">
                 </Box>
-                <Split :num="numChains">
+                <Parallel join :num="numChains">
                     <Chain
                         v-for="(perturbations, chain) of run.evaluation.perturbations"
                         :key="chain"
@@ -167,9 +319,16 @@ export default {
                             input
                             type="perturbation"
                         ></Box>
-                        <Box :name="run.evaluation.model.name" input type="model"></Box>
+                        <LineToBottom :fill="maxNumPerturbations - perturbations.length">
+                        </LineToBottom>
                     </Chain>
-                </Split>
+                </Parallel>
+                <Box :name="run.evaluation.model.name" input output type="model"></Box>
+                <Parallel :num="3" :splitHeight="2">
+                    <Box input type="metric" name="accuracy" />
+                    <Box input type="metric" name="accuracy" />
+                    <Box input type="metric" name="accuracy" />
+                </Parallel>
             </div>
         </div>
         <div v-if="!run.evaluation" class="bg-red-100 border-2 border-red-200 flex justify-center my-10 mx-40 p-4 rounded-md">
