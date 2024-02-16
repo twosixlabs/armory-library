@@ -299,7 +299,8 @@ export default {
         const maxNumPerturbations = computed(
             () => Math.max(...Object.values(props.run.evaluation.perturbations).map(p => p.length))
         );
-        return { maxNumPerturbations, numChains };
+        const numMetrics = computed(() => props.run.evaluation.metrics.length);
+        return { maxNumPerturbations, numChains, numMetrics };
     },
     template: `
         <div v-if="run.evaluation" class="flex flex-row justify-center my-2">
@@ -324,10 +325,14 @@ export default {
                     </Chain>
                 </Parallel>
                 <Box :name="run.evaluation.model.name" input output type="model"></Box>
-                <Parallel :num="3" :splitHeight="2">
-                    <Box input type="metric" name="accuracy" />
-                    <Box input type="metric" name="accuracy" />
-                    <Box input type="metric" name="accuracy" />
+                <Parallel :num="numMetrics" :splitHeight="2">
+                    <Box
+                        v-for="metric in run.evaluation.metrics"
+                        :key="metric.name"
+                        :name="metric.name"
+                        input
+                        type="metric"
+                    />
                 </Parallel>
             </div>
         </div>
