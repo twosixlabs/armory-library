@@ -129,7 +129,6 @@ export default {
                     <TableHeader
                         v-for="run in runs"
                         :key="run.info.run_id"
-                        class="[writing-mode:vertical-lr]"
                     >
                         <router-link
                             :to="{ name: 'single-run', params: { id: run.info.run_id } }"
