@@ -85,7 +85,8 @@ export default {
                         </TableHeader>
                         <TableHeader>Name</TableHeader>
                         <TableHeader>Started</TableHeader>
-                        <TableHeader class="rounded-tr-lg">Duration</TableHeader>
+                        <TableHeader>Duration</TableHeader>
+                        <TableHeader class="rounded-tr-lg">Status</TableHeader>
                     </tr>
                 </TableHead>
                 <TableBody>
@@ -112,6 +113,9 @@ export default {
                         </TableCell>
                         <TableCell>
                             {{ run.info.start_time && run.info.end_time && humanizeDuration(run.info.end_time - run.info.start_time) }}
+                        </TableCell>
+                        <TableCell>
+                            {{ run.info.status }}
                         </TableCell>
                     </TableRow>
                 </TableBody>
