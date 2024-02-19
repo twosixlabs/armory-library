@@ -186,7 +186,7 @@ export default {
                             v-for="run in runs"
                             :key="run.info.run_id"
                         >
-                            {{ run.data.metrics[chain + "/" + metric].toFixed(precision) }}
+                            {{ run.data.metrics[chain + "/" + metric]?.toFixed(precision) }}
                         </TableCell>
                     </tr>
                 </template>

@@ -32,7 +32,7 @@ export const MetricCell = {
     template: `
         <TableCell :class="classes.cell">
             <span :class="classes.span">
-                {{ value.toFixed(precision) }}
+                {{ value?.toFixed(precision) }}
             </span>
         </TableCell>
     `,
