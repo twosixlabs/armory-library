@@ -63,6 +63,7 @@ def configure_args(parser: "argparse.ArgumentParser"):
     )
     parser.add_argument(
         "--metric-types",
+        default=[],
         help="Type of metric (high or low is better) in the form of ':'-separated key-value pairs (e.g., 'accuracy:high')",
         nargs="*",
     )
