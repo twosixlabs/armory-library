@@ -1,7 +1,7 @@
 import { storeToRefs } from 'pinia';
 import { computed, ref } from 'vue';
 import Button from '../components/button.js';
-import { ChevronDownIcon, ChevronRightIcon } from '../components/icons.js';
+import { ChevronDownIcon, ChevronUpIcon } from '../components/icons.js';
 import {
     Table,
     TableBody,
@@ -46,7 +46,7 @@ export default {
     components: {
         Button,
         ChevronDownIcon,
-        ChevronRightIcon,
+        ChevronUpIcon,
         Table,
         TableBody,
         TableCell,
@@ -152,7 +152,7 @@ export default {
                             Metrics
                             <Button @click="collapseMetrics = !collapseMetrics" minimal class="ml-2">
                                 <ChevronDownIcon v-if="collapseMetrics" />
-                                <ChevronRightIcon v-if="!collapseMetrics" />
+                                <ChevronUpIcon v-if="!collapseMetrics" />
                             </Button>
                         </div>
                     </TableRowHeader>
@@ -188,7 +188,7 @@ export default {
                             Parameters
                             <Button @click="collapseParams = !collapseParams" minimal class="ml-2">
                                 <ChevronDownIcon v-if="collapseParams" />
-                                <ChevronRightIcon v-if="!collapseParams" />
+                                <ChevronUpIcon v-if="!collapseParams" />
                             </Button>
                         </div>
                     </TableRowHeader>
