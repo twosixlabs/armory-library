@@ -169,6 +169,9 @@ def generate(
                     extension="png",
                     outdir=outpath / "assets/img" / run["info"]["run_id"],
                 )
+        else:
+            for run in data["runs"]:
+                run["artifacts"] = []
 
         if evaluation:
             with open(evaluation, "r") as infile:

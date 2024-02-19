@@ -1,12 +1,14 @@
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import ImageClassificationSample from '../components/image-classification-sample.js';
+import ObjectDetectionSample from '../components/object-detection-sample.js';
 import { useArtifactSettings } from '../stores/artifact-settings.js';
 import { useEvaluationData } from '../stores/evaluation-data.js';
 
 export default {
     components: {
         ImageClassificationSample,
+        ObjectDetectionSample,
     },
     props: {
         run: Object,
@@ -15,6 +17,7 @@ export default {
         const evaluationData = useEvaluationData();
         const taskSpecificComponent = computed(() => ({
             'image-classification': ImageClassificationSample,
+            'object-detection': ObjectDetectionSample,
         }[evaluationData.settings.task]));
 
         const keys = computed(() => {
