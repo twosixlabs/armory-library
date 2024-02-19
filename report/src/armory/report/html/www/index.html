@@ -4,6 +4,13 @@
     <title>Armory Evaluation Report</title>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.2/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Use a custom collapse class since Tailwind and DaisyUI have
+           conflicting class names both named 'collapse' */
+        .tw-collapse {
+            visibility: collapse;
+        }
+    </style>
     <script>
         tailwind.config = {
             theme: {

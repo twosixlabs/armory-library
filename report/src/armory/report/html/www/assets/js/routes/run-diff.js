@@ -1,6 +1,7 @@
 import { storeToRefs } from 'pinia';
-import { computed } from 'vue';
-import { RouterLink } from 'vue-router';
+import { computed, ref } from 'vue';
+import Button from '../components/button.js';
+import { ChevronDownIcon, ChevronRightIcon } from '../components/icons.js';
 import {
     Table,
     TableBody,
@@ -43,6 +44,9 @@ const getParameters = (runs) => {
 
 export default {
     components: {
+        Button,
+        ChevronDownIcon,
+        ChevronRightIcon,
         Table,
         TableBody,
         TableCell,
@@ -59,8 +63,7 @@ export default {
         const { precision } = storeToRefs(metricsSettings);
 
         const metrics = computed(() => getMetrics(props.runs));
-        const parameters = computed(() => getParameters(props.runs));
-
+        const collapseMetrics = ref(false);
         const getMetricRowClass = (chain, metric) => {
             const values = new Set();
             for (const run of props.runs) {
@@ -76,9 +79,12 @@ export default {
             return {
                 'even:bg-zinc-50': num <= 1,
                 'bg-twosix-green': num > 1,
+                'tw-collapse': collapseMetrics.value,
             };
         };
 
+        const parameters = computed(() => getParameters(props.runs));
+        const collapseParams = ref(false);
         const getParamRowClass = (param) => {
             const values = new Set();
             for (const run of props.runs) {
@@ -89,10 +95,13 @@ export default {
             return {
                 'even:bg-zinc-50': num <= 1,
                 'bg-twosix-green': num > 1,
+                'tw-collapse': collapseParams.value,
             };
         }
 
         return {
+            collapseMetrics,
+            collapseParams,
             getMetricRowClass,
             getParamRowClass,
             metrics,
@@ -132,13 +141,24 @@ export default {
                 </tr>
             </TableHead>
             <TableBody>
+                <tr class="tw-collapse">
+                    <td>hello</td>
+                    <td>to</td>
+                    <td>you</td>
+                </tr>
                 <TableRow>
                     <TableRowHeader :colspan="runs.length + 1">
-                        Metrics
+                        <div class="flex items-center">
+                            Metrics
+                            <Button @click="collapseMetrics = !collapseMetrics" minimal class="ml-2">
+                                <ChevronDownIcon v-if="collapseMetrics" />
+                                <ChevronRightIcon v-if="!collapseMetrics" />
+                            </Button>
+                        </div>
                     </TableRowHeader>
                 </TableRow>
                 <template v-for="(chains, metric) in metrics" :key="metric">
-                    <TableRow>
+                    <TableRow :class="{'tw-collapse': collapseMetrics}">
                         <TableRowHeader :colspan="runs.length + 1">
                             <span class="ml-4">
                                 {{ metric }}
@@ -164,7 +184,13 @@ export default {
                 </template>
                 <TableRow>
                     <TableRowHeader :colspan="runs.length + 1">
-                        Parameters
+                        <div class="flex items-center">
+                            Parameters
+                            <Button @click="collapseParams = !collapseParams" minimal class="ml-2">
+                                <ChevronDownIcon v-if="collapseParams" />
+                                <ChevronRightIcon v-if="!collapseParams" />
+                            </Button>
+                        </div>
                     </TableRowHeader>
                 </TableRow>
                 <tr
