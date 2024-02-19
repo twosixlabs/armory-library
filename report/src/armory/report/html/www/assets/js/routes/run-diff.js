@@ -60,7 +60,7 @@ export default {
     },
     setup(props) {
         const metricsSettings = useMetricsSettings();
-        const { precision } = storeToRefs(metricsSettings);
+        const { precision, showAll } = storeToRefs(metricsSettings);
 
         const metrics = computed(() => getMetrics(props.runs));
         const collapseMetrics = ref(false);
@@ -79,7 +79,7 @@ export default {
             return {
                 'even:bg-zinc-50': num <= 1,
                 'bg-twosix-green': num > 1,
-                'tw-collapse': collapseMetrics.value,
+                'tw-collapse': collapseMetrics.value || (!showAll.value && num <= 1),
             };
         };
 
@@ -95,7 +95,7 @@ export default {
             return {
                 'even:bg-zinc-50': num <= 1,
                 'bg-twosix-green': num > 1,
-                'tw-collapse': collapseParams.value,
+                'tw-collapse': collapseParams.value || (!showAll.value && num <= 1),
             };
         }
 
@@ -107,6 +107,7 @@ export default {
             metrics,
             parameters,
             precision,
+            showAll,
         };
     },
     template: `
@@ -121,6 +122,14 @@ export default {
                 max="9"
                 type="number"
             />
+            <input
+                v-model="showAll"
+                id="show-all"
+                type="checkbox"
+            />
+            <label for="show-all" class="hover:cursor-pointer">
+                Show all
+            </label>
         </div>
         <Table>
             <TableHead>

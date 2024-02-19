@@ -174,6 +174,21 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
         updateQuery({ showParameter });
     }
 
+    // -- show-all visibility
+
+    const showAll = computed({
+        get() {
+            const showAll = route.value.query.showAll;
+            if (showAll == undefined) {
+                return true;
+            }
+            return showAll == "true";
+        },
+        set(showAll) {
+            updateQuery({ showAll });
+        },
+    });
+
     return {
         baselineChain,
         baselineRun,
@@ -182,6 +197,7 @@ export const useMetricsSettings = defineStore('metrics-settings', () => {
         hiddenMetrics,
         precision,
         setMetricType,
+        showAll,
         showParameters,
         toggleBaselineChain,
         toggleBaselineRun,
