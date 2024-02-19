@@ -225,7 +225,7 @@ const Chain = {
         name: String,
     },
     template: `
-        <div class="flex flex-col items-center">
+        <div class="flex flex-col items-center w-28">
             <div class="tooltip" :data-tip="name">
                 <div class="max-w-28 overflow-hidden text-ellipsis">
                     {{ name }}
