@@ -41,9 +41,9 @@ const reorganizeMetrics = (runs, hiddenMetrics, hiddenChains) => {
     const columns = {};
     for (const key of allMetrics) {
         const segments = key.split("/");
-        if (segments.length == 2 && segments[0] != "system") {
+        if (segments.length >= 2 && segments[0] != "system") {
             const chain = segments[0];
-            const metric = segments[1];
+            const metric = segments.slice(1).join("/");
             if (hiddenMetrics.includes(metric) || hiddenChains.includes(chain)) {
                 // skip
             } else if (metric in columns) {

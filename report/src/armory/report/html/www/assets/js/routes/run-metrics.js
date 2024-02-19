@@ -26,9 +26,9 @@ const reorganizeMetrics = (flatMetrics) => {
     const allMetrics = new Set();
     for (const [key, value] of Object.entries(flatMetrics)) {
         const segments = key.split("/");
-        if (segments.length == 2 && segments[0] != "system") {
+        if (segments.length >= 2 && segments[0] != "system") {
             const chain = segments[0];
-            const metric = segments[1];
+            const metric = segments.slice(1).join("/");
             allMetrics.add(metric);
             if (chain in byChain) {
                 byChain[chain][metric] = value;
