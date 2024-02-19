@@ -58,6 +58,7 @@ export default {
     template: `
         <div class="flex gap-4 items-center justify-center">
             <div class="flex flex-col">
+                <span>{{ lhsChain }}</span>
                 <span>Target: {{ lhsTarget }}</span>
                 <span>Prediction: {{ lhsPrediction }}</span>
             </div>
@@ -71,6 +72,7 @@ export default {
                 <div class="diff-resizer"></div>
             </div>
             <div class="flex flex-col">
+                <span>{{ rhsChain }}</span>
                 <span>Target: {{ rhsTarget }}</span>
                 <span>Prediction: {{ rhsPrediction }}</span>
             </div>
