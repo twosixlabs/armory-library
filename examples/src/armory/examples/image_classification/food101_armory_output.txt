@@ -1,0 +1,35 @@
+INFO: GPU available: True (cuda), used: True
+INFO: TPU available: False, using: 0 TPU cores
+INFO: IPU available: False, using: 0 IPUs
+INFO: HPU available: False, using: 0 HPUs
+2024/02/21 14:32:06 INFO mlflow.system_metrics.system_metrics_monitor: Started monitoring system metrics.
+INFO: LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+/home/kyle-treubig/Code/jatic/armory/.venv-3.11/lib/python3.11/site-packages/lightning/pytorch/trainer/connectors/data_connector.py:441: The 'test_dataloader' does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` to `num_workers=11` in the `DataLoader` to improve performance.
+Testing DataLoader 0: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 [07:11<00:00,  0.01it/s]
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                                                                                                                                              
+┃        Test metric        ┃       DataLoader 0        ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│     attacked/accuracy     │    0.42500001192092896    │
+│    attacked/linf_norm     │   0.003000020980834961    │
+│      benign/accuracy      │    0.9624999761581421     │
+│     benign/linf_norm      │            0.0            │
+│     defended/accuracy     │    0.8374999761581421     │
+│    defended/linf_norm     │    1.1254903078079224     │
+└───────────────────────────┴───────────────────────────┘
+2024/02/21 14:39:18 INFO mlflow.system_metrics.system_metrics_monitor: Stopping system metrics monitoring...
+2024/02/21 14:39:18 INFO mlflow.system_metrics.system_metrics_monitor: Successfully terminated system metrics monitoring!
+{'compute': {'Avg. CPU time (s) for 5 executions of attacked/perturbation': 40.09015541020199,
+             'Avg. CPU time (s) for 5 executions of attacked/perturbation/PGD': 40.090144914199485,
+             'Avg. CPU time (s) for 5 executions of attacked/predict': 0.012825554003939033,
+             'Avg. CPU time (s) for 5 executions of benign/perturbation': 1.0554009350016714e-06,
+             'Avg. CPU time (s) for 5 executions of benign/predict': 0.14927994679892437,
+             'Avg. CPU time (s) for 5 executions of defended/perturbation': 41.00933763380162,
+             'Avg. CPU time (s) for 5 executions of defended/perturbation/JPEG_compression': 0.06530600039695855,
+             'Avg. CPU time (s) for 5 executions of defended/perturbation/PGD': 40.94399837520323,
+             'Avg. CPU time (s) for 5 executions of defended/predict': 0.01620221380435396},
+ 'metrics': {'attacked/accuracy': tensor(0.4250),
+             'attacked/linf_norm': tensor(0.0030),
+             'benign/accuracy': tensor(0.9625),
+             'benign/linf_norm': tensor(0.),
+             'defended/accuracy': tensor(0.8375),
+             'defended/linf_norm': tensor(1.1255)}}
