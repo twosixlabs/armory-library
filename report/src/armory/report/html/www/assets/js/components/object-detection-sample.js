@@ -1,5 +1,4 @@
 import { computed } from 'vue';
-import { argmax } from '../utils/argmax.js';
 
 export default {
     props: {
@@ -8,6 +7,7 @@ export default {
         rhsChain: String,
         run: Object,
         sample: Number,
+        sideBySide: Boolean,
     },
     setup(props) {
         const lhsImage = computed(() => {
@@ -36,15 +36,23 @@ export default {
             <div class="flex flex-col">
                 <span>{{ lhsChain }}</span>
             </div>
-            <div v-if="lhsImage && rhsImage" class="diff aspect-square max-w-xl">
-                <div class="diff-item-1">
-                    <img :src="rhsImage" />
+            <template v-if="lhsImage && rhsImage">
+                <div v-if="!sideBySide" class="diff aspect-square max-w-xl">
+                    <div class="diff-item-1">
+                        <img :src="rhsImage" />
+                    </div>
+                    <div class="diff-item-2">
+                        <img :src="lhsImage" />
+                    </div>
+                    <div class="diff-resizer"></div>
                 </div>
-                <div class="diff-item-2">
+                <div v-else class="flex gap-2">
                     <img :src="lhsImage" />
+                    <img
+                        :src="rhsImage"
+                        class="border-l-2 pl-2"
+                    />
                 </div>
-                <div class="diff-resizer"></div>
-            </div>
             <div class="flex flex-col">
                 <span>{{ rhsChain }}</span>
             </div>

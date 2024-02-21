@@ -30,10 +30,24 @@ export const useArtifactSettings = defineStore('artifact-settings', () => {
     const batch = createSetting("batch", "batch");
     const sample = createSetting("sample", "sample");
 
+    const sideBySide = computed({
+        get() {
+            const sideBySide = route.value.query.sideBySide;
+            if (sideBySide == undefined) {
+                return false;
+            }
+            return sideBySide == "true";
+        },
+        set(sideBySide) {
+            updateQuery({ sideBySide });
+        },
+    });
+
     return {
         lhsChain,
         rhsChain,
         batch,
         sample,
+        sideBySide,
     };
 });

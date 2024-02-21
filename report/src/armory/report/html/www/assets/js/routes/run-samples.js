@@ -40,14 +40,11 @@ export default {
             }
         });
 
-        const { batch, lhsChain, rhsChain, sample } = storeToRefs(useArtifactSettings());
+        const settings = storeToRefs(useArtifactSettings());
 
         return {
-            batch,
+            ...settings,
             keys,
-            lhsChain,
-            rhsChain,
-            sample,
             taskSpecificComponent,
         };
     },
@@ -85,6 +82,14 @@ export default {
                     {{ sample }}
                 </option>
             </select>
+            <input
+                v-model="sideBySide"
+                id="side-by-side"
+                type="checkbox"
+            />
+            <label for="side-by-side" class="hover:cursor-pointer">
+                Side-by-side
+            </label>
         </div>
         <component
             :is="taskSpecificComponent"
@@ -93,6 +98,7 @@ export default {
             :rhsChain="rhsChain"
             :run="run"
             :sample="sample"
+            :sideBySide="sideBySide"
         ></component>
     `,
 };
