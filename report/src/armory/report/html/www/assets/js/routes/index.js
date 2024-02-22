@@ -6,6 +6,7 @@ import RunDiff from './run-diff.js';
 import RunFlowchart from './run-flowchart.js';
 import RunMetrics from './run-metrics.js';
 import RunParameters from './run-parameters.js';
+import RunRuntime from './run-runtime.js';
 import RunSamples from './run-samples.js';
 import SingleRun from './single-run.js';
 
@@ -22,6 +23,7 @@ export const routes = [
             { path: 'flowchart', name: 'single-run-flowchart', component: RunFlowchart },
             { path: 'metrics', name: 'single-run-metrics', component: RunMetrics },
             { path: 'parameters', name: 'single-run-params', component: RunParameters },
+            { path: 'runtime', name: 'single-run-runtime', component: RunRuntime },
             { path: 'samples', name: 'single-run-samples', component: RunSamples },
         ],
     },

@@ -25,51 +25,30 @@ export default {
             }
         });
 
-        return { run };
+        const tabs = [
+            { dest: 'single-run-details', label: 'Details' },
+            { dest: 'single-run-metrics', label: 'Metrics' },
+            { dest: 'single-run-runtime', label: 'Runtime' },
+            { dest: 'single-run-params', label: 'Parameters' },
+            { dest: 'single-run-samples', label: 'Samples' },
+            { dest: 'single-run-flowchart', label: 'Flowchart' },
+        ];
+
+        return { run, tabs };
     },
     template: `
         <div class="container">
             <heading>{{ run?.info.run_name }}</heading>
             <div role="tablist" class="tabs tabs-lifted">
                 <router-link
-                    :to="{ name: 'single-run-details' }"
+                    v-for="tab in tabs"
+                    :key="tab.dest"
+                    :to="{ name: tab.dest }"
                     role="tab"
                     class="tab"
                     exact-active-class="tab-active"
                 >
-                    Details
-                </router-link>
-                <router-link
-                    :to="{ name: 'single-run-metrics' }"
-                    role="tab"
-                    class="tab"
-                    active-class="tab-active"
-                >
-                    Metrics
-                </router-link>
-                <router-link
-                    :to="{ name: 'single-run-params' }"
-                    role="tab"
-                    class="tab"
-                    active-class="tab-active"
-                >
-                    Parameters
-                </router-link>
-                <router-link
-                    :to="{ name: 'single-run-samples' }"
-                    role="tab"
-                    class="tab"
-                    active-class="tab-active"
-                >
-                    Samples
-                </router-link>
-                <router-link
-                    :to="{ name: 'single-run-flowchart' }"
-                    role="tab"
-                    class="tab"
-                    active-class="tab-active"
-                >
-                    Flowchart
+                    {{ tab.label }}
                 </router-link>
             </div>
             <router-view v-if="run" :run="run"></router-view>
