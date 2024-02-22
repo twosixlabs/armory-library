@@ -1,6 +1,7 @@
 import { computed, watch } from 'vue';
-import { RouterLink, RouterView, useRouter } from 'vue-router';
+import { RouterView, useRouter } from 'vue-router';
 import Heading from '../components/heading.js';
+import Tabs from '../components/tabs.js';
 import { useEvaluationData } from '../stores/evaluation-data.js';
 
 export default {
@@ -9,8 +10,8 @@ export default {
     },
     components: {
         Heading,
-        RouterLink,
         RouterView,
+        Tabs,
     },
     setup(props) {
         const router = useRouter();
@@ -39,18 +40,7 @@ export default {
     template: `
         <div class="container">
             <heading>{{ run?.info.run_name }}</heading>
-            <div role="tablist" class="tabs tabs-lifted">
-                <router-link
-                    v-for="tab in tabs"
-                    :key="tab.dest"
-                    :to="{ name: tab.dest }"
-                    role="tab"
-                    class="tab"
-                    exact-active-class="tab-active"
-                >
-                    {{ tab.label }}
-                </router-link>
-            </div>
+            <Tabs :tabs="tabs" />
             <router-view v-if="run" :run="run"></router-view>
         </div>
     `,
