@@ -90,3 +90,13 @@ def dump_artifacts(
                 artifacts[chain][batch][sample].update(json.load(jsonfile))
 
     return artifacts
+
+
+def get_metric_histories(run_id: str, metrics: List[str]):
+    client = create_client()
+    histories = {}
+    for metric in metrics:
+        history = client.get_metric_history(run_id, metric)
+        history = sorted(history, key=lambda x: x.timestamp)
+        histories[metric] = [_serialize(entry) for entry in history]
+    return histories

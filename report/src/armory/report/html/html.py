@@ -160,8 +160,8 @@ def generate(
             task=task,
         )
 
-        if export_batches:
-            for run in data["runs"]:
+        for run in data["runs"]:
+            if export_batches:
                 run["artifacts"] = common.dump_artifacts(
                     run_id=run["info"]["run_id"],
                     batches=export_batches,
@@ -169,9 +169,17 @@ def generate(
                     extension="png",
                     outdir=outpath / "assets/img" / run["info"]["run_id"],
                 )
-        else:
-            for run in data["runs"]:
+            else:
                 run["artifacts"] = []
+
+            run["system_metrics"] = common.get_metric_histories(
+                run_id=run["info"]["run_id"],
+                metrics=[
+                    key
+                    for key in run["data"]["metrics"].keys()
+                    if key.startswith("system/")
+                ],
+            )
 
         if evaluation:
             with open(evaluation, "r") as infile:
