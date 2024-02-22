@@ -1,4 +1,5 @@
 import CompareMetrics from './compare-metrics.js';
+import CompareRuntimes from './compare-runtimes.js';
 import MultipleRuns from './multiple-runs.js';
 import Overview from './overview.js';
 import RunDetails from './run-details.js';
@@ -33,8 +34,9 @@ export const routes = [
         component: MultipleRuns,
         children: [
             { path: '', redirect: { name: 'compare-runs-metrics' } },
-            { path: 'metrics', name: 'compare-runs-metrics', component: CompareMetrics },
             { path: 'diff', name: 'compare-runs-diff', component: RunDiff },
+            { path: 'metrics', name: 'compare-runs-metrics', component: CompareMetrics },
+            { path: 'runtime', name: 'compare-runs-runtime', component: CompareRuntimes },
         ],
     },
 ];

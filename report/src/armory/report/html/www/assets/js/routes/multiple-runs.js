@@ -36,6 +36,10 @@ export default {
                 label: 'Metrics',
             },
             {
+                dest: { name: 'compare-runs-runtime', query: { runs: runIds.value } },
+                label: 'Runtime',
+            },
+            {
                 dest: { name: 'compare-runs-diff', query: { runs: runIds.value } },
                 label: 'Diff',
             },

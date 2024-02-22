@@ -1,16 +1,22 @@
 import { Chart, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js';
-import dayjs from 'dayjs';
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { Line } from "vue-chartjs";
 import { useRuntimeSettings } from '../stores/runtime-settings.js';
+
+const colors = [
+    '#1e41dd',
+    '#24d4a0',
+    '#889ea9',
+    '#002643',
+];
 
 export default {
     components: {
         Line,
     },
     props: {
-        run: Object,
+        runs: Object,
     },
     setup(props) {
         Chart.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale);
@@ -18,20 +24,22 @@ export default {
         const settings = storeToRefs(useRuntimeSettings());
         const { selectedMetric } = settings;
 
-        const systemMetrics = computed(() => 
-            Object.keys(props.run.system_metrics).map((key) => key.slice(7)));
+        const systemMetrics = computed(() => {
+            const allMetrics = new Set();
+            for (const run of props.runs) {
+                for (const name of Object.keys(run.system_metrics)) {
+                    allMetrics.add(name.slice(7));
+                }
+            }
+            return [...allMetrics];
+        });
 
         const chartOptions = computed(() => ({
             responsive: true,
             scales: {
                 x: {
-                    type: 'linear',
                     ticks: {
-                        display: true,
-                        callback: function(value, index, values) {
-                            return dayjs(value).format("YYYY-MM-DD HH:mm:ss");
-                        },
-                        stepSize: 60000
+                        display: false,
                     },
                 },
             },
@@ -39,20 +47,24 @@ export default {
 
         const chartData = computed(() => {
             if (!!selectedMetric.value) {
-                const metrics = props.run.system_metrics["system/" + selectedMetric.value];
-                if (metrics == undefined) {
-                    return { datasets: [] };
+                const datasets = [];
+
+                for (const [idx, run] of props.runs.entries()) {
+                    const metrics = run.system_metrics["system/" + selectedMetric.value];
+                    if (metrics == undefined) {
+                        continue;
+                    }
+                    datasets.push({
+                        label: run.info.run_name,
+                        backgroundColor: colors[idx],
+                        data: metrics.map((m) => m.value),
+                    });
                 }
-                return {
-                    labels: metrics.map((m) => m.timestamp),
-                    datasets: [
-                        {
-                            label: selectedMetric.value,
-                            backgroundColor: '#1e41dd',
-                            data: metrics.map((m) => m.value),
-                        },
-                    ],
-                };
+
+                const max = Math.max(...datasets.map((d) => d.data.length));
+                const labels = [...Array(max)].map((_, i) => i);
+
+                return { labels, datasets };
             }
         });
 
