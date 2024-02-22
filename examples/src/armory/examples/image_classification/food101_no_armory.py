@@ -111,7 +111,7 @@ with mlflow.start_run(log_system_metrics=True):
 
     mlflow.log_params(
         {
-            "Jpegcompression.quality": 50,
+            "JpegCompression.quality": 50,
         }
     )
 
