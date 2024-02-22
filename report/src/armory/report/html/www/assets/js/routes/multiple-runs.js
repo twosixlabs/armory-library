@@ -1,6 +1,7 @@
 import { computed, watch } from 'vue';
 import { RouterLink, RouterView, useRouter } from 'vue-router';
 import Heading from '../components/heading.js';
+import Tabs from '../components/tabs.js';
 import { useEvaluationData } from '../stores/evaluation-data.js';
 
 export default {
@@ -8,6 +9,7 @@ export default {
         Heading,
         RouterLink,
         RouterView,
+        Tabs,
     },
     setup() {
         const router = useRouter();
@@ -28,31 +30,25 @@ export default {
             }
         }, { immediate: true });
 
-        return { runs, runIds };
+        const tabs = computed(() => ([
+            {
+                dest: { name: 'compare-runs-metrics', query: { runs: runIds.value } },
+                label: 'Metrics',
+            },
+            {
+                dest: { name: 'compare-runs-diff', query: { runs: runIds.value } },
+                label: 'Diff',
+            },
+        ]));
+
+        return { runs, runIds, tabs };
     },
     template: `
         <div class="container">
             <heading>
                 Comparing {{ runs.length }} runs
             </heading>
-            <div role="tablist" class="tabs tabs-lifted">
-                <router-link
-                    :to="{ name: 'compare-runs-metrics', query: { runs: runIds } }"
-                    role="tab"
-                    class="tab"
-                    active-class="tab-active"
-                >
-                    Metrics
-                </router-link>
-                <router-link
-                    :to="{ name: 'compare-runs-diff', query: { runs: runIds } }"
-                    role="tab"
-                    class="tab"
-                    active-class="tab-active"
-                >
-                    Diff
-                </router-link>
-            </div>
+            <Tabs :tabs="tabs" />
             <router-view v-if="runs.length" :runs="runs"></router-view>
         </div>
     `,

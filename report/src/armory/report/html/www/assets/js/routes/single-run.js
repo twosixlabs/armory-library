@@ -27,12 +27,12 @@ export default {
         });
 
         const tabs = [
-            { dest: 'single-run-details', label: 'Details' },
-            { dest: 'single-run-metrics', label: 'Metrics' },
-            { dest: 'single-run-runtime', label: 'Runtime' },
-            { dest: 'single-run-params', label: 'Parameters' },
-            { dest: 'single-run-samples', label: 'Samples' },
-            { dest: 'single-run-flowchart', label: 'Flowchart' },
+            { dest: { name: 'single-run-details' }, label: 'Details' },
+            { dest: { name: 'single-run-metrics' }, label: 'Metrics' },
+            { dest: { name: 'single-run-runtime' }, label: 'Runtime' },
+            { dest: { name: 'single-run-params' }, label: 'Parameters' },
+            { dest: { name: 'single-run-samples' }, label: 'Samples' },
+            { dest: { name: 'single-run-flowchart' }, label: 'Flowchart' },
         ];
 
         return { run, tabs };

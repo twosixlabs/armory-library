@@ -14,8 +14,8 @@ export default {
         <div role="tablist" class="tabs tabs-lifted">
             <router-link
                 v-for="tab in tabs"
-                :key="tab.dest"
-                :to="{ name: tab.dest }"
+                :key="tab.dest.name"
+                :to="tab.dest"
                 role="tab"
                 class="tab"
                 exact-active-class="tab-active"
