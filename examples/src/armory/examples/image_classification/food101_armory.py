@@ -148,6 +148,7 @@ evaluation_defense = armory.perturbation.ArtPreprocessorDefence(
 metrics = {
     "linf_norm": armory.metric.PerturbationMetric(
         armory.metrics.perturbation.PerturbationNormMetric(ord=torch.inf),
+        armory.data.Images.as_torch(scale=normalized_scale),
     ),
     "accuracy": armory.metric.PredictionMetric(
         torchmetrics.classification.Accuracy(task="multiclass", num_classes=101),
