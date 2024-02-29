@@ -53,8 +53,8 @@ dependencies = [
     # tracking
     "mlflow",
 
-    # metrics
-    "transformers",
+    # HF transformers
+    "transformers < 4.38.0",
 
     # an ugly hack to workaround a bug on MacOS which makes PyYAML 5.4.1 unbuildable
     # lightning 2.1.2 requires PyYAML >= 5.4 < 8.0 which on MacOS under Python 3.11
