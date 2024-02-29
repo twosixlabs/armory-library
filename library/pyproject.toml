@@ -54,6 +54,7 @@ dependencies = [
     "mlflow",
 
     # HF transformers
+    # TODO: unpin this version when patch https://github.com/huggingface/transformers/pull/29353 is released.
     "transformers < 4.38.0",
 
     # an ugly hack to workaround a bug on MacOS which makes PyYAML 5.4.1 unbuildable
