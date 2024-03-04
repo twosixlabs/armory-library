@@ -112,7 +112,7 @@ jobs:
           pip3 install --no-compile ./library
           pip3 install --no-compile ./matrix
           pip3 install --no-compile ./examples[huggingface,yolo]
-          pip3 install nbconvert
+          pip3 install ipykernel nbconvert
 
       - name: Test
         run: cd ${{ matrix.test.dir }} && ${{ matrix.test.script }}
