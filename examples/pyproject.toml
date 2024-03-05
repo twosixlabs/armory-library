@@ -15,7 +15,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "albumentations",
+    "albumentations<1.4.1",
     "armory-library",
 ]
 
