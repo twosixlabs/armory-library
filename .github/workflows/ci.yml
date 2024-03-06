@@ -83,7 +83,7 @@ jobs:
             script: python license_plates_yolov5.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
           - name: Tutorial Notebook
             dir: examples/notebooks
-            script: papermill armory_colab_example.ipynb ./out.ipynb -p batch_size 2 -p num_batches 1
+            script: papermill armory_evaluation_walkthrough.ipynb ./out.ipynb -p batch_size 2 -p num_batches 1
           - name: Image Classification Food-101 Notebook
             dir: examples/notebooks
             script: papermill image_classification_food101.ipynb ./out.ipynb -p batch_size 2 -p num_batches 1
