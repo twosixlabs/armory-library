@@ -1,4 +1,5 @@
 """Script argument parsing utilities for armory-library examples"""
+
 import argparse
 from typing import Optional
 

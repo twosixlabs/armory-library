@@ -2,7 +2,6 @@
 Support for patch attacks using same interface.
 """
 
-
 from typing import Any, Mapping, Optional, Sequence
 
 from art.attacks.attack import EvasionAttack
