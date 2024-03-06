@@ -84,7 +84,7 @@ Defense Advanced Research Projects Agency (DARPA) or JATIC.
 [docs-badge]: https://readthedocs.org/projects/armory/badge/
 [docs-url]: https://readthedocs.org/projects/armory/
 [style-badge]: https://img.shields.io/badge/code%20style-black-000000.svg
-[style-url]: https://github.com/ambv/black
+[style-url]: https://github.com/psf/black
 [gardproject]: https://www.gardproject.org
 [colab-badge]: https://colab.research.google.com/assets/colab-badge.svg
 [colab-url]: https://colab.research.google.com/github/twosixlabs/armory-library/blob/master/examples/notebooks/image_classification_food101.ipynb
