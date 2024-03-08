@@ -3,7 +3,7 @@ Armory helper utilities to assist with use of HuggingFace datasets and models
 with Armory
 """
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, TypeAlias
 
 from art.estimators.classification.pytorch import PyTorchClassifier
 from transformers import AutoImageProcessor
@@ -16,7 +16,7 @@ from armory.track import track_init_params, track_params
 if TYPE_CHECKING:
     import torch.nn
 
-Sample = dict(str, Any)
+Sample: TypeAlias = Dict[str, Any]
 
 
 def _create_scale_from_image_processor(processor: AutoImageProcessor) -> Scale:
@@ -32,7 +32,7 @@ def _create_scale_from_image_processor(processor: AutoImageProcessor) -> Scale:
     return scale
 
 
-def _create_clip_values_from_scale(scale: Scale) -> (float, float):
+def _create_clip_values_from_scale(scale: Scale) -> Tuple[float, float]:
     if not scale.is_normalized or not scale.mean or not scale.std:
         return (0, scale.max)
     else:
