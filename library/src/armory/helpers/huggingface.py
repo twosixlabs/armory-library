@@ -3,7 +3,7 @@ Armory helper utilities to assist with use of HuggingFace datasets and models
 with Armory
 """
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, TypeAlias
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 from art.estimators.classification.pytorch import PyTorchClassifier
 from transformers import AutoImageProcessor
@@ -16,7 +16,7 @@ from armory.track import track_init_params, track_params
 if TYPE_CHECKING:
     import torch.nn
 
-Sample: TypeAlias = Dict[str, Any]
+Sample = Dict[str, Any]
 
 
 def _create_scale_from_image_processor(processor: AutoImageProcessor) -> Scale:
