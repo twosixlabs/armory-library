@@ -99,7 +99,7 @@ def load_image_classification_model(
     loss: Optional["torch.nn.modules.loss._Loss"] = None,
     dim: ImageDimensions = ImageDimensions.CHW,
     num_channels: int = 3,
-) -> tuple(ImageClassifier, PyTorchClassifier):
+) -> Tuple[ImageClassifier, PyTorchClassifier]:
     from art.estimators.classification import PyTorchClassifier
     from transformers import AutoImageProcessor, AutoModelForImageClassification
 
