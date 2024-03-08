@@ -3,7 +3,7 @@ Armory helper utilities to assist with use of HuggingFace datasets and models
 with Armory
 """
 
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from art.estimators.classification.pytorch import PyTorchClassifier
 from transformers import AutoImageProcessor
@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     import torch.nn
 
 Sample = dict(str, Any)
+
 
 def _create_scale_from_image_processor(processor: AutoImageProcessor) -> Scale:
     do_normalize = getattr(processor, "do_normalize", False)
