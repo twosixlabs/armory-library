@@ -3,16 +3,22 @@ Armory helper utilities to assist with use of HuggingFace datasets and models
 with Armory
 """
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Any
+
+from art.estimators.classification.pytorch import PyTorchClassifier
+from transformers import AutoImageProcessor
 
 from armory.data import DataType, ImageDimensions, Images, Scale
+from armory.evaluation import ImageClassificationDataset
+from armory.model.image_classification.image_classifier import ImageClassifier
 from armory.track import track_init_params, track_params
 
 if TYPE_CHECKING:
     import torch.nn
 
+Sample = dict(str, Any)
 
-def _create_scale_from_image_processor(processor):
+def _create_scale_from_image_processor(processor: AutoImageProcessor) -> Scale:
     do_normalize = getattr(processor, "do_normalize", False)
     image_mean = getattr(processor, "image_mean", None)
     image_std = getattr(processor, "image_std", None)
@@ -25,7 +31,7 @@ def _create_scale_from_image_processor(processor):
     return scale
 
 
-def _create_clip_values_from_scale(scale: Scale):
+def _create_clip_values_from_scale(scale: Scale) -> (float, float):
     if not scale.is_normalized or not scale.mean or not scale.std:
         return (0, scale.max)
     else:
@@ -34,7 +40,7 @@ def _create_clip_values_from_scale(scale: Scale):
         return (min_val, max_val)
 
 
-def _transform(processor, sample):
+def _transform(processor: AutoImageProcessor, sample: Sample) -> Sample:
     """Use the HF image processor and convert from BW To RGB"""
     sample["image"] = processor([img.convert("RGB") for img in sample["image"]])[
         "pixel_values"
@@ -46,12 +52,12 @@ def _transform(processor, sample):
 def load_image_classification_dataset(
     name: str,
     split: str,
-    processor,
+    processor: AutoImageProcessor,
     dim: ImageDimensions = ImageDimensions.CHW,
     image_key: str = "image",
     label_key: str = "label",
     **kwargs,
-):
+) -> ImageClassificationDataset:
     import functools
 
     import datasets
@@ -92,7 +98,7 @@ def load_image_classification_model(
     loss: Optional["torch.nn.modules.loss._Loss"] = None,
     dim: ImageDimensions = ImageDimensions.CHW,
     num_channels: int = 3,
-):
+) -> tuple(ImageClassifier, PyTorchClassifier):
     from art.estimators.classification import PyTorchClassifier
     from transformers import AutoImageProcessor, AutoModelForImageClassification
 
