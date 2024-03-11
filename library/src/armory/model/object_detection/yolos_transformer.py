@@ -1,4 +1,5 @@
 """Armory model wrapper for HuggingFace transformer YOLOS models."""
+
 from typing import TYPE_CHECKING, Optional, Tuple
 
 import torch

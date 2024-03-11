@@ -29,12 +29,10 @@ class frange:
     """
 
     @overload
-    def __init__(self, stop: float, /):
-        ...
+    def __init__(self, stop: float, /): ...
 
     @overload
-    def __init__(self, start: float, stop: float, step: Optional[float] = None):
-        ...
+    def __init__(self, start: float, stop: float, step: Optional[float] = None): ...
 
     def __init__(
         self, start: float, stop: Optional[float] = None, step: Optional[float] = None
