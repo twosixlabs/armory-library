@@ -9,7 +9,7 @@ see [Pre-commit Hooks](#pre-commit-hooks) below.
 # Formatting
 All contributions to the repository must be formatted with [black](https://github.com/psf/black).
 ```
-pip install black==22.*
+pip install black==24.*
 black .
 ```
 We will update black versioning annually following their [Stability Policy](https://black.readthedocs.io/en/stable/the_black_code_style/index.html#stability-policy).

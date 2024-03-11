@@ -1,4 +1,5 @@
 """Armory engine to create adversarial datasets"""
+
 from typing import TYPE_CHECKING, Any, Callable, Generator, Mapping, Optional
 
 from armory.engine.evaluation_module import EvaluationModule

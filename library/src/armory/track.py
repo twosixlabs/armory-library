@@ -120,8 +120,7 @@ def track_params(
     *,
     prefix: Optional[str] = None,
     ignore: Optional[Sequence[str]] = None,
-) -> Callable[[Callable[P, T]], Callable[P, T]]:
-    ...
+) -> Callable[[Callable[P, T]], Callable[P, T]]: ...
 
 
 @overload
@@ -130,8 +129,7 @@ def track_params(
     *,
     prefix: Optional[str] = None,
     ignore: Optional[Sequence[str]] = None,
-) -> Callable[P, T]:
-    ...
+) -> Callable[P, T]: ...
 
 
 def track_params(
@@ -206,8 +204,7 @@ def track_init_params(
     *,
     prefix: Optional[str] = None,
     ignore: Optional[Sequence[str]] = None,
-) -> Callable[[T], T]:
-    ...
+) -> Callable[[T], T]: ...
 
 
 @overload
@@ -216,8 +213,7 @@ def track_init_params(
     *,
     prefix: Optional[str] = None,
     ignore: Optional[Sequence[str]] = None,
-) -> T:
-    ...
+) -> T: ...
 
 
 def track_init_params(

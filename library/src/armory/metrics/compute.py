@@ -18,8 +18,7 @@ class Profiler(Protocol):
     def measure(self, name: str):
         yield
 
-    def results(self) -> Mapping[str, float]:
-        ...
+    def results(self) -> Mapping[str, float]: ...
 
 
 class NullProfiler:
@@ -65,9 +64,9 @@ class BasicProfiler(NullProfiler):
             total_time = entry["total_time"]
             execution_count = entry["execution_count"]
             average_time = total_time / execution_count
-            results[
-                f"Avg. CPU time (s) for {execution_count} executions of {name}"
-            ] = average_time
+            results[f"Avg. CPU time (s) for {execution_count} executions of {name}"] = (
+                average_time
+            )
         return results
 
 
@@ -116,8 +115,8 @@ class DeterministicProfiler(NullProfiler):
             total_time = entry["total_time"]
             execution_count = entry["execution_count"]
             average_time = total_time / execution_count
-            results[
-                f"Avg. CPU time (s) for {execution_count} executions of {name}"
-            ] = average_time
+            results[f"Avg. CPU time (s) for {execution_count} executions of {name}"] = (
+                average_time
+            )
             results[f"{name} profiler stats"] = entry["stats"]
         return results

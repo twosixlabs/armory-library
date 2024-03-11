@@ -1,4 +1,5 @@
 """Armory model wrapper for JATIC object detection models."""
+
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
