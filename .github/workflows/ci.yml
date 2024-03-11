@@ -71,16 +71,25 @@ jobs:
         test:
           - name: Image Classification Food-101 HuggingFace
             dir: examples/src/armory/examples/image_classification
-            script: food101.py --batch-size 2 --num-batches 1 --export-every-n-batches 1 --dataset huggingface
+            script: python food101.py --batch-size 2 --num-batches 1 --export-every-n-batches 1 --dataset huggingface
           - name: Image Classification Food-101 TorchVision
             dir: examples/src/armory/examples/image_classification
-            script: food101.py --batch-size 2 --num-batches 1 --export-every-n-batches 1 --dataset torchvision
+            script: python food101.py --batch-size 2 --num-batches 1 --export-every-n-batches 1 --dataset torchvision
           - name: Object Detection License Plates YOLOS
             dir: examples/src/armory/examples/object_detection
-            script: license_plates_yolos.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
+            script: python license_plates_yolos.py --batch-size 1 --num-batches 1 --export-every-n-batches 1
           - name: Object Detection License Plates YOLOv5
             dir: examples/src/armory/examples/object_detection
-            script: license_plates_yolov5.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
+            script: python license_plates_yolov5.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
+          - name: Tutorial Notebook
+            dir: examples/notebooks
+            script: papermill armory_evaluation_walkthrough.ipynb ./out.ipynb -p batch_size 2 -p num_batches 1
+          - name: Image Classification Food-101 Notebook
+            dir: examples/notebooks
+            script: papermill image_classification_food101.ipynb ./out.ipynb -p batch_size 2 -p num_batches 1
+          - name: Object Detection License Plates Notebook
+            dir: examples/notebooks
+            script: papermill object_detection_license_plates.ipynb ./out.ipynb -p batch_size 2 -p num_batches 1
         python-version: ["3.8"]
     steps:
       - name: Remove unnecessary files
@@ -103,9 +112,10 @@ jobs:
           pip3 install --no-compile ./library
           pip3 install --no-compile ./matrix
           pip3 install --no-compile ./examples[huggingface,yolo]
+          pip3 install ipykernel papermill
 
       - name: Test
-        run: cd ${{ matrix.test.dir }} && python ${{ matrix.test.script }}
+        run: cd ${{ matrix.test.dir }} && ${{ matrix.test.script }}
 
 
   generate-docs:
