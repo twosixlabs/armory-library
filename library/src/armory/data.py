@@ -438,12 +438,15 @@ class _TorchCallableAccessor(TorchAccessor, _Accessor[RepresentationType]):
         self._get = get
         self._set = set
         self.device = device
+        # If this accessor was created with an explicit target device, ignore
+        # any future moves to a different device
+        self.ignore_move = device is not None
 
     def to(
         self,
         device: Optional[torch.device] = None,
     ):
-        if self.device is None and device is not None:
+        if not self.ignore_move and device is not None:
             self.device = device
 
     def get(self, convertable) -> RepresentationType:
@@ -477,12 +480,15 @@ class DefaultTorchAccessor(TorchAccessor, _Accessor[RepresentationType]):
         device: Optional[torch.device] = None,
     ):
         self.device = device
+        # If this accessor was created with an explicit target device, ignore
+        # any future moves to a different device
+        self.ignore_move = device is not None
 
     def to(
         self,
         device: Optional[torch.device] = None,
     ):
-        if device is not None:
+        if not self.ignore_move and device is not None:
             self.device = device
 
     def get(self, convertable) -> RepresentationType:
