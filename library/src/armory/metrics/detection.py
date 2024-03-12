@@ -153,9 +153,7 @@ class ObjectDetectionRates(Metric):
             self.misclassification_rate_per_img
         )
         disappearance_rate_per_img = dim_zero_cat(self.disappearance_rate_per_img)
-        hallucinations_per_img = dim_zero_cat(self.hallucinations_per_img).to(
-            dtype=torch.float32
-        )
+        hallucinations_per_img = dim_zero_cat(self.hallucinations_per_img)
 
         if self.mean:
             return {
@@ -164,7 +162,9 @@ class ObjectDetectionRates(Metric):
                     misclassification_rate_per_img
                 ),
                 "disappearance_rate_mean": torch.mean(disappearance_rate_per_img),
-                "hallucinations_mean": torch.mean(hallucinations_per_img),
+                "hallucinations_mean": torch.mean(
+                    hallucinations_per_img.to(dtype=torch.float32)
+                ),
             }
 
         return {
