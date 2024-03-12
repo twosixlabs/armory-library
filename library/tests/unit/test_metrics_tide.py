@@ -6,6 +6,16 @@ from armory.metrics.tide import TIDE
 pytestmark = pytest.mark.unit
 
 
+@pytest.fixture
+def target():
+    return [
+        {
+            "labels": torch.tensor([1]),
+            "boxes": torch.tensor([[10, 10, 10, 10]]),
+        }
+    ]
+
+
 def assert_main_error_count(results, error_key):
     all_error_keys = ["Cls", "Loc", "Both", "Dupe", "Bkg", "Miss"]
     for key in all_error_keys:
@@ -17,13 +27,7 @@ def assert_main_error_count(results, error_key):
         ), f"Expected {expected_count} {key} errors but got {actual_count}"
 
 
-def test_tide_with_no_errors():
-    target = [
-        {
-            "labels": torch.tensor([1]),
-            "boxes": torch.tensor([[10, 10, 10, 10]]),
-        }
-    ]
+def test_tide_with_no_errors(target):
     preds = [
         {
             "labels": torch.tensor([1]),
@@ -36,13 +40,7 @@ def test_tide_with_no_errors():
     assert_main_error_count(results, None)
 
 
-def test_tide_with_classification_error():
-    target = [
-        {
-            "labels": torch.tensor([1]),
-            "boxes": torch.tensor([[10, 10, 10, 10]]),
-        }
-    ]
+def test_tide_with_classification_error(target):
     preds = [
         {
             "labels": torch.tensor([2]),
@@ -55,13 +53,7 @@ def test_tide_with_classification_error():
     assert_main_error_count(results, "Cls")
 
 
-def test_tide_with_location_error():
-    target = [
-        {
-            "labels": torch.tensor([1]),
-            "boxes": torch.tensor([[10, 10, 10, 10]]),
-        }
-    ]
+def test_tide_with_location_error(target):
     preds = [
         {
             "labels": torch.tensor([1]),
@@ -74,13 +66,7 @@ def test_tide_with_location_error():
     assert_main_error_count(results, "Loc")
 
 
-def test_tide_with_both_classification_and_location_error():
-    target = [
-        {
-            "labels": torch.tensor([1]),
-            "boxes": torch.tensor([[10, 10, 10, 10]]),
-        }
-    ]
+def test_tide_with_both_classification_and_location_error(target):
     preds = [
         {
             "labels": torch.tensor([1, 2]),
@@ -93,13 +79,7 @@ def test_tide_with_both_classification_and_location_error():
     assert_main_error_count(results, "Both")
 
 
-def test_tide_with_duplicate_error():
-    target = [
-        {
-            "labels": torch.tensor([1]),
-            "boxes": torch.tensor([[10, 10, 10, 10]]),
-        }
-    ]
+def test_tide_with_duplicate_error(target):
     preds = [
         {
             "labels": torch.tensor([1, 1]),
@@ -112,13 +92,7 @@ def test_tide_with_duplicate_error():
     assert_main_error_count(results, "Dupe")
 
 
-def test_tide_with_background_error():
-    target = [
-        {
-            "labels": torch.tensor([1]),
-            "boxes": torch.tensor([[10, 10, 10, 10]]),
-        }
-    ]
+def test_tide_with_background_error(target):
     preds = [
         {
             "labels": torch.tensor([1, 1]),
