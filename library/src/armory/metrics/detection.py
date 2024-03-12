@@ -42,6 +42,20 @@ class ObjectDetectionRates(Metric):
         score_threshold: float = 0.5,
         class_list: Optional[Sequence[int]] = None,
     ):
+        """
+        Initialize the metric.
+
+        Args:
+            mean: `True` to return the mean values across all images or `False`
+                to return the individual values per image
+            iou_threshold: The minimum IoU for detected boxes to be considered
+                and evaluated against the target boxes
+            score_threshold: The minimum prediction score for boxes to be
+                considered and evaluated against the target boxes
+            class_list: Optional list of classes, such that all predictions with
+                labels and ground-truths with labels _not_ in the class list are
+                to be ignored
+        """
         super().__init__()
         self.mean = mean
         self.iou_threshold = iou_threshold
