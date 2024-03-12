@@ -23,6 +23,7 @@ import armory.evaluation
 import armory.export.object_detection
 import armory.metric
 import armory.metrics.compute
+import armory.metrics.detection
 import armory.metrics.perturbation
 import armory.metrics.tide
 import armory.model.object_detection
@@ -177,6 +178,7 @@ def create_metrics():
             armory.data.BoundingBoxes.as_torch(format=armory.data.BBoxFormat.XYXY),
         ),
         "tide": armory.metrics.tide.TIDE.create(),
+        "detection": armory.metrics.detection.ObjectDetectionRates.create(),
     }
 
 
