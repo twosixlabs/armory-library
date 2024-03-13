@@ -223,6 +223,42 @@ def test_any_criteria(n_batch, n_sample, batch_idx, batch_size, expected):
 @pytest.mark.parametrize(
     "metric_value,threshold,expected",
     [
+        (1, 5, False),
+        (5, 5, True),
+        (7, 5, False),
+        (True, True, True),
+        (True, False, False),
+        (False, True, False),
+        (False, False, True),
+        (torch.tensor(3), 5, False),
+        (torch.tensor(5), 5, True),
+        (torch.tensor(7), 5, False),
+        (torch.tensor(True), True, True),
+        (torch.tensor(True), False, False),
+        (torch.tensor(False), True, False),
+        (torch.tensor(False), False, True),
+        (torch.tensor([1, 2, 3, 4]), 5, []),
+        (torch.tensor([1, 5, 3, 4]), 5, [1]),
+        (torch.tensor([5, 5, 5, 5]), 5, [0, 1, 2, 3]),
+        (torch.tensor([True, False, False, True]), True, [0, 3]),
+        (torch.tensor([True, False, False, True]), False, [1, 2]),
+        (torch.tensor([3]), 5, []),
+        (torch.tensor([5]), 5, [0]),
+        (torch.tensor([7]), 5, []),
+        (torch.tensor([True]), True, [0]),
+        (torch.tensor([True]), False, []),
+        (torch.tensor([False]), True, []),
+        (torch.tensor([False]), False, [0]),
+    ],
+)
+def test_when_metric_eq(metric_value, threshold, batch, expected):
+    metric = MagicMock(return_value=metric_value)
+    assert criteria.when_metric_eq(metric, threshold)("", 0, batch) == expected
+
+
+@pytest.mark.parametrize(
+    "metric_value,threshold,expected",
+    [
         (0.1, 0.5, True),
         (0.5, 0.5, False),
         (0.7, 0.5, False),

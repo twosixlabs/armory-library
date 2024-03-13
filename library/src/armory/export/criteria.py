@@ -130,6 +130,19 @@ def samples(indices: Sequence[int]) -> Exporter.Criteria:
     return _criteria
 
 
+def when_metric_eq(metric, threshold) -> Exporter.Criteria:
+    def _criteria(chain_name, batch_idx, batch):
+        val = metric(batch)
+        res = val == threshold
+        if type(res) == torch.Tensor:
+            if res.dim() == 0:
+                return res.item()
+            return res.nonzero().flatten().tolist()
+        return res
+
+    return _criteria
+
+
 def when_metric_lt(metric, threshold) -> Exporter.Criteria:
     def _criteria(chain_name, batch_idx, batch):
         val = metric(batch)
