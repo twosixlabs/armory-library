@@ -1,5 +1,7 @@
 from typing import Iterable, Optional, Sequence, Set, Union
 
+import torch
+
 from armory.export.base import Exporter
 
 
@@ -20,7 +22,7 @@ def all_criteria(*criteria: Exporter.Criteria) -> Exporter.Criteria:
                 aggregate_to_export = to_export
             else:
                 aggregate_to_export.intersection_update(to_export)
-        return aggregate_to_export if aggregate_to_export is not None else []
+        return aggregate_to_export if aggregate_to_export is not None else set()
 
     return _criteria
 
@@ -34,7 +36,7 @@ def any_criteria(*criteria: Exporter.Criteria) -> Exporter.Criteria:
                 aggregate_to_export = to_export
             else:
                 aggregate_to_export.update(to_export)
-        return aggregate_to_export if aggregate_to_export is not None else []
+        return aggregate_to_export if aggregate_to_export is not None else set()
 
     return _criteria
 
@@ -43,9 +45,7 @@ def every_n_batches(n: int) -> Exporter.Criteria:
     def _criteria(chain_name, batch_idx: int, batch):
         if n == 0:
             return False
-        if (batch_idx + 1) % n == 0:
-            return True
-        return False
+        return (batch_idx + 1) % n == 0
 
     return _criteria
 
@@ -59,6 +59,17 @@ def first_n_batches(n: int) -> Exporter.Criteria:
     return _criteria
 
 
+def every_n_samples_of_batch(n: int) -> Exporter.Criteria:
+    def _criteria(chain_name, batch_idx: int, batch):
+        if n == 0:
+            return False
+        return [
+            sample_idx for sample_idx in range(len(batch)) if (sample_idx + 1) % n == 0
+        ]
+
+    return _criteria
+
+
 def every_n_samples(n: int) -> Exporter.Criteria:
     def _criteria(chain_name, batch_idx: int, batch):
         if n == 0:
@@ -66,9 +77,18 @@ def every_n_samples(n: int) -> Exporter.Criteria:
         batch_size = len(batch)
         return [
             sample_idx
-            for sample_idx in range(len(batch))
-            if ((batch_idx * batch_size) + sample_idx) % n == 0
+            for sample_idx in range(batch_size)
+            if ((batch_idx * batch_size) + sample_idx + 1) % n == 0
         ]
+
+    return _criteria
+
+
+def first_n_samples_of_batch(n: int) -> Exporter.Criteria:
+    def _criteria(chain_name, batch_idx: int, batch):
+        if n == 0:
+            return False
+        return [sample_idx for sample_idx in range(len(batch)) if sample_idx < n]
 
     return _criteria
 
@@ -82,7 +102,7 @@ def first_n_samples(n: int) -> Exporter.Criteria:
             return False
         return [
             sample_idx
-            for sample_idx in range(len(batch))
+            for sample_idx in range(batch_size)
             if ((batch_idx * batch_size) + sample_idx) < n
         ]
 
@@ -96,7 +116,7 @@ def samples(indices: Sequence[int]) -> Exporter.Criteria:
         batch_size = len(batch)
         return [
             sample_idx
-            for sample_idx in range(len(batch))
+            for sample_idx in range(batch_size)
             if ((batch_idx * batch_size) + sample_idx) in indices
         ]
 
@@ -106,7 +126,12 @@ def samples(indices: Sequence[int]) -> Exporter.Criteria:
 def when_metric_lt(metric, threshold) -> Exporter.Criteria:
     def _criteria(chain_name, batch_idx, batch):
         val = metric(batch)
-        return val < threshold
+        res = val < threshold
+        if type(res) == torch.Tensor:
+            if res.dim() == 0:
+                return res.item()
+            return res.nonzero().flatten().tolist()
+        return res
 
     return _criteria
 
@@ -114,6 +139,11 @@ def when_metric_lt(metric, threshold) -> Exporter.Criteria:
 def when_metric_gt(metric, threshold) -> Exporter.Criteria:
     def _criteria(chain_name, batch_idx, batch):
         val = metric(batch)
-        return val > threshold
+        res = val > threshold
+        if type(res) == torch.Tensor:
+            if res.dim() == 0:
+                return res.item()
+            return res.nonzero().flatten().tolist()
+        return res
 
     return _criteria
