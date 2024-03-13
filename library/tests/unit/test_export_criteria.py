@@ -133,6 +133,21 @@ def test_first_n_samples_of_batch(n, batch_idx, batch_size, expected):
 
 
 @pytest.mark.parametrize(
+    "names,chain_name,expected",
+    [
+        ([], "benign", False),
+        ([], "attack", False),
+        (["benign"], "benign", True),
+        (["benign"], "attack", False),
+        (["benign", "attack"], "benign", True),
+        (["benign", "attack"], "attack", True),
+    ],
+)
+def test_chains(names, chain_name, batch, expected):
+    assert criteria.chains(names)(chain_name, 0, batch) == expected
+
+
+@pytest.mark.parametrize(
     "indices,batch_idx,batch_size,expected",
     [
         ([], 0, 2, False),

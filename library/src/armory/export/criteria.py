@@ -109,6 +109,13 @@ def first_n_samples(n: int) -> Exporter.Criteria:
     return _criteria
 
 
+def chains(names: Sequence[str]) -> Exporter.Criteria:
+    def _criteria(chain_name: str, batch_idx, batch):
+        return chain_name in names
+
+    return _criteria
+
+
 def samples(indices: Sequence[int]) -> Exporter.Criteria:
     def _criteria(chain_name, batch_idx: int, batch):
         if len(indices) == 0:
