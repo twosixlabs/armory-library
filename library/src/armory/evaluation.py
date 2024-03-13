@@ -14,7 +14,7 @@ from typing import (
 )
 
 from armory.data import Batch
-from armory.export import Exporter, NullExporter
+from armory.export import Exporter
 from armory.metric import Metric
 from armory.metrics.compute import NullProfiler, Profiler
 
@@ -111,7 +111,7 @@ class Evaluation:
     """Optional, perturbation chains to be applied during evaluation"""
     metrics: Mapping[str, Metric] = field(default_factory=dict)
     """Optional, dictionary of metric names to metric collection objects"""
-    exporter: Exporter = field(default_factory=NullExporter)
+    exporters: Iterable[Exporter] = field(default_factory=list)
     """Optional, sample exporter"""
     profiler: Profiler = field(default_factory=NullProfiler)
     """Optional, computational performance profiler instance"""

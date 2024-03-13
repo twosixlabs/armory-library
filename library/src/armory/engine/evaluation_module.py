@@ -20,22 +20,17 @@ class EvaluationModule(pl.LightningModule):
     def __init__(
         self,
         evaluation: Evaluation,
-        export_every_n_batches: int = 0,
     ):
         """
         Initializes the task.
 
         Args:
             evaluation: Configuration for the evaluation
-            export_every_n_batches: Frequency at which batches will be exported
-                to MLflow. A value of 0 means that no batches will be exported.
-                The data that is exported is task-specific.
         """
         super().__init__()
         self.evaluation = evaluation
         # store model as an attribute so it gets moved to device automatically
         self.model = evaluation.model
-        self.export_every_n_batches = export_every_n_batches
 
         # Make copies of user-configured metrics for each perturbation chain
         self.metrics = self.MetricsDict(
@@ -65,19 +60,6 @@ class EvaluationModule(pl.LightningModule):
         def reset(self) -> None:
             for metric in self.values():
                 metric.reset()
-
-    ###
-    # Internal methods
-    ###
-
-    def _should_export(self, batch_idx) -> bool:
-        """
-        Whether the specified batch should be exported, based on the
-        `export_every_n_batches` value.
-        """
-        if self.export_every_n_batches == 0:
-            return False
-        return (batch_idx + 1) % self.export_every_n_batches == 0
 
     ###
     # Task evaluation methods
@@ -131,7 +113,7 @@ class EvaluationModule(pl.LightningModule):
     ###
 
     def setup(self, stage: str) -> None:
-        """Sets up the exporter"""
+        """Sets up the exporters"""
         super().setup(stage)
         logger = self.logger
         sink = (
@@ -139,7 +121,8 @@ class EvaluationModule(pl.LightningModule):
             if isinstance(logger, MLFlowLogger)
             else Sink()
         )
-        self.evaluation.exporter.use_sink(sink)
+        for exporter in self.evaluation.exporters:
+            exporter.use_sink(sink)
 
     def on_test_epoch_start(self) -> None:
         """Resets all metrics"""
@@ -162,8 +145,8 @@ class EvaluationModule(pl.LightningModule):
                 self.evaluate(chain_name, chain_batch)
                 self.update_metrics(chain_name, chain_batch)
 
-                if self._should_export(batch_idx):
-                    self.evaluation.exporter.export(chain_name, batch_idx, chain_batch)
+                for exporter in self.evaluation.exporters:
+                    exporter.export(chain_name, batch_idx, chain_batch)
             except BaseException as err:
                 raise RuntimeError(
                     f"Error performing evaluation of batch #{batch_idx} using chain '{chain_name}': {batch}"

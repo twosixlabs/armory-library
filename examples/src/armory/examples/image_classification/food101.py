@@ -19,6 +19,8 @@ import armory.data
 import armory.dataset
 import armory.engine
 import armory.evaluation
+import armory.export
+import armory.export.criteria
 import armory.export.image_classification
 import armory.metric
 import armory.metrics.compute
@@ -273,6 +275,15 @@ def create_metrics():
     }
 
 
+def create_exporters(export_every_n_batches):
+    """Create sample exporters"""
+    return [
+        armory.export.image_classification.ImageClassificationExporter(
+            criteria=armory.export.criteria.every_n_batches(export_every_n_batches)
+        ),
+    ]
+
+
 @armory.track.track_params(prefix="main")
 def main(
     batch_size,
@@ -297,6 +308,7 @@ def main(
     )
     perturbations = dict()
     metrics = create_metrics()
+    exporters = create_exporters(export_every_n_batches)
     profiler = armory.metrics.compute.BasicProfiler()
 
     if "benign" in chains:
@@ -331,14 +343,13 @@ def main(
         model=model,
         perturbations=perturbations,
         metrics=metrics,
-        exporter=armory.export.image_classification.ImageClassificationExporter(),
+        exporters=exporters,
         profiler=profiler,
         sysconfig=sysconfig,
     )
 
     engine = armory.engine.EvaluationEngine(
         evaluation,
-        export_every_n_batches=export_every_n_batches,
         limit_test_batches=num_batches,
     )
     results = engine.run()

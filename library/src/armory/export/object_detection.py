@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Iterable, Optional
 
 import numpy as np
 import torch
@@ -113,22 +113,24 @@ class ObjectDetectionExporter(Exporter):
             dtype=np.uint8,
         )
 
-    def export(self, chain_name: str, batch_idx: int, batch: Batch) -> None:
+    def export_samples(
+        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+    ) -> None:
         assert self.sink, "No sink has been set, unable to export"
 
-        self._export_metadata(chain_name, batch_idx, batch)
+        self._export_metadata(chain_name, batch_idx, batch, samples)
 
         images = self.inputs_accessor.get(batch.inputs)
         targets = self.targets_accessor.get(batch.targets)
         predictions = self.predictions_accessor.get(batch.predictions)
-        for sample_idx, image in enumerate(images):
+        for sample_idx in samples:
             boxes_above_threshold = predictions[sample_idx]["boxes"][
                 predictions[sample_idx]["scores"] > self.score_threshold
             ]
             # We access images as CHW because draw_bounding_boxes requires it,
             # but MLFlow needs HWC so we transpose
             with_boxes = draw_boxes_on_image(
-                image=image,
+                image=images[sample_idx],
                 ground_truth_boxes=targets[sample_idx]["boxes"],
                 pred_boxes=boxes_above_threshold,
             ).transpose(1, 2, 0)

@@ -43,7 +43,6 @@ class EvaluationEngine:
     def __init__(
         self,
         evaluation: Evaluation,
-        export_every_n_batches: int = 0,
         run_id: Optional[str] = None,
         **kwargs,
     ):
@@ -52,9 +51,6 @@ class EvaluationEngine:
 
         Args:
             evaluation: Configuration for the evaluation
-            export_every_n_batches: Frequency at which batches will be exported
-                to MLflow. A value of 0 means that no batches will be exported.
-                The data that is exported is task-specific.
             run_id: Optional, MLflow run ID to which to record evaluation results
             **kwargs: All other keyword arguments will be forwarded to the
                 `lightning.pytorch.Trainer` class.
@@ -66,7 +62,7 @@ class EvaluationEngine:
             tracking_uri=init_tracking_uri(evaluation.sysconfig.armory_home),
             run_id=run_id,
         )
-        self.module = EvaluationModule(evaluation, export_every_n_batches)
+        self.module = EvaluationModule(evaluation)
         self.trainer = pl.Trainer(
             inference_mode=False,
             logger=self._logger,

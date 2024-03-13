@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Iterable, Optional
 
 from armory.data import Accessor, Batch, DataType, ImageDimensions, Images, Scale
 from armory.export.base import Exporter
@@ -12,6 +12,7 @@ class ImageClassificationExporter(Exporter):
         inputs_accessor: Optional[Images.Accessor] = None,
         predictions_accessor: Optional[Accessor] = None,
         targets_accessor: Optional[Accessor] = None,
+        criteria: Optional[Exporter.Criteria] = None,
     ):
         """
         Initializes the exporter.
@@ -30,18 +31,20 @@ class ImageClassificationExporter(Exporter):
                 accessor is used.
         """
         super().__init__(
-            predictions_accessor=predictions_accessor, targets_accessor=targets_accessor
+            predictions_accessor=predictions_accessor,
+            targets_accessor=targets_accessor,
+            criteria=criteria,
         )
         self.inputs_accessor = inputs_accessor or Images.as_numpy(
             dim=ImageDimensions.HWC, scale=Scale(dtype=DataType.FLOAT, max=1.0)
         )
 
-    def export(self, chain_name: str, batch_idx: int, batch: Batch) -> None:
+    def export_samples(
+        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+    ) -> None:
         assert self.sink, "No sink has been set, unable to export"
-
-        self._export_metadata(chain_name, batch_idx, batch)
-
+        self._export_metadata(chain_name, batch_idx, batch, samples)
         images = self.inputs_accessor.get(batch.inputs)
-        for sample_idx, image in enumerate(images):
+        for sample_idx in samples:
             filename = f"batch_{batch_idx}_ex_{sample_idx}_{chain_name}.png"
-            self.sink.log_image(image, filename)
+            self.sink.log_image(images[sample_idx], filename)
