@@ -5,6 +5,13 @@ import torch
 from armory.export.base import Exporter
 
 
+def always() -> Exporter.Criteria:
+    def _criteria(chain_name, batch_idx, batch):
+        return True
+
+    return _criteria
+
+
 def _to_set(value: Union[bool, Iterable[int]], batch) -> Set[int]:
     if not value:
         return set()
@@ -37,6 +44,18 @@ def any_criteria(*criteria: Exporter.Criteria) -> Exporter.Criteria:
             else:
                 aggregate_to_export.update(to_export)
         return aggregate_to_export if aggregate_to_export is not None else set()
+
+    return _criteria
+
+
+def not_criteria(criteria: Exporter.Criteria) -> Exporter.Criteria:
+    def _criteria(chain_name, batch_idx, batch):
+        res = criteria(chain_name, batch_idx, batch)
+        if not res:
+            return True
+        if type(res) is bool:
+            return False
+        return set(range(len(batch))).difference(res)
 
     return _criteria
 

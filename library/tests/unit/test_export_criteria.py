@@ -14,6 +14,10 @@ def batch():
     return MagicMock(spec=Batch)
 
 
+def test_always(batch):
+    assert criteria.always()("", 0, batch)
+
+
 @pytest.mark.parametrize(
     "n,batch_idx,expected",
     [
@@ -218,6 +222,26 @@ def test_any_criteria(n_batch, n_sample, batch_idx, batch_size, expected):
         criteria.every_n_batches(n_batch),
         criteria.every_n_samples(n_sample),
     )("", batch_idx, batch) == set(expected)
+
+
+@pytest.mark.parametrize(
+    "criteria_value,batch_size,expected",
+    [
+        (False, 2, True),
+        (True, 2, False),
+        ([0, 1], 2, set()),
+        ([], 2, True),
+        ([0], 2, {1}),
+        ([1], 2, {0}),
+    ],
+)
+def test_not_criteria(criteria_value, batch_size, expected):
+    batch = MagicMock()
+    batch.__len__ = MagicMock(return_value=batch_size)
+    assert (
+        criteria.not_criteria(MagicMock(return_value=criteria_value))("", 0, batch)
+        == expected
+    )
 
 
 @pytest.mark.parametrize(
