@@ -78,6 +78,7 @@ class ObjectDetectionExporter(Exporter):
         inputs_accessor: Optional[Images.Accessor] = None,
         predictions_accessor: Optional[BoundingBoxes.Accessor] = None,
         targets_accessor: Optional[BoundingBoxes.Accessor] = None,
+        criteria: Optional[Exporter.Criteria] = None,
     ):
         """
         Initializes the exporter.
@@ -97,6 +98,8 @@ class ObjectDetectionExporter(Exporter):
                 ground truth targets data from the high-ly structured targets
                 contained in exported batches. By default, an XYXY NumPy
                 bounding box accessor is used.
+            criteria: Criteria dictating when samples will be exported. If
+                omitted, no samples will be exported.
         """
         super().__init__(
             predictions_accessor=(
@@ -105,6 +108,7 @@ class ObjectDetectionExporter(Exporter):
             targets_accessor=(
                 targets_accessor or BoundingBoxes.as_numpy(format=BBoxFormat.XYXY)
             ),
+            criteria=criteria,
         )
         self.score_threshold = score_threshold
         self.inputs_accessor = inputs_accessor or Images.as_numpy(

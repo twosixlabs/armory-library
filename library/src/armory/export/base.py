@@ -28,6 +28,8 @@ class Exporter(ABC):
                 ground truth targets data from the high-ly structured targets
                 contained in exported batches. By default, a generic NumPy
                 accessor is used.
+            criteria: Criteria dictating when samples will be exported. If
+                omitted, no samples will be exported.
         """
         self.predictions_accessor = predictions_accessor or DefaultNumpyAccessor()
         self.targets_accessor = targets_accessor or DefaultNumpyAccessor()

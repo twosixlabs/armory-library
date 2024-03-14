@@ -29,6 +29,8 @@ class ImageClassificationExporter(Exporter):
                 ground truth targets data from the high-ly structured targets
                 contained in exported batches. By default, a generic NumPy
                 accessor is used.
+            criteria: Criteria dictating when samples will be exported. If
+                omitted, no samples will be exported.
         """
         super().__init__(
             predictions_accessor=predictions_accessor,

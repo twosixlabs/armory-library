@@ -19,7 +19,6 @@ import armory.data
 import armory.dataset
 import armory.engine
 import armory.evaluation
-import armory.export
 import armory.export.criteria
 import armory.export.image_classification
 import armory.metric
