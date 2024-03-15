@@ -25,6 +25,11 @@ class ObjectDetectionRates(Metric):
       score > score_threshold and iou < iou_threshold for each ground-truth box
     """
 
+    true_positive_rate_per_img: List[torch.Tensor]
+    misclassification_rate_per_img: List[torch.Tensor]
+    disappearance_rate_per_img: List[torch.Tensor]
+    hallucinations_per_img: List[torch.Tensor]
+
     @classmethod
     def create(cls, *args, **kwargs):
         """
@@ -63,11 +68,6 @@ class ObjectDetectionRates(Metric):
         self.class_list = (
             torch.as_tensor(class_list) if class_list is not None else None
         )
-
-        self.true_positive_rate_per_img: List[torch.Tensor]
-        self.misclassification_rate_per_img: List[torch.Tensor]
-        self.disappearance_rate_per_img: List[torch.Tensor]
-        self.hallucinations_per_img: List[torch.Tensor]
 
         self.add_state("true_positive_rate_per_img", default=[], dist_reduce_fx="cat")
         self.add_state(
