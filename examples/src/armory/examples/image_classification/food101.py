@@ -19,6 +19,7 @@ import armory.data
 import armory.dataset
 import armory.engine
 import armory.evaluation
+import armory.export.captum
 import armory.export.criteria
 import armory.export.image_classification
 import armory.metric
@@ -274,11 +275,15 @@ def create_metrics():
     }
 
 
-def create_exporters(export_every_n_batches):
+def create_exporters(model, export_every_n_batches):
     """Create sample exporters"""
     return [
         armory.export.image_classification.ImageClassificationExporter(
             criterion=armory.export.criteria.every_n_batches(export_every_n_batches)
+        ),
+        armory.export.captum.CaptumImageClassificationExporter(
+            model,
+            criteria=armory.export.criteria.every_n_batches(export_every_n_batches),
         ),
     ]
 
@@ -307,7 +312,7 @@ def main(
     )
     perturbations = dict()
     metrics = create_metrics()
-    exporters = create_exporters(export_every_n_batches)
+    exporters = create_exporters(model, export_every_n_batches)
     profiler = armory.metrics.compute.BasicProfiler()
 
     if "benign" in chains:
