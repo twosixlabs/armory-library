@@ -70,7 +70,7 @@ def test_object_detection_rates_per_img(preds, target):
         results["misclassification_rate_per_img"], torch.tensor([1 / 3, 0.0, 0.0])
     )
     torch.testing.assert_close(
-        results["disappearance_rate_per_img"], torch.tensor([1 / 3, 1.0, 1.0])
+        results["disappearance_rate_per_img"], torch.tensor([1 / 3, 0.0, 1.0])
     )
     torch.testing.assert_close(
         results["hallucinations_per_img"], torch.tensor([1, 1, 0])
@@ -86,5 +86,5 @@ def test_object_detection_rates_mean(preds, target):
     torch.testing.assert_close(
         results["misclassification_rate_mean"], torch.tensor(1 / 9)
     )
-    torch.testing.assert_close(results["disappearance_rate_mean"], torch.tensor(7 / 9))
+    torch.testing.assert_close(results["disappearance_rate_mean"], torch.tensor(4 / 9))
     torch.testing.assert_close(results["hallucinations_mean"], torch.tensor(2 / 3))

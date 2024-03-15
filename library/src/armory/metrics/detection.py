@@ -118,7 +118,7 @@ class ObjectDetectionRates(Metric):
                     intersection_over_union(
                         torch.stack([y_pred_box]), gt_boxes, aggregate=False
                     )[0]
-                    if len(gt_boxes) > 0
+                    if num_gt_boxes > 0
                     else torch.tensor([])
                 )
 
@@ -154,7 +154,11 @@ class ObjectDetectionRates(Metric):
 
             # Any ground-truth box that had no overlapping predicted box is considered a
             # disappearance
-            disappearance_rate = 1 - true_positive_rate - misclassification_rate
+            disappearance_rate = (
+                1 - true_positive_rate - misclassification_rate
+                if num_gt_boxes > 0
+                else torch.tensor(0)
+            )
 
             self.true_positive_rate_per_img.append(true_positive_rate)
             self.misclassification_rate_per_img.append(misclassification_rate)
