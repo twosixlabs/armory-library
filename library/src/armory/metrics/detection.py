@@ -82,7 +82,7 @@ class ObjectDetectionRates(Metric):
         targets: Sequence[BoundingBoxes.BoxesTorch],
     ):
         for y, y_pred in zip(targets, preds):
-            if self.class_list:
+            if self.class_list is not None:
                 # Filter out ground-truth classes with labels not in class_list
                 indices_to_keep = torch.where(torch.isin(y["labels"], self.class_list))
                 gt_boxes = y["boxes"][indices_to_keep]
@@ -103,7 +103,7 @@ class ObjectDetectionRates(Metric):
             # Only consider the model's confident predictions
             assert y_pred["scores"] is not None
             conf_pred_indices = torch.where(y_pred["scores"] > self.score_threshold)[0]
-            if self.class_list:
+            if self.class_list is not None:
                 # Filter out predictions from classes not in class_list kwarg
                 conf_pred_indices = conf_pred_indices[
                     torch.isin(y_pred["labels"][conf_pred_indices], self.class_list)
