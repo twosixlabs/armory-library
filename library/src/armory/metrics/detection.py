@@ -144,12 +144,12 @@ class ObjectDetectionRates(Metric):
             true_positive_rate = (
                 true_positive_array.mean()
                 if len(true_positive_array) > 0
-                else torch.tensor(0)
+                else torch.tensor(0, dtype=torch.float32)
             )
             misclassification_rate = (
                 misclassification_array.mean()
                 if len(misclassification_array) > 0
-                else torch.tensor(0)
+                else torch.tensor(0, dtype=torch.float32)
             )
 
             # Any ground-truth box that had no overlapping predicted box is considered a
@@ -157,7 +157,7 @@ class ObjectDetectionRates(Metric):
             disappearance_rate = (
                 1 - true_positive_rate - misclassification_rate
                 if num_gt_boxes > 0
-                else torch.tensor(0)
+                else torch.tensor(0, dtype=torch.float32)
             )
 
             self.true_positive_rate_per_img.append(true_positive_rate)
