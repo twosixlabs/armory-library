@@ -20,7 +20,7 @@ def _to_set(value: Union[bool, Iterable[int]], batch) -> Set[int]:
     return set(value)
 
 
-def all_criteria(*criteria: Exporter.Criteria) -> Exporter.Criteria:
+def all_satisfied(*criteria: Exporter.Criteria) -> Exporter.Criteria:
     def _criteria(chain_name, batch_idx, batch):
         aggregate_to_export: Optional[Set[int]] = None
         for c in criteria:
@@ -34,7 +34,7 @@ def all_criteria(*criteria: Exporter.Criteria) -> Exporter.Criteria:
     return _criteria
 
 
-def any_criteria(*criteria: Exporter.Criteria) -> Exporter.Criteria:
+def any_satisfied(*criteria: Exporter.Criteria) -> Exporter.Criteria:
     def _criteria(chain_name, batch_idx, batch):
         aggregate_to_export: Optional[Set[int]] = None
         for c in criteria:

@@ -185,10 +185,10 @@ def test_samples(indices, batch_idx, batch_size, expected):
         (2, 2, 3, 4, [1, 3]),
     ],
 )
-def test_all_criteria(n_batch, n_sample, batch_idx, batch_size, expected):
+def test_all_satisfied(n_batch, n_sample, batch_idx, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
-    assert criteria.all_criteria(
+    assert criteria.all_satisfied(
         criteria.every_n_batches(n_batch),
         criteria.every_n_samples_of_batch(n_sample),
     )("", batch_idx, batch) == set(expected)
@@ -215,10 +215,10 @@ def test_all_criteria(n_batch, n_sample, batch_idx, batch_size, expected):
         (2, 3, 3, 4, [0, 1, 2, 3]),
     ],
 )
-def test_any_criteria(n_batch, n_sample, batch_idx, batch_size, expected):
+def test_any_satisfied(n_batch, n_sample, batch_idx, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
-    assert criteria.any_criteria(
+    assert criteria.any_satisfied(
         criteria.every_n_batches(n_batch),
         criteria.every_n_samples(n_sample),
     )("", batch_idx, batch) == set(expected)
