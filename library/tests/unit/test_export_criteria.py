@@ -235,11 +235,11 @@ def test_any_satisfied(n_batch, n_sample, batch_idx, batch_size, expected):
         ([1], 2, {0}),
     ],
 )
-def test_not_criteria(criteria_value, batch_size, expected):
+def test_not_satisfied(criteria_value, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
     assert (
-        criteria.not_criteria(MagicMock(return_value=criteria_value))("", 0, batch)
+        criteria.not_satisfied(MagicMock(return_value=criteria_value))("", 0, batch)
         == expected
     )
 
