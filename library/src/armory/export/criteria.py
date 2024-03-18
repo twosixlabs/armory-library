@@ -351,7 +351,7 @@ def chains(names: Sequence[str]) -> Exporter.Criteria:
     Args:
         names: Names of perturbation chains from which to export
 
-    Return:
+    Returns:
         Export criteria function
     """
 
