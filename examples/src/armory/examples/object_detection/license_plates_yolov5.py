@@ -23,7 +23,9 @@ import armory.evaluation
 import armory.export.object_detection
 import armory.metric
 import armory.metrics.compute
+import armory.metrics.detection
 import armory.metrics.perturbation
+import armory.metrics.tide
 import armory.model.object_detection
 import armory.perturbation
 import armory.track
@@ -175,6 +177,8 @@ def create_metrics():
             torchmetrics.detection.MeanAveragePrecision(class_metrics=False),
             armory.data.BoundingBoxes.as_torch(format=armory.data.BBoxFormat.XYXY),
         ),
+        "tide": armory.metrics.tide.TIDE.create(),
+        "detection": armory.metrics.detection.ObjectDetectionRates.create(),
     }
 
 

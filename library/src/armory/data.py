@@ -271,7 +271,7 @@ def to_bbox_format(
     format, if one is specified and does not already match the bounding box's
     current coordinate format.
     """
-    if to_format is None or to_format == from_format:
+    if len(data) == 0 or to_format is None or to_format == from_format:
         return data
 
     return box_convert(

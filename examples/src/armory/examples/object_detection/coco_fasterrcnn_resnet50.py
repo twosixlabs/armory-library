@@ -22,7 +22,9 @@ import armory.evaluation
 import armory.export.object_detection
 import armory.metric
 import armory.metrics.compute
+import armory.metrics.detection
 import armory.metrics.perturbation
+import armory.metrics.tide
 import armory.model.object_detection
 import armory.perturbation
 import armory.track
@@ -95,7 +97,7 @@ def load_dataset(batch_size: int, shuffle: bool):
         tmp["objects"] = []
         for image, objects in zip(sample["image"], sample["objects"]):
             res = resize(
-                image=np.asarray(image),
+                image=np.asarray(image.convert("RGB")),
                 bboxes=objects["bbox"],
                 label=objects["label"],
                 id=objects["id"],
@@ -160,6 +162,8 @@ def create_metrics():
             torchmetrics.detection.MeanAveragePrecision(class_metrics=False),
             armory.data.BoundingBoxes.as_torch(format=armory.data.BBoxFormat.XYXY),
         ),
+        "tide": armory.metrics.tide.TIDE.create(),
+        "detection": armory.metrics.detection.ObjectDetectionRates.create(),
     }
 
 
