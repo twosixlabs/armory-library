@@ -48,11 +48,11 @@ def display_image_classification_results(
 
         for sample_idx in range(batch_size):
             for chain_idx, chain in enumerate(chains):
-                image_filename = f"batch_{batch_idx}_ex_{sample_idx}_{chain}.png"
+                image_filename = f"exports/{chain}/{str(batch_idx).zfill(5)}/{str(sample_idx).zfill(2)}/input.png"
                 client.download_artifacts(run_id, image_filename, tmpdir)
                 image = plt.imread(tmppath / image_filename)
 
-                json_filename = f"batch_{batch_idx}_ex_{sample_idx}_{chain}.txt"
+                json_filename = f"exports/{chain}/{str(batch_idx).zfill(5)}/{str(sample_idx).zfill(2)}/metadata.txt"
                 client.download_artifacts(run_id, json_filename, tmpdir)
                 predicted_label = get_predicted_label(tmppath / json_filename, labels)
 
@@ -87,11 +87,11 @@ def display_object_detection_results(
 
         for sample_idx in range(batch_size):
             for chain_idx, chain in enumerate(chains):
-                image_filename = f"batch_{batch_idx}_ex_{sample_idx}_{chain}.png"
+                image_filename = f"exports/{chain}/{str(batch_idx).zfill(5)}/{str(sample_idx).zfill(2)}/input.png"
                 client.download_artifacts(run_id, image_filename, tmpdir)
                 image = plt.imread(tmppath / image_filename)
 
-                json_filename = f"batch_{batch_idx}_ex_{sample_idx}_{chain}.txt"
+                json_filename = f"exports/{chain}/{str(batch_idx).zfill(5)}/{str(sample_idx).zfill(2)}/metadata.txt"
                 client.download_artifacts(run_id, json_filename, tmpdir)
 
                 ax = axes[sample_idx][chain_idx]

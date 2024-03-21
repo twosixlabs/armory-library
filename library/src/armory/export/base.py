@@ -77,6 +77,11 @@ class Exporter(ABC):
         """
         ...
 
+    def _artifact_path(
+        self, chain_name: str, batch_idx: int, sample_idx: int, filename: str
+    ):
+        return f"exports/{chain_name}/{str(batch_idx).zfill(5)}/{str(sample_idx).zfill(2)}/{filename}"
+
     @staticmethod
     def _from_list(maybe_list, idx):
         try:
@@ -113,5 +118,7 @@ class Exporter(ABC):
 
             self.sink.log_dict(
                 dictionary=dictionary,
-                artifact_file=f"batch_{batch_idx}_ex_{sample_idx}_{chain_name}.txt",
+                artifact_file=self._artifact_path(
+                    chain_name, batch_idx, sample_idx, "metadata.txt"
+                ),
             )

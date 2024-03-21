@@ -138,5 +138,7 @@ class ObjectDetectionExporter(Exporter):
                 ground_truth_boxes=targets[sample_idx]["boxes"],
                 pred_boxes=boxes_above_threshold,
             ).transpose(1, 2, 0)
-            filename = f"batch_{batch_idx}_ex_{sample_idx}_{chain_name}.png"
+            filename = self._artifact_path(
+                chain_name, batch_idx, sample_idx, "input.png"
+            )
             self.sink.log_image(with_boxes, filename)
