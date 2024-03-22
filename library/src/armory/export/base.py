@@ -80,7 +80,7 @@ class Exporter(ABC):
     def _artifact_path(
         self, chain_name: str, batch_idx: int, sample_idx: int, filename: str
     ):
-        return f"exports/{chain_name}/{str(batch_idx).zfill(5)}/{str(sample_idx).zfill(2)}/{filename}"
+        return f"exports/{chain_name}/{batch_idx:05}/{sample_idx:02}/{filename}"
 
     @staticmethod
     def _from_list(maybe_list, idx):
