@@ -8,13 +8,13 @@ from armory.export.sink import Sink
 class Exporter(ABC):
     """Base class for an Armory sample exporter."""
 
-    Criteria = Callable[[str, int, Batch], Union[bool, Iterable[int]]]
+    Criterion = Callable[[str, int, Batch], Union[bool, Iterable[int]]]
 
     def __init__(
         self,
         predictions_accessor: Optional[Accessor] = None,
         targets_accessor: Optional[Accessor] = None,
-        criteria: Optional[Criteria] = None,
+        criterion: Optional[Criterion] = None,
     ) -> None:
         """
         Initializes the exporter.
@@ -28,13 +28,13 @@ class Exporter(ABC):
                 ground truth targets data from the high-ly structured targets
                 contained in exported batches. By default, a generic NumPy
                 accessor is used.
-            criteria: Criteria dictating when samples will be exported. If
+            criterion: Criterion dictating when samples will be exported. If
                 omitted, no samples will be exported.
         """
         self.predictions_accessor = predictions_accessor or DefaultNumpyAccessor()
         self.targets_accessor = targets_accessor or DefaultNumpyAccessor()
         self.sink: Optional[Sink] = None
-        self.criteria = criteria
+        self.criterion = criterion
 
     def use_sink(self, sink: Sink) -> None:
         """Sets the export sink to be used by the exporter."""
@@ -51,9 +51,9 @@ class Exporter(ABC):
             batch: The batch to be exported.
         """
         assert self.sink, "No sink has been set, unable to export"
-        if self.criteria is None:
+        if self.criterion is None:
             return
-        to_export = self.criteria(chain_name, batch_idx, batch)
+        to_export = self.criterion(chain_name, batch_idx, batch)
         if not to_export:
             return
         if type(to_export) is bool:

@@ -1,4 +1,4 @@
-"""Export criteria utilities"""
+"""Export criterion utilities"""
 
 from typing import Callable, Iterable, Optional, Sequence, Set, Union
 
@@ -8,25 +8,25 @@ from armory.data import Batch
 from armory.export.base import Exporter
 
 
-def always() -> Exporter.Criteria:
+def always() -> Exporter.Criterion:
     """
-    Creates an export criteria that matches all samples of all batches.
+    Creates an export criterion that matches all samples of all batches.
 
     Example::
 
         from armory.export import Exporter
         from armory.export.criteria import always
 
-        exporter = Exporter(criteria=always())
+        exporter = Exporter(criterion=always())
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
 
-    def _criteria(chain_name, batch_idx, batch):
+    def _criterion(chain_name, batch_idx, batch):
         return True
 
-    return _criteria
+    return _criterion
 
 
 def _to_set(value: Union[bool, Iterable[int]], batch) -> Set[int]:
@@ -37,9 +37,9 @@ def _to_set(value: Union[bool, Iterable[int]], batch) -> Set[int]:
     return set(value)
 
 
-def all_satisfied(*criteria: Exporter.Criteria) -> Exporter.Criteria:
+def all_satisfied(*criteria: Exporter.Criterion) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches samples that satisfy all of the given
+    Creates an export criterion that matches samples that satisfy all of the given
     nested criteria.
 
     Example::
@@ -49,7 +49,7 @@ def all_satisfied(*criteria: Exporter.Criteria) -> Exporter.Criteria:
 
         # Only exports every other sample from the first 2 batches
         exporter = Exporter(
-            criteria=all_satisfied(
+            criterion=all_satisfied(
                 every_n_samples(2),
                 first_n_batches(2),
             )
@@ -60,10 +60,10 @@ def all_satisfied(*criteria: Exporter.Criteria) -> Exporter.Criteria:
             be exported
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
 
-    def _criteria(chain_name, batch_idx, batch):
+    def _criterion(chain_name, batch_idx, batch):
         aggregate_to_export: Optional[Set[int]] = None
         for c in criteria:
             to_export = _to_set(c(chain_name, batch_idx, batch), batch)
@@ -73,12 +73,12 @@ def all_satisfied(*criteria: Exporter.Criteria) -> Exporter.Criteria:
                 aggregate_to_export.intersection_update(to_export)
         return aggregate_to_export if aggregate_to_export is not None else set()
 
-    return _criteria
+    return _criterion
 
 
-def any_satisfied(*criteria: Exporter.Criteria) -> Exporter.Criteria:
+def any_satisfied(*criteria: Exporter.Criterion) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches samples that satisfy any of the given
+    Creates an export criterion that matches samples that satisfy any of the given
     nested criteria.
 
     Example::
@@ -89,7 +89,7 @@ def any_satisfied(*criteria: Exporter.Criteria) -> Exporter.Criteria:
         # Exports every sample from the first 2 batches, then every other sample
         # for all other batches
         exporter = Exporter(
-            criteria=any_satisfied(
+            criterion=any_satisfied(
                 every_n_samples(2),
                 first_n_batches(2),
             )
@@ -100,10 +100,10 @@ def any_satisfied(*criteria: Exporter.Criteria) -> Exporter.Criteria:
             a sample to be exported
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
 
-    def _criteria(chain_name, batch_idx, batch):
+    def _criterion(chain_name, batch_idx, batch):
         aggregate_to_export: Optional[Set[int]] = None
         for c in criteria:
             to_export = _to_set(c(chain_name, batch_idx, batch), batch)
@@ -113,13 +113,13 @@ def any_satisfied(*criteria: Exporter.Criteria) -> Exporter.Criteria:
                 aggregate_to_export.update(to_export)
         return aggregate_to_export if aggregate_to_export is not None else set()
 
-    return _criteria
+    return _criterion
 
 
-def not_satisfied(criteria: Exporter.Criteria) -> Exporter.Criteria:
+def not_satisfied(criterion: Exporter.Criterion) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches samples that do not satisfy the
-    nested criteria.
+    Creates an export criterion that matches samples that do not satisfy the
+    nested criterion.
 
     Example::
 
@@ -128,30 +128,30 @@ def not_satisfied(criteria: Exporter.Criteria) -> Exporter.Criteria:
 
         # Exports every sample in every batch except every 3rd batch (when
         # batch_idx is 0, 1, 3, etc.)
-        exporter = Exporter(criteria=not_satisfied(every_n_batches(3)))
+        exporter = Exporter(criterion=not_satisfied(every_n_batches(3)))
 
     Args:
-        criteria: Nested criteria for which unsatisfied samples are to be
+        criterion: Nested criterion for which unsatisfied samples are to be
             exported
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
 
-    def _criteria(chain_name, batch_idx, batch):
-        res = criteria(chain_name, batch_idx, batch)
+    def _criterion(chain_name, batch_idx, batch):
+        res = criterion(chain_name, batch_idx, batch)
         if not res:
             return True
         if type(res) is bool:
             return False
         return set(range(len(batch))).difference(res)
 
-    return _criteria
+    return _criterion
 
 
-def every_n_batches(n: int) -> Exporter.Criteria:
+def every_n_batches(n: int) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches all samples from every nth batch.
+    Creates an export criterion that matches all samples from every nth batch.
 
     Example::
 
@@ -159,26 +159,26 @@ def every_n_batches(n: int) -> Exporter.Criteria:
         from armory.export.criteria import every_n_batches
 
         # Exports every sample in every 5th batch (when batch_idx is 4, 9, 14, etc.)
-        exporter = Exporter(criteria=every_n_batches(5))
+        exporter = Exporter(criterion=every_n_batches(5))
 
     Args:
         n: Interval at which to export batches based on the index of the batch
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
 
-    def _criteria(chain_name, batch_idx: int, batch):
+    def _criterion(chain_name, batch_idx: int, batch):
         if n == 0:
             return False
         return (batch_idx + 1) % n == 0
 
-    return _criteria
+    return _criterion
 
 
-def first_n_batches(n: int) -> Exporter.Criteria:
+def first_n_batches(n: int) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches all samples from the first n batches.
+    Creates an export criterion that matches all samples from the first n batches.
 
     Example::
 
@@ -186,26 +186,26 @@ def first_n_batches(n: int) -> Exporter.Criteria:
         from armory.export.criteria import first_n_batches
 
         # Exports every sample in the first 3 batches (when batch_idx is 0, 1, and 2)
-        exporter = Exporter(criteria=every_n_batches(3))
+        exporter = Exporter(criterion=every_n_batches(3))
 
     Args:
         n: Number of batches to be exported
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
 
-    def _criteria(chain_name, batch_idx: int, batch):
+    def _criterion(chain_name, batch_idx: int, batch):
         if n == 0:
             return False
         return batch_idx < n
 
-    return _criteria
+    return _criterion
 
 
-def every_n_samples_of_batch(n: int) -> Exporter.Criteria:
+def every_n_samples_of_batch(n: int) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches every nth sample in every batch.
+    Creates an export criterion that matches every nth sample in every batch.
 
     Example::
 
@@ -213,29 +213,29 @@ def every_n_samples_of_batch(n: int) -> Exporter.Criteria:
         from armory.export.criteria import every_n_samples_of_batch
 
         # Exports every other sample in every batch (when sample_idx is 1, 3, 5, etc.)
-        exporter = Exporter(criteria=every_n_samples_of_batch(5))
+        exporter = Exporter(criterion=every_n_samples_of_batch(5))
 
     Args:
         n: Interval at which to export samples based on the index of the sample
             within each batch
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
 
-    def _criteria(chain_name, batch_idx: int, batch):
+    def _criterion(chain_name, batch_idx: int, batch):
         if n == 0:
             return False
         return [
             sample_idx for sample_idx in range(len(batch)) if (sample_idx + 1) % n == 0
         ]
 
-    return _criteria
+    return _criterion
 
 
-def every_n_samples(n: int) -> Exporter.Criteria:
+def every_n_samples(n: int) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches every nth sample in the dataset.
+    Creates an export criterion that matches every nth sample in the dataset.
 
     Example::
 
@@ -247,17 +247,17 @@ def every_n_samples(n: int) -> Exporter.Criteria:
         #  - batch 0, sample 2
         #  - batch 1, sample 1
         #  - batch 2, samples 0 and 3
-        exporter = Exporter(criteria=every_n_samples(3))
+        exporter = Exporter(criterion=every_n_samples(3))
 
     Args:
         n: Interval at which to export samples based on the index of the sample
             within the dataset
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
 
-    def _criteria(chain_name, batch_idx: int, batch):
+    def _criterion(chain_name, batch_idx: int, batch):
         if n == 0:
             return False
         batch_size = len(batch)
@@ -267,12 +267,12 @@ def every_n_samples(n: int) -> Exporter.Criteria:
             if ((batch_idx * batch_size) + sample_idx + 1) % n == 0
         ]
 
-    return _criteria
+    return _criterion
 
 
-def first_n_samples_of_batch(n: int) -> Exporter.Criteria:
+def first_n_samples_of_batch(n: int) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches the first n samples in every batch.
+    Creates an export criterion that matches the first n samples in every batch.
 
     Example::
 
@@ -280,26 +280,26 @@ def first_n_samples_of_batch(n: int) -> Exporter.Criteria:
         from armory.export.criteria import first_n_samples_of_batch
 
         # Exports the first 2 samples in every batches (when sample_idx is 0 and 1)
-        exporter = Exporter(criteria=first_n_samples_of_batch(2))
+        exporter = Exporter(criterion=first_n_samples_of_batch(2))
 
     Args:
         n: Number of samples to be exported from each batch
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
 
-    def _criteria(chain_name, batch_idx: int, batch):
+    def _criterion(chain_name, batch_idx: int, batch):
         if n == 0:
             return False
         return [sample_idx for sample_idx in range(len(batch)) if sample_idx < n]
 
-    return _criteria
+    return _criterion
 
 
-def first_n_samples(n: int) -> Exporter.Criteria:
+def first_n_samples(n: int) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches the first n samples in the dataset.
+    Creates an export criterion that matches the first n samples in the dataset.
 
     Example::
 
@@ -311,16 +311,16 @@ def first_n_samples(n: int) -> Exporter.Criteria:
         #  - batch 0, samples 0 and 1
         #  - batch 1, samples 0 and 1
         #  - batch 2, sample 0
-        exporter = Exporter(criteria=first_n_samples(5))
+        exporter = Exporter(criterion=first_n_samples(5))
 
     Args:
         n: Number of samples to be exported
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
 
-    def _criteria(chain_name, batch_idx: int, batch):
+    def _criterion(chain_name, batch_idx: int, batch):
         if n == 0:
             return False
         batch_size = len(batch)
@@ -332,12 +332,12 @@ def first_n_samples(n: int) -> Exporter.Criteria:
             if ((batch_idx * batch_size) + sample_idx) < n
         ]
 
-    return _criteria
+    return _criterion
 
 
-def chains(names: Sequence[str]) -> Exporter.Criteria:
+def chains(names: Sequence[str]) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches all samples in every batch for a
+    Creates an export criterion that matches all samples in every batch for a
     particular set of perturbation chains.
 
     Example::
@@ -346,24 +346,24 @@ def chains(names: Sequence[str]) -> Exporter.Criteria:
         from armory.export.criteria import chains
 
         # Exports every sample in every batch for chains "benign" and "defended"
-        exporter = Exporter(criteria=chains(["benign", "defended"]))
+        exporter = Exporter(criterion=chains(["benign", "defended"]))
 
     Args:
         names: Names of perturbation chains from which to export
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
 
-    def _criteria(chain_name: str, batch_idx, batch):
+    def _criterion(chain_name: str, batch_idx, batch):
         return chain_name in names
 
-    return _criteria
+    return _criterion
 
 
-def samples(indices: Sequence[int]) -> Exporter.Criteria:
+def samples(indices: Sequence[int]) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches specific samples in the dataset, by
+    Creates an export criterion that matches specific samples in the dataset, by
     their global index (regardless of batch).
 
     Example::
@@ -375,16 +375,16 @@ def samples(indices: Sequence[int]) -> Exporter.Criteria:
         #  - batch 0, sample 2
         #  - batch 1, samples 0 and 1
         #  - batch 2, samples 2 and 3
-        exporter = Exporter(criteria=samples([2, 4, 5, 10, 11]))
+        exporter = Exporter(criterion=samples([2, 4, 5, 10, 11]))
 
     Args:
         indices: Indices of samples within the dataset to be exported
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
 
-    def _criteria(chain_name, batch_idx: int, batch):
+    def _criterion(chain_name, batch_idx: int, batch):
         if len(indices) == 0:
             return False
         batch_size = len(batch)
@@ -394,11 +394,11 @@ def samples(indices: Sequence[int]) -> Exporter.Criteria:
             if ((batch_idx * batch_size) + sample_idx) in indices
         ]
 
-    return _criteria
+    return _criterion
 
 
-def _create_metric_criteria(comp, metric, threshold) -> Exporter.Criteria:
-    def _criteria(chain_name, batch_idx, batch):
+def _create_metric_criterion(comp, metric, threshold) -> Exporter.Criterion:
+    def _criterion(chain_name, batch_idx, batch):
         val = metric(batch)
         res = comp(val, threshold)
         if type(res) == torch.Tensor:
@@ -407,15 +407,15 @@ def _create_metric_criteria(comp, metric, threshold) -> Exporter.Criteria:
             return res.nonzero().flatten().tolist()
         return res
 
-    return _criteria
+    return _criterion
 
 
 def when_metric_eq(
     metric: Callable[[Batch], Union[bool, float, torch.Tensor]],
     threshold: Union[bool, float, torch.Tensor],
-) -> Exporter.Criteria:
+) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches when a computed metric for a batch
+    Creates an export criterion that matches when a computed metric for a batch
     or the samples within the batch is equal to a particular value.
 
     Example::
@@ -430,7 +430,7 @@ def when_metric_eq(
             return torch.tensor([
                 torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
             ])
-        exporter = Exporter(criteria=when_metric_eq(max_pred, 5))
+        exporter = Exporter(criterion=when_metric_eq(max_pred, 5))
 
     Args:
         metric: Callable that computes a metric for a batch. The return value
@@ -440,17 +440,17 @@ def when_metric_eq(
             must be equal to in order for the batch or samples to be exported
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
-    return _create_metric_criteria(lambda lhs, rhs: lhs == rhs, metric, threshold)
+    return _create_metric_criterion(lambda lhs, rhs: lhs == rhs, metric, threshold)
 
 
 def when_metric_lt(
     metric: Callable[[Batch], Union[float, torch.Tensor]],
     threshold: Union[float, torch.Tensor],
-) -> Exporter.Criteria:
+) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches when a computed metric for a batch
+    Creates an export criterion that matches when a computed metric for a batch
     or the samples within the batch is less than a particular threshold value.
 
     Example::
@@ -465,7 +465,7 @@ def when_metric_lt(
             return torch.tensor([
                 torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
             ])
-        exporter = Exporter(criteria=when_metric_lt(max_pred, 5))
+        exporter = Exporter(criterion=when_metric_lt(max_pred, 5))
 
     Args:
         metric: Callable that computes a metric for a batch. The return value
@@ -475,14 +475,14 @@ def when_metric_lt(
             must be less than in order for the batch or samples to be exported
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
-    return _create_metric_criteria(lambda lhs, rhs: lhs < rhs, metric, threshold)
+    return _create_metric_criterion(lambda lhs, rhs: lhs < rhs, metric, threshold)
 
 
-def when_metric_gt(metric, threshold) -> Exporter.Criteria:
+def when_metric_gt(metric, threshold) -> Exporter.Criterion:
     """
-    Creates an export criteria that matches when a computed metric for a batch
+    Creates an export criterion that matches when a computed metric for a batch
     or the samples within the batch is greater than a particular threshold value.
 
     Example::
@@ -497,7 +497,7 @@ def when_metric_gt(metric, threshold) -> Exporter.Criteria:
             return torch.tensor([
                 torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
             ])
-        exporter = Exporter(criteria=when_metric_gt(max_pred, 5))
+        exporter = Exporter(criterion=when_metric_gt(max_pred, 5))
 
     Args:
         metric: Callable that computes a metric for a batch. The return value
@@ -507,6 +507,6 @@ def when_metric_gt(metric, threshold) -> Exporter.Criteria:
             must be greater than in order for the batch or samples to be exported
 
     Returns:
-        Export criteria function
+        Export criterion function
     """
-    return _create_metric_criteria(lambda lhs, rhs: lhs > rhs, metric, threshold)
+    return _create_metric_criterion(lambda lhs, rhs: lhs > rhs, metric, threshold)

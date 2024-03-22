@@ -12,7 +12,7 @@ class ImageClassificationExporter(Exporter):
         inputs_accessor: Optional[Images.Accessor] = None,
         predictions_accessor: Optional[Accessor] = None,
         targets_accessor: Optional[Accessor] = None,
-        criteria: Optional[Exporter.Criteria] = None,
+        criterion: Optional[Exporter.Criterion] = None,
     ):
         """
         Initializes the exporter.
@@ -29,13 +29,13 @@ class ImageClassificationExporter(Exporter):
                 ground truth targets data from the high-ly structured targets
                 contained in exported batches. By default, a generic NumPy
                 accessor is used.
-            criteria: Criteria dictating when samples will be exported. If
+            criterion: Criterion dictating when samples will be exported. If
                 omitted, no samples will be exported.
         """
         super().__init__(
             predictions_accessor=predictions_accessor,
             targets_accessor=targets_accessor,
-            criteria=criteria,
+            criterion=criterion,
         )
         self.inputs_accessor = inputs_accessor or Images.as_numpy(
             dim=ImageDimensions.HWC, scale=Scale(dtype=DataType.FLOAT, max=1.0)

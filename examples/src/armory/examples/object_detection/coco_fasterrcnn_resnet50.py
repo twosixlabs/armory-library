@@ -168,7 +168,7 @@ def create_exporters(export_every_n_batches):
     """Create sample exporters"""
     return [
         armory.export.object_detection.ObjectDetectionExporter(
-            criteria=armory.export.criteria.every_n_batches(export_every_n_batches)
+            criterion=armory.export.criteria.every_n_batches(export_every_n_batches)
         ),
     ]
 
