@@ -48,7 +48,7 @@ class ImageClassificationExporter(Exporter):
         self._export_metadata(chain_name, batch_idx, batch, samples)
         images = self.inputs_accessor.get(batch.inputs)
         for sample_idx in samples:
-            filename = self._artifact_path(
+            filename = self.artifact_path(
                 chain_name, batch_idx, sample_idx, "input.png"
             )
             self.sink.log_image(images[sample_idx], filename)

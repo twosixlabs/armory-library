@@ -9,6 +9,7 @@ from mlflow.client import MlflowClient
 import numpy as np
 
 from armory.evaluation import SysConfig
+from armory.export import Exporter
 from armory.track import init_tracking_uri
 
 
@@ -48,14 +49,14 @@ def display_image_classification_results(
 
         for sample_idx in range(batch_size):
             for chain_idx, chain in enumerate(chains):
-                image_filename = (
-                    f"exports/{chain}/{batch_idx:05}/{sample_idx:02}/input.png"
+                image_filename = Exporter.artifact_path(
+                    chain, batch_idx, sample_idx, "input.png"
                 )
                 client.download_artifacts(run_id, image_filename, tmpdir)
                 image = plt.imread(tmppath / image_filename)
 
-                json_filename = (
-                    f"exports/{chain}/{batch_idx:05}/{sample_idx:02}/metadata.txt"
+                json_filename = Exporter.artifact_path(
+                    chain, batch_idx, sample_idx, "metadata.txt"
                 )
                 client.download_artifacts(run_id, json_filename, tmpdir)
                 predicted_label = get_predicted_label(tmppath / json_filename, labels)
@@ -91,14 +92,14 @@ def display_object_detection_results(
 
         for sample_idx in range(batch_size):
             for chain_idx, chain in enumerate(chains):
-                image_filename = (
-                    f"exports/{chain}/{batch_idx:05}/{sample_idx:02}/input.png"
+                image_filename = Exporter.artifact_path(
+                    chain, batch_idx, sample_idx, "input.png"
                 )
                 client.download_artifacts(run_id, image_filename, tmpdir)
                 image = plt.imread(tmppath / image_filename)
 
-                json_filename = (
-                    f"exports/{chain}/{batch_idx:05}/{sample_idx:02}/metadata.txt"
+                json_filename = Exporter.artifact_path(
+                    chain, batch_idx, sample_idx, "metadata.txt"
                 )
                 client.download_artifacts(run_id, json_filename, tmpdir)
 

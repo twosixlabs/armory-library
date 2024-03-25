@@ -77,9 +77,23 @@ class Exporter(ABC):
         """
         ...
 
-    def _artifact_path(
-        self, chain_name: str, batch_idx: int, sample_idx: int, filename: str
-    ):
+    @staticmethod
+    def artifact_path(
+        chain_name: str, batch_idx: int, sample_idx: int, filename: str
+    ) -> str:
+        """
+        Creates the full artifact path for a particular sample export.
+
+        Args:
+            chain_name: The name of the perturbation chain from the evaluation
+                to which the sample's batch belongs.
+            batch_idx: The index/number of the sample's batch.
+            sample_idx: The index/number of the sample within the batch.
+            filename: The name of the exported file.
+
+        Returns:
+            Full artifact path as a string.
+        """
         return f"exports/{chain_name}/{batch_idx:05}/{sample_idx:02}/{filename}"
 
     @staticmethod
@@ -118,7 +132,7 @@ class Exporter(ABC):
 
             self.sink.log_dict(
                 dictionary=dictionary,
-                artifact_file=self._artifact_path(
+                artifact_file=self.artifact_path(
                     chain_name, batch_idx, sample_idx, "metadata.txt"
                 ),
             )
