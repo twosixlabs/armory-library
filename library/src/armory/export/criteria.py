@@ -150,6 +150,9 @@ def every_n_batches(n: int) -> Exporter.Criterion:
     """
     Creates an export criterion that matches all samples from every nth batch.
 
+    Note, if the data loader is shuffling the dataset, the samples that get
+    exported will vary between runs.
+
     Example::
 
         from armory.export import Exporter
@@ -177,6 +180,9 @@ def first_n_batches(n: int) -> Exporter.Criterion:
     """
     Creates an export criterion that matches all samples from the first n batches.
 
+    Note, if the data loader is shuffling the dataset, the samples that get
+    exported will vary between runs.
+
     Example::
 
         from armory.export import Exporter
@@ -203,6 +209,9 @@ def first_n_batches(n: int) -> Exporter.Criterion:
 def every_n_samples_of_batch(n: int) -> Exporter.Criterion:
     """
     Creates an export criterion that matches every nth sample in every batch.
+
+    Note, if the data loader is shuffling the dataset, the samples that get
+    exported will vary between runs.
 
     Example::
 
@@ -233,6 +242,9 @@ def every_n_samples_of_batch(n: int) -> Exporter.Criterion:
 def every_n_samples(n: int) -> Exporter.Criterion:
     """
     Creates an export criterion that matches every nth sample in the dataset.
+
+    Note, if the data loader is shuffling the dataset, the samples that get
+    exported will vary between runs.
 
     Example::
 
@@ -271,6 +283,9 @@ def first_n_samples_of_batch(n: int) -> Exporter.Criterion:
     """
     Creates an export criterion that matches the first n samples in every batch.
 
+    Note, if the data loader is shuffling the dataset, the samples that get
+    exported will vary between runs.
+
     Example::
 
         from armory.export import Exporter
@@ -297,6 +312,9 @@ def first_n_samples_of_batch(n: int) -> Exporter.Criterion:
 def first_n_samples(n: int) -> Exporter.Criterion:
     """
     Creates an export criterion that matches the first n samples in the dataset.
+
+    Note, if the data loader is shuffling the dataset, the samples that get
+    exported will vary between runs.
 
     Example::
 
@@ -362,6 +380,9 @@ def samples(indices: Sequence[int]) -> Exporter.Criterion:
     """
     Creates an export criterion that matches specific samples in the dataset, by
     their global index (regardless of batch).
+
+    Note, if the data loader is shuffling the dataset, the samples that get
+    exported will vary between runs.
 
     Example::
 
