@@ -104,14 +104,11 @@ def any_satisfied(*criteria: Exporter.Criterion) -> Exporter.Criterion:
     """
 
     def _criterion(chain_name, batch_idx, batch):
-        aggregate_to_export: Optional[Set[int]] = None
+        aggregate_to_export: Set[int] = set()
         for c in criteria:
             to_export = _to_set(c(chain_name, batch_idx, batch), batch)
-            if aggregate_to_export is None:
-                aggregate_to_export = to_export
-            else:
-                aggregate_to_export.update(to_export)
-        return aggregate_to_export if aggregate_to_export is not None else set()
+            aggregate_to_export.update(to_export)
+        return aggregate_to_export
 
     return _criterion
 
