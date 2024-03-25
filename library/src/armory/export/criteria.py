@@ -71,6 +71,10 @@ def all_satisfied(*criteria: Exporter.Criterion) -> Exporter.Criterion:
                 aggregate_to_export = to_export
             else:
                 aggregate_to_export.intersection_update(to_export)
+                # If all samples have been disqualified, no need to continue
+                # evaluating the remaining criteria
+                if not aggregate_to_export:
+                    return aggregate_to_export
         return aggregate_to_export if aggregate_to_export is not None else set()
 
     return _criterion
