@@ -223,9 +223,9 @@ def every_n_samples_of_batch(n: int) -> Exporter.Criterion:
     def _criterion(chain_name, batch_idx: int, batch):
         if n == 0:
             return False
-        return [
+        return (
             sample_idx for sample_idx in range(len(batch)) if (sample_idx + 1) % n == 0
-        ]
+        )
 
     return _criterion
 
@@ -258,11 +258,11 @@ def every_n_samples(n: int) -> Exporter.Criterion:
         if n == 0:
             return False
         batch_size = len(batch)
-        return [
+        return (
             sample_idx
             for sample_idx in range(batch_size)
             if ((batch_idx * batch_size) + sample_idx + 1) % n == 0
-        ]
+        )
 
     return _criterion
 
@@ -289,7 +289,7 @@ def first_n_samples_of_batch(n: int) -> Exporter.Criterion:
     def _criterion(chain_name, batch_idx: int, batch):
         if n == 0:
             return False
-        return [sample_idx for sample_idx in range(len(batch)) if sample_idx < n]
+        return (sample_idx for sample_idx in range(len(batch)) if sample_idx < n)
 
     return _criterion
 
@@ -323,11 +323,11 @@ def first_n_samples(n: int) -> Exporter.Criterion:
         batch_size = len(batch)
         if batch_idx * batch_size >= n:
             return False
-        return [
+        return (
             sample_idx
             for sample_idx in range(batch_size)
             if ((batch_idx * batch_size) + sample_idx) < n
-        ]
+        )
 
     return _criterion
 
@@ -385,11 +385,11 @@ def samples(indices: Sequence[int]) -> Exporter.Criterion:
         if len(indices) == 0:
             return False
         batch_size = len(batch)
-        return [
+        return (
             sample_idx
             for sample_idx in range(batch_size)
             if ((batch_idx * batch_size) + sample_idx) in indices
-        ]
+        )
 
     return _criterion
 

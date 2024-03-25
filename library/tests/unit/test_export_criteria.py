@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from unittest.mock import MagicMock
 
 import pytest
@@ -7,6 +8,16 @@ from armory.data import Batch
 import armory.export.criteria as criteria
 
 pytestmark = pytest.mark.unit
+
+
+def to_list(maybe_iterable):
+    """
+    Converts the criteria output to a list if it is an iterable (i.e. a
+    generator) so that strict list equality comparisons can be made
+    """
+    if isinstance(maybe_iterable, Iterable):
+        return [i for i in maybe_iterable]
+    return maybe_iterable
 
 
 @pytest.fixture
@@ -73,7 +84,7 @@ def test_first_n_batches(n, batch_idx, batch, expected):
 def test_every_n_samples(n, batch_idx, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
-    assert criteria.every_n_samples(n)("", batch_idx, batch) == expected
+    assert to_list(criteria.every_n_samples(n)("", batch_idx, batch)) == expected
 
 
 @pytest.mark.parametrize(
@@ -93,7 +104,9 @@ def test_every_n_samples(n, batch_idx, batch_size, expected):
 def test_every_n_samples_of_batch(n, batch_idx, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
-    assert criteria.every_n_samples_of_batch(n)("", batch_idx, batch) == expected
+    assert (
+        to_list(criteria.every_n_samples_of_batch(n)("", batch_idx, batch)) == expected
+    )
 
 
 @pytest.mark.parametrize(
@@ -113,7 +126,7 @@ def test_every_n_samples_of_batch(n, batch_idx, batch_size, expected):
 def test_first_n_samples(n, batch_idx, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
-    assert criteria.first_n_samples(n)("", batch_idx, batch) == expected
+    assert to_list(criteria.first_n_samples(n)("", batch_idx, batch)) == expected
 
 
 @pytest.mark.parametrize(
@@ -133,7 +146,9 @@ def test_first_n_samples(n, batch_idx, batch_size, expected):
 def test_first_n_samples_of_batch(n, batch_idx, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
-    assert criteria.first_n_samples_of_batch(n)("", batch_idx, batch) == expected
+    assert (
+        to_list(criteria.first_n_samples_of_batch(n)("", batch_idx, batch)) == expected
+    )
 
 
 @pytest.mark.parametrize(
@@ -165,7 +180,7 @@ def test_chains(names, chain_name, batch, expected):
 def test_samples(indices, batch_idx, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
-    assert criteria.samples(indices)("", batch_idx, batch) == expected
+    assert to_list(criteria.samples(indices)("", batch_idx, batch)) == expected
 
 
 @pytest.mark.parametrize(
