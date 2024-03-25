@@ -1,5 +1,6 @@
 """Export criterion utilities"""
 
+import math
 from typing import Callable, Iterable, Optional, Sequence, Set, Union
 
 import torch
@@ -465,6 +466,54 @@ def when_metric_eq(
         Export criterion function
     """
     return _create_metric_criterion(lambda lhs, rhs: lhs == rhs, metric, threshold)
+
+
+def when_metric_isclose(
+    metric: Callable[[Batch], Union[float, torch.Tensor]],
+    threshold: Union[float, torch.Tensor],
+    rtol: float = 1e-05,
+    atol: float = 1e-08,
+) -> Exporter.Criterion:
+    """
+    Creates an export criterion that matches when a computed metric for a batch
+    or the samples within the batch is close to a particular value.
+
+    Example::
+
+        import torch
+        from armory.data import DefaultTorchAccessor
+        from armory.export import Exporter
+        from armory.export.criteria import when_metric_isclose
+
+        # Exports samples that have max score of 5.0
+        def max_pred(batch):
+            return torch.tensor([
+                torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
+            ])
+        exporter = Exporter(criterion=when_metric_isclose(max_pred, 5))
+
+    Args:
+        metric: Callable that computes a metric for a batch. The return value
+            may be a single boolean or number, or it can be a tensor array of
+            the computed metric values for each sample in the batch.
+        threshold: Value the computed metric (either batchwise or samplewise)
+            must be equal to in order for the batch or samples to be exported
+        rtol: Optional, relative tolerance
+        atol: Optional, absolute tolerance
+
+    Returns:
+        Export criterion function
+    """
+
+    def isclose(lhs, rhs):
+        if isinstance(lhs, torch.Tensor):
+            if not isinstance(rhs, torch.Tensor):
+                rhs = torch.as_tensor(rhs, dtype=lhs.dtype)
+            return torch.isclose(lhs, rhs, rtol=rtol, atol=atol)
+        else:
+            return math.isclose(lhs, rhs, rel_tol=rtol, abs_tol=atol)
+
+    return _create_metric_criterion(isclose, metric, threshold)
 
 
 def when_metric_lt(

@@ -296,6 +296,27 @@ def test_when_metric_eq(metric_value, threshold, batch, expected):
 
 
 @pytest.mark.parametrize(
+    "metric_value,threshold,atol,expected",
+    [
+        (4.9, 5, 0.01, False),
+        (4.99, 5, 0.01, True),
+        (5.1, 5, 0.01, False),
+        (torch.tensor(4.9), 5, 0.01, False),
+        (torch.tensor(4.99), 5, 0.01, True),
+        (torch.tensor(5.1), 5, 0.01, False),
+        (torch.tensor([1, 5, 3, 4]), 5, 0.01, [1]),
+        (torch.tensor([1, 5.01, 3, 4.99]), torch.tensor(5.0), 0.01, [1, 3]),
+    ],
+)
+def test_when_metric_isclose(metric_value, threshold, atol, batch, expected):
+    metric = MagicMock(return_value=metric_value)
+    assert (
+        criteria.when_metric_isclose(metric, threshold, atol=atol)("", 0, batch)
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
     "metric_value,threshold,expected",
     [
         (0.1, 0.5, True),
