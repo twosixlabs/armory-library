@@ -283,7 +283,7 @@ def create_exporters(model, export_every_n_batches):
         ),
         armory.export.captum.CaptumImageClassificationExporter(
             model,
-            criteria=armory.export.criteria.every_n_batches(export_every_n_batches),
+            criterion=armory.export.criteria.every_n_batches(export_every_n_batches),
         ),
     ]
 

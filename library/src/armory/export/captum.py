@@ -1,5 +1,6 @@
+from functools import partial
 from io import BytesIO
-from typing import TYPE_CHECKING, Iterable, Optional
+from typing import TYPE_CHECKING, Callable, Iterable, Optional
 
 import PIL.Image
 from captum.attr import (
@@ -34,7 +35,7 @@ class CaptumImageClassificationExporter(Exporter):
         n_steps: int = 1,
         inputs_accessor: Optional[Images.Accessor] = None,
         targets_accessor: Optional[Accessor] = None,
-        criteria: Optional[Exporter.Criteria] = None,
+        criterion: Optional[Exporter.Criterion] = None,
     ):
         """
         Initializes the exporter.
@@ -48,10 +49,10 @@ class CaptumImageClassificationExporter(Exporter):
                 ground truth targets data from the high-ly structured targets
                 contained in exported batches. By default, a generic NumPy
                 accessor is used.
-            criteria: Criteria dictating when samples will be exported. If
+            criterion: Criterion dictating when samples will be exported. If
                 omitted, no samples will be exported.
         """
-        super().__init__(targets_accessor=targets_accessor, criteria=criteria)
+        super().__init__(targets_accessor=targets_accessor, criterion=criterion)
         self.model = model
         self.saliency = Saliency(model) if do_saliency else None
         self.integrated_grads = (
@@ -85,12 +86,14 @@ class CaptumImageClassificationExporter(Exporter):
 
             target = targets[sample_idx].item()
 
-            prefix = f"batch_{batch_idx}_ex_{sample_idx}_{chain_name}"
+            artifact_path = partial(
+                self.artifact_path, chain_name, batch_idx, sample_idx
+            )
 
-            self._export_saliency(prefix, orig_image, image, target)
-            self._export_integrated_gradients(prefix, orig_image, image, target)
-            self._export_smoothgrad_squared(prefix, orig_image, image, target)
-            self._export_deeplift(prefix, orig_image, image, target)
+            self._export_saliency(artifact_path, orig_image, image, target)
+            self._export_integrated_gradients(artifact_path, orig_image, image, target)
+            self._export_smoothgrad_squared(artifact_path, orig_image, image, target)
+            self._export_deeplift(artifact_path, orig_image, image, target)
 
     @staticmethod
     def _tensor2np(as_tensor: "torch.Tensor") -> np.ndarray:
@@ -105,7 +108,7 @@ class CaptumImageClassificationExporter(Exporter):
 
     def _export_saliency(
         self,
-        filename_prefix: str,
+        artifact_path: Callable[[str], str],
         orig_image: np.ndarray,
         image: "torch.Tensor",
         target,
@@ -126,12 +129,12 @@ class CaptumImageClassificationExporter(Exporter):
             title="Overlayed Gradient Magnitudes",
             use_pyplot=False,
         )
-        filename = f"{filename_prefix}_saliency.png"
+        filename = artifact_path("captum_saliency.png")
         self.sink.log_image(self._fig2img(fig), filename)
 
     def _export_integrated_gradients(
         self,
-        filename_prefix: str,
+        artifact_path: Callable[[str], str],
         orig_image: np.ndarray,
         image: "torch.Tensor",
         target,
@@ -158,12 +161,12 @@ class CaptumImageClassificationExporter(Exporter):
             title="Overlayed Integrated Gradients",
             use_pyplot=False,
         )
-        filename = f"{filename_prefix}_integrated_gradients.png"
+        filename = artifact_path("captum_integrated_gradients.png")
         self.sink.log_image(self._fig2img(fig), filename)
 
     def _export_smoothgrad_squared(
         self,
-        filename_prefix: str,
+        artifact_path: Callable[[str], str],
         orig_image: np.ndarray,
         image: "torch.Tensor",
         target,
@@ -194,12 +197,12 @@ class CaptumImageClassificationExporter(Exporter):
             title="Overlayed Integrated Gradients \n with SmoothGrad Squared",
             use_pyplot=False,
         )
-        filename = f"{filename_prefix}_integrated_gradients_smoothgrad_squared.png"
+        filename = artifact_path("captum_integrated_gradients_smoothgrad_squared.png")
         self.sink.log_image(self._fig2img(fig), filename)
 
     def _export_deeplift(
         self,
-        filename_prefix: str,
+        artifact_path: Callable[[str], str],
         orig_image: np.ndarray,
         image: "torch.Tensor",
         target,
@@ -224,5 +227,5 @@ class CaptumImageClassificationExporter(Exporter):
             title="Overlayed DeepLift",
             use_pyplot=False,
         )
-        filename = f"{filename_prefix}_deeplift.png"
+        filename = artifact_path("captum_deeplift.png")
         self.sink.log_image(self._fig2img(fig), filename)
