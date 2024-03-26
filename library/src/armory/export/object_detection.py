@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Iterable, Optional
 
 import numpy as np
 import torch
@@ -78,6 +78,7 @@ class ObjectDetectionExporter(Exporter):
         inputs_accessor: Optional[Images.Accessor] = None,
         predictions_accessor: Optional[BoundingBoxes.Accessor] = None,
         targets_accessor: Optional[BoundingBoxes.Accessor] = None,
+        criterion: Optional[Exporter.Criterion] = None,
     ):
         """
         Initializes the exporter.
@@ -97,6 +98,8 @@ class ObjectDetectionExporter(Exporter):
                 ground truth targets data from the high-ly structured targets
                 contained in exported batches. By default, an XYXY NumPy
                 bounding box accessor is used.
+            criterion: Criterion dictating when samples will be exported. If
+                omitted, no samples will be exported.
         """
         super().__init__(
             predictions_accessor=(
@@ -105,6 +108,7 @@ class ObjectDetectionExporter(Exporter):
             targets_accessor=(
                 targets_accessor or BoundingBoxes.as_numpy(format=BBoxFormat.XYXY)
             ),
+            criterion=criterion,
         )
         self.score_threshold = score_threshold
         self.inputs_accessor = inputs_accessor or Images.as_numpy(
@@ -113,24 +117,28 @@ class ObjectDetectionExporter(Exporter):
             dtype=np.uint8,
         )
 
-    def export(self, chain_name: str, batch_idx: int, batch: Batch) -> None:
+    def export_samples(
+        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+    ) -> None:
         assert self.sink, "No sink has been set, unable to export"
 
-        self._export_metadata(chain_name, batch_idx, batch)
+        self._export_metadata(chain_name, batch_idx, batch, samples)
 
         images = self.inputs_accessor.get(batch.inputs)
         targets = self.targets_accessor.get(batch.targets)
         predictions = self.predictions_accessor.get(batch.predictions)
-        for sample_idx, image in enumerate(images):
+        for sample_idx in samples:
             boxes_above_threshold = predictions[sample_idx]["boxes"][
                 predictions[sample_idx]["scores"] > self.score_threshold
             ]
             # We access images as CHW because draw_bounding_boxes requires it,
             # but MLFlow needs HWC so we transpose
             with_boxes = draw_boxes_on_image(
-                image=image,
+                image=images[sample_idx],
                 ground_truth_boxes=targets[sample_idx]["boxes"],
                 pred_boxes=boxes_above_threshold,
             ).transpose(1, 2, 0)
-            filename = f"batch_{batch_idx}_ex_{sample_idx}_{chain_name}.png"
+            filename = self.artifact_path(
+                chain_name, batch_idx, sample_idx, "input.png"
+            )
             self.sink.log_image(with_boxes, filename)
