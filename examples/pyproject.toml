@@ -18,6 +18,8 @@ dependencies = [
     # 1.4.1 adds version constraints to scikit-learn and numpy that are incompatible with ART
     "albumentations<1.4.1",
     "armory-library",
+    "adversarial-robustness-toolbox",
+    "tidecv",
 ]
 
 [project.optional-dependencies]
