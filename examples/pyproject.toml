@@ -19,6 +19,7 @@ dependencies = [
     "albumentations<1.4.1",
     "armory-library",
     "adversarial-robustness-toolbox",
+    "tidecv",
 ]
 
 [project.optional-dependencies]
