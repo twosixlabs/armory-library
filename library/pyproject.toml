@@ -22,9 +22,9 @@ dependencies = [
     "mlflow",
     "numpy",
     "Pillow",
-    "torch >= 2.0.0",
+    "torch",
     "torchmetrics",
-    "torchvision >= 0.15.1",
+    "torchvision",
     "tqdm",
 
     # an ugly hack to workaround a bug on MacOS which makes PyYAML 5.4.1 unbuildable
@@ -44,11 +44,8 @@ extras = [
     "albumentations",
     "matplotlib",
     "pandas",
-    "scikit-learn < 1.2.0", # ART requires scikit-learn >= 0.22.2, < 1.2.0
-    "scipy",                # ART requires scipy >= 1.4.1, < 1.10.1
     "tidecv",
-    # TODO: unpin this version when patch https://github.com/huggingface/transformers/pull/29353 is released.
-    "transformers < 4.38.0",
+    "transformers",
 ]
 
 
