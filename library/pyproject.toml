@@ -15,47 +15,17 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 
+# Core dependencies required for general use of Armory
 dependencies = [
-    "loguru",
-    "requests",
-
-    # engine
-    "adversarial-robustness-toolbox == 1.16.0",
     "lightning",
-    "tqdm",
-    "Pillow",                                   # Data dependencies
-    "boto3",                                    # Needed for armory.data.utils
-    "botocore",                                 # Needed for armory.data.utils
-    "ffmpeg-python",                            # Needed for armory.utils.export
-    "pydub",                                    # this is in ART's extra-requires
-    "tidecv",                                   # Needed for TIDE metrics
-    "tensorboardx",
-    "torchmetrics",
-
-    # math
-    # scikit-learn and scipy requirments below are still present in ART v1.16.0
-    "scikit-learn < 1.2.0", # ART requires scikit-learn >= 0.22.2, < 1.2.0
-    "scipy",                # ART requires scipy >= 1.4.1, < 1.10.1
-
-    "numpy",
-    "pandas",
-    "matplotlib",
-
-    # pytorch
-    "torch >= 2.0.0",
-    "torchaudio >= 2.0.1",
-    "torchvision >= 0.15.1",
-
-    # tensorflow
-    "tf-models-official",
-    "tensorflow >= 2.11.0",
-
-    # tracking
+    "loguru",
     "mlflow",
-
-    # HF transformers
-    # TODO: unpin this version when patch https://github.com/huggingface/transformers/pull/29353 is released.
-    "transformers < 4.38.0",
+    "numpy",
+    "Pillow",
+    "torch",
+    "torchmetrics",
+    "torchvision",
+    "tqdm",
 
     # an ugly hack to workaround a bug on MacOS which makes PyYAML 5.4.1 unbuildable
     # lightning 2.1.2 requires PyYAML >= 5.4 < 8.0 which on MacOS under Python 3.11
@@ -63,6 +33,19 @@ dependencies = [
     # and see if it helps. I'd like to do this as a constraints.txt entry but
     # constraints and --editable are mutually exclusive.
     "PyYAML >= 6",
+]
+
+
+# Dependencies that aren't required for general use of Armory, but may be
+# required according to the specific Armory capabilities being used.
+[project.optional-dependencies]
+extras = [
+    "adversarial-robustness-toolbox",
+    "albumentations",
+    "matplotlib",
+    "pandas",
+    "tidecv",
+    "transformers",
 ]
 
 
@@ -74,26 +57,6 @@ Documentation = "https://armory-library.readthedocs.io/en/latest/"
 
 [project.scripts]
 armory-mlflow-server = "charmory.track:server"
-
-
-[project.optional-dependencies]
-extras = [
-    # deepspeech
-    "python-levenshtein",
-    "sox",
-    "librosa",
-    "google-cloud-storage",
-    "transformers",
-
-    # datasets
-    # Handle issue with tensorflow-datasets 4.9.0 not installing correctly
-    # on MacOS, fixed in 4.9.1 - https://github.com/tensorflow/datasets/issues/4852
-    "tensorflow-datasets >= 4.6.0, != 4.9.0",
-    "protobuf",
-
-    # datasets-builder
-    "apache-beam >= 2.22.0",
-]
 
 
 [build-system]

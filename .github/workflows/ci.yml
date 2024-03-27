@@ -54,7 +54,7 @@ jobs:
       - name: Install
         run: |
           pip3 install --no-compile .
-          pip3 install --no-compile ./library
+          pip3 install --no-compile ./library[extras]
           pip3 install --no-compile ./matrix
 
       - name: Test
