@@ -42,6 +42,7 @@ dependencies = [
 extras = [
     "adversarial-robustness-toolbox",
     "albumentations",
+    "captum",
     "matplotlib",
     "pandas",
     "tidecv",
