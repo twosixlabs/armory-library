@@ -47,6 +47,7 @@ extras = [
     "pandas",
     "tidecv",
     "transformers",
+    "xaitk-saliency",
 ]
 
 

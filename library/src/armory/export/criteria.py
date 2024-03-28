@@ -5,7 +5,7 @@ from typing import Callable, Iterable, Optional, Sequence, Set, Union
 
 import torch
 
-from armory.data import Batch
+from armory.data import Accessor, Batch, DefaultTorchAccessor
 from armory.export.base import Exporter
 
 
@@ -581,3 +581,16 @@ def when_metric_gt(metric, threshold) -> Exporter.Criterion:
         Export criterion function
     """
     return _create_metric_criterion(lambda lhs, rhs: lhs > rhs, metric, threshold)
+
+
+def when_target_eq(
+    value: Union[float, torch.Tensor],
+    accessor: Optional[Accessor] = None,
+) -> Exporter.Criterion:
+    if accessor is None:
+        accessor = DefaultTorchAccessor()
+
+    def _metric(batch):
+        return accessor.get(batch.targets)
+
+    return when_metric_eq(_metric, value)

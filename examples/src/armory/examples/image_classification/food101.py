@@ -14,6 +14,7 @@ import torch
 import torch.nn
 import torchmetrics.classification
 import transformers
+import xaitk_saliency.impls.gen_image_classifier_blackbox_sal.slidingwindow
 
 import armory.data
 import armory.dataset
@@ -22,6 +23,7 @@ import armory.evaluation
 import armory.export.captum
 import armory.export.criteria
 import armory.export.image_classification
+import armory.export.xaitksaliency
 import armory.metric
 import armory.metrics.compute
 import armory.metrics.perturbation
@@ -82,7 +84,9 @@ def load_model():
     armory_model = armory.model.image_classification.ImageClassifier(
         name="ViT-finetuned-food101",
         model=hf_model,
-        accessor=armory.data.Images.as_torch(scale=normalized_scale),
+        accessor=armory.data.Images.as_torch(
+            dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
+        ),
     )
 
     art_classifier = armory.track.track_init_params(
@@ -284,6 +288,15 @@ def create_exporters(model, export_every_n_batches):
         armory.export.captum.CaptumImageClassificationExporter(
             model,
             criterion=armory.export.criteria.every_n_batches(export_every_n_batches),
+        ),
+        armory.export.xaitksaliency.XaitkSaliencyBlackboxImageClassificationExporter(
+            name="slidingwindow",
+            model=model,
+            classes=[6],
+            algorithm=xaitk_saliency.impls.gen_image_classifier_blackbox_sal.slidingwindow.SlidingWindowStack(
+                (50, 50), (20, 20), threads=4
+            ),
+            criterion=armory.export.criteria.when_target_eq(6),
         ),
     ]
 

@@ -21,6 +21,7 @@ dependencies = [
     "adversarial-robustness-toolbox",
     "captum",
     "tidecv",
+    "xaitk-saliency",
 ]
 
 [project.optional-dependencies]
