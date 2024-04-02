@@ -583,6 +583,48 @@ def when_metric_gt(metric, threshold) -> Exporter.Criterion:
     return _create_metric_criterion(lambda lhs, rhs: lhs > rhs, metric, threshold)
 
 
+def when_metric_in(
+    metric: Callable[[Batch], Union[float, torch.Tensor]],
+    threshold: Union[Sequence[float], Sequence[torch.Tensor]],
+) -> Exporter.Criterion:
+    """
+    Creates an export criterion that matches when a computed metric for a batch
+    or the samples within the batch is one of a particular set of values.
+
+    Example::
+
+        import torch
+        from armory.data import DefaultTorchAccessor
+        from armory.export import Exporter
+        from armory.export.criteria import when_metric_in
+
+        # Exports samples that have max score of 5 or 8
+        def max_pred(batch):
+            return torch.tensor([
+                torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
+            ])
+        exporter = Exporter(criterion=when_metric_in(max_pred, [5, 8]))
+
+    Args:
+        metric: Callable that computes a metric for a batch. The return value
+            may be a single boolean or number, or it can be a tensor array of
+            the computed metric values for each sample in the batch.
+        threshold: Possible values the computed metric (either batchwise or
+            samplewise) must be equal to in order for the batch or samples to
+            be exported
+
+    Returns:
+        Export criterion function
+    """
+
+    def _comp(lhs, rhs):
+        if isinstance(lhs, torch.Tensor):
+            return lhs.apply_(lambda x: x in rhs).bool()
+        return lhs in rhs
+
+    return _create_metric_criterion(_comp, metric, threshold)
+
+
 def batch_targets(
     accessor: Optional[Accessor] = None,
 ) -> Callable[[Batch], torch.Tensor]:
