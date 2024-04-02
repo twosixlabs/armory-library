@@ -1,5 +1,5 @@
 from io import BytesIO
-from typing import TYPE_CHECKING, Iterable, Optional, Sequence
+from typing import Iterable, Optional, Sequence
 
 import PIL.Image
 import matplotlib.pyplot as plt
@@ -20,9 +20,6 @@ from armory.data import (
 )
 from armory.export.base import Exporter
 from armory.model.image_classification import ImageClassifier
-
-if TYPE_CHECKING:
-    import matplotlib.figure
 
 
 class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
@@ -85,6 +82,7 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
         self.name = name
         self.blackbox = self.ModelWrapper(model, classes, self.dim, self.scale)
         self.algorithm = algorithm
+        self.classes = classes
 
     def export_samples(
         self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
@@ -96,50 +94,55 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
         for sample_idx in samples:
             ref_image: np.ndarray = images[sample_idx]
             sal_maps: np.ndarray = self.algorithm.generate(ref_image, self.blackbox)
-            fig = self._visualize(ref_image, sal_maps)
 
-            buf = BytesIO()
-            fig.savefig(buf)
-            buf.seek(0)
-            img = PIL.Image.open(buf)
+            colorbar_kwargs = {
+                "fraction": 0.046 * (ref_image.shape[0] / ref_image.shape[1]),
+                "pad": 0.04,
+            }
 
-            filename = self.artifact_path(
-                chain_name, batch_idx, sample_idx, f"xaitk_saliency_{self.name}.png"
-            )
-            self.sink.log_image(img, filename)
+            for i, class_sal_map in enumerate(sal_maps):
+                label = self.classes[i]
 
-    def _visualize(
-        self, ref_image: np.ndarray, sal_maps: np.ndarray
-    ) -> "matplotlib.figure.Figure":
-        sub_plot_ind = len(sal_maps) + 1
-        fig = plt.figure(figsize=(12, 6))
-        plt.subplot(2, sub_plot_ind, 1)
-        plt.imshow(ref_image)
-        plt.axis("off")
-        plt.title("Test Image")
+                # Positive half saliency
+                fig = plt.figure(figsize=(6, 6))
+                plt.imshow(ref_image, alpha=0.7)
+                plt.imshow(np.clip(class_sal_map, 0, 1), cmap="jet", alpha=0.3)
+                plt.clim(0, 1)
+                plt.colorbar(**colorbar_kwargs)
+                plt.title(f"Class {label} Pos Saliency")
+                plt.axis("off")
 
-        colorbar_kwargs = {
-            "fraction": 0.046 * (ref_image.shape[0] / ref_image.shape[1]),
-            "pad": 0.04,
-        }
+                buf = BytesIO()
+                fig.savefig(buf)
+                buf.seek(0)
+                img = PIL.Image.open(buf)
 
-        for i, class_sal_map in enumerate(sal_maps):
-            # Positive half saliency
-            plt.subplot(2, sub_plot_ind, 2 + i)
-            plt.imshow(ref_image, alpha=0.7)
-            plt.imshow(np.clip(class_sal_map, 0, 1), cmap="jet", alpha=0.3)
-            plt.clim(0, 1)
-            plt.colorbar(**colorbar_kwargs)
-            plt.title(f"Class #{i+1} Pos Saliency")
-            plt.axis("off")
+                filename = self.artifact_path(
+                    chain_name,
+                    batch_idx,
+                    sample_idx,
+                    f"xaitk_saliency_{self.name}_{label}_pos.png",
+                )
+                self.sink.log_image(img, filename)
 
-            # Negative half saliency
-            plt.subplot(2, sub_plot_ind, sub_plot_ind + 2 + i)
-            plt.imshow(ref_image, alpha=0.7)
-            plt.imshow(np.clip(class_sal_map, -1, 0), cmap="jet_r", alpha=0.3)
-            plt.clim(-1, 0)
-            plt.colorbar(**colorbar_kwargs)
-            plt.title(f"Class #{i+1} Neg Saliency")
-            plt.axis("off")
+                # Negative half saliency
+                fig = plt.figure(figsize=(6, 6))
+                plt.imshow(ref_image, alpha=0.7)
+                plt.imshow(np.clip(class_sal_map, -1, 0), cmap="jet_r", alpha=0.3)
+                plt.clim(-1, 0)
+                plt.colorbar(**colorbar_kwargs)
+                plt.title(f"Class {label} Neg Saliency")
+                plt.axis("off")
 
-        return fig
+                buf = BytesIO()
+                fig.savefig(buf)
+                buf.seek(0)
+                img = PIL.Image.open(buf)
+
+                filename = self.artifact_path(
+                    chain_name,
+                    batch_idx,
+                    sample_idx,
+                    f"xaitk_saliency_{self.name}_{label}_neg.png",
+                )
+                self.sink.log_image(img, filename)
