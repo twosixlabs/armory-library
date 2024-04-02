@@ -15,35 +15,24 @@ classifiers = [
 ]
 
 dependencies = [
-    # 1.4.1 adds version constraints to scikit-learn and numpy that are incompatible with ART
-    "albumentations<1.4.1",
     "armory-library",
-]
-
-[project.optional-dependencies]
-huggingface = [
+    "adversarial-robustness-toolbox",
     "datasets",
     "huggingface_hub",
     "transformers",
 ]
 
-# pypi will not accept this dependency because it is not a public repo therefore I'm
-# just pulling it for at least the time needed to publish armory-examples thus aquiring
-# the package name
-#
-# jatic = [ "jatic_toolbox @
-#     git+ssh://git@gitlab.jatic.net/jatic/cdao/jatic-toolbox.git@v0.2.0rc1", ]
-
-yolo = [
+[project.optional-dependencies]
+# Dependencies for computer vision examples
+cv = [
+    # 1.4.1 adds version constraints to scikit-learn and numpy that are incompatible with ART
+    "albumentations<1.4.1",
+    "tidecv",
     "yolov5",
 ]
 
-demo = ["pandas", "sklearn", "plotly", "numpy", "matplotlib", "seaborn"]
-
 all = [
-    "armory-examples[huggingface]",
-    "armory-examples[jatic]",
-    "armory-examples[yolo]",
+    "armory-examples[cv]",
 ]
 
 [build-system]
