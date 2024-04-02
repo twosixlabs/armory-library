@@ -96,66 +96,63 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
             ref_image: np.ndarray = images[sample_idx]
             sal_maps: np.ndarray = self.algorithm.generate(ref_image, self.blackbox)
 
-            colorbar_kwargs = {
-                "fraction": 0.046 * (ref_image.shape[0] / ref_image.shape[1]),
-                "pad": 0.04,
-            }
-
             for i, class_sal_map in enumerate(sal_maps):
                 label = self.classes[i]
 
                 # Positive half saliency
-                fig = Figure(figsize=(6, 6))
-                axes = fig.subplots()
-                assert isinstance(axes, Axes)
-
-                axes.imshow(ref_image, alpha=0.7)
-                im = axes.imshow(
-                    np.clip(class_sal_map, 0, 1), cmap="jet", alpha=0.3, vmin=0, vmax=1
+                pos_sal_img = self._plot(
+                    ref_image, class_sal_map, False, f"Class {label} Pos Saliency"
                 )
-                fig.colorbar(im, **colorbar_kwargs)
-                axes.set_title(f"Class {label} Pos Saliency")
-                axes.axis("off")
-
-                buf = BytesIO()
-                fig.savefig(buf)
-                buf.seek(0)
-                img = PIL.Image.open(buf)
-
                 filename = self.artifact_path(
                     chain_name,
                     batch_idx,
                     sample_idx,
                     f"xaitk_saliency_{self.name}_{label}_pos.png",
                 )
-                self.sink.log_image(img, filename)
+                self.sink.log_image(pos_sal_img, filename)
 
                 # Negative half saliency
-                fig = Figure(figsize=(6, 6))
-                axes = fig.subplots()
-                assert isinstance(axes, Axes)
-
-                axes.imshow(ref_image, alpha=0.7)
-                im = axes.imshow(
-                    np.clip(class_sal_map, -1, 0),
-                    cmap="jet_r",
-                    alpha=0.3,
-                    vmin=-1,
-                    vmax=0,
+                neg_sal_img = self._plot(
+                    ref_image, class_sal_map, True, f"Class {label} Neg Saliency"
                 )
-                fig.colorbar(im, **colorbar_kwargs)
-                axes.set_title(f"Class {label} Neg Saliency")
-                axes.axis("off")
-
-                buf = BytesIO()
-                fig.savefig(buf)
-                buf.seek(0)
-                img = PIL.Image.open(buf)
-
                 filename = self.artifact_path(
                     chain_name,
                     batch_idx,
                     sample_idx,
                     f"xaitk_saliency_{self.name}_{label}_neg.png",
                 )
-                self.sink.log_image(img, filename)
+                self.sink.log_image(neg_sal_img, filename)
+
+    @staticmethod
+    def _plot(
+        ref_image: np.ndarray, sal_map: np.ndarray, neg: bool, title: str
+    ) -> PIL.Image.Image:
+        fig = Figure(figsize=(6, 6))
+        axes = fig.subplots()
+        assert isinstance(axes, Axes)
+
+        if neg:
+            cmap = "jet_r"
+            vmin = -1
+            vmax = 0
+        else:
+            cmap = "jet"
+            vmin = 0
+            vmax = 1
+
+        axes.imshow(ref_image, alpha=0.7)
+        im = axes.imshow(
+            np.clip(sal_map, vmin, vmax), cmap=cmap, alpha=0.3, vmin=vmin, vmax=vmax
+        )
+        fig.colorbar(
+            im,
+            fraction=0.046 * (ref_image.shape[0] / ref_image.shape[1]),
+            pad=0.04,
+        )
+        axes.set_title(title)
+        axes.axis("off")
+
+        buf = BytesIO()
+        fig.savefig(buf)
+        buf.seek(0)
+        return PIL.Image.open(buf)
