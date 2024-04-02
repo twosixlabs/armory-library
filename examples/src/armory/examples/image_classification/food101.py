@@ -292,7 +292,7 @@ def create_exporters(model, export_every_n_batches):
         armory.export.xaitksaliency.XaitkSaliencyBlackboxImageClassificationExporter(
             name="slidingwindow",
             model=model,
-            classes=[6, 23],
+            classes=[6, 23],  # beignets(6), churros(23)
             algorithm=xaitk_saliency.impls.gen_image_classifier_blackbox_sal.slidingwindow.SlidingWindowStack(
                 (50, 50), (20, 20), threads=4
             ),
