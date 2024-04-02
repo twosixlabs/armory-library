@@ -583,14 +583,30 @@ def when_metric_gt(metric, threshold) -> Exporter.Criterion:
     return _create_metric_criterion(lambda lhs, rhs: lhs > rhs, metric, threshold)
 
 
-def when_target_eq(
-    value: Union[float, torch.Tensor],
+def batch_targets(
     accessor: Optional[Accessor] = None,
-) -> Exporter.Criterion:
+) -> Callable[[Batch], torch.Tensor]:
+    """
+    Creates a batch metric callable that returns the targets from the batch.
+
+    Example::
+
+        from armory.export import Exporter
+        from armory.export.criteria import batch_targets, when_metric_lt
+
+        # Exports samples that have a target value less than 10
+        exporter = Exporter(criterion=when_metric_lt(batch_targets(), 10))
+
+    Args:
+        accessor: Accessor for targets in a batch
+
+    Returns:
+        Batch metric function
+    """
     if accessor is None:
         accessor = DefaultTorchAccessor()
 
     def _metric(batch):
         return accessor.get(batch.targets)
 
-    return when_metric_eq(_metric, value)
+    return _metric

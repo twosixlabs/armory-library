@@ -296,7 +296,9 @@ def create_exporters(model, export_every_n_batches):
             algorithm=xaitk_saliency.impls.gen_image_classifier_blackbox_sal.slidingwindow.SlidingWindowStack(
                 (50, 50), (20, 20), threads=4
             ),
-            criterion=armory.export.criteria.when_target_eq(6),
+            criterion=armory.export.criteria.when_metric_eq(
+                armory.export.criteria.batch_targets(), 6
+            ),
         ),
     ]
 
