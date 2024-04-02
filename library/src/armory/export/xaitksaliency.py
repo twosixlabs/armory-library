@@ -2,7 +2,8 @@ from io import BytesIO
 from typing import Iterable, Optional, Sequence
 
 import PIL.Image
-import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import numpy as np
 from smqtk_classifier import ClassifyImage
 import torch
@@ -104,13 +105,17 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
                 label = self.classes[i]
 
                 # Positive half saliency
-                fig = plt.figure(figsize=(6, 6))
-                plt.imshow(ref_image, alpha=0.7)
-                plt.imshow(np.clip(class_sal_map, 0, 1), cmap="jet", alpha=0.3)
-                plt.clim(0, 1)
-                plt.colorbar(**colorbar_kwargs)
-                plt.title(f"Class {label} Pos Saliency")
-                plt.axis("off")
+                fig = Figure(figsize=(6, 6))
+                axes = fig.subplots()
+                assert isinstance(axes, Axes)
+
+                axes.imshow(ref_image, alpha=0.7)
+                im = axes.imshow(
+                    np.clip(class_sal_map, 0, 1), cmap="jet", alpha=0.3, vmin=0, vmax=1
+                )
+                fig.colorbar(im, **colorbar_kwargs)
+                axes.set_title(f"Class {label} Pos Saliency")
+                axes.axis("off")
 
                 buf = BytesIO()
                 fig.savefig(buf)
@@ -126,13 +131,21 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
                 self.sink.log_image(img, filename)
 
                 # Negative half saliency
-                fig = plt.figure(figsize=(6, 6))
-                plt.imshow(ref_image, alpha=0.7)
-                plt.imshow(np.clip(class_sal_map, -1, 0), cmap="jet_r", alpha=0.3)
-                plt.clim(-1, 0)
-                plt.colorbar(**colorbar_kwargs)
-                plt.title(f"Class {label} Neg Saliency")
-                plt.axis("off")
+                fig = Figure(figsize=(6, 6))
+                axes = fig.subplots()
+                assert isinstance(axes, Axes)
+
+                axes.imshow(ref_image, alpha=0.7)
+                im = axes.imshow(
+                    np.clip(class_sal_map, -1, 0),
+                    cmap="jet_r",
+                    alpha=0.3,
+                    vmin=-1,
+                    vmax=0,
+                )
+                fig.colorbar(im, **colorbar_kwargs)
+                axes.set_title(f"Class {label} Neg Saliency")
+                axes.axis("off")
 
                 buf = BytesIO()
                 fig.savefig(buf)
