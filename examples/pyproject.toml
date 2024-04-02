@@ -20,6 +20,7 @@ dependencies = [
     "armory-library",
     "adversarial-robustness-toolbox",
     "captum",
+    "scikit-learn>=1.2", # required by xaitk-saliency
     "tidecv",
     "xaitk-saliency",
 ]
