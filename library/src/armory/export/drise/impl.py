@@ -99,8 +99,6 @@ def get_proposal_data(
         for images_batch, masks_batch in mkdl:
             with torch.no_grad():
                 boxes_batch, cls_probs_batch, objs_batch = model(images_batch)
-                objs_batch = objs_batch[:, :, 0]
-                boxes_batch = boxes_batch[:, :, 0]
                 for boxes, cls_probs, objs in zip(
                     boxes_batch, cls_probs_batch, objs_batch
                 ):
@@ -108,7 +106,7 @@ def get_proposal_data(
                     objectiveness.append(objs[mask].cpu())
                     class_probs.append(cls_probs[mask].cpu())
                     boxes_list.append(boxes[mask].cpu())
-            progress_bar.update(objs_batch.shape[0])
+            progress_bar.update(len(objs_batch))
 
     return masks, rand_offset_nums, boxes_list, class_probs, objectiveness
 
