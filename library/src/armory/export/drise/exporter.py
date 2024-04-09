@@ -54,6 +54,7 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
             all_objs = []
 
             for result in results:
+                assert result["scores"] is not None
                 all_boxes.append(result["boxes"])
                 all_cls_probs.append(
                     self.expand_scores(result["scores"], result["labels"])
@@ -78,10 +79,12 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         num_classes: int,
         batch_size: int = 1,
         criterion: Optional[Exporter.Criterion] = None,
+        score_threshold: float = 0.5,
     ):
         super().__init__(criterion=criterion)
         self.model = model
         self.batch_size = batch_size
+        self.score_threshold = score_threshold
         self.wrapper = self.ModelWrapper(model, num_classes, self.dim, self.scale)
         self.image_accessor = Images.as_torch(dim=self.dim, scale=self.scale)
         self.bbox_accessor = BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
@@ -153,22 +156,26 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         assert preds["scores"] is not None
 
         num_targets = targets["boxes"].shape[0]
-        num_preds = preds["boxes"].shape[0]
+        above_threshold = preds["scores"] > self.score_threshold
+        boxes_above_threshold = preds["boxes"][above_threshold]
+        num_preds = boxes_above_threshold.shape[0]
         num_classes = self.wrapper.num_classes
 
         if num_targets and num_preds:
-            all_boxes = torch.vstack([targets["boxes"].cpu(), preds["boxes"].cpu()])
+            all_boxes = torch.vstack(
+                [targets["boxes"].cpu(), boxes_above_threshold.cpu()]
+            )
         elif num_targets:  # but no preds
             all_boxes = targets["boxes"]
         elif num_preds:  # but no targets
-            all_boxes = preds["boxes"]
+            all_boxes = boxes_above_threshold
         else:  # no targets or preds
             all_boxes = torch.zeros((0, 4))
 
         all_probs = torch.zeros((num_targets + num_preds, num_classes))
         for i, label in enumerate(targets["labels"]):
             all_probs[i, label] = 1.0
-        for j, prob in enumerate(preds["scores"]):
+        for j, prob in enumerate(preds["scores"][above_threshold]):
             all_probs[num_targets + j] = prob
 
         return all_boxes, all_probs
