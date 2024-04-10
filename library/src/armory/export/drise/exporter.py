@@ -112,7 +112,7 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
                     self.wrapper,
                     batch_size=self.batch_size,
                     device=self.model.device,
-                    number_of_masks=10,
+                    number_of_masks=100,
                 )
             )
 
@@ -131,10 +131,10 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
             num_targets = targets["boxes"].shape[0]
             for i in range(all_boxes.shape[0]):
                 if i < num_targets:
-                    color = "#50C878"
+                    color = "red"
                     name = "target"
                 else:
-                    color = "#D22B2B"
+                    color = "white"
                     name = "pred"
                 img_contour_with_box = make_saliency_img(
                     image,

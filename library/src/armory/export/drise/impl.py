@@ -211,7 +211,7 @@ def draw_contour(img_pt, cpu_map, thickness=1, levels=[0.95, 0.99], pixel_weight
 def draw_box(image, box, color="red"):
     img_c = image.copy()
     img = ImageDraw.Draw(img_c)
-    img.rectangle(box, outline=color, width=4)
+    img.rectangle(box, outline=color, width=2)
     return img_c
 
 
@@ -221,7 +221,7 @@ def make_saliency_img(
     img_contour = draw_contour(img_pt, saliency_map.unsqueeze(0), levels=levels)
     img_contour_with_box = draw_box(
         F.to_pil_image(img_contour),
-        (box * 608).tolist(),
+        box.tolist(),
         color,
     )
     return img_contour_with_box
