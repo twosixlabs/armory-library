@@ -1,6 +1,9 @@
+from io import BytesIO
 import os
 
 from PIL import Image, ImageDraw
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import torch
 from torchvision.ops import box_iou
 import torchvision.transforms.functional as F
@@ -208,6 +211,35 @@ def draw_contour(img_pt, cpu_map, thickness=1, levels=[0.95, 0.99], pixel_weight
     return img_pt_draw
 
 
+def draw_heatmap(image, saliency_map: torch.Tensor, box):
+    fig = Figure(figsize=(6, 6))
+    axes = fig.subplots()
+    assert isinstance(axes, Axes)
+
+    sal_min = saliency_map.min()
+    sal_max = saliency_map.max()
+    saliency_map = (saliency_map - sal_min) / (sal_max - sal_min)
+
+    axes.imshow(image.permute((1, 2, 0)), alpha=0.7, cmap="gray")
+    heat_map = axes.imshow(
+        saliency_map,
+        cmap="jet",
+        # vmin=0,
+        # vmax=1,
+        alpha=0.3,
+    )
+    axes.imshow(box)
+
+    fig.colorbar(heat_map, fraction=0.046 * (image.shape[1] / image.shape[2]), pad=0.04)
+
+    axes.axis("off")
+
+    buf = BytesIO()
+    fig.savefig(buf)
+    buf.seek(0)
+    return Image.open(buf)
+
+
 def draw_box(image, box, color="red"):
     img_c = image.copy()
     img = ImageDraw.Draw(img_c)
@@ -216,12 +248,25 @@ def draw_box(image, box, color="red"):
 
 
 def make_saliency_img(
-    img_pt, saliency_map, box, color="black", levels=[0.9, 0.95, 0.975, 0.99]
+    img_pt,
+    saliency_map,
+    box,
+    color="black",
+    levels=[0.9, 0.95, 0.975, 0.99],
+    contour=False,
 ):
-    img_contour = draw_contour(img_pt, saliency_map.unsqueeze(0), levels=levels)
-    img_contour_with_box = draw_box(
-        F.to_pil_image(img_contour),
-        box.tolist(),
-        color,
-    )
-    return img_contour_with_box
+    if contour:
+        img_with_saliency = draw_contour(
+            img_pt, saliency_map.unsqueeze(0), levels=levels
+        )
+        img = F.to_pil_image(img_with_saliency)
+        return draw_box(
+            img,
+            box.tolist(),
+            color,
+        )
+    else:
+        _, height, width = img_pt.shape
+        blank = Image.new("RGBA", (height, width), (255, 0, 0, 0))
+        box_img = draw_box(blank, box.tolist(), color)
+        return draw_heatmap(img_pt, saliency_map, box_img)

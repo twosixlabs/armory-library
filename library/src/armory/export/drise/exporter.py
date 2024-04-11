@@ -112,7 +112,7 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
                     self.wrapper,
                     batch_size=self.batch_size,
                     device=self.model.device,
-                    number_of_masks=100,
+                    number_of_masks=1000,
                 )
             )
 
@@ -146,7 +146,7 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
                     chain_name,
                     batch_idx,
                     sample_idx,
-                    f"drise_{i:02}_{name}.jpg",
+                    f"drise_{i:02}_{name}.png",
                 )
                 self.sink.log_image(img_contour_with_box, filename)
 
@@ -158,6 +158,8 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         num_targets = targets["boxes"].shape[0]
         above_threshold = preds["scores"] > self.score_threshold
         boxes_above_threshold = preds["boxes"][above_threshold]
+        scores_above_threshold = preds["scores"][above_threshold]
+        labels_above_threshold = preds["labels"][above_threshold]
         num_preds = boxes_above_threshold.shape[0]
         num_classes = self.wrapper.num_classes
 
@@ -175,7 +177,9 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         all_probs = torch.zeros((num_targets + num_preds, num_classes))
         for i, label in enumerate(targets["labels"]):
             all_probs[i, label] = 1.0
-        for j, prob in enumerate(preds["scores"][above_threshold]):
+        for j, prob in enumerate(
+            self.wrapper.expand_scores(scores_above_threshold, labels_above_threshold)
+        ):
             all_probs[num_targets + j] = prob
 
         return all_boxes, all_probs
