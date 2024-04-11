@@ -68,6 +68,9 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
         Initializes the exporter.
 
         Args:
+            model: Armory image classifier
+            classes: List of classes for which to generate saliency maps
+            algorithm: XAITK saliency algorithm
             targets_accessor: Optional, data exporter used to obtain low-level
                 ground truth targets data from the high-ly structured targets
                 contained in exported batches. By default, a generic NumPy

@@ -24,12 +24,16 @@ from armory.model.object_detection import ObjectDetector
 
 
 class DRiseSaliencyObjectDetectionExporter(Exporter):
-    """An exporter for D-Rise object detection saliency maps."""
+    """An exporter for D-RISE object detection saliency maps."""
 
     dim = ImageDimensions.CHW
     scale = Scale(dtype=DataType.FLOAT, max=1.0)
 
     class ModelWrapper(torch.nn.Module):
+        """
+        A wrapper around an Armory object detector to make it work with the
+        D-RISE implementation.
+        """
 
         def __init__(self, model: ObjectDetector, num_classes: int, dim, scale):
             super().__init__()
@@ -40,6 +44,10 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
             self.bbox_accessor = BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
 
         def forward(self, images_pt: torch.Tensor):
+            """
+            Invokes the wrapped model and returns the resulting boxes, class
+            probabilities, and objectness as a tuple.
+            """
             batch = ObjectDetectionBatch(
                 inputs=Images(
                     images=images_pt,
@@ -69,6 +77,20 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         def expand_scores(
             self, scores: torch.Tensor, labels: torch.Tensor
         ) -> torch.Tensor:
+            """
+            Expands the given batch of scores and labels into probabilities for
+            all classes. The score for the assigned label remains as specified,
+            with all other classes receiving the evenly divided remaining
+            probability.
+
+            Args:
+                scores: N-length tensor of predicted scores
+                labels: N-length tensor of assigned labels
+
+            Returns:
+                (N, C) tensor of probabilities, where C is the total number of
+                    classes
+            """
             expanded_scores = torch.ones(scores.shape[0], self.num_classes)
             for i, (score, label) in enumerate(zip(scores, labels)):
                 residual = (1.0 - score.item()) / self.num_classes
@@ -82,9 +104,23 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         num_classes: int,
         batch_size: int = 1,
         num_masks: int = 1000,
-        criterion: Optional[Exporter.Criterion] = None,
         score_threshold: float = 0.5,
+        criterion: Optional[Exporter.Criterion] = None,
     ):
+        """
+        Initializes the exporter.
+
+        Args:
+            model: Armory object detector
+            num_classes: Number of classes supported by the model
+            batch_size: Number of images per batch when generating D-RISE
+                saliency maps
+            num_masks: Number of masks to evaluate
+            score_threshold: Minimum score for predicted objects to be included
+                for D-RISE saliency map generation
+            criterion: Criterion dictating when samples will be exported. If
+                omitted, no samples will be exported.
+        """
         super().__init__(criterion=criterion)
         self.model = model
         self.batch_size = batch_size
@@ -158,6 +194,10 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
     def _get_all_boxes_and_preds(
         self, targets: BoundingBoxes.BoxesTorch, preds: BoundingBoxes.BoxesTorch
     ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Produces single lists containing all target and predicted boxes and
+        class probabilities.
+        """
         assert preds["scores"] is not None
 
         num_targets = targets["boxes"].shape[0]

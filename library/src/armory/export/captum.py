@@ -42,6 +42,13 @@ class CaptumImageClassificationExporter(Exporter):
 
         Args:
             model: Computer vision model
+            do_saliency: Whether to generate saliency maps
+            do_integrated_grads: Whether to generate integrated gradient maps
+            do_smoothgrad_squred: Whether to generated integrated gradient maps
+                with SmoothGrad Squared
+            do_deeplift: Whether to generate DeepLift maps
+            internal_batch_size: Batch size to use with Captum
+            n_steps: Number of steps to be used when generating maps
             inputs_accessor: Optional, data exporter used to obtain low-level
                 image data from the highly-structured inputs contained in
                 exported batches. By default, a NumPy images accessor is used.
