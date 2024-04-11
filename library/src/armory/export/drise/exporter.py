@@ -10,6 +10,8 @@ from armory.data import (
     DataType,
     ImageDimensions,
     Images,
+    Metadata,
+    ObjectDetectionBatch,
     Scale,
 )
 from armory.export.base import Exporter
@@ -38,16 +40,17 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
             self.bbox_accessor = BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
 
         def forward(self, images_pt: torch.Tensor):
-            images = Images(
-                images=images_pt,
-                dim=self.dim,
-                scale=self.scale,
+            batch = ObjectDetectionBatch(
+                inputs=Images(
+                    images=images_pt,
+                    dim=self.dim,
+                    scale=self.scale,
+                ),
+                targets=BoundingBoxes([], format=BBoxFormat.XYXY),
+                metadata=Metadata(data=dict(), perturbations=dict()),
             )
-            inputs = self.model.inputs_accessor.get(images)
-            outputs = self.model(inputs)
-            preds = BoundingBoxes([], format=BBoxFormat.XYXY)
-            self.model.predictions_accessor.set(preds, outputs)
-            results = self.bbox_accessor.get(preds)
+            self.model.predict(batch)
+            results = self.bbox_accessor.get(batch.predictions)
 
             all_boxes = []
             all_cls_probs = []
