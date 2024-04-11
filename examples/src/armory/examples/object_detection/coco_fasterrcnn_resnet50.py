@@ -179,6 +179,7 @@ def create_exporters(model, export_every_n_batches):
             model,
             criterion=armory.export.criteria.every_n_batches(export_every_n_batches),
             num_classes=91,
+            num_masks=10,
         ),
     ]
 

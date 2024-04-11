@@ -78,12 +78,14 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         model: ObjectDetector,
         num_classes: int,
         batch_size: int = 1,
+        num_masks: int = 1000,
         criterion: Optional[Exporter.Criterion] = None,
         score_threshold: float = 0.5,
     ):
         super().__init__(criterion=criterion)
         self.model = model
         self.batch_size = batch_size
+        self.num_masks = num_masks
         self.score_threshold = score_threshold
         self.wrapper = self.ModelWrapper(model, num_classes, self.dim, self.scale)
         self.image_accessor = Images.as_torch(dim=self.dim, scale=self.scale)
@@ -112,7 +114,7 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
                     self.wrapper,
                     batch_size=self.batch_size,
                     device=self.model.device,
-                    number_of_masks=1000,
+                    number_of_masks=self.num_masks,
                 )
             )
 
