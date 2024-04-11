@@ -21,6 +21,7 @@ import armory.dataset
 import armory.engine
 import armory.evaluation
 import armory.export.criteria
+import armory.export.drise
 import armory.export.object_detection
 import armory.metric
 import armory.metrics.compute
@@ -198,11 +199,17 @@ def create_metrics():
     }
 
 
-def create_exporters(export_every_n_batches):
+def create_exporters(model, export_every_n_batches):
     """Create sample exporters"""
     return [
         armory.export.object_detection.ObjectDetectionExporter(
             criterion=armory.export.criteria.every_n_batches(export_every_n_batches)
+        ),
+        armory.export.drise.DRiseSaliencyObjectDetectionExporter(
+            model,
+            criterion=armory.export.criteria.every_n_batches(export_every_n_batches),
+            num_classes=2,
+            num_masks=10,
         ),
     ]
 
@@ -218,7 +225,7 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     dataset = load_dataset(batch_size, shuffle)
     attack = create_attack(art_detector, batch_size)
     metrics = create_metrics()
-    exporters = create_exporters(export_every_n_batches)
+    exporters = create_exporters(model, export_every_n_batches)
 
     evaluation = armory.evaluation.Evaluation(
         name="license-plate-detection-yolos",
