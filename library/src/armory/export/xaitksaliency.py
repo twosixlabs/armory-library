@@ -8,6 +8,9 @@ import numpy as np
 from smqtk_classifier import ClassifyImage
 import torch
 from xaitk_saliency import GenerateImageClassifierBlackboxSaliency
+from xaitk_saliency.impls.gen_image_classifier_blackbox_sal.slidingwindow import (
+    SlidingWindowStack,
+)
 
 from armory.data import (
     Accessor,
@@ -60,7 +63,7 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
         name: str,
         model: ImageClassifier,
         classes: Sequence[int],
-        algorithm: GenerateImageClassifierBlackboxSaliency,
+        algorithm: Optional[GenerateImageClassifierBlackboxSaliency] = None,
         targets_accessor: Optional[Accessor] = None,
         criterion: Optional[Exporter.Criterion] = None,
     ):
@@ -70,7 +73,8 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
         Args:
             model: Armory image classifier
             classes: List of classes for which to generate saliency maps
-            algorithm: XAITK saliency algorithm
+            algorithm: XAITK saliency algorithm. By default the sliding window
+                stack algorithm is used.
             targets_accessor: Optional, data exporter used to obtain low-level
                 ground truth targets data from the high-ly structured targets
                 contained in exported batches. By default, a generic NumPy
@@ -85,8 +89,11 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
         self.inputs_accessor = Images.as_numpy(dim=self.dim, scale=self.scale)
         self.name = name
         self.blackbox = self.ModelWrapper(model, classes, self.dim, self.scale)
-        self.algorithm = algorithm
         self.classes = classes
+
+        if algorithm is None:
+            algorithm = SlidingWindowStack((50, 50), (20, 20), threads=4)
+        self.algorithm: GenerateImageClassifierBlackboxSaliency = algorithm
 
     def export_samples(
         self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
