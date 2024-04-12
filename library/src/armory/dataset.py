@@ -96,6 +96,67 @@ class TupleDataset(ArmoryDataset):
         return {self._x_key: x, self._y_key: y}
 
 
+class TupleDatasetExpanded(ArmoryDataset):
+    """
+    Dataset wrapper with a pre-applied adapter to adapt tuples to map-like
+    samples specific to the West Point model.
+
+    Example::
+
+        from armory.dataset import TupleDataset
+
+        # assuming `dataset` has been defined elsewhere
+        print(dataset[0])
+        # output: [[0, 0, 0], [0, 0, 0]], [5]
+
+        tuple_ds = TupleDataset(dataset, x_key="image", y_key="label")
+        print(tuple_ds[0])
+        # output: {'image': [[0, 0, 0], [0, 0, 0]], 'label': [5]}
+    """
+
+    def __init__(
+        self,
+        dataset,
+        image_key: str,
+        boxes_key: str,
+        img_pixels_list_key: str,
+        patch_pixels_list_key: str,
+        weight_list_key: str,
+        mean_filter_key: str
+    ):
+        """
+        Initializes the dataset.
+
+        Args:
+            dataset: Source dataset where samples are a two-entry tuple of data,
+                or x, and target, or y.
+            x_key: Key name to use for x data in the adapted sample dictionary
+            y_key: Key name to use for y data in the adapted sample dictionary
+        """
+        super().__init__(dataset, self._adapt)
+        self._image_key = image_key
+        self._boxes_key = boxes_key
+        self._img_pixels_list_key = img_pixels_list_key
+        self._patch_pixels_list_key = patch_pixels_list_key
+        self._weight_list_key = weight_list_key
+        self._mean_filter_key = mean_filter_key
+
+    def _adapt(self, sample):
+        image, boxes, img_pixels, patch_pixels_list, weight_list, mean_filter_list = sample
+        return {
+            self._image_key: image,
+            "objects": {
+                self._boxes_key: [],
+                "labels": [],
+            },
+            "patch_locations": boxes,
+            self._img_pixels_list_key: img_pixels,
+            self._patch_pixels_list_key: patch_pixels_list,
+            self._weight_list_key: weight_list,
+            self._mean_filter_key: mean_filter_list
+        }
+
+
 def _collate_by_type(values: List):
     if len(values) == 0:
         return []
@@ -276,7 +337,10 @@ class ObjectDetectionDataLoader(DataLoader):
             scale=self.scale,
         )
         boxes = data.BoundingBoxes(
-            boxes=[self._to_bbox(obj) for obj in collated.pop(self.objects_key)],
+            boxes=[
+                self._to_bbox(obj)
+                for obj in collated.pop(self.objects_key)
+            ],
             format=self.format,
         )
         return data.ObjectDetectionBatch(
