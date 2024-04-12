@@ -1,6 +1,6 @@
 """Armory Dataset Classes"""
 
-from typing import Any, Callable, List, Mapping, Sequence, cast
+from typing import Any, Callable, Iterable, List, Mapping, Sequence, cast
 
 import numpy as np
 import torch
@@ -67,7 +67,7 @@ class TupleDataset(ArmoryDataset):
         print(dataset[0])
         # output: [[0, 0, 0], [0, 0, 0]], [5]
 
-        tuple_ds = TupleDataset(dataset, x_key="image", y_key="label")
+        tuple_ds = TupleDataset(dataset, ("image", "label"))
         print(tuple_ds[0])
         # output: {'image': [[0, 0, 0], [0, 0, 0]], 'label': [5]}
     """
@@ -75,25 +75,21 @@ class TupleDataset(ArmoryDataset):
     def __init__(
         self,
         dataset,
-        x_key: str,
-        y_key: str,
+        keys: Iterable[str],
     ):
         """
         Initializes the dataset.
 
         Args:
-            dataset: Source dataset where samples are a two-entry tuple of data,
-                or x, and target, or y.
-            x_key: Key name to use for x data in the adapted sample dictionary
-            y_key: Key name to use for y data in the adapted sample dictionary
+            dataset: Source dataset where samples are a tuples of data
+            keys: List of key names to use for each element in the sample tuple
+                when converted to a dictionary
         """
         super().__init__(dataset, self._adapt)
-        self._x_key = x_key
-        self._y_key = y_key
+        self._keys = keys
 
     def _adapt(self, sample):
-        x, y = sample
-        return {self._x_key: x, self._y_key: y}
+        return {key: value for key, value in zip(self._keys, sample)}
 
 
 def _collate_by_type(values: List):
