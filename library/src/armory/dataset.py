@@ -89,7 +89,7 @@ class TupleDataset(ArmoryDataset):
         self._keys = keys
 
     def _adapt(self, sample):
-        return {key: value for key, value in zip(self._keys, sample)}
+        return dict(zip(self._keys, sample))
 
 
 def _collate_by_type(values: List):
