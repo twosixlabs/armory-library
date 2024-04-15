@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -12,6 +12,7 @@ from armory.data import (
     ImageDimensions,
     Images,
     Scale,
+    to_numpy,
 )
 from armory.model.object_detection.object_detector import ObjectDetector
 from armory.track import track_init_params
@@ -154,19 +155,20 @@ def _nms_cpu(boxes, confs, nms_thresh=0.5, min_mode=False):
     return np.array(keep)
 
 
-def _to_numpy(tensor_obj):
-    if type(tensor_obj).__name__ != "ndarray":
-        return tensor_obj.cpu().detach().numpy()
-    return tensor_obj
-
-
-def _get_max_conf_and_id(confs):
+def _get_max_conf_and_id(confs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     max_conf = np.max(confs, axis=2)
     max_id = np.argmax(confs, axis=2)
     return max_conf, max_id
 
 
-def _process_batch(box_array, max_conf, max_id, conf_thresh, num_classes, nms_thresh):
+def _process_batch(
+    box_array: np.ndarray,
+    max_conf: np.ndarray,
+    max_id: np.ndarray,
+    conf_thresh: float,
+    num_classes: int,
+    nms_thresh: float,
+):
     bboxes_batch = []
     for i in range(box_array.shape[0]):
         bboxes_batch.append(
@@ -183,12 +185,12 @@ def _process_batch(box_array, max_conf, max_id, conf_thresh, num_classes, nms_th
 
 
 def _process_single(
-    box_array_single,
-    max_conf_single,
-    max_id_single,
-    conf_thresh,
-    num_classes,
-    nms_thresh,
+    box_array_single: np.ndarray,
+    max_conf_single: np.ndarray,
+    max_id_single: np.ndarray,
+    conf_thresh: float,
+    num_classes: int,
+    nms_thresh: float,
 ):
     argwhere = max_conf_single > conf_thresh
     l_box_array = box_array_single[argwhere, :]
@@ -230,10 +232,10 @@ def _nms_for_class(l_box_array, l_max_conf, l_max_id, cls, nms_thresh):
 
 
 def _post_processing(
-    output: list, conf_thresh: float = 0.4, nms_thresh: float = 0.6
-) -> list:
-    box_array = _to_numpy(output[0])
-    confs = _to_numpy(output[1])
+    output: List, conf_thresh: float = 0.4, nms_thresh: float = 0.6
+) -> List:
+    box_array = to_numpy(output[0])
+    confs = to_numpy(output[1])
 
     num_classes = confs.shape[2]
     box_array = box_array[:, :, 0]
