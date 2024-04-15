@@ -24,11 +24,9 @@ class YoloV4ObjectDetector(ObjectDetector):
 
     Example::
 
-        import yolov4
         from armory.model.object_detection import Yolov4ObjectDetector
 
-        model = yolov4.load_model(CHECKPOINT)
-
+        # assumes `model` has been created elsewhere
         detector = YoloV4ObjectDetector(
             name="My model",
             model=model,
@@ -71,21 +69,6 @@ class YoloV4ObjectDetector(ObjectDetector):
                 predictions_accessor or BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
             ),
         )
-
-    def forward(self, x, targets=None):
-        """
-        Invokes the wrapped model. If in training and given targets, then the
-        loss is computed and returned rather than the raw predictions.
-        """
-        # TODO: (jxc) From YoloV5ObjectDetector, rework this for YoloV4ObjectDetector
-        # inputs: CHW images, 0.0-1.0 float
-        # outputs: (N,6) detections (cx,cy,w,h,scores,labels)
-        # if self.training and targets is not None:
-        #     outputs = self._model.model.model(x)
-        #     loss, _ = self.compute_loss(outputs, targets)
-        #     return dict(loss_total=loss)
-        preds = self._model(x)
-        return preds
 
     def predict(self, batch: Batch):
         """
@@ -136,7 +119,6 @@ class YoloV4ObjectDetector(ObjectDetector):
 
 
 def _nms_cpu(boxes, confs, nms_thresh=0.5, min_mode=False):
-    # print(boxes.shape)
     x1 = boxes[:, 0]
     y1 = boxes[:, 1]
     x2 = boxes[:, 2]
