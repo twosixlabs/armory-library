@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional
 
 import torch.nn as nn
 
-from armory.data import Accessor, Batch, DefaultTorchAccessor, TorchAccessor
+from armory.data import Batch, DataSpecification, TorchSpec
 
 if TYPE_CHECKING:
     from torchmetrics import Metric as TorchMetric
@@ -14,24 +14,24 @@ class Metric(nn.Module, ABC):
     Base class for an Armory-compatible metric.
     """
 
-    def __init__(self, metric: "TorchMetric", accessor: Optional[Accessor] = None):
+    def __init__(self, metric: "TorchMetric", spec: Optional[DataSpecification] = None):
         """
         Initializes the metric.
 
         Args:
             metric: torchmetrics metric to be wrapped.
-            accessor: Optional, data accessor for the batch fields used for the
+            spec: Optional, data specification for the batch fields used for the
                 metric. This may be used for input data or for predictions from
-                the batch. By default, a generic torch accessor is used.
+                the batch. By default, a generic torch spec is used.
         """
         super().__init__()
         self.metric = metric
-        self.accessor = accessor or DefaultTorchAccessor(device=self.metric.device)
+        self.spec = spec or TorchSpec(device=self.metric.device)
 
     def _apply(self, *args, **kwargs):
         super()._apply(*args, **kwargs)
-        if isinstance(self.accessor, TorchAccessor):
-            self.accessor.to(device=self.metric.device)
+        if isinstance(self.spec, TorchSpec):
+            self.spec.to(device=self.metric.device)
 
     def compute(self):
         """Computes the metric value(s)."""
@@ -71,12 +71,12 @@ class PerturbationMetric(Metric):
     """
 
     def clone(self):
-        return PerturbationMetric(self.metric.clone(), self.accessor)
+        return PerturbationMetric(self.metric.clone(), self.spec)
 
     def update(self, batch: Batch) -> None:
         self.metric.update(
-            self.accessor.get(batch.initial_inputs),
-            self.accessor.get(batch.inputs),
+            batch.initial_inputs.get(self.spec),
+            batch.inputs.get(self.spec),
         )
 
 
@@ -99,11 +99,11 @@ class PredictionMetric(Metric):
     """
 
     def clone(self):
-        return PredictionMetric(self.metric.clone(), self.accessor)
+        return PredictionMetric(self.metric.clone(), self.spec)
 
     def update(self, batch: Batch) -> None:
         if batch.predictions is not None:
             self.metric.update(
-                self.accessor.get(batch.predictions),
-                self.accessor.get(batch.targets),
+                batch.predictions.get(self.spec),
+                batch.targets.get(self.spec),
             )

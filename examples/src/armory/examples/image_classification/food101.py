@@ -83,7 +83,7 @@ def load_model():
     armory_model = armory.model.image_classification.ImageClassifier(
         name="ViT-finetuned-food101",
         model=hf_model,
-        accessor=armory.data.Images.as_torch(
+        inputs_spec=armory.data.TorchImageSpec(
             dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
         ),
     )
@@ -208,7 +208,9 @@ def create_pgd_attack(classifier: art.estimators.classification.PyTorchClassifie
         name="PGD",
         attack=pgd,
         use_label_for_untargeted=True,
-        inputs_accessor=armory.data.Images.as_numpy(scale=normalized_scale),
+        inputs_spec=armory.data.NumpyImageSpec(
+            dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
+        ),
     )
 
     return evaluation_attack
@@ -235,7 +237,9 @@ def create_adversarial_patch_attack(
         name="AdversarialPatch",
         attack=patch,
         use_label_for_untargeted=False,
-        inputs_accessor=armory.data.Images.as_numpy(scale=normalized_scale),
+        inputs_spec=armory.data.NumpyImageSpec(
+            dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
+        ),
         generate_every_batch=False,
         apply_patch_kwargs={"scale": 0.5},
     )
@@ -260,7 +264,9 @@ def create_compression_defence(
     perturbation = armory.perturbation.ArtPreprocessorDefence(
         name="JPEG_compression",
         defence=jpeg_compression,
-        inputs_accessor=armory.data.Images.as_numpy(scale=unnormalized_scale),
+        inputs_spec=armory.data.NumpyImageSpec(
+            dim=armory.data.ImageDimensions.CHW, scale=unnormalized_scale
+        ),
     )
 
     return perturbation

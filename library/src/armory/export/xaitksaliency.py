@@ -13,12 +13,12 @@ from xaitk_saliency.impls.gen_image_classifier_blackbox_sal.slidingwindow import
 )
 
 from armory.data import (
-    Accessor,
-    Batch,
     DataType,
-    DefaultTorchAccessor,
+    ImageClassificationBatch,
     ImageDimensions,
     Images,
+    ImageSpec,
+    NumpyImageSpec,
     Scale,
     to_numpy,
 )
@@ -29,17 +29,18 @@ from armory.model.image_classification import ImageClassifier
 class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
     """An exporter for XAITK-Saliency."""
 
-    dim = ImageDimensions.HWC
-    scale = Scale(dtype=DataType.FLOAT, max=1.0)
+    spec = ImageSpec(
+        dim=ImageDimensions.HWC,
+        scale=Scale(dtype=DataType.FLOAT, max=1.0),
+    )
 
     class ModelWrapper(ClassifyImage):
-        def __init__(self, model: ImageClassifier, classes: Sequence[int], dim, scale):
+        def __init__(self, model: ImageClassifier, classes: Sequence[int], spec):
             super().__init__()
             self.model = model
             self.classes = classes
             self.labels = [str(c) for c in classes]
-            self.dim = dim
-            self.scale = scale
+            self.spec = spec
 
         def get_labels(self):
             return self.labels
@@ -47,10 +48,8 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
         @torch.no_grad()
         def classify_images(self, img_iter):
             for img in img_iter:
-                images = Images(
-                    images=np.expand_dims(img, axis=0), dim=self.dim, scale=self.scale
-                )
-                inputs = self.model.accessor.get(images)
+                images = Images(images=np.expand_dims(img, axis=0), spec=self.spec)
+                inputs = images.get(self.model.inputs_spec)
                 outputs = to_numpy(self.model(inputs)).squeeze()
                 yield dict(zip(self.labels, outputs[self.classes]))
 
@@ -64,7 +63,6 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
         model: ImageClassifier,
         classes: Sequence[int],
         algorithm: Optional[GenerateImageClassifierBlackboxSaliency] = None,
-        targets_accessor: Optional[Accessor] = None,
         criterion: Optional[Exporter.Criterion] = None,
     ):
         """
@@ -75,20 +73,15 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
             classes: List of classes for which to generate saliency maps
             algorithm: XAITK saliency algorithm. By default the sliding window
                 stack algorithm is used.
-            targets_accessor: Optional, data exporter used to obtain low-level
-                ground truth targets data from the high-ly structured targets
-                contained in exported batches. By default, a generic NumPy
-                accessor is used.
-            criterion: Criterion dictating when samples will be exported. If
+            criterion: Criterion to determine when samples will be exported. If
                 omitted, no samples will be exported.
         """
         super().__init__(
-            targets_accessor=targets_accessor or DefaultTorchAccessor(),
             criterion=criterion,
         )
-        self.inputs_accessor = Images.as_numpy(dim=self.dim, scale=self.scale)
+        self.inputs_spec = NumpyImageSpec(dim=self.spec.dim, scale=self.spec.scale)
         self.name = name
-        self.blackbox = self.ModelWrapper(model, classes, self.dim, self.scale)
+        self.blackbox = self.ModelWrapper(model, classes, self.spec)
         self.classes = classes
 
         if algorithm is None:
@@ -96,11 +89,15 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
         self.algorithm: GenerateImageClassifierBlackboxSaliency = algorithm
 
     def export_samples(
-        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+        self,
+        chain_name: str,
+        batch_idx: int,
+        batch: ImageClassificationBatch,
+        samples: Iterable[int],
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
 
-        images = self.inputs_accessor.get(batch.inputs)
+        images = batch.inputs.get(self.inputs_spec)
 
         for sample_idx in samples:
             ref_image: np.ndarray = images[sample_idx]

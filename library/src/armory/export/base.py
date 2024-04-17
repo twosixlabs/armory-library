@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Iterable, Mapping, Optional, Union
 
-from armory.data import Accessor, Batch, DefaultNumpyAccessor
+from armory.data import Batch, DataSpecification, NumpySpec
 from armory.export.sink import Sink
 
 
@@ -12,27 +12,25 @@ class Exporter(ABC):
 
     def __init__(
         self,
-        predictions_accessor: Optional[Accessor] = None,
-        targets_accessor: Optional[Accessor] = None,
+        predictions_spec: Optional[DataSpecification] = None,
+        targets_spec: Optional[DataSpecification] = None,
         criterion: Optional[Criterion] = None,
     ) -> None:
         """
         Initializes the exporter.
 
         Args:
-            predictions_accessor: Optional, data exporter used to obtain
-                low-level predictions data from the highly-structured
-                predictions contained in exported batches. By default, a generic
-                NumPy accessor is used.
-            targets_accessor: Optional, data exporter used to obtain low-level
-                ground truth targets data from the high-ly structured targets
-                contained in exported batches. By default, a generic NumPy
-                accessor is used.
-            criterion: Criterion dictating when samples will be exported. If
+            predictions_spec: Optional, data specification used to obtain raw
+                predictions data from the exported batches. By default, a generic
+                NumPy specification will be used.
+            targets_spec: Optional, data specification used to obtain raw ground
+                truth targets data from the exported batches. By default, a
+                generic NumPy specification is used.
+            criterion: Criterion to determine when samples will be exported. If
                 omitted, no samples will be exported.
         """
-        self.predictions_accessor = predictions_accessor or DefaultNumpyAccessor()
-        self.targets_accessor = targets_accessor or DefaultNumpyAccessor()
+        self.predictions_spec = predictions_spec or NumpySpec()
+        self.targets_spec = targets_spec or NumpySpec()
         self.sink: Optional[Sink] = None
         self.criterion = criterion
 
@@ -109,8 +107,8 @@ class Exporter(ABC):
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
 
-        targets = self.targets_accessor.get(batch.targets)
-        predictions = self.predictions_accessor.get(batch.predictions)
+        targets = batch.targets.get(self.targets_spec)
+        predictions = batch.predictions.get(self.predictions_spec)
 
         for sample_idx in samples:
             dictionary = dict(

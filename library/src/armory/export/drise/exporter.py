@@ -4,15 +4,17 @@ import torch
 import torch.nn
 
 from armory.data import (
-    Batch,
     BBoxFormat,
     BoundingBoxes,
+    BoundingBoxSpec,
     DataType,
     ImageDimensions,
     Images,
-    Metadata,
+    ImageSpec,
     ObjectDetectionBatch,
     Scale,
+    TorchBoundingBoxSpec,
+    TorchImageSpec,
 )
 from armory.export.base import Exporter
 from armory.export.drise.impl import (
@@ -26,8 +28,10 @@ from armory.model.object_detection import ObjectDetector
 class DRiseSaliencyObjectDetectionExporter(Exporter):
     """An exporter for D-RISE object detection saliency maps."""
 
-    dim = ImageDimensions.CHW
-    scale = Scale(dtype=DataType.FLOAT, max=1.0)
+    spec = ImageSpec(
+        dim=ImageDimensions.CHW,
+        scale=Scale(dtype=DataType.FLOAT, max=1.0),
+    )
 
     class ModelWrapper(torch.nn.Module):
         """
@@ -35,13 +39,12 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         D-RISE implementation.
         """
 
-        def __init__(self, model: ObjectDetector, num_classes: int, dim, scale):
+        def __init__(self, model: ObjectDetector, num_classes: int, spec):
             super().__init__()
             self.model = model
             self.num_classes = num_classes
-            self.dim = dim
-            self.scale = scale
-            self.bbox_accessor = BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
+            self.spec = spec
+            self.bbox_spec = TorchBoundingBoxSpec(format=BBoxFormat.XYXY)
 
         def forward(self, images_pt: torch.Tensor):
             """
@@ -51,14 +54,12 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
             batch = ObjectDetectionBatch(
                 inputs=Images(
                     images=images_pt,
-                    dim=self.dim,
-                    scale=self.scale,
+                    spec=self.spec,
                 ),
-                targets=BoundingBoxes([], format=BBoxFormat.XYXY),
-                metadata=Metadata(data=dict(), perturbations=dict()),
+                targets=BoundingBoxes([], BoundingBoxSpec(format=BBoxFormat.XYXY)),
             )
             self.model.predict(batch)
-            results = self.bbox_accessor.get(batch.predictions)
+            results = batch.predictions.get(self.bbox_spec)
 
             all_boxes = []
             all_cls_probs = []
@@ -118,7 +119,7 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
             num_masks: Number of masks to evaluate
             score_threshold: Minimum score for predicted objects to be included
                 for D-RISE saliency map generation
-            criterion: Criterion dictating when samples will be exported. If
+            criterion: Criterion to determine when samples will be exported. If
                 omitted, no samples will be exported.
         """
         super().__init__(criterion=criterion)
@@ -126,19 +127,23 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         self.batch_size = batch_size
         self.num_masks = num_masks
         self.score_threshold = score_threshold
-        self.wrapper = self.ModelWrapper(model, num_classes, self.dim, self.scale)
-        self.image_accessor = Images.as_torch(dim=self.dim, scale=self.scale)
-        self.bbox_accessor = BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
+        self.wrapper = self.ModelWrapper(model, num_classes, self.spec)
+        self.image_spec = TorchImageSpec(dim=self.spec.dim, scale=self.spec.scale)
+        self.bbox_spec = TorchBoundingBoxSpec(format=BBoxFormat.XYXY)
 
     def export_samples(
-        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+        self,
+        chain_name: str,
+        batch_idx: int,
+        batch: ObjectDetectionBatch,
+        samples: Iterable[int],
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
         self.model.eval()
 
-        images = self.image_accessor.get(batch.inputs)
-        batch_targets = self.bbox_accessor.get(batch.targets)
-        batch_preds = self.bbox_accessor.get(batch.predictions)
+        images = batch.inputs.get(self.image_spec)
+        batch_targets = batch.targets.get(self.bbox_spec)
+        batch_preds = batch.predictions.get(self.bbox_spec)
 
         for sample_idx in samples:
             image = images[sample_idx]

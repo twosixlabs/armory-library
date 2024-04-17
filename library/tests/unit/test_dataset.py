@@ -63,12 +63,12 @@ def test_ImageClassificationDataLoader():
     assert isinstance(batch, armory.data.ImageClassificationBatch)
 
     assert_array_equal(
-        batch.inputs.to_numpy(dtype=np.uint8),
+        batch.inputs.get(armory.data.NumpySpec(dtype=np.uint8)),
         np.array([[1, 2, 3], [5, 6, 7]], dtype=np.uint8),
         strict=True,
     )
     assert_array_equal(
-        batch.targets.to_numpy(dtype=np.uint8),
+        batch.targets.get(armory.data.NumpySpec(dtype=np.uint8)),
         np.array([[4], [8]], dtype=np.uint8),
         strict=True,
     )
@@ -100,12 +100,12 @@ def test_ObjectDetectionDataLoader():
     assert isinstance(batch, armory.data.ObjectDetectionBatch)
 
     assert_array_equal(
-        batch.inputs.to_numpy(dtype=np.uint8),
+        batch.inputs.get(armory.data.NumpySpec(dtype=np.uint8)),
         np.array([[1, 2, 3], [5, 7, 9]], dtype=np.uint8),
         strict=True,
     )
 
-    targets = batch.targets.to_numpy(np.uint8)
+    targets = batch.targets.get(armory.data.NumpySpec(dtype=np.uint8))
     assert len(targets) == 2
     assert_array_equal(
         targets[0]["boxes"],

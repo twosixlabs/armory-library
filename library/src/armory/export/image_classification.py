@@ -1,6 +1,13 @@
 from typing import Iterable, Optional
 
-from armory.data import Accessor, Batch, DataType, ImageDimensions, Images, Scale
+from armory.data import (
+    DataSpecification,
+    DataType,
+    ImageClassificationBatch,
+    ImageDimensions,
+    NumpyImageSpec,
+    Scale,
+)
 from armory.export.base import Exporter
 
 
@@ -9,44 +16,46 @@ class ImageClassificationExporter(Exporter):
 
     def __init__(
         self,
-        inputs_accessor: Optional[Images.Accessor] = None,
-        predictions_accessor: Optional[Accessor] = None,
-        targets_accessor: Optional[Accessor] = None,
+        inputs_spec: Optional[NumpyImageSpec] = None,
+        predictions_spec: Optional[DataSpecification] = None,
+        targets_spec: Optional[DataSpecification] = None,
         criterion: Optional[Exporter.Criterion] = None,
     ):
         """
         Initializes the exporter.
 
         Args:
-            inputs_accessor: Optional, data exporter used to obtain low-level
-                image data from the highly-structured inputs contained in
-                exported batches. By default, a NumPy images accessor is used.
-            predictions_accessor: Optional, data exporter used to obtain
-                low-level predictions data from the highly-structured
-                predictions contained in exported batches. By default, a generic
-                NumPy accessor is used.
-            targets_accessor: Optional, data exporter used to obtain low-level
-                ground truth targets data from the high-ly structured targets
-                contained in exported batches. By default, a generic NumPy
-                accessor is used.
-            criterion: Criterion dictating when samples will be exported. If
+            inputs_spec: Optional, data specification used to obtain raw
+                image data from the inputs contained in exported batches. By
+                default, a NumPy images specification is used.
+            predictions_spec: Optional, data specification used to obtain raw
+                predictions data from the exported batches. By default, a generic
+                NumPy specification is used.
+            targets_spec: Optional, data specification used to obtain raw ground
+                truth targets data from the exported batches. By default, a
+                generic NumPy specification is used.
+            criterion: Criterion to determine when samples will be exported. If
                 omitted, no samples will be exported.
         """
         super().__init__(
-            predictions_accessor=predictions_accessor,
-            targets_accessor=targets_accessor,
+            predictions_spec=predictions_spec,
+            targets_spec=targets_spec,
             criterion=criterion,
         )
-        self.inputs_accessor = inputs_accessor or Images.as_numpy(
+        self.inputs_spec = inputs_spec or NumpyImageSpec(
             dim=ImageDimensions.HWC, scale=Scale(dtype=DataType.FLOAT, max=1.0)
         )
 
     def export_samples(
-        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+        self,
+        chain_name: str,
+        batch_idx: int,
+        batch: ImageClassificationBatch,
+        samples: Iterable[int],
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
         self._export_metadata(chain_name, batch_idx, batch, samples)
-        images = self.inputs_accessor.get(batch.inputs)
+        images = batch.inputs.get(self.inputs_spec)
         for sample_idx in samples:
             filename = self.artifact_path(
                 chain_name, batch_idx, sample_idx, "input.png"

@@ -5,7 +5,7 @@ from typing import Callable, Iterable, Optional, Sequence, Set, Union
 
 import torch
 
-from armory.data import Accessor, Batch, DefaultTorchAccessor
+from armory.data import Batch, DataSpecification, TorchSpec
 from armory.export.base import Exporter
 
 
@@ -444,14 +444,14 @@ def when_metric_eq(
     Example::
 
         import torch
-        from armory.data import DefaultTorchAccessor
+        from armory.data import TorchSpec
         from armory.export import Exporter
         from armory.export.criteria import when_metric_eq
 
         # Exports samples that have max score of exactly 5
         def max_pred(batch):
             return torch.tensor([
-                torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
+                torch.max(p) for p in batch.predictions.get(TorchSpec())
             ])
         exporter = Exporter(criterion=when_metric_eq(max_pred, 5))
 
@@ -481,14 +481,14 @@ def when_metric_isclose(
     Example::
 
         import torch
-        from armory.data import DefaultTorchAccessor
+        from armory.data import TorchSpec
         from armory.export import Exporter
         from armory.export.criteria import when_metric_isclose
 
         # Exports samples that have max score of 5.0
         def max_pred(batch):
             return torch.tensor([
-                torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
+                torch.max(p) for p in batch.predictions.get(TorchSpec())
             ])
         exporter = Exporter(criterion=when_metric_isclose(max_pred, 5))
 
@@ -527,14 +527,14 @@ def when_metric_lt(
     Example::
 
         import torch
-        from armory.data import DefaultTorchAccessor
+        from armory.data import TorchSpec
         from armory.export import Exporter
         from armory.export.criteria import when_metric_lt
 
         # Exports samples that have max score less than 5
         def max_pred(batch):
             return torch.tensor([
-                torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
+                torch.max(p) for p in batch.predictions.get(TorchSpec())
             ])
         exporter = Exporter(criterion=when_metric_lt(max_pred, 5))
 
@@ -559,14 +559,14 @@ def when_metric_gt(metric, threshold) -> Exporter.Criterion:
     Example::
 
         import torch
-        from armory.data import DefaultTorchAccessor
+        from armory.data import TorchSpec
         from armory.export import Exporter
         from armory.export.criteria import when_metric_gt
 
         # Exports samples that have max score greater than 5
         def max_pred(batch):
             return torch.tensor([
-                torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
+                torch.max(p) for p in batch.predictions.get(TorchSpec())
             ])
         exporter = Exporter(criterion=when_metric_gt(max_pred, 5))
 
@@ -594,14 +594,14 @@ def when_metric_in(
     Example::
 
         import torch
-        from armory.data import DefaultTorchAccessor
+        from armory.data import TorchSpec
         from armory.export import Exporter
         from armory.export.criteria import when_metric_in
 
         # Exports samples that have max score of 5 or 8
         def max_pred(batch):
             return torch.tensor([
-                torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
+                torch.max(p) for p in batch.predictions.get(TorchSpec())
             ])
         exporter = Exporter(criterion=when_metric_in(max_pred, [5, 8]))
 
@@ -626,7 +626,7 @@ def when_metric_in(
 
 
 def batch_targets(
-    accessor: Optional[Accessor] = None,
+    spec: Optional[DataSpecification] = None,
 ) -> Callable[[Batch], torch.Tensor]:
     """
     Creates a batch metric callable that returns the targets from the batch.
@@ -640,15 +640,15 @@ def batch_targets(
         exporter = Exporter(criterion=when_metric_lt(batch_targets(), 10))
 
     Args:
-        accessor: Accessor for targets in a batch
+        spec: Data specification for obtaining targets in a batch
 
     Returns:
         Batch metric function
     """
-    if accessor is None:
-        accessor = DefaultTorchAccessor()
+    if spec is None:
+        spec = TorchSpec()
 
     def _metric(batch):
-        return accessor.get(batch.targets)
+        return batch.targets.get(spec)
 
     return _metric

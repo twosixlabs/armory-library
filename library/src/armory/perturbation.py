@@ -1,9 +1,9 @@
 """Perturbation adaption APIs"""
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, Dict, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Dict, Generic, Optional, TypeVar, cast
 
-from armory.data import Accessor, Batch, DefaultNumpyAccessor
+from armory.data import Batch, DataSpecification, NumpySpec
 from armory.evaluation import PerturbationProtocol
 
 if TYPE_CHECKING:
@@ -21,11 +21,12 @@ T = TypeVar("T")
 class CallablePerturbation(PerturbationProtocol, Generic[T]):
     name: str
     perturbation: Callable[[T], T]
-    inputs_accessor: Accessor[T]
+    inputs_spec: DataSpecification
 
     def apply(self, batch: "Batch"):
-        perturbed = self.perturbation(self.inputs_accessor.get(batch.inputs))
-        self.inputs_accessor.set(batch.inputs, perturbed)
+        inputs = batch.inputs.get(self.inputs_spec)
+        perturbed = self.perturbation(cast(T, inputs))
+        batch.inputs.set(perturbed, self.inputs_spec)
 
 
 @dataclass
@@ -49,16 +50,14 @@ class ArtPreprocessorDefence(PerturbationProtocol):
     """Descriptive name of the defence"""
     defence: "Preprocessor"
     """ART preprocessor defence"""
-    inputs_accessor: Accessor["np.ndarray"] = field(
-        default_factory=DefaultNumpyAccessor
-    )
-    """Accessor to use for obtaining low-level model inputs from batches"""
+    inputs_spec: DataSpecification = field(default_factory=NumpySpec)
+    """Data specification to use for obtaining raw model inputs from batches"""
 
     def apply(self, batch: Batch):
         perturbed_x, _ = self.defence(
-            x=self.inputs_accessor.get(batch.inputs),
+            x=cast("np.ndarray", batch.inputs.get(self.inputs_spec)),
         )
-        self.inputs_accessor.set(batch.inputs, perturbed_x)
+        batch.inputs.set(perturbed_x, self.inputs_spec)
 
 
 @dataclass
@@ -82,12 +81,8 @@ class ArtEvasionAttack(PerturbationProtocol):
     name: str
     """Descriptive name of the attack"""
     attack: "EvasionAttack"
-    inputs_accessor: Accessor["np.ndarray"] = field(
-        default_factory=DefaultNumpyAccessor
-    )
-    targets_accessor: Accessor["np.ndarray"] = field(
-        default_factory=DefaultNumpyAccessor
-    )
+    inputs_spec: DataSpecification = field(default_factory=NumpySpec)
+    targets_spec: DataSpecification = field(default_factory=NumpySpec)
     """Evasion attack instance"""
     generate_kwargs: Dict[str, Any] = field(default_factory=dict)
     """
@@ -136,14 +131,12 @@ class ArtEvasionAttack(PerturbationProtocol):
         if self.targeted:
             if TYPE_CHECKING:
                 assert self.label_targeter
-            return self.label_targeter.generate(
-                self.targets_accessor.get(batch.targets)
-            )
+            return self.label_targeter.generate(batch.targets.get(self.targets_spec))
 
         # If untargeted, use either the natural or benign labels
         # (when set to None, the ART attack handles the benign label)
         return (
-            self.targets_accessor.get(batch.targets)
+            cast("np.ndarray", batch.targets.get(self.targets_spec))
             if self.use_label_for_untargeted
             else None
         )
@@ -151,11 +144,11 @@ class ArtEvasionAttack(PerturbationProtocol):
     def apply(self, batch: Batch):
         y_target = self._generate_y_target(batch)
         perturbed = self.attack.generate(
-            x=self.inputs_accessor.get(batch.inputs),
+            x=cast("np.ndarray", batch.inputs.get(self.inputs_spec)),
             y=y_target,
             **self.generate_kwargs,
         )
-        self.inputs_accessor.set(batch.inputs, perturbed)
+        batch.inputs.set(perturbed, self.inputs_spec)
         batch.metadata["perturbations"][self.name] = dict(y_target=y_target)
 
 
@@ -196,14 +189,14 @@ class ArtPatchAttack(ArtEvasionAttack):
 
     def generate(self, batch: Batch):
         self._generate(
-            self.inputs_accessor.get(batch.inputs),
+            cast("np.ndarray", batch.inputs.get(self.inputs_spec)),
             batch,
         )
 
     def apply(self, batch: Batch):
-        x = self.inputs_accessor.get(batch.inputs)
+        x = cast("np.ndarray", batch.inputs.get(self.inputs_spec))
         if self.generate_every_batch:
             self._generate(x, batch)
         perturbed = self.attack.apply_patch(x=x, **self.apply_patch_kwargs)
-        self.inputs_accessor.set(batch.inputs, perturbed)
+        batch.inputs.set(perturbed, self.inputs_spec)
         batch.metadata["perturbations"][self.name] = dict(patch=self.patch)
