@@ -84,7 +84,7 @@ class YoloV4ObjectDetector(ObjectDetector):
         """
         self.eval()
         inputs = self.inputs_accessor.get(batch.inputs)
-        _, h, w = inputs.shape
+        _, _, h, w = inputs.shape  # (N, C, H, W)
         outputs = self(inputs)
         outputs = _post_processing(outputs)
         if all(not sublist for sublist in outputs):
