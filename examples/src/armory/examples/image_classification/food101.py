@@ -162,11 +162,7 @@ def load_torchvision_dataset(
 
     labels = tv_dataset.classes
 
-    armory_dataset = armory.dataset.TupleDataset(
-        tv_dataset,
-        x_key="image",
-        y_key="label",
-    )
+    armory_dataset = armory.dataset.TupleDataset(tv_dataset, ("image", "label"))
 
     dataloader = armory.dataset.ImageClassificationDataLoader(
         armory_dataset,
