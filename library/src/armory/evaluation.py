@@ -10,6 +10,7 @@ from typing import (
     Mapping,
     Optional,
     Protocol,
+    Sequence,
     runtime_checkable,
 )
 
@@ -31,6 +32,12 @@ class Dataset:
 
     dataloader: "DataLoader"
     """Data loader for evaluation data"""
+
+
+@dataclass
+class ImageClassificationDataset(Dataset):
+    labels: Sequence[str]
+    """List of class label names"""
 
 
 @runtime_checkable

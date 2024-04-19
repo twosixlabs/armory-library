@@ -21,6 +21,7 @@ import armory.engine
 import armory.evaluation
 import armory.export.criteria
 import armory.export.image_classification
+import armory.helpers.huggingface
 import armory.metric
 import armory.metrics.compute
 import armory.metrics.perturbation
@@ -74,69 +75,19 @@ def parse_cli_args():
 
 def load_model():
     """Load model from HuggingFace"""
-    hf_model = armory.track.track_params(
-        transformers.AutoModelForImageClassification.from_pretrained
-    )(pretrained_model_name_or_path="nateraw/food")
-
-    armory_model = armory.model.image_classification.ImageClassifier(
-        name="ViT-finetuned-food101",
-        model=hf_model,
-        accessor=armory.data.Images.as_torch(scale=normalized_scale),
-    )
-
-    art_classifier = armory.track.track_init_params(
-        art.estimators.classification.PyTorchClassifier
-    )(
-        armory_model,
-        loss=torch.nn.CrossEntropyLoss(),
-        optimizer=torch.optim.Adam(armory_model.parameters(), lr=0.003),
-        input_shape=(3, 224, 224),
-        channels_first=True,
-        nb_classes=101,
-        clip_values=(-1.0, 1.0),
-    )
-
-    return armory_model, art_classifier
-
-
-def transform(processor, sample):
-    """Use the HF image processor and convert from BW To RGB"""
-    sample["image"] = processor([img.convert("RGB") for img in sample["image"]])[
-        "pixel_values"
-    ]
-    return sample
+    return armory.helpers.huggingface.load_image_classification_model("nateraw/food")
 
 
 def load_huggingface_dataset(batch_size: int, shuffle: bool):
     """Load food-101 dataset from HuggingFace"""
-    import functools
-
-    import datasets
-
-    hf_dataset = datasets.load_dataset("food101", split="validation")
-    assert isinstance(hf_dataset, datasets.Dataset)
-
-    labels = hf_dataset.features["label"].names
-
     hf_processor = transformers.AutoImageProcessor.from_pretrained("nateraw/food")
-    hf_dataset.set_transform(functools.partial(transform, hf_processor))
-
-    dataloader = armory.dataset.ImageClassificationDataLoader(
-        hf_dataset,
-        dim=armory.data.ImageDimensions.CHW,
-        scale=normalized_scale,
-        image_key="image",
-        label_key="label",
+    return armory.helpers.huggingface.load_image_classification_dataset(
+        "food101",
+        split="validation",
+        processor=hf_processor,
         batch_size=batch_size,
         shuffle=shuffle,
     )
-
-    evaluation_dataset = armory.evaluation.Dataset(
-        name="food-101",
-        dataloader=dataloader,
-    )
-
-    return evaluation_dataset, labels
 
 
 def load_torchvision_dataset(
@@ -174,12 +125,13 @@ def load_torchvision_dataset(
         shuffle=shuffle,
     )
 
-    evaluation_dataset = armory.evaluation.Dataset(
+    evaluation_dataset = armory.evaluation.ImageClassificationDataset(
         name="food-101",
         dataloader=dataloader,
+        labels=labels,
     )
 
-    return evaluation_dataset, labels
+    return evaluation_dataset
 
 
 def create_pgd_attack(classifier: art.estimators.classification.PyTorchClassifier):
@@ -296,7 +248,7 @@ def main(
 
     sysconfig = armory.evaluation.SysConfig()
     model, art_classifier = load_model()
-    dataset, _ = (
+    dataset = (
         load_huggingface_dataset(batch_size, shuffle)
         if dataset_src == "huggingface"
         else load_torchvision_dataset(batch_size, shuffle, sysconfig)
