@@ -33,7 +33,7 @@ from armory.logs import log
 # Params are recorded globally in a stack of parameter stores, where the
 # first stack entry is the default, implicit parameter store. Creation of
 # subsequent parameter stores only occurs by using the `tracking_context`
-# context manager. Params are ways recorded in the top-most store in the
+# context manager. Params are always recorded in the top-most store in the
 # stack at the time of recording. This is modeled after the way MLFlow handles
 # nested calls to `start_run`.
 _params_stack: List[Dict[str, Any]] = []
@@ -385,6 +385,93 @@ def track_system_metrics(run_id: str):
                 monitor.finish()
             except Exception as err:
                 log.warning(f"Exception shutting down system metrics monitor, {err}")
+
+
+# Trackables are recorded globally in a stack of lists, where the first stack
+# entry is the default, global list. Creation of subsequent lists only occurs by
+# using the `trackable_context` context manager. Trackables are always
+# registered in the top-most list in the stack at the time of creation.
+_trackables: List[List["Trackable"]] = []
+
+
+def get_current_trackables() -> List["Trackable"]:
+    """Get the trackables from the current context"""
+    if len(_trackables) == 0:
+        _trackables.append([])
+    return _trackables[-1]
+
+
+class Trackable:
+    """
+    A mixin to make a class a trackable, meaning that it will automatically
+    receive the parameters recorded during a tracking context in which the
+    trackable instance is created.
+
+    If the subclass has an `__init__` function, it must call
+    `super().__init__()` in order for the mixin to be activated.
+
+    This has to be first mixin to work correctly with multiple inheritance.
+
+    Example::
+
+        from armory.track import Trackable, trackable_context, track_param
+
+        class MyClass(Trackable):
+            pass
+
+        with trackable_context():
+            track_param("key", "value")
+            my_obj = MyClass()
+
+        assert my_obj.tracked_params == {"key": "value"}
+    """
+
+    def __init__(self):
+        super().__init__()
+        get_current_trackables().append(self)
+        self.tracked_params: Dict[str, Any] = {}
+
+
+@contextmanager
+def trackable_context(nested: bool = False):
+    """
+    Create a new trackable context. Parameters recorded while the context is
+    active will be automatically associated with any Trackable objects creating
+    while the context is active. When the context begins, a new tracking context
+    is created to isolate parameters from other contexts. Upon completion of the
+    context, the tracked parameters are associated with the trackables and all
+    parameters will be cleared.
+
+    Example::
+
+        from armory.track import Trackable, trackable_context, track_param
+
+        class MyClass(Trackable):
+            pass
+
+        with trackable_context():
+            track_param("key", "value")
+            my_obj = MyClass()
+            assert get_current_params() == {"key": "value"}
+
+        assert get_current_params() == {}
+        assert my_obj.tracked_params == {"key": "value"}
+
+    Args:
+        nested: Copy parameters from the current context into the new
+            tracking context
+
+    Returns:
+        Context manager
+    """
+    with tracking_context(nested):
+        _trackables.append([])
+        try:
+            yield
+        finally:
+            params = get_current_params()
+            for trackable in _trackables.pop():
+                trackable.tracked_params = params
 
 
 def server():
