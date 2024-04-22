@@ -216,6 +216,37 @@ def test_track_init_params_when_multiple_calls():
 
 
 ###
+# track_call
+###
+
+
+def test_track_call_with_function():
+    def func(a, b):
+        assert a == "hello world"
+        assert b == 42
+
+    track.track_call(func, a="hello world", b=42)
+
+    params = track.get_current_params()
+    params.pop("func._func")
+    assert params == {"func.a": "hello world", "func.b": 42}
+
+
+def test_track_call_with_class():
+    class TestClass:
+        def __init__(self, a, b):
+            assert a == "hello world"
+            assert b == 42
+
+    obj = track.track_call(TestClass, a="hello world", b=42)
+    assert isinstance(obj, TestClass)
+
+    params = track.get_current_params()
+    params.pop("TestClass._func")
+    assert params == {"TestClass.a": "hello world", "TestClass.b": 42}
+
+
+###
 # trackable_context/Trackable
 ###
 

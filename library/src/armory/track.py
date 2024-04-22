@@ -262,6 +262,46 @@ def track_init_params(
         return _decorator(_cls)
 
 
+def track_call(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+    """
+    Invoke the given function or class's initializer with the given arguments,
+    recording keyword arguments as parameters in the current tracking context to
+    be logged with MLFlow.
+
+    The effect is functionally equivalent to using the `track_params` or
+    `track_init_params` decorators in an inline fashion with no prefix or
+    ignored arguments. In order to use a custom prefix or to ignore arguments,
+    the `track_params` or `track_init_params` functions must be used directly.
+
+    Example::
+
+        from armory.track import track_call
+
+        class MyDataset:
+            def __init__(self, batch_size: int):
+                pass
+
+
+        def load_model(name: str):
+            pass
+
+        ds = track_call(MyDataset, batch_size=32)
+        model = track_call(load_model, name="model")
+
+    Args:
+        func: Function or class to be invoked
+        *args: Positional arguments to be passed to the function or class
+        **kwargs: Keyword arguments to be passed to the function or class, which
+            will be recorded as parameters
+
+    Return:
+        Result of the function or class invocation
+    """
+    if isinstance(func, type):
+        return track_init_params(func)(*args, **kwargs)
+    return track_params(func)(*args, **kwargs)
+
+
 def init_tracking_uri(armory_home: Path) -> str:
     """
     Initialize the MLFlow tracking URI.
