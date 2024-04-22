@@ -7,6 +7,10 @@ import armory.evaluation
 pytestmark = pytest.mark.unit
 
 
+def drop_func_params(params):
+    return {k: v for k, v in params.items() if not k.endswith("._func")}
+
+
 @pytest.fixture
 def evaluation():
     return armory.evaluation.NewEvaluation(
@@ -16,7 +20,9 @@ def evaluation():
 
 @pytest.fixture
 def dataset():
-    return MagicMock(spec=armory.evaluation.Dataset)
+    ds = MagicMock(spec=armory.evaluation.Dataset)
+    ds.tracked_params = {}
+    return ds
 
 
 @pytest.fixture
@@ -162,3 +168,86 @@ def test_chain_is_invalid_with_no_model(evaluation, dataset):
     with pytest.raises(ValueError):
         with evaluation.add_chain("test") as chain:
             chain.use_dataset(dataset)
+
+
+def test_chain_has_tracked_params_from_self(evaluation, dataset, model):
+    with evaluation.add_chain("test") as chain:
+        chain.track_call(lambda a, b: None, a=1, b=2)
+
+        chain.use_dataset(dataset)
+        chain.use_model(model)
+
+    params = drop_func_params(evaluation.chains["test"].get_tracked_params())
+    assert params == {"<lambda>.a": 1, "<lambda>.b": 2}
+
+
+class MockTrackable(armory.evaluation.Trackable):
+    pass
+
+
+def test_chain_has_tracked_params_from_dataset(evaluation, model):
+    with evaluation.autotrack() as track:
+        track(lambda a, b: None, a=1, b=2)
+        dataset = MockTrackable()
+
+    with evaluation.add_chain("test") as chain:
+        chain.use_dataset(dataset)
+        chain.use_model(model)
+
+    params = drop_func_params(evaluation.chains["test"].get_tracked_params())
+    assert params == {"<lambda>.a": 1, "<lambda>.b": 2}
+
+
+def test_chain_has_tracked_params_from_perturbation(evaluation, dataset, model):
+    with evaluation.autotrack() as track:
+        track(lambda a, b: None, a=1, b=2)
+        perturbation = MockTrackable()
+
+    with evaluation.add_chain("test") as chain:
+        chain.use_dataset(dataset)
+        chain.use_model(model)
+        chain.use_perturbations([perturbation])
+
+    params = drop_func_params(evaluation.chains["test"].get_tracked_params())
+    assert params == {"<lambda>.a": 1, "<lambda>.b": 2}
+
+
+def test_chain_has_tracked_params_from_model(evaluation, dataset):
+    with evaluation.autotrack() as track:
+        track(lambda a, b: None, a=1, b=2)
+        model = MockTrackable()
+
+    with evaluation.add_chain("test") as chain:
+        chain.use_dataset(dataset)
+        chain.use_model(model)
+
+    params = drop_func_params(evaluation.chains["test"].get_tracked_params())
+    assert params == {"<lambda>.a": 1, "<lambda>.b": 2}
+
+
+def test_chain_has_tracked_params_from_metric(evaluation, dataset, model):
+    with evaluation.autotrack() as track:
+        track(lambda a, b: None, a=1, b=2)
+        metric = MockTrackable()
+
+    with evaluation.add_chain("test") as chain:
+        chain.use_dataset(dataset)
+        chain.use_model(model)
+        chain.use_metrics({"test": metric})
+
+    params = drop_func_params(evaluation.chains["test"].get_tracked_params())
+    assert params == {"<lambda>.a": 1, "<lambda>.b": 2}
+
+
+def test_chain_has_tracked_params_from_exporter(evaluation, dataset, model):
+    with evaluation.autotrack() as track:
+        track(lambda a, b: None, a=1, b=2)
+        exporter = MockTrackable()
+
+    with evaluation.add_chain("test") as chain:
+        chain.use_dataset(dataset)
+        chain.use_model(model)
+        chain.use_exporters([exporter])
+
+    params = drop_func_params(evaluation.chains["test"].get_tracked_params())
+    assert params == {"<lambda>.a": 1, "<lambda>.b": 2}
