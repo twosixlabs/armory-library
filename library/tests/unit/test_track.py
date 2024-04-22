@@ -216,23 +216,6 @@ def test_track_init_params_when_multiple_calls():
 
 
 ###
-# track_evaluation
-###
-
-
-def test_track_evaluation_logs_params_with_mlflow():
-    track.track_param("strparam", "str")
-    track.track_param("intparam", 42)
-    with track.track_evaluation("test"):
-        pass
-
-    run = mlflow.last_active_run()
-    assert run
-    assert run.data.params["strparam"] == "str"
-    assert run.data.params["intparam"] == "42"
-
-
-###
 # trackable_context/Trackable
 ###
 

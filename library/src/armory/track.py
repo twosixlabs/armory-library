@@ -282,48 +282,6 @@ def init_tracking_uri(armory_home: Path) -> str:
     return mlflow.get_tracking_uri()
 
 
-def track_evaluation(
-    name: str, description: Optional[str] = None, uri: Optional[Union[str, Path]] = None
-):
-    """
-    Create a context manager for tracking an evaluation run with MLFlow.
-    Parameters that have been recorded in the current tracking context will be
-    logged with MLFlow.
-
-    Example::
-
-        from charmory.track import track_evaluation
-
-        with track_evaluation("my_experiment"):
-            # Perform evaluation run
-
-    Args:
-        name: Experiment name (should be the same between runs)
-        description: Optional description of the run
-        uri: Optional MLFlow server URI, defaults to ~/.armory/mlruns
-    """
-
-    if not os.environ.get("MLFLOW_TRACKING_URI"):
-        if uri is None:
-            uri = Path(Path.home(), ".armory/mlruns")
-        mlflow.set_tracking_uri(uri)
-
-    experiment = mlflow.get_experiment_by_name(name)
-    if experiment:
-        experiment_id = experiment.experiment_id
-    else:
-        experiment_id = mlflow.create_experiment(name)
-
-    run = mlflow.start_run(
-        experiment_id=experiment_id,
-        description=description,
-    )
-
-    mlflow.log_params(get_current_params())
-
-    return run
-
-
 def track_metrics(metrics: Mapping[str, Union[float, Sequence[float], torch.Tensor]]):
     """
     Log the given metrics with MLFlow.
