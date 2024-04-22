@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class Dataset:
+class Dataset(Trackable):
     """Configuration for the dataset to be used for model evaluation"""
 
     name: str

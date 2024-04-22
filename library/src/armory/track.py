@@ -428,6 +428,12 @@ class Trackable:
 
     def __init__(self):
         super().__init__()
+        # In case the subclass is a dataclass, it will not invoke our
+        # `__init__`, but it will invoke a `__post_init__`, so we do the
+        # initialization there
+        self.__post_init__()
+
+    def __post_init__(self):
         get_current_trackables().append(self)
         self.tracked_params: Dict[str, Any] = {}
 

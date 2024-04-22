@@ -3,9 +3,10 @@ from typing import Callable, Iterable, Mapping, Optional, Union
 
 from armory.data import Accessor, Batch, DefaultNumpyAccessor
 from armory.export.sink import Sink
+from armory.track import Trackable
 
 
-class Exporter(ABC):
+class Exporter(Trackable, ABC):
     """Base class for an Armory sample exporter."""
 
     Criterion = Callable[[str, int, Batch], Union[bool, Iterable[int]]]
@@ -31,6 +32,7 @@ class Exporter(ABC):
             criterion: Criterion dictating when samples will be exported. If
                 omitted, no samples will be exported.
         """
+        super().__init__()
         self.predictions_accessor = predictions_accessor or DefaultNumpyAccessor()
         self.targets_accessor = targets_accessor or DefaultNumpyAccessor()
         self.sink: Optional[Sink] = None

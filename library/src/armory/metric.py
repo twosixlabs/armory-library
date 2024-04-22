@@ -4,12 +4,13 @@ from typing import TYPE_CHECKING, Optional
 import torch.nn as nn
 
 from armory.data import Accessor, Batch, DefaultTorchAccessor, TorchAccessor
+from armory.track import Trackable
 
 if TYPE_CHECKING:
     from torchmetrics import Metric as TorchMetric
 
 
-class Metric(nn.Module, ABC):
+class Metric(Trackable, nn.Module, ABC):
     """
     Base class for an Armory-compatible metric.
     """
