@@ -50,6 +50,8 @@ class YolosTransformer(ObjectDetector):
         inputs_accessor: Optional[Images.Accessor] = None,
         predictions_accessor: Optional[Accessor] = None,
         target_size: Tuple[int, int] = (512, 512),
+        iou_threshold: Optional[float] = None,
+        score_threshold: Optional[float] = None,
     ):
         """
         Initializes the model wrapper.
@@ -91,6 +93,8 @@ class YolosTransformer(ObjectDetector):
             predictions_accessor=(
                 predictions_accessor or BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
             ),
+            iou_threshold=iou_threshold,
+            score_threshold=score_threshold,
         )
         self.image_processor = image_processor
         self.target_size = target_size

@@ -1,9 +1,11 @@
 from typing import Optional
 
+import torch.nn as nn
 import torchvision.ops
 
 from armory.data import Accessor, Batch, Images, TorchAccessor, to_torch
 from armory.evaluation import ModelProtocol
+from armory.logs import log
 from armory.model.base import ArmoryModel, ModelInputAdapter, ModelOutputAdapter
 
 
@@ -36,7 +38,7 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
     def __init__(
         self,
         name: str,
-        model,
+        model: nn.Module,
         inputs_accessor: Images.Accessor,
         predictions_accessor: Accessor,
         preadapter: Optional[ModelInputAdapter] = None,
@@ -81,28 +83,28 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
         for pred in preds:
             # Filter based on score shreshold, if configured
             if self.score_threshold is not None:
-                print(f"started with {len(pred['boxes'])} boxes before score threshold")
+                log.info(
+                    f"started with {len(pred['boxes'])} boxes before score threshold"
+                )
                 keep = pred["scores"] > self.score_threshold
                 pred["boxes"] = pred["boxes"][keep]
                 pred["scores"] = pred["scores"][keep]
                 pred["labels"] = pred["labels"][keep]
-                print(f"keeping {len(pred['boxes'])} boxes")
+                log.info(f"keeping {len(pred['boxes'])} boxes")
             # Perform non-maximum suppression, if configured
             if self.iou_threshold is not None:
-                print(f"started with {len(pred['boxes'])} boxes before iou threshold")
+                log.info(
+                    f"started with {len(pred['boxes'])} boxes before iou threshold"
+                )
                 keep = torchvision.ops.nms(
                     boxes=to_torch(pred["boxes"]),
                     scores=to_torch(pred["scores"]),
                     iou_threshold=self.iou_threshold,
                 )
-                single = len(keep) == 1
-                boxes = pred["boxes"][keep]
-                scores = pred["scores"][keep]
-                labels = pred["labels"][keep]
-                pred["boxes"] = [boxes] if single else boxes
-                pred["scores"] = [scores] if single else scores
-                pred["labels"] = [labels] if single else labels
-                print(f"keeping {len(pred['boxes'])} boxes")
+                pred["boxes"] = pred["boxes"][keep]
+                pred["scores"] = pred["scores"][keep]
+                pred["labels"] = pred["labels"][keep]
+                log.info(f"keeping {len(pred['boxes'])} boxes")
         return preds
 
     def predict(self, batch: Batch):
