@@ -112,10 +112,10 @@ class Chain(Trackable):
         super().__init__()
         self.name = name
         self.dataset = dataset
-        self.perturbations = list(perturbations) if perturbations is not None else None
+        self.perturbations = list(perturbations) if perturbations is not None else []
         self.model = model
-        self.metrics = dict(metrics) if metrics is not None else None
-        self.exporters = list(exporters) if exporters is not None else None
+        self.metrics = dict(metrics) if metrics is not None else {}
+        self.exporters = list(exporters) if exporters is not None else []
         self.track_call = track_call
 
     def use_dataset(self, dataset: Dataset) -> None:

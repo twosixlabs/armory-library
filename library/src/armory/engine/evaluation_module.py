@@ -2,46 +2,46 @@
 Armory lightning module to perform evaluations
 """
 
-from typing import Any, Iterable, Mapping
+from typing import Any, Mapping
 
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
 import torch
-import tqdm
 
 from armory.data import Batch
-from armory.evaluation import Evaluation, PerturbationProtocol
+from armory.evaluation import Chain
 from armory.export.sink import MlflowSink, Sink
+from armory.metrics.compute import Profiler
 
 
 class EvaluationModule(pl.LightningModule):
-    """Armory lightning module to perform evaluations"""
+    """
+    Armory lightning module to perform an evaluation on a single evaluation chain
+    """
 
     def __init__(
         self,
-        evaluation: Evaluation,
+        chain: Chain,
+        profiler: Profiler,
     ):
         """
-        Initializes the task.
+        Initializes the lightning module.
 
         Args:
-            evaluation: Configuration for the evaluation
+            chain: Evaluation chain
         """
         super().__init__()
-        self.evaluation = evaluation
+        self.chain = chain
+        self.profiler = profiler
         # store model as an attribute so it gets moved to device automatically
-        self.model = evaluation.model
+        assert chain.model is not None
+        self.model = chain.model
 
-        # Make copies of user-configured metrics for each perturbation chain
+        # Make copies of user-configured metrics for the chain
         self.metrics = self.MetricsDict(
             {
-                chain_name: self.MetricsDict(
-                    {
-                        metric_name: metric.clone()
-                        for metric_name, metric in self.evaluation.metrics.items()
-                    }
-                )
-                for chain_name in self.evaluation.perturbations.keys()
+                metric_name: metric.clone()
+                for metric_name, metric in chain.metrics.items()
             }
         )
 
@@ -65,27 +65,25 @@ class EvaluationModule(pl.LightningModule):
     # Task evaluation methods
     ###
 
-    def apply_perturbations(
-        self, chain_name: str, batch: "Batch", chain: Iterable["PerturbationProtocol"]
-    ):
+    def apply_perturbations(self, batch: "Batch"):
         """
-        Applies the given perturbation chain to the batch to produce the perturbed data
+        Applies the chain's perturbations to the batch to produce the perturbed data
         to be given to the model
         """
-        with self.evaluation.profiler.measure(f"{chain_name}/perturbation"):
-            for perturbation in chain:
-                with self.evaluation.profiler.measure(
-                    f"{chain_name}/perturbation/{perturbation.name}"
+        with self.profiler.measure(f"{self.chain.name}/perturbation"):
+            for perturbation in self.chain.perturbations:
+                with self.profiler.measure(
+                    f"{self.chain.name}/perturbation/{perturbation.name}"
                 ):
                     perturbation.apply(batch)
 
-    def evaluate(self, chain_name: str, batch: "Batch"):
+    def evaluate(self, batch: "Batch"):
         """Perform evaluation on batch"""
-        with self.evaluation.profiler.measure(f"{chain_name}/predict"):
-            self.evaluation.model.predict(batch)
+        with self.profiler.measure(f"{self.chain.name}/predict"):
+            self.model.predict(batch)
 
-    def update_metrics(self, chain_name: str, batch: "Batch"):
-        self.metrics[chain_name].update_metrics(batch)
+    def update_metrics(self, batch: "Batch"):
+        self.metrics.update_metrics(batch)
 
     def log_metric(self, name: str, metric: Any):
         if isinstance(metric, dict):
@@ -121,7 +119,7 @@ class EvaluationModule(pl.LightningModule):
             if isinstance(logger, MLFlowLogger)
             else Sink()
         )
-        for exporter in self.evaluation.exporters:
+        for exporter in self.chain.exporters:
             exporter.use_sink(sink)
 
     def on_test_epoch_start(self) -> None:
@@ -133,29 +131,26 @@ class EvaluationModule(pl.LightningModule):
         """
         Performs evaluations of the model for each configured perturbation chain
         """
-        pbar = tqdm.tqdm(self.evaluation.perturbations.items(), position=1, leave=False)
-        for chain_name, chain in pbar:
-            pbar.set_description(f"Evaluating {chain_name}")
+        # pbar = tqdm.tqdm(self.chain.perturbations.items(), position=1, leave=False)
+        # for chain_name, chain in pbar:
+        #     pbar.set_description(f"Evaluating {chain_name}")
 
-            chain_batch = batch.clone()
+        try:
+            with torch.enable_grad():
+                self.apply_perturbations(batch)
+            self.evaluate(batch)
+            self.update_metrics(batch)
 
-            try:
-                with torch.enable_grad():
-                    self.apply_perturbations(chain_name, chain_batch, chain)
-                self.evaluate(chain_name, chain_batch)
-                self.update_metrics(chain_name, chain_batch)
-
-                for exporter in self.evaluation.exporters:
-                    exporter.export(chain_name, batch_idx, chain_batch)
-            except BaseException as err:
-                raise RuntimeError(
-                    f"Error performing evaluation of batch #{batch_idx} using chain '{chain_name}': {batch}"
-                ) from err
+            for exporter in self.chain.exporters:
+                exporter.export(self.chain.name, batch_idx, batch)
+        except BaseException as err:
+            raise RuntimeError(
+                f"Error performing evaluation of batch #{batch_idx} in chain '{self.chain.name}': {batch}"
+            ) from err
 
     def on_test_epoch_end(self) -> None:
         """Logs all metric results"""
-        for chain_name, chain in self.metrics.items():
-            for metric_name, metric in chain.items():
-                self.log_metric(f"{chain_name}/{metric_name}", metric.compute())
+        for metric_name, metric in self.metrics.items():
+            self.log_metric(f"{metric_name}", metric.compute())
 
         return super().on_test_epoch_end()

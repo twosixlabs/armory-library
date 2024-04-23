@@ -3,13 +3,13 @@
 from contextlib import nullcontext
 from typing import Any, Dict, Mapping, Optional, TypedDict
 
-# import lightning.pytorch as pl
+import lightning.pytorch as pl
 import lightning.pytorch.loggers as pl_loggers
 from lightning.pytorch.utilities import rank_zero_only
 import mlflow
 from torch import Tensor
 
-# from armory.engine.evaluation_module import EvaluationModule
+from armory.engine.evaluation_module import EvaluationModule
 from armory.evaluation import Chain, Evaluation, SysConfig
 from armory.metrics.compute import NullProfiler, Profiler
 from armory.track import get_current_params, init_tracking_uri, track_system_metrics
@@ -115,24 +115,24 @@ class EvaluationEngine:
     def _evaluate_chain(
         self, chain_run_id: Optional[str], chain_name: str, chain: Chain
     ) -> EvaluationResults:
+        assert chain.dataset
+
         logger = pl_loggers.MLFlowLogger(
             run_id=chain_run_id,
             tracking_uri=init_tracking_uri(self.sysconfig.armory_home),
         )
         self._log_params(logger, chain.get_tracked_params())
 
-        # with self._track_system_metrics(logger.run_id):
-        #     module = EvaluationModule(chain)
-        #     trainer = pl.Trainer(
-        #         inference_mode=False,
-        #         logger=logger,
-        #         **kwargs,
-        #     )
-        #     trainer.test(module, dataloaders=chain.dataset.dataloader)
+        with self._track_system_metrics(logger.run_id):
+            module = EvaluationModule(chain, self.profiler)
+            trainer = pl.Trainer(
+                inference_mode=False,
+                logger=logger,
+                **self.trainer_kwargs,
+            )
+            trainer.test(module, dataloaders=chain.dataset.dataloader)
 
         return EvaluationResults(
-            compute={},
-            metrics={},
-            # compute=self.evaluation.profiler.results(),
-            # metrics=trainer.callback_metrics,
+            compute=self.profiler.results(),
+            metrics=trainer.callback_metrics,
         )
