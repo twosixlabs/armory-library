@@ -13,9 +13,7 @@ def drop_func_params(params):
 
 @pytest.fixture
 def evaluation():
-    return armory.evaluation.NewEvaluation(
-        name="test", description="test", author="test"
-    )
+    return armory.evaluation.Evaluation(name="test", description="test", author="test")
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 """Armory Experiment Configuration Classes"""
 
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import os
 from pathlib import Path
 from typing import (
@@ -18,7 +18,6 @@ from typing import (
 from armory.data import Batch
 from armory.export import Exporter
 from armory.metric import Metric
-from armory.metrics.compute import NullProfiler, Profiler
 from armory.track import Trackable, track_call, trackable_context
 
 if TYPE_CHECKING:
@@ -89,37 +88,6 @@ class SysConfig:
         # SysConfig object
         os.environ["ARMORY_HOME"] = self.armory_home.as_posix()
         os.environ["ARMORY_DATASET_CACHE"] = self.dataset_cache.as_posix()
-
-
-@dataclass
-class Evaluation:
-    """Configuration of an Armory model evaluation"""
-
-    name: str
-    """
-    Short name for the evaluation. This will be used for the experiment name in
-    MLflow
-    """
-    description: str
-    """Full description of the evaluation"""
-    model: ModelProtocol
-    """Configuration for the model being evaluated"""
-    dataset: Dataset
-    """Configuration for the dataset to be used for evaluation"""
-    author: Optional[str]
-    """Optional, author to which to attribute evaluation results"""
-    perturbations: Dict[str, Iterable[PerturbationProtocol]] = field(
-        default_factory=dict
-    )
-    """Optional, perturbation chains to be applied during evaluation"""
-    metrics: Mapping[str, Metric] = field(default_factory=dict)
-    """Optional, dictionary of metric names to metric collection objects"""
-    exporters: Iterable[Exporter] = field(default_factory=list)
-    """Optional, sample exporter"""
-    profiler: Profiler = field(default_factory=NullProfiler)
-    """Optional, computational performance profiler instance"""
-    sysconfig: SysConfig = field(default_factory=SysConfig)
-    """Optional, host system configuration"""
 
 
 class Chain(Trackable):
@@ -224,7 +192,7 @@ class Chain(Trackable):
         return params
 
 
-class NewEvaluation:
+class Evaluation:
     """
     A collection of datasets, perturbations, models, and outputs defining an
     Armory evaluation.

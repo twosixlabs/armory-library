@@ -1,20 +1,18 @@
 """Armory engine to perform model robustness evaluations"""
 
-from typing import Mapping, Optional, TypedDict
+from contextlib import nullcontext
+from typing import Any, Dict, Mapping, Optional, TypedDict
 
-import lightning.pytorch as pl
+# import lightning.pytorch as pl
 import lightning.pytorch.loggers as pl_loggers
 from lightning.pytorch.utilities import rank_zero_only
+import mlflow
 from torch import Tensor
 
-from armory.engine.evaluation_module import EvaluationModule
-from armory.evaluation import Evaluation
-from armory.track import (
-    get_current_params,
-    init_tracking_uri,
-    track_param,
-    track_system_metrics,
-)
+# from armory.engine.evaluation_module import EvaluationModule
+from armory.evaluation import Chain, Evaluation, SysConfig
+from armory.metrics.compute import NullProfiler, Profiler
+from armory.track import get_current_params, init_tracking_uri, track_system_metrics
 import armory.version
 
 
@@ -43,7 +41,9 @@ class EvaluationEngine:
     def __init__(
         self,
         evaluation: Evaluation,
-        run_id: Optional[str] = None,
+        profiler: Optional[Profiler] = None,
+        sysconfig: Optional[SysConfig] = None,
+        # run_id: Optional[str] = None,
         **kwargs,
     ):
         """
@@ -56,37 +56,39 @@ class EvaluationEngine:
                 `lightning.pytorch.Trainer` class.
         """
         self.evaluation = evaluation
-        self._logger = pl_loggers.MLFlowLogger(
-            experiment_name=evaluation.name,
-            tags={"mlflow.note.content": evaluation.description},
-            tracking_uri=init_tracking_uri(evaluation.sysconfig.armory_home),
-            run_id=run_id,
-        )
-        self.module = EvaluationModule(evaluation)
-        self.trainer = pl.Trainer(
-            inference_mode=False,
-            logger=self._logger,
-            **kwargs,
-        )
-        self.run_id = run_id
+        self.profiler = profiler or NullProfiler()
+        self.sysconfig = sysconfig or SysConfig()
+        self.trainer_kwargs = kwargs
         self._was_run = False
 
-    @property
-    def metrics(self) -> EvaluationModule.MetricsDict:
-        """
-        The dictionary mapping perturbation chain names to a dictionary mapping
-        metric names to the metric objects.
-        """
-        return self.module.metrics
+    @rank_zero_only
+    def _log_params(self, logger: pl_loggers.MLFlowLogger, params: Dict[str, Any]):
+        """Log tracked params with MLFlow"""
+        params["Armory.version"] = armory.version.__version__
+        logger.log_hyperparams(params)
 
     @rank_zero_only
-    def _log_params(self):
-        """Log tracked params with MLflow"""
-        track_param("Armory.version", armory.version.__version__)
-        self.run_id = self._logger.run_id
-        self._logger.log_hyperparams(get_current_params())
+    def _create_nested_run_ids(
+        self, logger: pl_loggers.MLFlowLogger
+    ) -> Optional[Dict[str, str]]:
+        """Create nested MLFlow run IDs for each perturbation chain"""
+        run_ids = {}
+        with mlflow.start_run(run_id=logger.run_id):
+            for chain_name in self.evaluation.chains:
+                with mlflow.start_run(
+                    experiment_id=logger.experiment_id, run_name=chain_name, nested=True
+                ) as run:
+                    run_ids[chain_name] = run.info.run_id
+        return run_ids
 
-    def run(self) -> EvaluationResults:
+    def _track_system_metrics(self, run_id: Optional[str]):
+        """Track system metrics with MLFlow"""
+        # run_id will only be valid if we are running on the rank zero node
+        if run_id is None:
+            return nullcontext()
+        return track_system_metrics(run_id)
+
+    def run(self) -> Dict[str, EvaluationResults]:
         """Perform the evaluation"""
         if self._was_run:
             raise RuntimeError(
@@ -95,13 +97,42 @@ class EvaluationEngine:
             )
         self._was_run = True
 
-        self._log_params()
-        assert self.run_id, "No run ID was created by the MLflow logger"
-        with track_system_metrics(self.run_id):
-            self.trainer.test(
-                self.module, dataloaders=self.evaluation.dataset.dataloader
-            )
+        logger = pl_loggers.MLFlowLogger(
+            experiment_name=self.evaluation.name,
+            tags={"mlflow.note.content": self.evaluation.description},
+            tracking_uri=init_tracking_uri(self.sysconfig.armory_home),
+        )
+        self.run_id = logger.run_id
+        self._log_params(logger, get_current_params())
+
+        results: Dict[str, EvaluationResults] = {}
+        chain_run_ids = self._create_nested_run_ids(logger) or {}
+        for chain_name, chain in self.evaluation.chains.items():
+            chain_run_id = chain_run_ids.get(chain_name, None)
+            results[chain_name] = self._evaluate_chain(chain_run_id, chain_name, chain)
+        return results
+
+    def _evaluate_chain(
+        self, chain_run_id: Optional[str], chain_name: str, chain: Chain
+    ) -> EvaluationResults:
+        logger = pl_loggers.MLFlowLogger(
+            run_id=chain_run_id,
+            tracking_uri=init_tracking_uri(self.sysconfig.armory_home),
+        )
+        self._log_params(logger, chain.get_tracked_params())
+
+        # with self._track_system_metrics(logger.run_id):
+        #     module = EvaluationModule(chain)
+        #     trainer = pl.Trainer(
+        #         inference_mode=False,
+        #         logger=logger,
+        #         **kwargs,
+        #     )
+        #     trainer.test(module, dataloaders=chain.dataset.dataloader)
+
         return EvaluationResults(
-            compute=self.evaluation.profiler.results(),
-            metrics=self.trainer.callback_metrics,
+            compute={},
+            metrics={},
+            # compute=self.evaluation.profiler.results(),
+            # metrics=trainer.callback_metrics,
         )
