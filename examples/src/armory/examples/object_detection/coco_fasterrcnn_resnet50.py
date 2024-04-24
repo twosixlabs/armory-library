@@ -194,7 +194,6 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     if seed is not None:
         torch.manual_seed(seed)
 
-    profiler = armory.metrics.compute.BasicProfiler()
     evaluation = armory.evaluation.Evaluation(
         name="coco-detection-fasterrcnn-resnet50",
         description="COCO object detection using Faster R-CNN with ResNet-50",
@@ -219,12 +218,12 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     with evaluation.add_chain("benign"):
         pass
 
-    # with evaluation.add_chain("attack") as chain:
-    #     chain.add_perturbation(create_attack(art_detector, batch_size))
+    with evaluation.add_chain("attack") as chain:
+        chain.add_perturbation(create_attack(art_detector, batch_size))
 
     engine = armory.engine.EvaluationEngine(
         evaluation,
-        profiler=profiler,
+        profiler=armory.metrics.compute.BasicProfiler(),
         limit_test_batches=num_batches,
     )
     results = engine.run()
