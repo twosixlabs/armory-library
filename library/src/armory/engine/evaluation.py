@@ -18,6 +18,8 @@ import armory.version
 class EvaluationResults(TypedDict):
     """Robustness evaluation results"""
 
+    run_id: str
+    """MLFlow run ID"""
     compute: Mapping[str, float]
     """Computational metrics"""
     metrics: Mapping[str, Tensor]
@@ -75,7 +77,7 @@ class EvaluationEngine:
             return nullcontext()
         return track_system_metrics(run_id)
 
-    def run(self) -> Dict[str, EvaluationResults]:
+    def run(self, verbose: bool = False) -> Dict[str, EvaluationResults]:
         """Perform the evaluation"""
         if self._was_run:
             raise RuntimeError(
@@ -97,7 +99,7 @@ class EvaluationEngine:
             with self._track_system_metrics(self.run_id):
                 for chain_name, chain in self.evaluation.chains.items():
                     results[chain_name] = self._evaluate_chain(
-                        logger.run_id, chain_name, chain
+                        logger.run_id, chain_name, chain, verbose
                     )
             logger.finalize()
 
@@ -114,6 +116,7 @@ class EvaluationEngine:
         parent_run_id: Optional[str],
         chain_name: str,
         chain: Chain,
+        verbose: bool = False,
     ) -> EvaluationResults:
         assert chain.dataset
 
@@ -132,9 +135,10 @@ class EvaluationEngine:
             **self.trainer_kwargs,
         )
         with self._track_system_metrics(logger.run_id):
-            trainer.test(module, dataloaders=chain.dataset.dataloader)
+            trainer.test(module, dataloaders=chain.dataset.dataloader, verbose=verbose)
 
         return EvaluationResults(
+            run_id=logger.run_id or "",
             compute=self.profiler.results(),
             metrics=trainer.callback_metrics,
         )
