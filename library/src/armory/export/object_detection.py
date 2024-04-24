@@ -118,11 +118,11 @@ class ObjectDetectionExporter(Exporter):
         )
 
     def export_samples(
-        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+        self, batch_idx: int, batch: Batch, samples: Iterable[int]
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
 
-        self._export_metadata(chain_name, batch_idx, batch, samples)
+        self._export_metadata(batch_idx, batch, samples)
 
         images = self.inputs_accessor.get(batch.inputs)
         targets = self.targets_accessor.get(batch.targets)
@@ -138,7 +138,5 @@ class ObjectDetectionExporter(Exporter):
                 ground_truth_boxes=targets[sample_idx]["boxes"],
                 pred_boxes=boxes_above_threshold,
             ).transpose(1, 2, 0)
-            filename = self.artifact_path(
-                chain_name, batch_idx, sample_idx, "input.png"
-            )
+            filename = self.artifact_path(batch_idx, sample_idx, "input.png")
             self.sink.log_image(with_boxes, filename)

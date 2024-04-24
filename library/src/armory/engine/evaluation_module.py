@@ -131,10 +131,6 @@ class EvaluationModule(pl.LightningModule):
         """
         Performs evaluations of the model for each configured perturbation chain
         """
-        # pbar = tqdm.tqdm(self.chain.perturbations.items(), position=1, leave=False)
-        # for chain_name, chain in pbar:
-        #     pbar.set_description(f"Evaluating {chain_name}")
-
         try:
             with torch.enable_grad():
                 self.apply_perturbations(batch)
@@ -142,7 +138,7 @@ class EvaluationModule(pl.LightningModule):
             self.update_metrics(batch)
 
             for exporter in self.chain.exporters:
-                exporter.export(self.chain.name, batch_idx, batch)
+                exporter.export(batch_idx, batch)
         except BaseException as err:
             raise RuntimeError(
                 f"Error performing evaluation of batch #{batch_idx} in chain '{self.chain.name}': {batch}"
