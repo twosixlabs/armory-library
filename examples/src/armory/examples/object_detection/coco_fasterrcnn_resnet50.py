@@ -162,9 +162,20 @@ def create_metrics():
         "map": armory.metric.PredictionMetric(
             torchmetrics.detection.MeanAveragePrecision(class_metrics=False),
             armory.data.BoundingBoxes.as_torch(format=armory.data.BBoxFormat.XYXY),
+            record_as_metrics=["map"],
         ),
-        "tide": armory.metrics.tide.TIDE.create(),
-        "detection": armory.metrics.detection.ObjectDetectionRates.create(),
+        "tide": armory.metrics.tide.TIDE.create(
+            record_as_metrics=[
+                "errors.main.count.Bkg",
+                "errors.main.count.Miss",
+            ],
+        ),
+        "detection": armory.metrics.detection.ObjectDetectionRates.create(
+            record_as_metrics=[
+                "disappearance_rate_mean",
+                "hallucinations_mean",
+            ],
+        ),
     }
 
 
@@ -183,30 +194,37 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     if seed is not None:
         torch.manual_seed(seed)
 
-    model, art_detector = load_model()
-
-    dataset = load_dataset(batch_size, shuffle)
-    attack = create_attack(art_detector, batch_size)
-    metrics = create_metrics()
-    exporters = create_exporters(export_every_n_batches)
-
+    profiler = armory.metrics.compute.BasicProfiler()
     evaluation = armory.evaluation.Evaluation(
         name="coco-detection-fasterrcnn-resnet50",
         description="COCO object detection using Faster R-CNN with ResNet-50",
         author="TwoSix",
-        dataset=dataset,
-        model=model,
-        perturbations={
-            "benign": [],
-            "attack": [attack],
-        },
-        metrics=metrics,
-        exporters=exporters,
-        profiler=armory.metrics.compute.BasicProfiler(),
     )
+
+    # Model
+    with evaluation.autotrack():
+        model, art_detector = load_model()
+    evaluation.use_model(model)
+
+    # Dataset
+    with evaluation.autotrack():
+        dataset = load_dataset(batch_size, shuffle)
+    evaluation.use_dataset(dataset)
+
+    # Metrics/Exporters
+    evaluation.use_metrics(create_metrics())
+    evaluation.use_exporters(create_exporters(export_every_n_batches))
+
+    # Chains
+    with evaluation.add_chain("benign"):
+        pass
+
+    # with evaluation.add_chain("attack") as chain:
+    #     chain.add_perturbation(create_attack(art_detector, batch_size))
 
     engine = armory.engine.EvaluationEngine(
         evaluation,
+        profiler=profiler,
         limit_test_batches=num_batches,
     )
     results = engine.run()

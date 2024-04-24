@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional
 
+from jsonpath_ng import parse
+import torch
 import torch.nn as nn
+from typing_extensions import Self
 
 from armory.data import Accessor, Batch, DefaultTorchAccessor, TorchAccessor
 from armory.track import Trackable
@@ -15,7 +18,13 @@ class Metric(Trackable, nn.Module, ABC):
     Base class for an Armory-compatible metric.
     """
 
-    def __init__(self, metric: "TorchMetric", accessor: Optional[Accessor] = None):
+    def __init__(
+        self,
+        metric: "TorchMetric",
+        accessor: Optional[Accessor] = None,
+        record_as_artifact: bool = True,
+        record_as_metrics: Optional[Iterable[str]] = None,
+    ):
         """
         Initializes the metric.
 
@@ -24,10 +33,21 @@ class Metric(Trackable, nn.Module, ABC):
             accessor: Optional, data accessor for the batch fields used for the
                 metric. This may be used for input data or for predictions from
                 the batch. By default, a generic torch accessor is used.
+            record_as_artifact: If True, the metric result will be recorded as
+                an artifact to the evaluation run.
+            record_as_metrics: Optional, a set of JSON paths in the metric
+                result pointing to scalar values to record as metrics to the
+                evaluation run. If None, no metrics will be recorded.
         """
         super().__init__()
         self.metric = metric
         self.accessor = accessor or DefaultTorchAccessor(device=self.metric.device)
+        self.record_as_artifact = record_as_artifact
+        self.record_as_metrics = (
+            {path: parse(path) for path in record_as_metrics}
+            if record_as_metrics is not None
+            else None
+        )
 
     def _apply(self, *args, **kwargs):
         super()._apply(*args, **kwargs)
@@ -42,10 +62,52 @@ class Metric(Trackable, nn.Module, ABC):
         """Resets the metric."""
         self.metric.reset()
 
-    @abstractmethod
-    def clone(self) -> "Metric":
+    @classmethod
+    def to_json(cls, value: Any) -> Any:
+        if isinstance(value, dict):
+            return {k: cls.to_json(v) for k, v in value.items()}
+
+        if isinstance(value, torch.Tensor):
+            value = value.to(torch.float32)
+            if value.dim() == 0:
+                return value.item()
+            elif value.dim() == 1:
+                return [v.item() for v in value]
+            else:
+                return [cls.to_json(v) for v in value]
+
+        return float(value)
+
+    def get_scalars(self, value: Any) -> Dict[str, float]:
+        if not self.record_as_metrics or value is None:
+            return {}
+
+        scalars = {}
+        for path, expr in self.record_as_metrics.items():
+            matches = expr.find(value)
+            if not matches:
+                raise RuntimeError(f"{path} did not match any values in metric result")
+            if len(matches) > 1:
+                raise RuntimeError(
+                    f"{path} matched multiple values in metric result, only one value allowed"
+                )
+            scalar = matches[0].value
+            if not isinstance(scalar, float):
+                raise RuntimeError(
+                    f"{path} matched a non-scalar value in metric result: {scalar}"
+                )
+            scalars[path] = scalar
+
+        return scalars
+
+    def clone(self) -> Self:
         """Creates a clone of the metric."""
-        ...
+        return self.__class__(
+            metric=self.metric,
+            accessor=self.accessor,
+            record_as_artifact=self.record_as_artifact,
+            record_as_metrics=self.record_as_metrics,
+        )
 
     @abstractmethod
     def update(self, batch: Batch) -> None:
@@ -71,9 +133,6 @@ class PerturbationMetric(Metric):
         metric = PerturbationMetric(PerturbationNormMetric())
     """
 
-    def clone(self):
-        return PerturbationMetric(self.metric.clone(), self.accessor)
-
     def update(self, batch: Batch) -> None:
         self.metric.update(
             self.accessor.get(batch.initial_inputs),
@@ -98,9 +157,6 @@ class PredictionMetric(Metric):
 
         metric = PredictionMetric(Accuracy())
     """
-
-    def clone(self):
-        return PredictionMetric(self.metric.clone(), self.accessor)
 
     def update(self, batch: Batch) -> None:
         if batch.predictions is not None:

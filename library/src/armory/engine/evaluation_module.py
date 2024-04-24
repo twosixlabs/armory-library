@@ -2,7 +2,7 @@
 Armory lightning module to perform evaluations
 """
 
-from typing import Any, Mapping
+from typing import Mapping
 
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
@@ -82,29 +82,16 @@ class EvaluationModule(pl.LightningModule):
         with self.profiler.measure(f"{self.chain.name}/predict"):
             self.model.predict(batch)
 
-    def update_metrics(self, batch: "Batch"):
-        self.metrics.update_metrics(batch)
-
-    def log_metric(self, name: str, metric: Any):
-        if isinstance(metric, dict):
-            for k, v in metric.items():
-                self.log_metric(f"{name}/{k}", v)
-
-        elif isinstance(metric, torch.Tensor):
-            metric = metric.to(torch.float32)
-            if len(metric.shape) == 0:
-                self.log(name, metric)
-            elif len(metric.shape) == 1:
-                self.log_dict(
-                    {f"{name}/{idx}": value for idx, value in enumerate(metric)},
-                    sync_dist=True,
-                )
-            else:
-                for idx, value in enumerate(metric):
-                    self.log_metric(f"{name}/{idx}", value)
-
-        else:
-            self.log(name, metric)
+    def record_metrics(self):
+        for metric_name, metric in self.metrics.items():
+            result = metric.compute()
+            as_json = metric.to_json(result)
+            if metric.record_as_artifact:
+                self.sink.log_dict(as_json, f"metrics/{metric_name}.txt")
+            for path, scalar in metric.get_scalars(as_json).items():
+                self.log(f"{metric_name}/{path}", scalar)
+            if metric.record_as_metrics is None and isinstance(as_json, float):
+                self.log(metric_name, as_json)
 
     ###
     # LightningModule method overrides
@@ -114,13 +101,13 @@ class EvaluationModule(pl.LightningModule):
         """Sets up the exporters"""
         super().setup(stage)
         logger = self.logger
-        sink = (
+        self.sink = (
             MlflowSink(logger.experiment, logger.run_id)
             if isinstance(logger, MLFlowLogger)
             else Sink()
         )
         for exporter in self.chain.exporters:
-            exporter.use_sink(sink)
+            exporter.use_sink(self.sink)
 
     def on_test_epoch_start(self) -> None:
         """Resets all metrics"""
@@ -135,7 +122,7 @@ class EvaluationModule(pl.LightningModule):
             with torch.enable_grad():
                 self.apply_perturbations(batch)
             self.evaluate(batch)
-            self.update_metrics(batch)
+            self.metrics.update_metrics(batch)
 
             for exporter in self.chain.exporters:
                 exporter.export(batch_idx, batch)
@@ -146,7 +133,5 @@ class EvaluationModule(pl.LightningModule):
 
     def on_test_epoch_end(self) -> None:
         """Logs all metric results"""
-        for metric_name, metric in self.metrics.items():
-            self.log_metric(f"{metric_name}", metric.compute())
-
+        self.record_metrics()
         return super().on_test_epoch_end()
