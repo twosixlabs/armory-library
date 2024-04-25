@@ -17,6 +17,7 @@ classifiers = [
 
 # Core dependencies required for general use of Armory
 dependencies = [
+    "jsonpath-ng",
     "lightning",
     "loguru",
     "mlflow",
