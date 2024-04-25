@@ -107,7 +107,9 @@ def transform(processor, sample):
     return sample
 
 
-def load_huggingface_dataset(batch_size: int, shuffle: bool):
+def load_huggingface_dataset(
+    batch_size: int, shuffle: bool, seed: Optional[int] = None
+):
     """Load food-101 dataset from HuggingFace"""
     import functools
 
@@ -129,6 +131,7 @@ def load_huggingface_dataset(batch_size: int, shuffle: bool):
         label_key="label",
         batch_size=batch_size,
         shuffle=shuffle,
+        seed=seed,
     )
 
     evaluation_dataset = armory.evaluation.Dataset(
@@ -140,7 +143,10 @@ def load_huggingface_dataset(batch_size: int, shuffle: bool):
 
 
 def load_torchvision_dataset(
-    batch_size: int, shuffle: bool, sysconfig: armory.evaluation.SysConfig
+    batch_size: int,
+    shuffle: bool,
+    seed: Optional[int],
+    sysconfig: armory.evaluation.SysConfig,
 ):
     """Load food-101 dataset from TorchVision"""
     from torchvision import datasets
@@ -172,6 +178,7 @@ def load_torchvision_dataset(
         label_key="label",
         batch_size=batch_size,
         shuffle=shuffle,
+        seed=seed,
     )
 
     evaluation_dataset = armory.evaluation.Dataset(
@@ -291,9 +298,6 @@ def main(
     patch_batch_size,
 ):
     """Perform evaluation"""
-    if seed is not None:
-        torch.manual_seed(seed)
-
     sysconfig = armory.evaluation.SysConfig()
     profiler = armory.metrics.compute.BasicProfiler()
     evaluation = armory.evaluation.Evaluation(
@@ -310,9 +314,9 @@ def main(
     # Dataset
     with evaluation.autotrack():
         dataset, _ = (
-            load_huggingface_dataset(batch_size, shuffle)
+            load_huggingface_dataset(batch_size, shuffle, seed)
             if dataset_src == "huggingface"
-            else load_torchvision_dataset(batch_size, shuffle, sysconfig)
+            else load_torchvision_dataset(batch_size, shuffle, seed, sysconfig)
         )
     evaluation.use_dataset(dataset)
 
