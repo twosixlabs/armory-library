@@ -71,13 +71,14 @@ def display_image_classification_results(
                 ax.tick_params(
                     bottom=False, left=False, labelbottom=False, labelleft=False
                 )
+                ax.axis("off")
 
     fig.suptitle(f"Batch {batch_idx}")
     fig.tight_layout()
 
 
 def display_object_detection_results(
-    run_id: str, batch_idx: int, batch_size: int, chains: List[str]
+    chains: Dict[str, str], batch_idx: int, batch_size: int
 ):
     suppress_artifact_progress_bar()
     client = get_mlflow_client()
@@ -91,7 +92,7 @@ def display_object_detection_results(
         tmppath = Path(tmpdir)
 
         for sample_idx in range(batch_size):
-            for chain_idx, chain in enumerate(chains):
+            for chain_idx, (chain, run_id) in enumerate(chains.items()):
                 image_filename = Exporter.artifact_path(
                     batch_idx, sample_idx, "input.png"
                 )
@@ -112,6 +113,7 @@ def display_object_detection_results(
                 ax.tick_params(
                     bottom=False, left=False, labelbottom=False, labelleft=False
                 )
+                ax.axis("off")
 
     fig.suptitle(f"Batch {batch_idx}")
     fig.tight_layout()
