@@ -76,7 +76,7 @@ class CaptumImageClassificationExporter(Exporter):
         )
 
     def export_samples(
-        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+        self, batch_idx: int, batch: Batch, samples: Iterable[int]
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
         self.model.eval()
@@ -93,9 +93,7 @@ class CaptumImageClassificationExporter(Exporter):
 
             target = targets[sample_idx].item()
 
-            artifact_path = partial(
-                self.artifact_path, chain_name, batch_idx, sample_idx
-            )
+            artifact_path = partial(self.artifact_path, batch_idx, sample_idx)
 
             self._export_saliency(artifact_path, orig_image, image, target)
             self._export_integrated_gradients(artifact_path, orig_image, image, target)

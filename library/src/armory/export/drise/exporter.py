@@ -131,7 +131,7 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         self.bbox_accessor = BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
 
     def export_samples(
-        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+        self, batch_idx: int, batch: Batch, samples: Iterable[int]
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
         self.model.eval()
@@ -184,7 +184,6 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
                     color=color,
                 )
                 filename = self.artifact_path(
-                    chain_name,
                     batch_idx,
                     sample_idx,
                     f"drise_{i:02}_{name}.png",
