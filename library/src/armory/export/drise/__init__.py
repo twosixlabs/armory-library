@@ -1,0 +1,1 @@
+from armory.export.drise.exporter import DRiseSaliencyObjectDetectionExporter

@@ -93,7 +93,7 @@ def display_object_detection_results(
         for sample_idx in range(batch_size):
             for chain_idx, chain in enumerate(chains):
                 image_filename = Exporter.artifact_path(
-                    chain, batch_idx, sample_idx, "input.png"
+                    chain, batch_idx, sample_idx, "objects.png"
                 )
                 client.download_artifacts(run_id, image_filename, tmpdir)
                 image = plt.imread(tmppath / image_filename)
@@ -112,6 +112,7 @@ def display_object_detection_results(
                 ax.tick_params(
                     bottom=False, left=False, labelbottom=False, labelleft=False
                 )
+                ax.axis("off")
 
     fig.suptitle(f"Batch {batch_idx}")
     fig.tight_layout()
