@@ -9,9 +9,9 @@
 import logging
 import sys
 
-LOGGING_LINE_FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
+LOGGING_LINE_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 
-LOGGING_DATETIME_FORMAT = '%Y/%m/%d %H:%M:%S'
+LOGGING_DATETIME_FORMAT = "%Y/%m/%d %H:%M:%S"
 
 ARMORY_LOGGING_STREAM = sys.stderr
 

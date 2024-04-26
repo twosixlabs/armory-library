@@ -385,7 +385,9 @@ def track_system_metrics(run_id: str):
             try:
                 monitor.finish()
             except Exception as err:
-                _logger.warning(f"Exception shutting down system metrics monitor, {err}")
+                _logger.warning(
+                    f"Exception shutting down system metrics monitor, {err}"
+                )
 
 
 def server():
