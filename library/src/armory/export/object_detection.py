@@ -74,6 +74,7 @@ class ObjectDetectionExporter(Exporter):
 
     def __init__(
         self,
+        name: Optional[str] = None,
         score_threshold: float = 0.5,
         inputs_spec: Optional[NumpyImageSpec] = None,
         predictions_spec: Optional[NumpyBoundingBoxSpec] = None,
@@ -84,6 +85,7 @@ class ObjectDetectionExporter(Exporter):
         Initializes the exporter.
 
         Args:
+            name: Description of the exporter
             score_threshold: Optional, minimum score for object detection
                 predictions to be included as drawn bounding boxes in the
                 exported images. Defaults to 0.5.
@@ -100,6 +102,7 @@ class ObjectDetectionExporter(Exporter):
                 omitted, no samples will be exported.
         """
         super().__init__(
+            name=name or "ObjectDetection",
             predictions_spec=(
                 predictions_spec or NumpyBoundingBoxSpec(format=BBoxFormat.XYXY)
             ),

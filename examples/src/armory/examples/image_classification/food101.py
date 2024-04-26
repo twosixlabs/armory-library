@@ -323,7 +323,7 @@ def main(
     sysconfig = armory.evaluation.SysConfig()
     profiler = armory.metrics.compute.BasicProfiler()
     evaluation = armory.evaluation.Evaluation(
-        name=f"new-food101-classification-{dataset_src}",
+        name=f"food101-classification-{dataset_src}",
         description=f"Image classification of food-101 from {dataset_src}",
         author="TwoSix",
     )
