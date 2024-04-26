@@ -5,12 +5,12 @@ import torch
 from torchvision.utils import draw_bounding_boxes
 
 from armory.data import (
-    Batch,
     BBoxFormat,
-    BoundingBoxes,
     DataType,
     ImageDimensions,
-    Images,
+    NumpyBoundingBoxSpec,
+    NumpyImageSpec,
+    ObjectDetectionBatch,
     Scale,
 )
 from armory.export.base import Exporter
@@ -75,9 +75,9 @@ class ObjectDetectionExporter(Exporter):
     def __init__(
         self,
         score_threshold: float = 0.5,
-        inputs_accessor: Optional[Images.Accessor] = None,
-        predictions_accessor: Optional[BoundingBoxes.Accessor] = None,
-        targets_accessor: Optional[BoundingBoxes.Accessor] = None,
+        inputs_spec: Optional[NumpyImageSpec] = None,
+        predictions_spec: Optional[NumpyBoundingBoxSpec] = None,
+        targets_spec: Optional[NumpyBoundingBoxSpec] = None,
         criterion: Optional[Exporter.Criterion] = None,
     ):
         """
@@ -87,49 +87,49 @@ class ObjectDetectionExporter(Exporter):
             score_threshold: Optional, minimum score for object detection
                 predictions to be included as drawn bounding boxes in the
                 exported images. Defaults to 0.5.
-            inputs_accessor: Optional, data exporter used to obtain low-level
-                image data from the highly-structured inputs contained in
-                exported batches. By default, a NumPy images accessor is used.
-            predictions_accessor: Optional, data exporter used to obtain
-                low-level predictions data from the highly-structured
-                predictions contained in exported batches. By default, an XYXY
-                NumPy bounding box accessor is used.
-            targets_accessor: Optional, data exporter used to obtain low-level
-                ground truth targets data from the high-ly structured targets
-                contained in exported batches. By default, an XYXY NumPy
-                bounding box accessor is used.
-            criterion: Criterion dictating when samples will be exported. If
+            inputs_spec: Optional, data specification used to obtain raw
+                image data from the inputs contained in exported batches. By
+                default, a NumPy images specification is used.
+            predictions_spec: Optional, data specification used to obtain raw
+                predictions data from the exported batches. By default, an XYXY
+                NumPy bounding box specification is used.
+            targets_spec: Optional, data specification used to obtain raw ground
+                truth targets data from the exported batches. By default, an XYXY
+                NumPy bounding box specification is used.
+            criterion: Criterion to determine when samples will be exported. If
                 omitted, no samples will be exported.
         """
         super().__init__(
-            predictions_accessor=(
-                predictions_accessor or BoundingBoxes.as_numpy(format=BBoxFormat.XYXY)
+            predictions_spec=(
+                predictions_spec or NumpyBoundingBoxSpec(format=BBoxFormat.XYXY)
             ),
-            targets_accessor=(
-                targets_accessor or BoundingBoxes.as_numpy(format=BBoxFormat.XYXY)
-            ),
+            targets_spec=(targets_spec or NumpyBoundingBoxSpec(format=BBoxFormat.XYXY)),
             criterion=criterion,
         )
         self.score_threshold = score_threshold
-        self.inputs_accessor = inputs_accessor or Images.as_numpy(
+        self.inputs_spec = inputs_spec or NumpyImageSpec(
             dim=ImageDimensions.CHW,
             scale=Scale(dtype=DataType.UINT8, max=255),
             dtype=np.uint8,
         )
+        self.targets_spec: NumpyBoundingBoxSpec
+        self.predictions_spec: NumpyBoundingBoxSpec
 
     def export_samples(
-        self, batch_idx: int, batch: Batch, samples: Iterable[int]
+        self, batch_idx: int, batch: ObjectDetectionBatch, samples: Iterable[int]
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
 
         self._export_metadata(batch_idx, batch, samples)
 
-        images = self.inputs_accessor.get(batch.inputs)
-        targets = self.targets_accessor.get(batch.targets)
-        predictions = self.predictions_accessor.get(batch.predictions)
+        images = batch.inputs.get(self.inputs_spec)
+        targets = batch.targets.get(self.targets_spec)
+        predictions = batch.predictions.get(self.predictions_spec)
         for sample_idx in samples:
+            scores = predictions[sample_idx]["scores"]
+            assert scores is not None
             boxes_above_threshold = predictions[sample_idx]["boxes"][
-                predictions[sample_idx]["scores"] > self.score_threshold
+                scores > self.score_threshold
             ]
             # We access images as CHW because draw_bounding_boxes requires it,
             # but MLFlow needs HWC so we transpose
@@ -138,5 +138,5 @@ class ObjectDetectionExporter(Exporter):
                 ground_truth_boxes=targets[sample_idx]["boxes"],
                 pred_boxes=boxes_above_threshold,
             ).transpose(1, 2, 0)
-            filename = self.artifact_path(batch_idx, sample_idx, "input.png")
+            filename = self.artifact_path(batch_idx, sample_idx, "objects.png")
             self.sink.log_image(with_boxes, filename)

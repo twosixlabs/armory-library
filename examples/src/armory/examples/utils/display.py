@@ -94,7 +94,7 @@ def display_object_detection_results(
         for sample_idx in range(batch_size):
             for chain_idx, (chain, run_id) in enumerate(chains.items()):
                 image_filename = Exporter.artifact_path(
-                    batch_idx, sample_idx, "input.png"
+                    batch_idx, sample_idx, "objects.png"
                 )
                 client.download_artifacts(run_id, image_filename, tmpdir)
                 image = plt.imread(tmppath / image_filename)

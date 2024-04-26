@@ -7,7 +7,7 @@ from torchmetrics import Metric
 from torchmetrics.functional.detection import intersection_over_union
 from torchmetrics.utilities import dim_zero_cat
 
-from armory.data import BBoxFormat, BoundingBoxes
+from armory.data import BBoxFormat, BoundingBoxes, TorchBoundingBoxSpec
 from armory.metric import PredictionMetric
 
 
@@ -58,7 +58,7 @@ class ObjectDetectionRates(Metric):
         """
         return PredictionMetric(
             metric=cls(*args, **kwargs),
-            accessor=BoundingBoxes.as_torch(format=BBoxFormat.XYXY),
+            spec=TorchBoundingBoxSpec(format=BBoxFormat.XYXY),
             record_as_artifact=record_as_artifact,
             record_as_metrics=record_as_metrics,
         )

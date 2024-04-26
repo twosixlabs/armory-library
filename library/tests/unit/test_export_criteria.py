@@ -334,3 +334,24 @@ def test_when_metric_lt(metric_value, threshold, batch, expected):
 def test_when_metric_gt(metric_value, threshold, batch, expected):
     metric = MagicMock(return_value=metric_value)
     assert criteria.when_metric_gt(metric, threshold)(0, batch) == expected
+
+
+@pytest.mark.parametrize(
+    "metric_value,threshold,expected",
+    [
+        (2, [2, 4], True),
+        (3, [2, 4], False),
+        (4, [2, 4], True),
+        (torch.tensor(2), [2, 4], True),
+        (torch.tensor(3), [2, 4], False),
+        (torch.tensor(4), [2, 4], True),
+        (torch.tensor([1, 3, 5, 7]), [2, 4], []),
+        (torch.tensor([1, 2, 4, 7]), [2, 4], [1, 2]),
+        (torch.tensor([2, 2, 4, 2]), [2, 4], [0, 1, 2, 3]),
+        (torch.tensor([1]), [2, 4], []),
+        (torch.tensor([4]), [2, 4], [0]),
+    ],
+)
+def test_when_metric_in(metric_value, threshold, batch, expected):
+    metric = MagicMock(return_value=metric_value)
+    assert criteria.when_metric_in(metric, threshold)(0, batch) == expected

@@ -20,6 +20,7 @@ import armory.dataset
 import armory.engine
 import armory.evaluation
 import armory.export.criteria
+import armory.export.drise
 import armory.export.object_detection
 import armory.metric
 import armory.metrics.compute
@@ -52,8 +53,11 @@ def load_model():
     armory_model = armory.model.object_detection.ObjectDetector(
         name="FasterRCNN-ResNet50",
         model=tv_model,
-        inputs_accessor=armory.data.Images.as_torch(),
-        predictions_accessor=armory.data.BoundingBoxes.as_torch(
+        inputs_spec=armory.data.TorchImageSpec(
+            dim=armory.data.ImageDimensions.CHW,
+            scale=armory.data.Scale(dtype=armory.data.DataType.FLOAT, max=1.0),
+        ),
+        predictions_spec=armory.data.TorchBoundingBoxSpec(
             format=armory.data.BBoxFormat.XYXY
         ),
     )
@@ -161,7 +165,7 @@ def create_metrics():
         ),
         "map": armory.metric.PredictionMetric(
             torchmetrics.detection.MeanAveragePrecision(class_metrics=False),
-            armory.data.BoundingBoxes.as_torch(format=armory.data.BBoxFormat.XYXY),
+            armory.data.TorchBoundingBoxSpec(format=armory.data.BBoxFormat.XYXY),
             record_as_metrics=["map"],
         ),
         "tide": armory.metrics.tide.TIDE.create(
@@ -179,11 +183,17 @@ def create_metrics():
     }
 
 
-def create_exporters(export_every_n_batches):
+def create_exporters(model, export_every_n_batches):
     """Create sample exporters"""
     return [
         armory.export.object_detection.ObjectDetectionExporter(
             criterion=armory.export.criteria.every_n_batches(export_every_n_batches)
+        ),
+        armory.export.drise.DRiseSaliencyObjectDetectionExporter(
+            model,
+            criterion=armory.export.criteria.every_n_batches(export_every_n_batches),
+            num_classes=91,
+            num_masks=10,
         ),
     ]
 
@@ -212,7 +222,7 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
 
     # Metrics/Exporters
     evaluation.use_metrics(create_metrics())
-    evaluation.use_exporters(create_exporters(export_every_n_batches))
+    evaluation.use_exporters(create_exporters(model, export_every_n_batches))
 
     # Chains
     with evaluation.add_chain("benign"):
