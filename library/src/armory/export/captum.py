@@ -27,6 +27,7 @@ class CaptumImageClassificationExporter(Exporter):
     def __init__(
         self,
         model: "torch.nn.Module",
+        name: Optional[str] = None,
         do_saliency: bool = True,
         do_integrated_grads: bool = False,
         do_smoothgrad_squared: bool = False,
@@ -42,6 +43,7 @@ class CaptumImageClassificationExporter(Exporter):
 
         Args:
             model: Computer vision model
+            name: Descriptive name of the exporter
             do_saliency: Whether to generate saliency maps
             do_integrated_grads: Whether to generate integrated gradient maps
             do_smoothgrad_squred: Whether to generated integrated gradient maps
@@ -59,7 +61,11 @@ class CaptumImageClassificationExporter(Exporter):
             criterion: Criterion dictating when samples will be exported. If
                 omitted, no samples will be exported.
         """
-        super().__init__(targets_accessor=targets_accessor, criterion=criterion)
+        super().__init__(
+            name=name or "CaptumImageClassification",
+            targets_accessor=targets_accessor,
+            criterion=criterion,
+        )
         self.model = model
         self.saliency = Saliency(model) if do_saliency else None
         self.integrated_grads = (

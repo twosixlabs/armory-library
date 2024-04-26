@@ -83,11 +83,11 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
                 omitted, no samples will be exported.
         """
         super().__init__(
+            name=name,
             targets_accessor=targets_accessor or DefaultTorchAccessor(),
             criterion=criterion,
         )
         self.inputs_accessor = Images.as_numpy(dim=self.dim, scale=self.scale)
-        self.name = name
         self.blackbox = self.ModelWrapper(model, classes, self.dim, self.scale)
         self.classes = classes
 

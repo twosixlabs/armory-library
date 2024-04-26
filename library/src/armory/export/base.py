@@ -13,6 +13,7 @@ class Exporter(Trackable, ABC):
 
     def __init__(
         self,
+        name: str,
         predictions_accessor: Optional[Accessor] = None,
         targets_accessor: Optional[Accessor] = None,
         criterion: Optional[Criterion] = None,
@@ -21,6 +22,7 @@ class Exporter(Trackable, ABC):
         Initializes the exporter.
 
         Args:
+            name: Descriptive name of the exporter
             predictions_accessor: Optional, data exporter used to obtain
                 low-level predictions data from the highly-structured
                 predictions contained in exported batches. By default, a generic
@@ -33,6 +35,7 @@ class Exporter(Trackable, ABC):
                 omitted, no samples will be exported.
         """
         super().__init__()
+        self.name = name
         self.predictions_accessor = predictions_accessor or DefaultNumpyAccessor()
         self.targets_accessor = targets_accessor or DefaultNumpyAccessor()
         self.sink: Optional[Sink] = None

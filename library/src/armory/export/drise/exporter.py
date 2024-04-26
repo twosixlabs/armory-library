@@ -103,6 +103,7 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         model: ObjectDetector,
         num_classes: int,
         batch_size: int = 1,
+        name: Optional[str] = None,
         num_masks: int = 1000,
         score_threshold: float = 0.5,
         criterion: Optional[Exporter.Criterion] = None,
@@ -115,13 +116,14 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
             num_classes: Number of classes supported by the model
             batch_size: Number of images per batch when generating D-RISE
                 saliency maps
+            name: Description of the exporter
             num_masks: Number of masks to evaluate
             score_threshold: Minimum score for predicted objects to be included
                 for D-RISE saliency map generation
             criterion: Criterion dictating when samples will be exported. If
                 omitted, no samples will be exported.
         """
-        super().__init__(criterion=criterion)
+        super().__init__(name=name or "D-RISE", criterion=criterion)
         self.model = model
         self.batch_size = batch_size
         self.num_masks = num_masks

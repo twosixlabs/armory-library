@@ -9,6 +9,7 @@ class ImageClassificationExporter(Exporter):
 
     def __init__(
         self,
+        name: Optional[str] = None,
         inputs_accessor: Optional[Images.Accessor] = None,
         predictions_accessor: Optional[Accessor] = None,
         targets_accessor: Optional[Accessor] = None,
@@ -18,6 +19,7 @@ class ImageClassificationExporter(Exporter):
         Initializes the exporter.
 
         Args:
+            name: Descriptive name of the exporter
             inputs_accessor: Optional, data exporter used to obtain low-level
                 image data from the highly-structured inputs contained in
                 exported batches. By default, a NumPy images accessor is used.
@@ -33,6 +35,7 @@ class ImageClassificationExporter(Exporter):
                 omitted, no samples will be exported.
         """
         super().__init__(
+            name=name or "ImageClassification",
             predictions_accessor=predictions_accessor,
             targets_accessor=targets_accessor,
             criterion=criterion,
