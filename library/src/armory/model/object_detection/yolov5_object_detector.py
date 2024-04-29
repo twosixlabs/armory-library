@@ -87,12 +87,10 @@ class YoloV5ObjectDetector(ObjectDetector):
         self._detection_model = self._get_detection_model(self._model)
         self.compute_loss = ComputeLoss(self._detection_model)
 
-        kwargs.update(
-            {
-                **({"conf_thres": score_threshold} if score_threshold else {}),
-                **({"iou_thres": iou_threshold} if iou_threshold else {}),
-            }
-        )
+        if score_threshold is not None:
+            kwargs["conf_thres"] = score_threshold
+        if iou_threshold is not None:
+            kwargs["iou_thres"] = iou_threshold
         self.nms = partial(non_max_suppression, **kwargs)
 
     @staticmethod
