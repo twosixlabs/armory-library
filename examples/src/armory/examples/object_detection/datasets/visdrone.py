@@ -6,35 +6,76 @@ from pathlib import Path
 from pprint import pprint
 from typing import Any, Dict, Iterator, List, Tuple
 
+import albumentations as A
+import albumentations.pytorch
 import datasets
+import numpy as np
 
 import armory.data
 import armory.dataset
 
 
 def create_dataloader(
-    dataset: datasets.Dataset, **kwargs
+    dataset: datasets.Dataset, max_size: int, **kwargs
 ) -> armory.dataset.ObjectDetectionDataLoader:
     """
     Create an Armory object detection dataloader for the given VisDrone2019 dataset split.
 
     Args:
         dataset: VisDrone2019 dataset split
+        max_size: Maximum image size to which to resize and pad image samples
         **kwargs: Additional keyword arguments to pass to the dataloader constructor
 
     Return:
         Armory object detection dataloader
     """
+    resize = A.Compose(
+        [
+            A.LongestMaxSize(max_size=max_size),
+            A.PadIfNeeded(
+                min_height=max_size,
+                min_width=max_size,
+                border_mode=0,
+                value=(0, 0, 0),
+            ),
+            A.ToFloat(max_value=255),
+            albumentations.pytorch.ToTensorV2(),
+        ],
+        bbox_params=A.BboxParams(
+            format="coco",
+            label_fields=["id", "category", "occlusion", "truncation"],
+        ),
+    )
+
+    def transform(sample):
+        tmp = dict(**sample)
+        tmp["image"] = []
+        tmp["objects"] = []
+        for image, objects in zip(sample["image"], sample["objects"]):
+            res = resize(
+                image=np.asarray(image),
+                bboxes=objects["bbox"],
+                id=objects["id"],
+                category=objects["category"],
+                occlusion=objects["occlusion"],
+                truncation=objects["truncation"],
+            )
+            tmp["image"].append(res.pop("image"))
+            tmp["objects"].append(res)
+        return tmp
+
+    dataset.set_transform(transform)
+
     return armory.dataset.ObjectDetectionDataLoader(
         dataset,
         image_key="image",
         dim=armory.data.ImageDimensions.CHW,
         scale=armory.data.Scale(
-            dtype=armory.data.DataType.UINT8,
-            max=255,
+            dtype=armory.data.DataType.FLOAT,
+            max=1.0,
         ),
         objects_key="objects",
-        boxes_key="bbox",
+        boxes_key="bboxes",
         format=armory.data.BBoxFormat.XYWH,
         labels_key="category",
         **kwargs,
