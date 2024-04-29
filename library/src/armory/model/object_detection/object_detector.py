@@ -1,9 +1,9 @@
 from typing import Optional
 
-import torch.nn as nn
+import numpy as np
 import torchvision.ops
 
-from armory.data import Accessor, Batch, Images, TorchAccessor, to_torch
+from armory.data import Accessor, Batch, Images, TorchAccessor, to_numpy, to_torch
 from armory.evaluation import ModelProtocol
 from armory.logs import log
 from armory.model.base import ArmoryModel, ModelInputAdapter, ModelOutputAdapter
@@ -38,7 +38,7 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
     def __init__(
         self,
         name: str,
-        model: nn.Module,
+        model,
         inputs_accessor: Images.Accessor,
         predictions_accessor: Accessor,
         preadapter: Optional[ModelInputAdapter] = None,
@@ -101,6 +101,10 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
                     scores=to_torch(pred["scores"]),
                     iou_threshold=self.iou_threshold,
                 )
+
+                if isinstance(pred["scores"], np.ndarray):
+                    keep = to_numpy(keep)
+
                 pred["boxes"] = pred["boxes"][keep]
                 pred["scores"] = pred["scores"][keep]
                 pred["labels"] = pred["labels"][keep]
