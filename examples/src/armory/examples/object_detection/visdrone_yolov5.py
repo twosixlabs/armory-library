@@ -82,7 +82,14 @@ def create_metrics():
             armory.data.TorchBoundingBoxSpec(format=armory.data.BBoxFormat.XYXY),
         ),
         "tide": armory.metrics.tide.TIDE.create(),
-        "detection": armory.metrics.detection.ObjectDetectionRates.create(),
+        "detection": armory.metrics.detection.ObjectDetectionRates.create(
+            record_as_metrics=[
+                "true_positive_rate_mean",
+                "misclassification_rate_mean",
+                "disappearance_rate_mean",
+                "hallucinations_mean",
+            ],
+        ),
     }
 
 
