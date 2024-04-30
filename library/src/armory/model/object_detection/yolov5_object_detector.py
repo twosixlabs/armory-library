@@ -2,6 +2,7 @@ from functools import partial
 from typing import Optional
 
 import torch
+from yolov5.models.yolo import DetectionModel
 
 from armory.data import (
     Accessor,
@@ -38,9 +39,11 @@ class YoloV5ObjectDetector(ObjectDetector):
     def __init__(
         self,
         name: str,
-        model,
+        model: DetectionModel,
         inputs_accessor: Optional[Images.Accessor] = None,
         predictions_accessor: Optional[Accessor] = None,
+        iou_threshold: Optional[float] = None,
+        score_threshold: Optional[float] = None,
         **kwargs,
     ):
         """
@@ -74,23 +77,43 @@ class YoloV5ObjectDetector(ObjectDetector):
             predictions_accessor=(
                 predictions_accessor or BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
             ),
+            iou_threshold=iou_threshold,
+            score_threshold=score_threshold,
         )
 
         from yolov5.utils.general import non_max_suppression
         from yolov5.utils.loss import ComputeLoss
 
-        self.compute_loss = ComputeLoss(self._model.model.model)
+        self._detection_model = self._get_detection_model(self._model)
+        self.compute_loss = ComputeLoss(self._detection_model)
+
+        if score_threshold is not None:
+            kwargs["conf_thres"] = score_threshold
+        if iou_threshold is not None:
+            kwargs["iou_thres"] = iou_threshold
         self.nms = partial(non_max_suppression, **kwargs)
+
+    @staticmethod
+    def _get_detection_model(model: DetectionModel) -> DetectionModel:
+        detect_model = model
+        try:
+            while type(detect_model) is not DetectionModel:
+                detect_model = detect_model.model
+        except AttributeError:
+            raise TypeError(f"{model} is not a {DetectionModel.__name__}")
+        return detect_model
 
     def forward(self, x, targets=None):
         """
         Invokes the wrapped model. If in training and given targets, then the
-        loss is computed and returned rather than the raw predictions.
+        loss is computed and returned rather than the raw predictions. This is
+        required when YoloV5ObjectDetector is used with ART and is wrapped by
+        art.estimators.object_detection.PyTorchYolo.
         """
         # inputs: CHW images, 0.0-1.0 float
         # outputs: (N,6) detections (cx,cy,w,h,scores,labels)
         if self.training and targets is not None:
-            outputs = self._model.model.model(x)
+            outputs = self._detection_model(x)
             loss, _ = self.compute_loss(outputs, targets)
             return dict(loss_total=loss)
         preds = self._model(x)
