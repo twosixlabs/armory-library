@@ -37,10 +37,10 @@ from armory.evaluation import Evaluation
 evaluation = Evaluation(name="...", description="...", author="...")
 
 # Common components
-chain.use_dataset(...)
-chain.use_metrics(...)
-chain.use_exporters(...)
-chain.use_model(...)
+evaluation.use_dataset(...)
+evaluation.use_metrics(...)
+evaluation.use_exporters(...)
+evaluation.use_model(...)
 
 with evaluation.add_chain("benign") as chain:
     pass
