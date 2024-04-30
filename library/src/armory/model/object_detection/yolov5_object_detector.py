@@ -1,8 +1,7 @@
 from functools import partial
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import torch
-from yolov5.models.yolo import DetectionModel
 
 from armory.data import (
     BBoxFormat,
@@ -17,6 +16,9 @@ from armory.data import (
 )
 from armory.model.object_detection.object_detector import ObjectDetector
 from armory.track import track_init_params
+
+if TYPE_CHECKING:
+    from yolov5.models.yolo import DetectionModel
 
 
 @track_init_params
@@ -40,7 +42,8 @@ class YoloV5ObjectDetector(ObjectDetector):
     def __init__(
         self,
         name: str,
-        model: DetectionModel,
+        model,
+        detection_model: Optional["DetectionModel"] = None,
         inputs_spec: Optional[ImageSpec] = None,
         predictions_spec: Optional[BoundingBoxSpec] = None,
         iou_threshold: Optional[float] = None,
@@ -53,6 +56,12 @@ class YoloV5ObjectDetector(ObjectDetector):
         Args:
             name: Name of the model.
             model: YOLOv5 model being wrapped.
+            detection_model: Optional, the inner YOLOv5 detection model to use
+                for computing loss. By default, the detection model is assumed
+                to be a property of the inner model property of the given YOLOv5
+                model--that is, `model.model.model`. It is unlikely that this
+                argument will ever be necessary, and may only be required if
+                the upstream `yolov5` package changes its model structure.
             inputs_spec: Optional, data specification used to obtain raw image
                 data from the image inputs contained in object detection
                 batches. Defaults to a specification compatible with typical
@@ -85,7 +94,9 @@ class YoloV5ObjectDetector(ObjectDetector):
         from yolov5.utils.general import non_max_suppression
         from yolov5.utils.loss import ComputeLoss
 
-        self._detection_model = self._get_detection_model(self._model)
+        self._detection_model: "DetectionModel" = (
+            detection_model if detection_model is not None else self._model.model.model
+        )
         self.compute_loss = ComputeLoss(self._detection_model)
 
         if score_threshold is not None:
@@ -93,16 +104,6 @@ class YoloV5ObjectDetector(ObjectDetector):
         if iou_threshold is not None:
             kwargs["iou_thres"] = iou_threshold
         self.nms = partial(non_max_suppression, **kwargs)
-
-    @staticmethod
-    def _get_detection_model(model: DetectionModel) -> DetectionModel:
-        detect_model = model
-        try:
-            while type(detect_model) is not DetectionModel:
-                detect_model = detect_model.model
-        except AttributeError:
-            raise TypeError(f"{model} is not a {DetectionModel.__name__}")
-        return detect_model
 
     def forward(self, x, targets=None):
         """
