@@ -9,6 +9,7 @@ class ImageClassificationExporter(Exporter):
 
     def __init__(
         self,
+        name: Optional[str] = None,
         inputs_accessor: Optional[Images.Accessor] = None,
         predictions_accessor: Optional[Accessor] = None,
         targets_accessor: Optional[Accessor] = None,
@@ -18,6 +19,7 @@ class ImageClassificationExporter(Exporter):
         Initializes the exporter.
 
         Args:
+            name: Descriptive name of the exporter
             inputs_accessor: Optional, data exporter used to obtain low-level
                 image data from the highly-structured inputs contained in
                 exported batches. By default, a NumPy images accessor is used.
@@ -33,6 +35,7 @@ class ImageClassificationExporter(Exporter):
                 omitted, no samples will be exported.
         """
         super().__init__(
+            name=name or "ImageClassification",
             predictions_accessor=predictions_accessor,
             targets_accessor=targets_accessor,
             criterion=criterion,
@@ -42,13 +45,11 @@ class ImageClassificationExporter(Exporter):
         )
 
     def export_samples(
-        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+        self, batch_idx: int, batch: Batch, samples: Iterable[int]
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
-        self._export_metadata(chain_name, batch_idx, batch, samples)
+        self._export_metadata(batch_idx, batch, samples)
         images = self.inputs_accessor.get(batch.inputs)
         for sample_idx in samples:
-            filename = self.artifact_path(
-                chain_name, batch_idx, sample_idx, "input.png"
-            )
+            filename = self.artifact_path(batch_idx, sample_idx, "input.png")
             self.sink.log_image(images[sample_idx], filename)

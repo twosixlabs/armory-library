@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Generic, Optional, TypeVa
 
 from armory.data import Accessor, Batch, DefaultNumpyAccessor
 from armory.evaluation import PerturbationProtocol
+from armory.track import Trackable
 
 if TYPE_CHECKING:
     from art.attacks import EvasionAttack
@@ -18,7 +19,7 @@ T = TypeVar("T")
 
 
 @dataclass
-class CallablePerturbation(PerturbationProtocol, Generic[T]):
+class CallablePerturbation(Trackable, PerturbationProtocol, Generic[T]):
     name: str
     perturbation: Callable[[T], T]
     inputs_accessor: Accessor[T]
@@ -29,7 +30,7 @@ class CallablePerturbation(PerturbationProtocol, Generic[T]):
 
 
 @dataclass
-class ArtPreprocessorDefence(PerturbationProtocol):
+class ArtPreprocessorDefence(Trackable, PerturbationProtocol):
     """
     A perturbation using a preprocessor defense from the Adversarial Robustness
     Toolbox (ART).
@@ -62,7 +63,7 @@ class ArtPreprocessorDefence(PerturbationProtocol):
 
 
 @dataclass
-class ArtEvasionAttack(PerturbationProtocol):
+class ArtEvasionAttack(Trackable, PerturbationProtocol):
     """
     A perturbation using an evasion attack from the Adversarial Robustness
     Toolbox (ART).
@@ -108,6 +109,7 @@ class ArtEvasionAttack(PerturbationProtocol):
     """
 
     def __post_init__(self):
+        super().__post_init__()
         if self.targeted:
             assert (
                 self.label_targeter is not None

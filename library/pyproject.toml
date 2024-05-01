@@ -17,6 +17,7 @@ classifiers = [
 
 # Core dependencies required for general use of Armory
 dependencies = [
+    "jsonpath-ng",
     "lightning",
     "loguru",
     "mlflow",
@@ -58,7 +59,7 @@ Documentation = "https://armory-library.readthedocs.io/en/latest/"
 
 
 [project.scripts]
-armory-mlflow-server = "charmory.track:server"
+armory-mlflow-server = "armory.track:server"
 
 
 [build-system]

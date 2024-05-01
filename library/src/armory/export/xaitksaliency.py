@@ -83,11 +83,11 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
                 omitted, no samples will be exported.
         """
         super().__init__(
+            name=name,
             targets_accessor=targets_accessor or DefaultTorchAccessor(),
             criterion=criterion,
         )
         self.inputs_accessor = Images.as_numpy(dim=self.dim, scale=self.scale)
-        self.name = name
         self.blackbox = self.ModelWrapper(model, classes, self.dim, self.scale)
         self.classes = classes
 
@@ -96,7 +96,7 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
         self.algorithm: GenerateImageClassifierBlackboxSaliency = algorithm
 
     def export_samples(
-        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+        self, batch_idx: int, batch: Batch, samples: Iterable[int]
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
 
@@ -114,7 +114,6 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
                     ref_image, class_sal_map, False, f"Class {label} Pos Saliency"
                 )
                 filename = self.artifact_path(
-                    chain_name,
                     batch_idx,
                     sample_idx,
                     f"xaitk_saliency_{self.name}_{label}_pos.png",
@@ -126,7 +125,6 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
                     ref_image, class_sal_map, True, f"Class {label} Neg Saliency"
                 )
                 filename = self.artifact_path(
-                    chain_name,
                     batch_idx,
                     sample_idx,
                     f"xaitk_saliency_{self.name}_{label}_neg.png",

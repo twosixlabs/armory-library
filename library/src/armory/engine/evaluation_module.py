@@ -2,46 +2,46 @@
 Armory lightning module to perform evaluations
 """
 
-from typing import Any, Iterable, Mapping
+from typing import Mapping
 
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import MLFlowLogger
 import torch
-import tqdm
 
 from armory.data import Batch
-from armory.evaluation import Evaluation, PerturbationProtocol
+from armory.evaluation import Chain
 from armory.export.sink import MlflowSink, Sink
+from armory.metrics.compute import Profiler
 
 
 class EvaluationModule(pl.LightningModule):
-    """Armory lightning module to perform evaluations"""
+    """
+    Armory lightning module to perform an evaluation on a single evaluation chain
+    """
 
     def __init__(
         self,
-        evaluation: Evaluation,
+        chain: Chain,
+        profiler: Profiler,
     ):
         """
-        Initializes the task.
+        Initializes the lightning module.
 
         Args:
-            evaluation: Configuration for the evaluation
+            chain: Evaluation chain
         """
         super().__init__()
-        self.evaluation = evaluation
+        self.chain = chain
+        self.profiler = profiler
         # store model as an attribute so it gets moved to device automatically
-        self.model = evaluation.model
+        assert chain.model is not None
+        self.model = chain.model
 
-        # Make copies of user-configured metrics for each perturbation chain
+        # Make copies of user-configured metrics for the chain
         self.metrics = self.MetricsDict(
             {
-                chain_name: self.MetricsDict(
-                    {
-                        metric_name: metric.clone()
-                        for metric_name, metric in self.evaluation.metrics.items()
-                    }
-                )
-                for chain_name in self.evaluation.perturbations.keys()
+                metric_name: metric.clone()
+                for metric_name, metric in chain.metrics.items()
             }
         )
 
@@ -65,48 +65,31 @@ class EvaluationModule(pl.LightningModule):
     # Task evaluation methods
     ###
 
-    def apply_perturbations(
-        self, chain_name: str, batch: "Batch", chain: Iterable["PerturbationProtocol"]
-    ):
+    def apply_perturbations(self, batch: "Batch"):
         """
-        Applies the given perturbation chain to the batch to produce the perturbed data
+        Applies the chain's perturbations to the batch to produce the perturbed data
         to be given to the model
         """
-        with self.evaluation.profiler.measure(f"{chain_name}/perturbation"):
-            for perturbation in chain:
-                with self.evaluation.profiler.measure(
-                    f"{chain_name}/perturbation/{perturbation.name}"
-                ):
+        with self.profiler.measure("perturbation"):
+            for perturbation in self.chain.perturbations:
+                with self.profiler.measure(f"perturbation/{perturbation.name}"):
                     perturbation.apply(batch)
 
-    def evaluate(self, chain_name: str, batch: "Batch"):
+    def evaluate(self, batch: "Batch"):
         """Perform evaluation on batch"""
-        with self.evaluation.profiler.measure(f"{chain_name}/predict"):
-            self.evaluation.model.predict(batch)
+        with self.profiler.measure("predict"):
+            self.model.predict(batch)
 
-    def update_metrics(self, chain_name: str, batch: "Batch"):
-        self.metrics[chain_name].update_metrics(batch)
-
-    def log_metric(self, name: str, metric: Any):
-        if isinstance(metric, dict):
-            for k, v in metric.items():
-                self.log_metric(f"{name}/{k}", v)
-
-        elif isinstance(metric, torch.Tensor):
-            metric = metric.to(torch.float32)
-            if len(metric.shape) == 0:
-                self.log(name, metric)
-            elif len(metric.shape) == 1:
-                self.log_dict(
-                    {f"{name}/{idx}": value for idx, value in enumerate(metric)},
-                    sync_dist=True,
-                )
-            else:
-                for idx, value in enumerate(metric):
-                    self.log_metric(f"{name}/{idx}", value)
-
-        else:
-            self.log(name, metric)
+    def record_metrics(self):
+        for metric_name, metric in self.metrics.items():
+            result = metric.compute()
+            as_json = metric.to_json(result)
+            if metric.record_as_artifact:
+                self.sink.log_dict(as_json, f"metrics/{metric_name}.txt")
+            for path, scalar in metric.get_scalars(as_json).items():
+                self.log(f"{metric_name}/{path}", scalar)
+            if metric.record_as_metrics is None and isinstance(as_json, float):
+                self.log(metric_name, as_json)
 
     ###
     # LightningModule method overrides
@@ -116,13 +99,13 @@ class EvaluationModule(pl.LightningModule):
         """Sets up the exporters"""
         super().setup(stage)
         logger = self.logger
-        sink = (
+        self.sink = (
             MlflowSink(logger.experiment, logger.run_id)
             if isinstance(logger, MLFlowLogger)
             else Sink()
         )
-        for exporter in self.evaluation.exporters:
-            exporter.use_sink(sink)
+        for exporter in self.chain.exporters:
+            exporter.use_sink(self.sink)
 
     def on_test_epoch_start(self) -> None:
         """Resets all metrics"""
@@ -133,29 +116,21 @@ class EvaluationModule(pl.LightningModule):
         """
         Performs evaluations of the model for each configured perturbation chain
         """
-        pbar = tqdm.tqdm(self.evaluation.perturbations.items(), position=1, leave=False)
-        for chain_name, chain in pbar:
-            pbar.set_description(f"Evaluating {chain_name}")
+        try:
+            with torch.enable_grad():
+                self.apply_perturbations(batch)
+            self.evaluate(batch)
+            self.metrics.update_metrics(batch)
 
-            chain_batch = batch.clone()
-
-            try:
-                with torch.enable_grad():
-                    self.apply_perturbations(chain_name, chain_batch, chain)
-                self.evaluate(chain_name, chain_batch)
-                self.update_metrics(chain_name, chain_batch)
-
-                for exporter in self.evaluation.exporters:
-                    exporter.export(chain_name, batch_idx, chain_batch)
-            except BaseException as err:
-                raise RuntimeError(
-                    f"Error performing evaluation of batch #{batch_idx} using chain '{chain_name}': {batch}"
-                ) from err
+            for exporter in self.chain.exporters:
+                with self.profiler.measure(f"export/{exporter.name}"):
+                    exporter.export(batch_idx, batch)
+        except BaseException as err:
+            raise RuntimeError(
+                f"Error performing evaluation of batch #{batch_idx} in chain '{self.chain.name}': {batch}"
+            ) from err
 
     def on_test_epoch_end(self) -> None:
         """Logs all metric results"""
-        for chain_name, chain in self.metrics.items():
-            for metric_name, metric in chain.items():
-                self.log_metric(f"{chain_name}/{metric_name}", metric.compute())
-
+        self.record_metrics()
         return super().on_test_epoch_end()

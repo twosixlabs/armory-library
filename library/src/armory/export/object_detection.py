@@ -74,6 +74,7 @@ class ObjectDetectionExporter(Exporter):
 
     def __init__(
         self,
+        name: Optional[str] = None,
         score_threshold: float = 0.5,
         inputs_accessor: Optional[Images.Accessor] = None,
         predictions_accessor: Optional[BoundingBoxes.Accessor] = None,
@@ -84,6 +85,7 @@ class ObjectDetectionExporter(Exporter):
         Initializes the exporter.
 
         Args:
+            name: Description of the exporter
             score_threshold: Optional, minimum score for object detection
                 predictions to be included as drawn bounding boxes in the
                 exported images. Defaults to 0.5.
@@ -102,6 +104,7 @@ class ObjectDetectionExporter(Exporter):
                 omitted, no samples will be exported.
         """
         super().__init__(
+            name=name or "ObjectDetection",
             predictions_accessor=(
                 predictions_accessor or BoundingBoxes.as_numpy(format=BBoxFormat.XYXY)
             ),
@@ -118,11 +121,11 @@ class ObjectDetectionExporter(Exporter):
         )
 
     def export_samples(
-        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+        self, batch_idx: int, batch: Batch, samples: Iterable[int]
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
 
-        self._export_metadata(chain_name, batch_idx, batch, samples)
+        self._export_metadata(batch_idx, batch, samples)
 
         images = self.inputs_accessor.get(batch.inputs)
         targets = self.targets_accessor.get(batch.targets)
@@ -138,7 +141,5 @@ class ObjectDetectionExporter(Exporter):
                 ground_truth_boxes=targets[sample_idx]["boxes"],
                 pred_boxes=boxes_above_threshold,
             ).transpose(1, 2, 0)
-            filename = self.artifact_path(
-                chain_name, batch_idx, sample_idx, "objects.png"
-            )
+            filename = self.artifact_path(batch_idx, sample_idx, "objects.png")
             self.sink.log_image(with_boxes, filename)

@@ -216,17 +216,80 @@ def test_track_init_params_when_multiple_calls():
 
 
 ###
-# track_evaluation
+# track_call
 ###
 
 
-def test_track_evaluation_logs_params_with_mlflow():
-    track.track_param("strparam", "str")
-    track.track_param("intparam", 42)
-    with track.track_evaluation("test"):
+def test_track_call_with_function():
+    def func(a, b):
+        assert a == "hello world"
+        assert b == 42
+
+    track.track_call(func, a="hello world", b=42)
+
+    params = track.get_current_params()
+    params.pop("func._func")
+    assert params == {"func.a": "hello world", "func.b": 42}
+
+
+def test_track_call_with_class():
+    class TestClass:
+        def __init__(self, a, b):
+            assert a == "hello world"
+            assert b == 42
+
+    obj = track.track_call(TestClass, a="hello world", b=42)
+    assert isinstance(obj, TestClass)
+
+    params = track.get_current_params()
+    params.pop("TestClass._func")
+    assert params == {"TestClass.a": "hello world", "TestClass.b": 42}
+
+
+###
+# trackable_context/Trackable
+###
+
+
+def test_trackable_context_records_on_trackables():
+    class TestTrackable(track.Trackable):
         pass
 
-    run = mlflow.last_active_run()
-    assert run
-    assert run.data.params["strparam"] == "str"
-    assert run.data.params["intparam"] == "42"
+    with track.trackable_context():
+        track.track_param("key1", "value1")
+        obj = TestTrackable()
+        track.track_param("key2", "value2")
+
+    assert track.get_current_params() == {}
+    assert obj.tracked_params == {"key1": "value1", "key2": "value2"}
+
+
+def test_trackable_context_and_decorated_trackables():
+    @track.track_init_params
+    class DecoratedTrackable(track.Trackable):
+        def __init__(self, a, b):
+            super().__init__()
+            assert a == 314159
+            assert b == "hi"
+
+    with track.trackable_context():
+        obj = DecoratedTrackable(a=314159, b="hi")
+
+    obj.tracked_params.pop("DecoratedTrackable._func")
+    assert obj.tracked_params == {
+        "DecoratedTrackable.a": 314159,
+        "DecoratedTrackable.b": "hi",
+    }
+
+
+def test_trackable_context_when_nested():
+    track.track_param("key1", "global")
+
+    class TestTrackable(track.Trackable):
+        pass
+
+    with track.trackable_context(nested=True):
+        track.track_param("key2", "child")
+        obj = TestTrackable()
+
+    assert obj.tracked_params == {"key1": "global", "key2": "child"}
