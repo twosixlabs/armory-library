@@ -82,8 +82,8 @@ def create_dataloader(
     )
 
 
-GDRIVE_VAL_URL = "https://drive.usercontent.google.com/download?id=1bxK5zgLn0_L8x276eKkuYA_FzwCIjb59&confirm=1"
-GDRIVE_TRAIN_URL = "https://drive.usercontent.google.com/download?id=1a2oHjcEcwXP8oUF95qiwrqzACb2YlUhn&confirm=1"
+TRAIN_URL = "https://github.com/ultralytics/yolov5/releases/download/v1.0/VisDrone2019-DET-train.zip"
+VAL_URL = "https://github.com/ultralytics/yolov5/releases/download/v1.0/VisDrone2019-DET-val.zip"
 
 
 def load_dataset() -> datasets.DatasetDict:
@@ -95,7 +95,7 @@ def load_dataset() -> datasets.DatasetDict:
     """
     dl_manager = datasets.DownloadManager(dataset_name="VisDrone2019")
     ds_features = features()
-    paths = dl_manager.download({"train": GDRIVE_TRAIN_URL, "val": GDRIVE_VAL_URL})
+    paths = dl_manager.download({"train": TRAIN_URL, "val": VAL_URL})
     train_files = dl_manager.iter_archive(paths["train"])
     val_files = dl_manager.iter_archive(paths["val"])
     return datasets.DatasetDict(
@@ -115,7 +115,9 @@ def load_dataset() -> datasets.DatasetDict:
 
 
 CATEGORIES = [
-    "ignored",
+    # The YOLOv5 model removed this class and shifted all others down by 1 when
+    # it trained on the VisDrone data
+    # "ignored",
     "pedestrian",
     "people",
     "bicycle",
@@ -171,15 +173,18 @@ def load_annotations(file: io.BufferedReader) -> List[Dict[str, Any]]:
     )
     annotations = []
     for idx, row in enumerate(reader):
-        annotations.append(
-            {
-                "id": idx,
-                "bbox": list(map(float, [row[k] for k in ANNOTATION_FIELDS[:4]])),
-                "category": int(row["category_id"]),
-                "truncation": row["truncation"],
-                "occlusion": row["occlusion"],
-            }
-        )
+        category = int(row["category_id"])
+        if category != 0:  # Drop class-0 annotations
+            category -= 1  # The model was trained with 0-indexed categories starting at pedestrian
+            annotations.append(
+                {
+                    "id": idx,
+                    "bbox": list(map(float, [row[k] for k in ANNOTATION_FIELDS[:4]])),
+                    "category": category,
+                    "truncation": row["truncation"],
+                    "occlusion": row["occlusion"],
+                }
+            )
     return annotations
 
 
