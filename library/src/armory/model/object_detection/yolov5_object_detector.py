@@ -139,7 +139,7 @@ class YoloV5ObjectDetector(ObjectDetector):
         outputs = [
             {
                 "boxes": output[:, 0:4],
-                "labels": torch.argmax(output[:, 5:], dim=1, keepdim=False),
+                "labels": output[:, 5].to(torch.int64),
                 "scores": output[:, 4],
             }
             for output in outputs
