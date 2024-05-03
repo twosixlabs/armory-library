@@ -128,7 +128,8 @@ CATEGORIES = [
     "awning-tricycle",
     "bus",
     "motor",
-    "other",
+    # The YOLOv5 model also ignored/removed this class
+    # "other",
 ]
 
 
@@ -173,8 +174,9 @@ def load_annotations(file: io.BufferedReader) -> List[Dict[str, Any]]:
     )
     annotations = []
     for idx, row in enumerate(reader):
+        score = int(row["score"])
         category = int(row["category_id"])
-        if category != 0:  # Drop class-0 annotations
+        if score != 0:  # Drop annotations with score of 0 (class-0 & class-11)
             category -= 1  # The model was trained with 0-indexed categories starting at pedestrian
             annotations.append(
                 {
