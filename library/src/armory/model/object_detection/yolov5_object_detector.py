@@ -5,14 +5,15 @@ import torch
 from yolov5.models.yolo import DetectionModel
 
 from armory.data import (
-    Accessor,
-    Batch,
     BBoxFormat,
-    BoundingBoxes,
+    BoundingBoxSpec,
     DataType,
     ImageDimensions,
-    Images,
+    ImageSpec,
+    ObjectDetectionBatch,
     Scale,
+    TorchBoundingBoxSpec,
+    TorchImageSpec,
 )
 from armory.model.object_detection.object_detector import ObjectDetector
 from armory.track import track_init_params
@@ -39,9 +40,9 @@ class YoloV5ObjectDetector(ObjectDetector):
     def __init__(
         self,
         name: str,
-        model: DetectionModel,
-        inputs_accessor: Optional[Images.Accessor] = None,
-        predictions_accessor: Optional[Accessor] = None,
+        model,
+        inputs_spec: Optional[ImageSpec] = None,
+        predictions_spec: Optional[BoundingBoxSpec] = None,
         iou_threshold: Optional[float] = None,
         score_threshold: Optional[float] = None,
         **kwargs,
@@ -52,13 +53,13 @@ class YoloV5ObjectDetector(ObjectDetector):
         Args:
             name: Name of the model.
             model: YOLOv5 model being wrapped.
-            inputs_accessor: Optional, data accessor used to obtain low-level
-                image data from the highly-structured image inputs contained in
-                object detection batches. Defaults to an accessor compatible
-                with typical YOLOv5 models.
-            predictions_accessor: Optional, data accessor used to update the
-                object detection predictions in the batch. Defaults to an
-                accessor compatible with typical YOLOv5 models.
+            inputs_spec: Optional, data specification used to obtain raw image
+                data from the image inputs contained in object detection
+                batches. Defaults to a specification compatible with typical
+                YOLOv5 models.
+            predictions_spec: Optional, data specification used to update the
+                object detection predictions in the batch. Defaults to a
+                bounding box specification compatible with typical YOLOv5 models.
             **kwargs: All other keyword arguments will be forwarded to the
                 `yolov5.utils.general.non_max_suppression` function used to
                 postprocess the model outputs.
@@ -66,16 +67,16 @@ class YoloV5ObjectDetector(ObjectDetector):
         super().__init__(
             name=name,
             model=model,
-            inputs_accessor=(
-                inputs_accessor
-                or Images.as_torch(
+            inputs_spec=(
+                inputs_spec
+                or TorchImageSpec(
                     dim=ImageDimensions.CHW,
                     scale=Scale(dtype=DataType.FLOAT, max=1.0),
                     dtype=torch.float32,
                 )
             ),
-            predictions_accessor=(
-                predictions_accessor or BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
+            predictions_spec=(
+                predictions_spec or TorchBoundingBoxSpec(format=BBoxFormat.XYXY)
             ),
             iou_threshold=iou_threshold,
             score_threshold=score_threshold,
@@ -119,7 +120,7 @@ class YoloV5ObjectDetector(ObjectDetector):
         preds = self._model(x)
         return preds
 
-    def predict(self, batch: Batch):
+    def predict(self, batch: ObjectDetectionBatch):
         """
         Invokes the wrapped model using the image inputs in the given batch and
         updates the object detection predictions in the batch.
@@ -131,7 +132,7 @@ class YoloV5ObjectDetector(ObjectDetector):
             batch: Object detection batch
         """
         self.eval()
-        inputs = self.inputs_accessor.get(batch.inputs)
+        inputs = batch.inputs.get(self.inputs_spec)
         outputs = self(inputs)
         outputs = self.nms(outputs)
         outputs = [
@@ -142,4 +143,4 @@ class YoloV5ObjectDetector(ObjectDetector):
             }
             for output in outputs
         ]
-        self.predictions_accessor.set(batch.predictions, outputs)
+        batch.predictions.set(outputs, self.predictions_spec)

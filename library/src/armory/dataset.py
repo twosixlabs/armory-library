@@ -233,8 +233,10 @@ class ImageClassificationDataLoader(ShuffleableDataLoader):
         }
         images = data.Images(
             images=_pop_and_cast(collated, self.image_key),
-            dim=self.dim,
-            scale=self.scale,
+            spec=data.ImageSpec(
+                dim=self.dim,
+                scale=self.scale,
+            ),
         )
         labels = data.NDimArray(_pop_and_cast(collated, self.label_key))
         return data.ImageClassificationBatch(
@@ -326,12 +328,16 @@ class ObjectDetectionDataLoader(ShuffleableDataLoader):
         }
         images = data.Images(
             images=_pop_and_cast(collated, self.image_key),
-            dim=self.dim,
-            scale=self.scale,
+            spec=data.ImageSpec(
+                dim=self.dim,
+                scale=self.scale,
+            ),
         )
         boxes = data.BoundingBoxes(
             boxes=[self._to_bbox(obj) for obj in collated.pop(self.objects_key)],
-            format=self.format,
+            spec=data.BoundingBoxSpec(
+                format=self.format,
+            ),
         )
         return data.ObjectDetectionBatch(
             inputs=images,

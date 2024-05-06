@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from typing_extensions import Self
 
-from armory.data import Accessor, Batch, DefaultTorchAccessor, TorchAccessor
+from armory.data import Batch, DataSpecification, TorchSpec
 from armory.track import Trackable
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ class Metric(Trackable, nn.Module, ABC):
     def __init__(
         self,
         metric: "TorchMetric",
-        accessor: Optional[Accessor] = None,
+        spec: Optional[DataSpecification] = None,
         record_as_artifact: bool = True,
         record_as_metrics: Optional[Iterable[str]] = None,
     ):
@@ -30,9 +30,9 @@ class Metric(Trackable, nn.Module, ABC):
 
         Args:
             metric: torchmetrics metric to be wrapped.
-            accessor: Optional, data accessor for the batch fields used for the
+            spec: Optional, data specification for the batch fields used for the
                 metric. This may be used for input data or for predictions from
-                the batch. By default, a generic torch accessor is used.
+                the batch. By default, a generic torch spec is used.
             record_as_artifact: If True, the metric result will be recorded as
                 an artifact to the evaluation run.
             record_as_metrics: Optional, a set of JSON paths in the metric
@@ -41,7 +41,7 @@ class Metric(Trackable, nn.Module, ABC):
         """
         super().__init__()
         self.metric = metric
-        self.accessor = accessor or DefaultTorchAccessor(device=self.metric.device)
+        self.spec = spec or TorchSpec(device=self.metric.device)
         self.record_as_artifact = record_as_artifact
         self.record_as_metrics = (
             {path: jsonpath_ng.parse(path) for path in record_as_metrics}
@@ -51,8 +51,8 @@ class Metric(Trackable, nn.Module, ABC):
 
     def _apply(self, *args, **kwargs):
         super()._apply(*args, **kwargs)
-        if isinstance(self.accessor, TorchAccessor):
-            self.accessor.to(device=self.metric.device)
+        if isinstance(self.spec, TorchSpec):
+            self.spec.to(device=self.metric.device)
 
     def compute(self):
         """Computes the metric value(s)."""
@@ -104,7 +104,7 @@ class Metric(Trackable, nn.Module, ABC):
         """Creates a clone of the metric."""
         return self.__class__(
             metric=self.metric,
-            accessor=self.accessor,
+            spec=self.spec,
             record_as_artifact=self.record_as_artifact,
             record_as_metrics=self.record_as_metrics,
         )
@@ -135,8 +135,8 @@ class PerturbationMetric(Metric):
 
     def update(self, batch: Batch) -> None:
         self.metric.update(
-            self.accessor.get(batch.initial_inputs),
-            self.accessor.get(batch.inputs),
+            batch.initial_inputs.get(self.spec),
+            batch.inputs.get(self.spec),
         )
 
 
@@ -161,6 +161,6 @@ class PredictionMetric(Metric):
     def update(self, batch: Batch) -> None:
         if batch.predictions is not None:
             self.metric.update(
-                self.accessor.get(batch.predictions),
-                self.accessor.get(batch.targets),
+                batch.predictions.get(self.spec),
+                batch.targets.get(self.spec),
             )

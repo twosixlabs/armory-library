@@ -1,6 +1,6 @@
 from typing import Optional
 
-from armory.data import Batch, Images, TorchAccessor
+from armory.data import ImageClassificationBatch, ImageSpec, TorchSpec
 from armory.evaluation import ModelProtocol
 from armory.model.base import ArmoryModel, ModelInputAdapter, ModelOutputAdapter
 
@@ -23,8 +23,12 @@ class ImageClassifier(ArmoryModel, ModelProtocol):
         classifier = ImageClassifier(
             name="My model",
             model=model,
-            accessor=armory.data.Images.as_torch(
-                dim=armory.data.ImageDimensions.CHW
+            inputs_spec=armory.data.TorchImageSpec(
+                dim=armory.data.ImageDimensions.CHW,
+                scale=armory.data.Scale(
+                    dtype=armory.data.DataType.FLOAT,
+                    max=1.0,
+                ),
             ),
         )
     """
@@ -33,7 +37,7 @@ class ImageClassifier(ArmoryModel, ModelProtocol):
         self,
         name: str,
         model,
-        accessor: Images.Accessor,
+        inputs_spec: ImageSpec,
         preadapter: Optional[ModelInputAdapter] = None,
         postadapter: Optional[ModelOutputAdapter] = None,
     ):
@@ -43,9 +47,8 @@ class ImageClassifier(ArmoryModel, ModelProtocol):
         Args:
             name: Name of the model.
             model: Image classification model being wrapped.
-            accessor: Data accessor used to obtain low-level image data from the
-                highly-structured image inputs contained in image classification
-                batches.
+            inputs_spec: Data specification used to obtain raw image data from the
+                image inputs contained in image classification batches.
             preadapter: Optional, model input adapter.
             postadapter: Optional, model output adapter.
         """
@@ -55,12 +58,12 @@ class ImageClassifier(ArmoryModel, ModelProtocol):
             preadapter=preadapter,
             postadapter=postadapter if postadapter is not None else self._postadapt,
         )
-        self.accessor = accessor
+        self.inputs_spec = inputs_spec
 
     def _apply(self, *args, **kwargs):
         super()._apply(*args, **kwargs)
-        if isinstance(self.accessor, TorchAccessor):
-            self.accessor.to(device=self.device)
+        if isinstance(self.inputs_spec, TorchSpec):
+            self.inputs_spec.to(device=self.device)
 
     def _postadapt(self, output):
         if hasattr(output, "logits"):
@@ -71,7 +74,7 @@ class ImageClassifier(ArmoryModel, ModelProtocol):
             return output.scores
         return output
 
-    def predict(self, batch: Batch):
+    def predict(self, batch: ImageClassificationBatch):
         """
         Invokes the wrapped model using the image inputs in the given batch and
         updates the image classification predictions in the batch.
@@ -79,6 +82,6 @@ class ImageClassifier(ArmoryModel, ModelProtocol):
         Args:
             batch: Image classification batch
         """
-        inputs = self.accessor.get(batch.inputs)
+        inputs = batch.inputs.get(self.inputs_spec)
         outputs = self(inputs)
-        batch.predictions.update(outputs)
+        batch.predictions.set(outputs)

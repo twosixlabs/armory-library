@@ -8,13 +8,14 @@ if TYPE_CHECKING:
     from transformers.models.yolos import YolosImageProcessor, YolosModel
 
 from armory.data import (
-    Accessor,
     BBoxFormat,
-    BoundingBoxes,
+    BoundingBoxSpec,
     DataType,
     ImageDimensions,
-    Images,
+    ImageSpec,
     Scale,
+    TorchBoundingBoxSpec,
+    TorchImageSpec,
 )
 from armory.model.object_detection.object_detector import ObjectDetector
 
@@ -47,8 +48,8 @@ class YolosTransformer(ObjectDetector):
         name: str,
         model: "YolosModel",
         image_processor: "YolosImageProcessor",
-        inputs_accessor: Optional[Images.Accessor] = None,
-        predictions_accessor: Optional[Accessor] = None,
+        inputs_spec: Optional[ImageSpec] = None,
+        predictions_spec: Optional[BoundingBoxSpec] = None,
         target_size: Tuple[int, int] = (512, 512),
         iou_threshold: Optional[float] = None,
         score_threshold: Optional[float] = None,
@@ -61,13 +62,13 @@ class YolosTransformer(ObjectDetector):
             model: YOLOS model being wrapped.
             image_processor: HuggingFace YOLOS image processor corresponding to
                 the model.
-            inputs_accessor: Optional, data accessor used to obtain low-level
-                image data from the highly-structured image inputs contained in
-                object detection batches. Defaults to an accessor compatible
-                with typical YOLOS models.
-            predictions_accessor: Optional, data accessor used to update the
-                object detection predictions in the batch. Defaults to an
-                accessor compatible with typical YOLOS models.
+            inputs_spec: Optional, data specification used to obtain raw image
+                data from the image inputs contained in object detection
+                batches. Defaults to a specification compatible with typical
+                YOLOS models.
+            predictions_spec: Optional, data specification used to update the
+                raw object detection predictions in the batch. Defaults to a
+                bounding box specification compatible with typical YOLOS models.
             target_size: Size (as a `height, width` tuple) of images, used for
                 correct postprocessing and resizing of the bounding box
                 predictions.
@@ -77,9 +78,9 @@ class YolosTransformer(ObjectDetector):
             model=model,
             preadapter=self._preadapt,
             postadapter=self._postadapt,
-            inputs_accessor=(
-                inputs_accessor
-                or Images.as_torch(
+            inputs_spec=(
+                inputs_spec
+                or TorchImageSpec(
                     dim=ImageDimensions.CHW,
                     scale=Scale(
                         dtype=DataType.FLOAT,
@@ -90,8 +91,8 @@ class YolosTransformer(ObjectDetector):
                     dtype=torch.float32,
                 )
             ),
-            predictions_accessor=(
-                predictions_accessor or BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
+            predictions_spec=(
+                predictions_spec or TorchBoundingBoxSpec(format=BBoxFormat.XYXY)
             ),
             iou_threshold=iou_threshold,
             score_threshold=score_threshold,

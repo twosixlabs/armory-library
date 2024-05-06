@@ -6,7 +6,7 @@ import tidecv
 import tidecv.data
 from torchmetrics import Metric
 
-from armory.data import BBoxFormat, BoundingBoxes
+from armory.data import BBoxFormat, TorchBoundingBoxSpec
 from armory.metric import PredictionMetric
 
 
@@ -38,7 +38,7 @@ class TIDE(Metric):
         """
         return PredictionMetric(
             metric=cls(),
-            accessor=BoundingBoxes.as_torch(format=BBoxFormat.XYWH),
+            spec=TorchBoundingBoxSpec(format=BBoxFormat.XYWH),
             record_as_artifact=record_as_artifact,
             record_as_metrics=record_as_metrics,
         )

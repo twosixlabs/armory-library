@@ -176,7 +176,7 @@ def create_blur():
     evaluation_perturbation = armory.perturbation.CallablePerturbation(
         name="blur",
         perturbation=blur,
-        inputs_accessor=armory.data.Images.as_torch(),
+        inputs_spec=armory.data.TorchSpec(),
     )
 
     return evaluation_perturbation
@@ -186,13 +186,14 @@ def create_metrics():
     return {
         "linf_norm": armory.metric.PerturbationMetric(
             armory.metrics.perturbation.PerturbationNormMetric(ord=torch.inf),
-            armory.data.Images.as_torch(
-                scale=armory.data.Scale(dtype=armory.data.DataType.FLOAT, max=1.0)
+            armory.data.TorchImageSpec(
+                dim=armory.data.ImageDimensions.CHW,
+                scale=armory.data.Scale(dtype=armory.data.DataType.FLOAT, max=1.0),
             ),
         ),
         "map": armory.metric.PredictionMetric(
             torchmetrics.detection.MeanAveragePrecision(class_metrics=False),
-            armory.data.BoundingBoxes.as_torch(format=armory.data.BBoxFormat.XYXY),
+            armory.data.TorchBoundingBoxSpec(format=armory.data.BBoxFormat.XYXY),
         ),
         "tide": armory.metrics.tide.TIDE.create(),
         "detection": armory.metrics.detection.ObjectDetectionRates.create(),

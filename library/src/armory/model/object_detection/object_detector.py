@@ -3,7 +3,14 @@ from typing import Optional
 import numpy as np
 import torchvision.ops
 
-from armory.data import Accessor, Batch, Images, TorchAccessor, to_numpy, to_torch
+from armory.data import (
+    BoundingBoxSpec,
+    ImageSpec,
+    ObjectDetectionBatch,
+    TorchSpec,
+    to_numpy,
+    to_torch,
+)
 from armory.evaluation import ModelProtocol
 from armory.logs import log
 from armory.model.base import ArmoryModel, ModelInputAdapter, ModelOutputAdapter
@@ -26,10 +33,14 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
         detector = ObjectDetector(
             name="My model",
             model=model,
-            inputs_accessor=armory.data.Images.as_torch(
-                dim=armory.data.ImageDimensions.CHW
+            inputs_spec=armory.data.TorchImageSpec(
+                dim=armory.data.ImageDimensions.CHW,
+                scale=armory.data.Scale(
+                    dtype=armory.data.DataType.FLOAT,
+                    max=1.0,
+                ),
             ),
-            predictions_accessor=armory.data.BoundingBoxes.as_torch(
+            predictions_spec=armory.data.BoundingBoxSpec(
                 format=armory.data.BBoxFormat.XYXY
             ),
         )
@@ -39,8 +50,8 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
         self,
         name: str,
         model,
-        inputs_accessor: Images.Accessor,
-        predictions_accessor: Accessor,
+        inputs_spec: ImageSpec,
+        predictions_spec: BoundingBoxSpec,
         preadapter: Optional[ModelInputAdapter] = None,
         postadapter: Optional[ModelOutputAdapter] = None,
         iou_threshold: Optional[float] = None,
@@ -52,11 +63,10 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
         Args:
             name: Name of the model.
             model: Object detection model being wrapped.
-            inputs_accessor: Data accessor used to obtain low-level image data
-                from the highly-structured image inputs contained in object
-                detection batches.
-            predictions_accessor: Data accessor used to update the object
-                detection predictions in the batch.
+            inputs_spec: Data specification used to obtain raw image data from
+                the image inputs contained in object detection batches.
+            predictions_spec: Data specification used to update the raw object
+                detection predictions data in the batch.
             preadapter: Optional, model input adapter.
             postadapter: Optional, model output adapter.
             iou_threshold: Optional, IOU threshold for non-maximum suppression
@@ -69,15 +79,15 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
             preadapter=preadapter,
             postadapter=postadapter,
         )
-        self.inputs_accessor = inputs_accessor
-        self.predictions_accessor = predictions_accessor
+        self.inputs_spec = inputs_spec
+        self.predictions_spec = predictions_spec
         self.iou_threshold = iou_threshold
         self.score_threshold = score_threshold
 
     def _apply(self, *args, **kwargs):
         super()._apply(*args, **kwargs)
-        if isinstance(self.inputs_accessor, TorchAccessor):
-            self.inputs_accessor.to(device=self.device)
+        if isinstance(self.inputs_spec, TorchSpec):
+            self.inputs_spec.to(device=self.device)
 
     def _filter_predictions(self, preds):
         for pred in preds:
@@ -111,7 +121,7 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
                 log.info(f"keeping {len(pred['boxes'])} boxes")
         return preds
 
-    def predict(self, batch: Batch):
+    def predict(self, batch: ObjectDetectionBatch):
         """
         Invokes the wrapped model using the image inputs in the given batch and
         updates the object detection predictions in the batch.
@@ -124,7 +134,7 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
             batch: Object detection batch
         """
         self.eval()
-        inputs = self.inputs_accessor.get(batch.inputs)
+        inputs = batch.inputs.get(self.inputs_spec)
         outputs = self(inputs)
         outputs = self._filter_predictions(outputs)
-        self.predictions_accessor.set(batch.predictions, outputs)
+        batch.predictions.set(outputs, self.predictions_spec)

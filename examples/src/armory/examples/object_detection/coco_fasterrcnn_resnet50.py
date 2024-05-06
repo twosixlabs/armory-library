@@ -53,8 +53,11 @@ def load_model():
     armory_model = armory.model.object_detection.ObjectDetector(
         name="FasterRCNN-ResNet50",
         model=tv_model,
-        inputs_accessor=armory.data.Images.as_torch(),
-        predictions_accessor=armory.data.BoundingBoxes.as_torch(
+        inputs_spec=armory.data.TorchImageSpec(
+            dim=armory.data.ImageDimensions.CHW,
+            scale=armory.data.Scale(dtype=armory.data.DataType.FLOAT, max=1.0),
+        ),
+        predictions_spec=armory.data.TorchBoundingBoxSpec(
             format=armory.data.BBoxFormat.XYXY
         ),
     )
@@ -162,7 +165,7 @@ def create_metrics():
         ),
         "map": armory.metric.PredictionMetric(
             torchmetrics.detection.MeanAveragePrecision(class_metrics=False),
-            armory.data.BoundingBoxes.as_torch(format=armory.data.BBoxFormat.XYXY),
+            armory.data.TorchBoundingBoxSpec(format=armory.data.BBoxFormat.XYXY),
             record_as_metrics=["map"],
         ),
         "tide": armory.metrics.tide.TIDE.create(
