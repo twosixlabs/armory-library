@@ -47,17 +47,11 @@ class ImageClassificationExporter(Exporter):
         )
 
     def export_samples(
-        self,
-        chain_name: str,
-        batch_idx: int,
-        batch: ImageClassificationBatch,
-        samples: Iterable[int],
+        self, batch_idx: int, batch: ImageClassificationBatch, samples: Iterable[int]
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
-        self._export_metadata(chain_name, batch_idx, batch, samples)
+        self._export_metadata(batch_idx, batch, samples)
         images = batch.inputs.get(self.inputs_spec)
         for sample_idx in samples:
-            filename = self.artifact_path(
-                chain_name, batch_idx, sample_idx, "input.png"
-            )
+            filename = self.artifact_path(batch_idx, sample_idx, "input.png")
             self.sink.log_image(images[sample_idx], filename)

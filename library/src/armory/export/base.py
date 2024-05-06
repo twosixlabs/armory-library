@@ -3,12 +3,13 @@ from typing import Callable, Iterable, Mapping, Optional, Union
 
 from armory.data import Batch, DataSpecification, NumpySpec
 from armory.export.sink import Sink
+from armory.track import Trackable
 
 
-class Exporter(ABC):
+class Exporter(Trackable, ABC):
     """Base class for an Armory sample exporter."""
 
-    Criterion = Callable[[str, int, Batch], Union[bool, Iterable[int]]]
+    Criterion = Callable[[int, Batch], Union[bool, Iterable[int]]]
 
     def __init__(
         self,
@@ -29,6 +30,7 @@ class Exporter(ABC):
             criterion: Criterion to determine when samples will be exported. If
                 omitted, no samples will be exported.
         """
+        super().__init__()
         self.predictions_spec = predictions_spec or NumpySpec()
         self.targets_spec = targets_spec or NumpySpec()
         self.sink: Optional[Sink] = None
@@ -38,37 +40,33 @@ class Exporter(ABC):
         """Sets the export sink to be used by the exporter."""
         self.sink = sink
 
-    def export(self, chain_name: str, batch_idx: int, batch: Batch) -> None:
+    def export(self, batch_idx: int, batch: Batch) -> None:
         """
         Exports the given batch.
 
         Args:
-            chain_name: The name of the perturbation chain from the evaluation
-                to which this batch belongs.
             batch_idx: The index/number of this batch.
             batch: The batch to be exported.
         """
         assert self.sink, "No sink has been set, unable to export"
         if self.criterion is None:
             return
-        to_export = self.criterion(chain_name, batch_idx, batch)
+        to_export = self.criterion(batch_idx, batch)
         if not to_export:
             return
         if type(to_export) is bool:
             # Because of the early-return above, to_export can only ever be True at this point
             to_export = range(len(batch))
-        self.export_samples(chain_name, batch_idx, batch, to_export)
+        self.export_samples(batch_idx, batch, to_export)
 
     @abstractmethod
     def export_samples(
-        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+        self, batch_idx: int, batch: Batch, samples: Iterable[int]
     ) -> None:
         """
         Exports samples from the given batch.
 
         Args:
-            chain_name: The name of the perturbation chain from the evaluation
-                to which this batch belongs.
             batch_idx: The index/number of this batch.
             batch: The batch to be exported.
             samples: The indices of samples in the batch to be exported.
@@ -76,15 +74,11 @@ class Exporter(ABC):
         ...
 
     @staticmethod
-    def artifact_path(
-        chain_name: str, batch_idx: int, sample_idx: int, filename: str
-    ) -> str:
+    def artifact_path(batch_idx: int, sample_idx: int, filename: str) -> str:
         """
         Creates the full artifact path for a particular sample export.
 
         Args:
-            chain_name: The name of the perturbation chain from the evaluation
-                to which the sample's batch belongs.
             batch_idx: The index/number of the sample's batch.
             sample_idx: The index/number of the sample within the batch.
             filename: The name of the exported file.
@@ -92,7 +86,7 @@ class Exporter(ABC):
         Returns:
             Full artifact path as a string.
         """
-        return f"exports/{chain_name}/{batch_idx:05}/{sample_idx:02}/{filename}"
+        return f"exports/{batch_idx:05}/{sample_idx:02}/{filename}"
 
     @staticmethod
     def _from_list(maybe_list, idx):
@@ -103,7 +97,7 @@ class Exporter(ABC):
             return None
 
     def _export_metadata(
-        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+        self, batch_idx: int, batch: Batch, samples: Iterable[int]
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
 
@@ -130,7 +124,5 @@ class Exporter(ABC):
 
             self.sink.log_dict(
                 dictionary=dictionary,
-                artifact_file=self.artifact_path(
-                    chain_name, batch_idx, sample_idx, "metadata.txt"
-                ),
+                artifact_file=self.artifact_path(batch_idx, sample_idx, "metadata.txt"),
             )

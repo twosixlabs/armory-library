@@ -5,6 +5,8 @@ from typing import Any, Callable, Dict, Optional, Tuple
 import torch
 import torch.nn as nn
 
+from armory.track import Trackable
+
 Args = Tuple[Any, ...]
 Kwargs = Dict[str, Any]
 ModelInputAdapter = Callable[..., Tuple[Args, Kwargs]]
@@ -16,7 +18,7 @@ for the model's `forward` method.
 ModelOutputAdapter = Callable[[Any], Any]
 
 
-class ArmoryModel(nn.Module):
+class ArmoryModel(Trackable, nn.Module):
     """
     Wrapper around a model to apply an adapter to inputs and outputs of the
     model.

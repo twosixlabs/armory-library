@@ -116,15 +116,11 @@ class ObjectDetectionExporter(Exporter):
         self.predictions_spec: NumpyBoundingBoxSpec
 
     def export_samples(
-        self,
-        chain_name: str,
-        batch_idx: int,
-        batch: ObjectDetectionBatch,
-        samples: Iterable[int],
+        self, batch_idx: int, batch: ObjectDetectionBatch, samples: Iterable[int]
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
 
-        self._export_metadata(chain_name, batch_idx, batch, samples)
+        self._export_metadata(batch_idx, batch, samples)
 
         images = batch.inputs.get(self.inputs_spec)
         targets = batch.targets.get(self.targets_spec)
@@ -142,7 +138,5 @@ class ObjectDetectionExporter(Exporter):
                 ground_truth_boxes=targets[sample_idx]["boxes"],
                 pred_boxes=boxes_above_threshold,
             ).transpose(1, 2, 0)
-            filename = self.artifact_path(
-                chain_name, batch_idx, sample_idx, "objects.png"
-            )
+            filename = self.artifact_path(batch_idx, sample_idx, "objects.png")
             self.sink.log_image(with_boxes, filename)
