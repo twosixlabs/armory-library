@@ -13,6 +13,7 @@ class Exporter(Trackable, ABC):
 
     def __init__(
         self,
+        name: str,
         predictions_spec: Optional[DataSpecification] = None,
         targets_spec: Optional[DataSpecification] = None,
         criterion: Optional[Criterion] = None,
@@ -21,6 +22,7 @@ class Exporter(Trackable, ABC):
         Initializes the exporter.
 
         Args:
+            name: Descriptive name of the exporter
             predictions_spec: Optional, data specification used to obtain raw
                 predictions data from the exported batches. By default, a generic
                 NumPy specification will be used.
@@ -31,6 +33,7 @@ class Exporter(Trackable, ABC):
                 omitted, no samples will be exported.
         """
         super().__init__()
+        self.name = name
         self.predictions_spec = predictions_spec or NumpySpec()
         self.targets_spec = targets_spec or NumpySpec()
         self.sink: Optional[Sink] = None

@@ -70,16 +70,14 @@ class EvaluationModule(pl.LightningModule):
         Applies the chain's perturbations to the batch to produce the perturbed data
         to be given to the model
         """
-        with self.profiler.measure(f"{self.chain.name}/perturbation"):
+        with self.profiler.measure("perturbation"):
             for perturbation in self.chain.perturbations:
-                with self.profiler.measure(
-                    f"{self.chain.name}/perturbation/{perturbation.name}"
-                ):
+                with self.profiler.measure(f"perturbation/{perturbation.name}"):
                     perturbation.apply(batch)
 
     def evaluate(self, batch: "Batch"):
         """Perform evaluation on batch"""
-        with self.profiler.measure(f"{self.chain.name}/predict"):
+        with self.profiler.measure("predict"):
             self.model.predict(batch)
 
     def record_metrics(self):
@@ -125,7 +123,8 @@ class EvaluationModule(pl.LightningModule):
             self.metrics.update_metrics(batch)
 
             for exporter in self.chain.exporters:
-                exporter.export(batch_idx, batch)
+                with self.profiler.measure(f"export/{exporter.name}"):
+                    exporter.export(batch_idx, batch)
         except BaseException as err:
             raise RuntimeError(
                 f"Error performing evaluation of batch #{batch_idx} in chain '{self.chain.name}': {batch}"

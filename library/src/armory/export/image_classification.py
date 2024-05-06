@@ -16,6 +16,7 @@ class ImageClassificationExporter(Exporter):
 
     def __init__(
         self,
+        name: Optional[str] = None,
         inputs_spec: Optional[NumpyImageSpec] = None,
         predictions_spec: Optional[DataSpecification] = None,
         targets_spec: Optional[DataSpecification] = None,
@@ -25,6 +26,7 @@ class ImageClassificationExporter(Exporter):
         Initializes the exporter.
 
         Args:
+            name: Descriptive name of the exporter
             inputs_spec: Optional, data specification used to obtain raw
                 image data from the inputs contained in exported batches. By
                 default, a NumPy images specification is used.
@@ -38,6 +40,7 @@ class ImageClassificationExporter(Exporter):
                 omitted, no samples will be exported.
         """
         super().__init__(
+            name=name or "ImageClassification",
             predictions_spec=predictions_spec,
             targets_spec=targets_spec,
             criterion=criterion,

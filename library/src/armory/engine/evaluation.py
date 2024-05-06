@@ -134,11 +134,15 @@ class EvaluationEngine:
             logger=logger,
             **self.trainer_kwargs,
         )
+        self.profiler.reset()
         with self._track_system_metrics(logger.run_id):
             trainer.test(module, dataloaders=chain.dataset.dataloader, verbose=verbose)
 
+        profiler_results = self.profiler.results()
+        module.sink.log_dict(dict(profiler_results), "profiler_results.txt")
+
         return EvaluationResults(
             run_id=logger.run_id or "",
-            compute=self.profiler.results(),
+            compute=profiler_results,
             metrics=trainer.callback_metrics,
         )

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional
 
-from jsonpath_ng import parse
+import jsonpath_ng
 import torch
 import torch.nn as nn
 from typing_extensions import Self
@@ -44,7 +44,7 @@ class Metric(Trackable, nn.Module, ABC):
         self.spec = spec or TorchSpec(device=self.metric.device)
         self.record_as_artifact = record_as_artifact
         self.record_as_metrics = (
-            {path: parse(path) for path in record_as_metrics}
+            {path: jsonpath_ng.parse(path) for path in record_as_metrics}
             if record_as_metrics is not None
             else None
         )
