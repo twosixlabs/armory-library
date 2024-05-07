@@ -4,8 +4,9 @@ a custom Robust DPatch attack
 """
 
 from pprint import pprint
-from typing import Optional
+from typing import Literal, Optional, Union
 
+import torch
 import torchmetrics.detection
 import yolov5
 
@@ -42,13 +43,14 @@ def load_dataset(
     batch_size: int,
     shuffle: bool,
     seed: Optional[int] = None,
+    split: Union[Literal["val"], Literal["train"]] = "val",
 ):
     """Load VisDrone dataset"""
     with evaluation.autotrack():
         hf_dataset = armory.examples.object_detection.datasets.visdrone.load_dataset()
         dataloader = (
             armory.examples.object_detection.datasets.visdrone.create_dataloader(
-                hf_dataset["val"],
+                hf_dataset[split],
                 max_size=640,
                 batch_size=batch_size,
                 shuffle=shuffle,
@@ -102,6 +104,20 @@ def create_exporters(model, export_every_n_batches):
     ]
 
 
+def generate_patch(dataloader, model) -> torch.Tensor:
+    from lightning.pytorch import Trainer
+
+    from armory.examples.object_detection.visdrone_yolov5_robustdpatch import (
+        RobustDPatchModule,
+    )
+
+    module = RobustDPatchModule(model)
+    trainer = Trainer(limit_train_batches=10, max_epochs=20)
+    trainer.fit(module, dataloader)
+
+    return module.patch
+
+
 @armory.track.track_params
 def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     """Perform the evaluation"""
@@ -114,6 +130,10 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     dataset = load_dataset(evaluation, batch_size, shuffle, seed)
     model = load_model(evaluation)
 
+    # Generate patch
+    train_dataset = load_dataset(evaluation, batch_size, shuffle, seed, split="train")
+    patch = generate_patch(train_dataset.dataloader, model)
+
     evaluation.use_dataset(dataset)
     evaluation.use_model(model)
     evaluation.use_metrics(create_metrics())
@@ -121,6 +141,23 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
 
     with evaluation.add_chain("benign"):
         pass
+
+    with evaluation.add_chain("patch") as chain:
+        x_1, y_1 = 295, 295  # middle of 640x640
+        x_2 = x_1 + patch.shape[1]
+        y_2 = y_1 + patch.shape[2]
+
+        def apply_patch(inputs: torch.Tensor) -> torch.Tensor:
+            with_patch = inputs.clone()
+            with_patch[:, :, x_1:x_2, y_1:y_2] = patch
+            return with_patch
+
+        attack = armory.perturbation.CallablePerturbation(
+            name="RobustDPatch",
+            perturbation=apply_patch,
+            inputs_spec=model.inputs_spec,
+        )
+        chain.add_perturbation(attack)
 
     eval_engine = armory.engine.EvaluationEngine(
         evaluation,
