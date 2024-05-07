@@ -1,6 +1,7 @@
 import logging
 from typing import Optional, Sequence
 
+import PIL.Image
 from lightning.pytorch import LightningModule, Trainer
 import torch
 import yolov5
@@ -21,8 +22,13 @@ class RobustDPatchModule(LightningModule):
             format=armory.data.BBoxFormat.CXCYWH
         )
         self.patch_shape = (3, 50, 50)
-        self.patch_location = (295, 295)
-        self.patch = torch.zeros(self.patch_shape)
+        self.patch_location = (295, 295)  # middle of 640x640
+        # TODO non-zero min value
+        self.patch = (
+            torch.randint(0, 255, self.patch_shape)
+            / 255
+            * self.model.inputs_spec.scale.max
+        )
         self.targeted = False
         self.learning_rate = 0.01
 
@@ -149,5 +155,9 @@ if __name__ == "__main__":
     model = load_model()
 
     module = RobustDPatchModule(model)
-    trainer = Trainer(limit_train_batches=10, max_epochs=2)
+    trainer = Trainer(limit_train_batches=10, max_epochs=20)
     trainer.fit(module, dataloader)
+
+    patch_np = (module.patch.cpu().numpy().transpose(1, 2, 0) * 255).astype("uint8")
+    patch = PIL.Image.fromarray(patch_np)
+    patch.save("patch.png")
