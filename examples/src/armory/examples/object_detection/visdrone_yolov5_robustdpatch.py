@@ -51,15 +51,20 @@ class RobustDPatchModule(LightningModule):
     def training_step(self, batch: armory.data.Batch, batch_idx: int):
         # TODO transformations
 
-        # Get inputs as Tensor with gradients required
+        # Get inputs as Tensor
         inputs = batch.inputs.get(self.model.inputs_spec)
         assert isinstance(inputs, torch.Tensor)
-        if inputs.is_leaf:
-            inputs.requires_grad = True
-        else:
-            inputs.retain_grad()
 
-        # TODO apply patch to image
+        # Get patch as Tensor with gradients required
+        patch = self.patch.clone()
+        patch.requires_grad = True
+
+        # Apply patch to image
+        x_1, y_1 = self.patch_location
+        x_2 = x_1 + self.patch_shape[1]
+        y_2 = y_1 + self.patch_shape[2]
+        inputs_with_patch = inputs.clone()
+        inputs_with_patch[:, :, x_1:x_2, y_1:y_2] = patch
 
         # Get targets as Tensor
         _, _, height, width = inputs.shape
@@ -68,7 +73,7 @@ class RobustDPatchModule(LightningModule):
 
         # Get loss from model outputs
         self.model.train()
-        loss_components = self.model(inputs, yolo_targets)
+        loss_components = self.model(inputs_with_patch, yolo_targets)
         loss = loss_components["loss_total"]
 
         # Clean gradients
@@ -76,16 +81,11 @@ class RobustDPatchModule(LightningModule):
 
         # Compute gradients
         loss.backward(retain_graph=True)
-        assert inputs.grad is not None
-        grads = inputs.grad.clone()
-        assert grads.shape == inputs.shape
+        assert patch.grad is not None
+        grads = patch.grad.clone()
+        assert grads.shape == self.patch.shape
 
-        # Extract patch gradients
-        x_1, y_1 = self.patch_location
-        x_2 = x_1 + self.patch_shape[1]
-        y_2 = y_1 + self.patch_shape[2]
-        grads = grads[:, :, x_1:x_2, y_1:y_2]
-
+        # Accumulate gradients
         patch_gradients = self.patch_gradients + torch.sum(grads, dim=0)
         logger.debug(
             "Gradient percentage diff: %f)",
