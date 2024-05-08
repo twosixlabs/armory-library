@@ -2,6 +2,7 @@ import logging
 from typing import Optional, Sequence
 
 import PIL.Image
+import kornia
 from lightning.pytorch import LightningModule, Trainer
 import torch
 import yolov5
@@ -31,6 +32,13 @@ class RobustDPatchModule(LightningModule):
         )
         self.targeted = False
         self.learning_rate = 0.01
+        self.sample_size = 10
+        self.augmentation = kornia.augmentation.container.ImageSequential(
+            kornia.augmentation.RandomHorizontalFlip(p=0.5),
+            kornia.augmentation.RandomBrightness(brightness=(0.5, 2.0), p=0.5),
+            kornia.augmentation.RandomRotation(degrees=15, p=0.5),
+            random_apply=True,
+        )
 
     # def forward(self, inputs, target):
     #     # return self.model(inputs)
@@ -55,52 +63,56 @@ class RobustDPatchModule(LightningModule):
         self.patch = torch.clip(self.patch, 0, self.model.inputs_spec.scale.max)
 
     def training_step(self, batch: armory.data.Batch, batch_idx: int):
-        # TODO transformations
+        for _ in range(self.sample_size):
+            # Get inputs as Tensor
+            inputs = batch.inputs.get(self.model.inputs_spec)
+            assert isinstance(inputs, torch.Tensor)
 
-        # Get inputs as Tensor
-        inputs = batch.inputs.get(self.model.inputs_spec)
-        assert isinstance(inputs, torch.Tensor)
+            # Get patch as Tensor with gradients required
+            patch = self.patch.clone()
+            patch.requires_grad = True
 
-        # Get patch as Tensor with gradients required
-        patch = self.patch.clone()
-        patch.requires_grad = True
+            # Apply patch to image
+            x_1, y_1 = self.patch_location
+            x_2 = x_1 + self.patch_shape[1]
+            y_2 = y_1 + self.patch_shape[2]
+            inputs_with_patch = inputs.clone()
+            inputs_with_patch[:, :, x_1:x_2, y_1:y_2] = patch
 
-        # Apply patch to image
-        x_1, y_1 = self.patch_location
-        x_2 = x_1 + self.patch_shape[1]
-        y_2 = y_1 + self.patch_shape[2]
-        inputs_with_patch = inputs.clone()
-        inputs_with_patch[:, :, x_1:x_2, y_1:y_2] = patch
+            # Apply random augmentations to images
+            inputs_with_augmentations = self.augmentation(inputs_with_patch)
 
-        # Get targets as Tensor
-        _, _, height, width = inputs.shape
-        targets = batch.targets.get(self.target_spec)
-        yolo_targets = self._to_yolo_targets(targets, height, width, self.model.device)
+            # Get targets as Tensor
+            _, _, height, width = inputs.shape
+            targets = batch.targets.get(self.target_spec)
+            yolo_targets = self._to_yolo_targets(
+                targets, height, width, self.model.device
+            )
 
-        # Get loss from model outputs
-        self.model.train()
-        loss_components = self.model(inputs_with_patch, yolo_targets)
-        loss = loss_components["loss_total"]
+            # Get loss from model outputs
+            self.model.train()
+            loss_components = self.model(inputs_with_augmentations, yolo_targets)
+            loss = loss_components["loss_total"]
 
-        # Clean gradients
-        self.model.zero_grad()
+            # Clean gradients
+            self.model.zero_grad()
 
-        # Compute gradients
-        loss.backward(retain_graph=True)
-        assert patch.grad is not None
-        grads = patch.grad.clone()
-        assert grads.shape == self.patch.shape
+            # Compute gradients
+            loss.backward(retain_graph=True)
+            assert patch.grad is not None
+            grads = patch.grad.clone()
+            assert grads.shape == self.patch.shape
 
-        # Accumulate gradients
-        patch_gradients = self.patch_gradients + torch.sum(grads, dim=0)
-        logger.debug(
-            "Gradient percentage diff: %f)",
-            torch.mean(
-                torch.sign(patch_gradients) != torch.sign(self.patch_gradients),
-                dtype=torch.float64,
-            ),
-        )
-        self.patch_gradients = patch_gradients
+            # Accumulate gradients
+            patch_gradients = self.patch_gradients + torch.sum(grads, dim=0)
+            logger.debug(
+                "Gradient percentage diff: %f)",
+                torch.mean(
+                    torch.sign(patch_gradients) != torch.sign(self.patch_gradients),
+                    dtype=torch.float64,
+                ),
+            )
+            self.patch_gradients = patch_gradients
 
     @staticmethod
     def _to_yolo_targets(
