@@ -185,7 +185,8 @@ def main(
         pass
 
     with evaluation.add_chain("patch") as chain:
-        x_1, y_1 = 295, 295  # middle of 640x640
+        # x_1, y_1 = 295, 295  # middle of 640x640
+        x_1, y_1 = 50, 50
         x_2 = x_1 + patch.shape[1]
         y_2 = y_1 + patch.shape[2]
 

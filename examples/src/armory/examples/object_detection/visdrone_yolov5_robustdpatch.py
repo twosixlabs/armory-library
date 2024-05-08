@@ -1,4 +1,5 @@
 import logging
+import random
 from typing import Optional, Sequence
 
 import PIL.Image
@@ -73,7 +74,9 @@ class RobustDPatchModule(LightningModule):
             patch.requires_grad = True
 
             # Apply patch to image
-            x_1, y_1 = self.patch_location
+            x_1 = random.randint(0, inputs.shape[3] - self.patch_shape[2])
+            y_1 = random.randint(0, inputs.shape[2] - self.patch_shape[1])
+            # x_1, y_1 = self.patch_location
             x_2 = x_1 + self.patch_shape[1]
             y_2 = y_1 + self.patch_shape[2]
             inputs_with_patch = inputs.clone()
