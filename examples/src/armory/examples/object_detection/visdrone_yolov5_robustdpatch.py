@@ -99,6 +99,7 @@ class RobustDPatchModule(LightningModule):
 
             # Compute gradients
             loss.backward(retain_graph=True)
+            self.log("loss", loss)
             assert patch.grad is not None
             grads = patch.grad.clone()
             assert grads.shape == self.patch.shape

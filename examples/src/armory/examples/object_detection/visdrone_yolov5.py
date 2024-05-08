@@ -124,13 +124,24 @@ def create_exporters(model, export_every_n_batches):
 
 def generate_patch(dataloader, model, num_batches=10, num_epochs=20) -> torch.Tensor:
     from lightning.pytorch import Trainer
+    from lightning.pytorch.loggers import MLFlowLogger
 
+    from armory.evaluation import SysConfig
     from armory.examples.object_detection.visdrone_yolov5_robustdpatch import (
         RobustDPatchModule,
     )
+    from armory.track import init_tracking_uri
+
+    sysconfig = SysConfig()
+    logger = MLFlowLogger(
+        experiment_name="visdrone-yolov5-robustdpatch-generation",
+        tracking_uri=init_tracking_uri(sysconfig.armory_home),
+    )
 
     module = RobustDPatchModule(model)
-    trainer = Trainer(limit_train_batches=num_batches, max_epochs=num_epochs)
+    trainer = Trainer(
+        limit_train_batches=num_batches, max_epochs=num_epochs, logger=logger
+    )
     trainer.fit(module, dataloader)
 
     return module.patch
