@@ -35,6 +35,24 @@ def parse_cli_args():
         export_every_n_batches=5,
         num_batches=20,
     )
+    parser.add_argument(
+        "--patch-batch-size",
+        default=2,
+        help="Batch size used to generate the patch",
+        type=int,
+    )
+    parser.add_argument(
+        "--patch-num-batches",
+        default=10,
+        help="Number of batches used to generate the patch",
+        type=int,
+    )
+    parser.add_argument(
+        "--patch-num-epochs",
+        default=20,
+        help="Number of epochs used to generate the patch",
+        type=int,
+    )
     return parser.parse_args()
 
 
@@ -104,7 +122,7 @@ def create_exporters(model, export_every_n_batches):
     ]
 
 
-def generate_patch(dataloader, model) -> torch.Tensor:
+def generate_patch(dataloader, model, num_batches=10, num_epochs=20) -> torch.Tensor:
     from lightning.pytorch import Trainer
 
     from armory.examples.object_detection.visdrone_yolov5_robustdpatch import (
@@ -112,14 +130,23 @@ def generate_patch(dataloader, model) -> torch.Tensor:
     )
 
     module = RobustDPatchModule(model)
-    trainer = Trainer(limit_train_batches=10, max_epochs=20)
+    trainer = Trainer(limit_train_batches=num_batches, max_epochs=num_epochs)
     trainer.fit(module, dataloader)
 
     return module.patch
 
 
 @armory.track.track_params
-def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
+def main(
+    batch_size,
+    export_every_n_batches,
+    num_batches,
+    seed,
+    shuffle,
+    patch_batch_size,
+    patch_num_batches,
+    patch_num_epochs,
+):
     """Perform the evaluation"""
     evaluation = armory.evaluation.Evaluation(
         name="visdrone-object-detection-yolov5",
@@ -131,8 +158,12 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     model = load_model(evaluation)
 
     # Generate patch
-    train_dataset = load_dataset(evaluation, batch_size, shuffle, seed, split="train")
-    patch = generate_patch(train_dataset.dataloader, model)
+    train_dataset = load_dataset(
+        evaluation, patch_batch_size, shuffle, seed, split="train"
+    )
+    patch = generate_patch(
+        train_dataset.dataloader, model, patch_num_batches, patch_num_epochs
+    )
 
     evaluation.use_dataset(dataset)
     evaluation.use_model(model)
