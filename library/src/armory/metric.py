@@ -54,7 +54,7 @@ class Metric(Trackable, nn.Module, ABC):
         if isinstance(self.spec, TorchSpec):
             self.spec.to(device=self.metric.device)
 
-    def compute(self):
+    def compute(self) -> torch.Tensor:
         """Computes the metric value(s)."""
         return self.metric.compute()
 
@@ -164,3 +164,12 @@ class PredictionMetric(Metric):
                 batch.predictions.get(self.spec),
                 batch.targets.get(self.spec),
             )
+
+    def forward(self, batch: Batch) -> torch.Tensor:
+        if batch.predictions is not None:
+            return self.metric(
+                batch.predictions.get(self.spec),
+                batch.targets.get(self.spec),
+            )
+        else:
+            return torch.empty(0)
