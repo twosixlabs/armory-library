@@ -178,10 +178,13 @@ def load_annotations(file: io.BufferedReader) -> List[Dict[str, Any]]:
         category = int(row["category_id"])
         if score != 0:  # Drop annotations with score of 0 (class-0 & class-11)
             category -= 1  # The model was trained with 0-indexed categories starting at pedestrian
+            bbox = list(map(float, [row[k] for k in ANNOTATION_FIELDS[:4]]))
+            if bbox[2] == 0 or bbox[3] == 0:
+                continue
             annotations.append(
                 {
                     "id": idx,
-                    "bbox": list(map(float, [row[k] for k in ANNOTATION_FIELDS[:4]])),
+                    "bbox": bbox,
                     "category": category,
                     "truncation": row["truncation"],
                     "occlusion": row["occlusion"],
