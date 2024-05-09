@@ -5,6 +5,7 @@ from typing import Optional, Sequence
 import PIL.Image
 import kornia
 from lightning.pytorch import LightningModule, Trainer
+from lightning.pytorch.loggers import MLFlowLogger
 import torch
 import yolov5
 
@@ -31,6 +32,7 @@ class RobustDPatchModule(LightningModule):
             / 255
             * self.model.inputs_spec.scale.max
         )
+        self.initial_patch = self.patch.clone()
         self.targeted = False
         self.learning_rate = 0.01
         self.sample_size = 10
@@ -41,27 +43,28 @@ class RobustDPatchModule(LightningModule):
             random_apply=True,
         )
 
-    # def forward(self, inputs, target):
-    #     # return self.model(inputs)
-    #     return super().forward(inputs, target)
-
     def configure_optimizers(self):
-        # return torch.optim.Adam(self.parameters(), lr=1e-3)
-        return super().configure_optimizers()
-
-    def on_train_epoch_start(self):
-        self.patch_gradients = torch.zeros_like(self.patch, device=self.model.device)
-        self.patch = self.patch.to(self.model.device)
+        return torch.optim.SGD([self.patch], lr=self.learning_rate)
 
     def on_train_epoch_end(self):
-        self.patch = (
-            self.patch
-            + torch.sign(self.patch_gradients)
-            * (1 - 2 * int(self.targeted))
-            * self.learning_rate
-        )
+        if isinstance(self.logger, MLFlowLogger):
+            if self.current_epoch % 5 == 0:
+                patch_np = (
+                    self.patch.detach().cpu().numpy().transpose(1, 2, 0) * 255
+                ).astype("uint8")
+                patch = PIL.Image.fromarray(patch_np)
+                self.logger.experiment.log_image(
+                    self.logger.run_id, patch, f"patch_epoch_{self.current_epoch}.png"
+                )
+
+        # self.patch = (
+        #     self.patch
+        #     + torch.sign(self.patch_gradients)
+        #     * (1 - 2 * int(self.targeted))
+        #     * self.learning_rate
+        # )
         # TODO handle normalized min/max
-        self.patch = torch.clip(self.patch, 0, self.model.inputs_spec.scale.max)
+        # self.patch = torch.clip(self.patch, 0, self.model.inputs_spec.scale.max)
 
     def training_step(self, batch: armory.data.Batch, batch_idx: int):
         for _ in range(self.sample_size):
@@ -69,9 +72,8 @@ class RobustDPatchModule(LightningModule):
             inputs = batch.inputs.get(self.model.inputs_spec)
             assert isinstance(inputs, torch.Tensor)
 
-            # Get patch as Tensor with gradients required
-            patch = self.patch.clone()
-            patch.requires_grad = True
+            # Require gradients on patch Tensor
+            self.patch.requires_grad = True
 
             # Apply patch to image
             x_1 = random.randint(0, inputs.shape[3] - self.patch_shape[2])
@@ -80,7 +82,7 @@ class RobustDPatchModule(LightningModule):
             x_2 = x_1 + self.patch_shape[1]
             y_2 = y_1 + self.patch_shape[2]
             inputs_with_patch = inputs.clone()
-            inputs_with_patch[:, :, x_1:x_2, y_1:y_2] = patch
+            inputs_with_patch[:, :, x_1:x_2, y_1:y_2] = self.patch
 
             # Apply random augmentations to images
             inputs_with_augmentations = self.augmentation(inputs_with_patch)
@@ -97,26 +99,21 @@ class RobustDPatchModule(LightningModule):
             loss_components = self.model(inputs_with_augmentations, yolo_targets)
             loss = loss_components["loss_total"]
 
-            # Clean gradients
-            self.model.zero_grad()
-
-            # Compute gradients
-            loss.backward(retain_graph=True)
             self.log("loss", loss)
-            assert patch.grad is not None
-            grads = patch.grad.clone()
-            assert grads.shape == self.patch.shape
+            loss = -loss
 
+            # Clean gradients
+            # self.model.zero_grad()
+            # Compute gradients
+            # loss.backward(retain_graph=True)
+            # assert patch.grad is not None
+            # grads = patch.grad.clone()
+            # assert grads.shape == self.patch.shape
             # Accumulate gradients
-            patch_gradients = self.patch_gradients + torch.sum(grads, dim=0)
-            logger.debug(
-                "Gradient percentage diff: %f)",
-                torch.mean(
-                    torch.sign(patch_gradients) != torch.sign(self.patch_gradients),
-                    dtype=torch.float64,
-                ),
-            )
-            self.patch_gradients = patch_gradients
+            # patch_gradients = self.patch_gradients + torch.sum(grads, dim=0)
+            # self.patch_gradients = patch_gradients
+
+            return loss
 
     @staticmethod
     def _to_yolo_targets(
@@ -174,6 +171,14 @@ if __name__ == "__main__":
     trainer = Trainer(limit_train_batches=10, max_epochs=20)
     trainer.fit(module, dataloader)
 
-    patch_np = (module.patch.cpu().numpy().transpose(1, 2, 0) * 255).astype("uint8")
+    patch_np = (
+        module.initial_patch.detach().cpu().numpy().transpose(1, 2, 0) * 255
+    ).astype("uint8")
+    patch = PIL.Image.fromarray(patch_np)
+    patch.save("initial_patch.png")
+
+    patch_np = (module.patch.detach().cpu().numpy().transpose(1, 2, 0) * 255).astype(
+        "uint8"
+    )
     patch = PIL.Image.fromarray(patch_np)
     patch.save("patch.png")
