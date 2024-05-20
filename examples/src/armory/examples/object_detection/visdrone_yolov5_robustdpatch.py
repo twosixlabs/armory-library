@@ -1,5 +1,6 @@
 import logging
-import random
+
+# import random
 from typing import Optional, Sequence
 
 import PIL.Image
@@ -32,19 +33,20 @@ class RobustDPatchModule(LightningModule):
             / 255
             * self.model.inputs_spec.scale.max
         )
+        self.patch.requires_grad = True
         self.initial_patch = self.patch.clone()
         self.targeted = False
-        self.learning_rate = 0.01
+        self.learning_rate = 0.1
         self.sample_size = 10
         self.augmentation = kornia.augmentation.container.ImageSequential(
             kornia.augmentation.RandomHorizontalFlip(p=0.5),
-            kornia.augmentation.RandomBrightness(brightness=(0.5, 2.0), p=0.5),
+            kornia.augmentation.RandomBrightness(brightness=(0.75, 1.25), p=0.5),
             kornia.augmentation.RandomRotation(degrees=15, p=0.5),
             random_apply=True,
         )
 
     def configure_optimizers(self):
-        return torch.optim.SGD([self.patch], lr=self.learning_rate)
+        return torch.optim.SGD([self.patch], lr=self.learning_rate, momentum=0.9)
 
     def on_train_epoch_end(self):
         if isinstance(self.logger, MLFlowLogger):
@@ -72,12 +74,10 @@ class RobustDPatchModule(LightningModule):
             inputs = batch.inputs.get(self.model.inputs_spec)
             assert isinstance(inputs, torch.Tensor)
 
-            # Require gradients on patch Tensor
-            self.patch.requires_grad = True
-
             # Apply patch to image
-            x_1 = random.randint(0, inputs.shape[3] - self.patch_shape[2])
-            y_1 = random.randint(0, inputs.shape[2] - self.patch_shape[1])
+            # x_1 = random.randint(0, inputs.shape[3] - self.patch_shape[2])
+            # y_1 = random.randint(0, inputs.shape[2] - self.patch_shape[1])
+            x_1, y_1 = self.patch_location
             # x_1, y_1 = self.patch_location
             x_2 = x_1 + self.patch_shape[1]
             y_2 = y_1 + self.patch_shape[2]
@@ -95,12 +95,12 @@ class RobustDPatchModule(LightningModule):
             )
 
             # Get loss from model outputs
-            self.model.train()
+            self.model.eval()
             loss_components = self.model(inputs_with_augmentations, yolo_targets)
             loss = loss_components["loss_total"]
 
             self.log("loss", loss)
-            loss = -loss
+            # loss = -loss
 
             # Clean gradients
             # self.model.zero_grad()
