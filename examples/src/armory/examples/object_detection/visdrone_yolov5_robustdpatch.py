@@ -1,6 +1,5 @@
 import logging
-
-# import random
+import random
 from typing import Optional, Sequence
 
 import PIL.Image
@@ -37,7 +36,6 @@ class RobustDPatchModule(LightningModule):
         self.initial_patch = self.patch.clone()
         self.targeted = False
         self.learning_rate = 0.1
-        self.sample_size = 10
         self.augmentation = kornia.augmentation.container.ImageSequential(
             kornia.augmentation.RandomHorizontalFlip(p=0.5),
             kornia.augmentation.RandomBrightness(brightness=(0.75, 1.25), p=0.5),
@@ -69,51 +67,47 @@ class RobustDPatchModule(LightningModule):
         # self.patch = torch.clip(self.patch, 0, self.model.inputs_spec.scale.max)
 
     def training_step(self, batch: armory.data.Batch, batch_idx: int):
-        for _ in range(self.sample_size):
-            # Get inputs as Tensor
-            inputs = batch.inputs.get(self.model.inputs_spec)
-            assert isinstance(inputs, torch.Tensor)
+        # Get inputs as Tensor
+        inputs = batch.inputs.get(self.model.inputs_spec)
+        assert isinstance(inputs, torch.Tensor)
 
-            # Apply patch to image
-            # x_1 = random.randint(0, inputs.shape[3] - self.patch_shape[2])
-            # y_1 = random.randint(0, inputs.shape[2] - self.patch_shape[1])
-            x_1, y_1 = self.patch_location
-            # x_1, y_1 = self.patch_location
-            x_2 = x_1 + self.patch_shape[1]
-            y_2 = y_1 + self.patch_shape[2]
-            inputs_with_patch = inputs.clone()
-            inputs_with_patch[:, :, x_1:x_2, y_1:y_2] = self.patch
+        # Apply patch to image
+        x_1 = random.randint(0, inputs.shape[3] - self.patch_shape[2])
+        y_1 = random.randint(0, inputs.shape[2] - self.patch_shape[1])
+        # x_1, y_1 = self.patch_location
+        x_2 = x_1 + self.patch_shape[1]
+        y_2 = y_1 + self.patch_shape[2]
+        inputs_with_patch = inputs.clone()
+        inputs_with_patch[:, :, x_1:x_2, y_1:y_2] = self.patch
 
-            # Apply random augmentations to images
-            inputs_with_augmentations = self.augmentation(inputs_with_patch)
+        # Apply random augmentations to images
+        inputs_with_augmentations = self.augmentation(inputs_with_patch)
 
-            # Get targets as Tensor
-            _, _, height, width = inputs.shape
-            targets = batch.targets.get(self.target_spec)
-            yolo_targets = self._to_yolo_targets(
-                targets, height, width, self.model.device
-            )
+        # Get targets as Tensor
+        _, _, height, width = inputs.shape
+        targets = batch.targets.get(self.target_spec)
+        yolo_targets = self._to_yolo_targets(targets, height, width, self.model.device)
 
-            # Get loss from model outputs
-            self.model.eval()
-            loss_components = self.model(inputs_with_augmentations, yolo_targets)
-            loss = loss_components["loss_total"]
+        # Get loss from model outputs
+        self.model.eval()
+        loss_components = self.model(inputs_with_augmentations, yolo_targets)
+        loss = loss_components["loss_total"]
 
-            self.log("loss", loss)
-            # loss = -loss
+        self.log("loss", loss)
+        # loss = -loss
 
-            # Clean gradients
-            # self.model.zero_grad()
-            # Compute gradients
-            # loss.backward(retain_graph=True)
-            # assert patch.grad is not None
-            # grads = patch.grad.clone()
-            # assert grads.shape == self.patch.shape
-            # Accumulate gradients
-            # patch_gradients = self.patch_gradients + torch.sum(grads, dim=0)
-            # self.patch_gradients = patch_gradients
+        # Clean gradients
+        # self.model.zero_grad()
+        # Compute gradients
+        # loss.backward(retain_graph=True)
+        # assert patch.grad is not None
+        # grads = patch.grad.clone()
+        # assert grads.shape == self.patch.shape
+        # Accumulate gradients
+        # patch_gradients = self.patch_gradients + torch.sum(grads, dim=0)
+        # self.patch_gradients = patch_gradients
 
-            return loss
+        return loss
 
     @staticmethod
     def _to_yolo_targets(
