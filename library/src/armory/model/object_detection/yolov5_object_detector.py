@@ -1,5 +1,5 @@
 from functools import partial
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple
 
 import torch
 
@@ -48,6 +48,7 @@ class YoloV5ObjectDetector(ObjectDetector):
         predictions_spec: Optional[BoundingBoxSpec] = None,
         iou_threshold: Optional[float] = None,
         score_threshold: Optional[float] = None,
+        compute_loss: Optional[Callable[[Any, Any], Tuple[Any, Any]]] = None,
         **kwargs,
     ):
         """
@@ -69,6 +70,12 @@ class YoloV5ObjectDetector(ObjectDetector):
             predictions_spec: Optional, data specification used to update the
                 object detection predictions in the batch. Defaults to a
                 bounding box specification compatible with typical YOLOv5 models.
+            compute_loss: Optional, loss function used to calculate loss when the
+                model is in training mode. By default, the standard YOLOv5 loss
+                function is used. The function must accept two arguments: the
+                model predictions and the ground truth targets. The function
+                must return a tuple of the loss and the loss items (the second
+                element is unused).
             **kwargs: All other keyword arguments will be forwarded to the
                 `yolov5.utils.general.non_max_suppression` function used to
                 postprocess the model outputs.
@@ -97,7 +104,11 @@ class YoloV5ObjectDetector(ObjectDetector):
         self._detection_model: "DetectionModel" = (
             detection_model if detection_model is not None else self._model.model.model
         )
-        self.compute_loss = ComputeLoss(self._detection_model)
+        self.compute_loss = (
+            compute_loss
+            if compute_loss is not None
+            else ComputeLoss(self._detection_model)
+        )
 
         if score_threshold is not None:
             kwargs["conf_thres"] = score_threshold
@@ -114,7 +125,7 @@ class YoloV5ObjectDetector(ObjectDetector):
         """
         # inputs: CHW images, 0.0-1.0 float
         # outputs: (N,6) detections (cx,cy,w,h,scores,labels)
-        if self.training and targets is not None:
+        if targets is not None:
             outputs = self._detection_model(x)
             loss, _ = self.compute_loss(outputs, targets)
             return dict(loss_total=loss)
