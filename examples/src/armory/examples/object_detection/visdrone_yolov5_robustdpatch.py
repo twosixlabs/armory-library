@@ -27,11 +27,9 @@ class RobustDPatchModule(LightningModule):
         self.patch_shape = (3, 50, 50)
         self.patch_location = (295, 295)  # middle of 640x640
         # TODO non-zero min value
-        self.patch = (
-            torch.randint(0, 255, self.patch_shape)
-            / 255
-            * self.model.inputs_spec.scale.max
-        )
+        self.patch_min = 0
+        self.patch_max = self.model.inputs_spec.scale.max
+        self.patch = torch.randint(0, 255, self.patch_shape) / 255 * self.patch_max
         self.patch.requires_grad = True
         self.initial_patch = self.patch.clone()
         self.targeted = False
@@ -56,15 +54,6 @@ class RobustDPatchModule(LightningModule):
                 self.logger.experiment.log_image(
                     self.logger.run_id, patch, f"patch_epoch_{self.current_epoch}.png"
                 )
-
-        # self.patch = (
-        #     self.patch
-        #     + torch.sign(self.patch_gradients)
-        #     * (1 - 2 * int(self.targeted))
-        #     * self.learning_rate
-        # )
-        # TODO handle normalized min/max
-        # self.patch = torch.clip(self.patch, 0, self.model.inputs_spec.scale.max)
 
     def training_step(self, batch: armory.data.Batch, batch_idx: int):
         # Get inputs as Tensor
@@ -94,18 +83,6 @@ class RobustDPatchModule(LightningModule):
         loss = loss_components["loss_total"]
 
         self.log("loss", loss)
-        # loss = -loss
-
-        # Clean gradients
-        # self.model.zero_grad()
-        # Compute gradients
-        # loss.backward(retain_graph=True)
-        # assert patch.grad is not None
-        # grads = patch.grad.clone()
-        # assert grads.shape == self.patch.shape
-        # Accumulate gradients
-        # patch_gradients = self.patch_gradients + torch.sum(grads, dim=0)
-        # self.patch_gradients = patch_gradients
 
         return loss
 
