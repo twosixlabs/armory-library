@@ -4,14 +4,15 @@ import numpy as np
 import torch
 
 from armory.data import (
-    Accessor,
-    Batch,
     BBoxFormat,
-    BoundingBoxes,
+    BoundingBoxSpec,
     DataType,
     ImageDimensions,
-    Images,
+    ImageSpec,
+    NumpyBoundingBoxSpec,
+    ObjectDetectionBatch,
     Scale,
+    TorchImageSpec,
     to_numpy,
 )
 from armory.model.object_detection.object_detector import ObjectDetector
@@ -38,8 +39,10 @@ class YoloV4ObjectDetector(ObjectDetector):
         self,
         name: str,
         model,
-        inputs_accessor: Optional[Images.Accessor] = None,
-        predictions_accessor: Optional[Accessor] = None,
+        inputs_spec: Optional[ImageSpec] = None,
+        predictions_spec: Optional[BoundingBoxSpec] = None,
+        iou_threshold: Optional[float] = None,
+        score_threshold: Optional[float] = None,
     ):
         """
         Initializes the model wrapper.
@@ -47,31 +50,33 @@ class YoloV4ObjectDetector(ObjectDetector):
         Args:
             name: Name of the model.
             model: YOLOv4 model being wrapped.
-            inputs_accessor: Optional, data accessor used to obtain low-level
-                image data from the highly-structured image inputs contained in
-                object detection batches. Defaults to an accessor compatible
-                with typical YOLOv4 models.
-            predictions_accessor: Optional, data accessor used to update the
-                object detection predictions in the batch. Defaults to an
-                accessor compatible with typical YOLOv4 models.
+            inputs_spec: Optional, data specification used to obtain raw image
+                data from the image inputs contained in object detection
+                batches. Defaults to a specification compatible with typical
+                YOLOv5 models.
+            predictions_spec: Optional, data specification used to update the
+                object detection predictions in the batch. Defaults to a
+                bounding box specification compatible with typical YOLOv5 models.
         """
         super().__init__(
             name=name,
             model=model,
-            inputs_accessor=(
-                inputs_accessor
-                or Images.as_torch(
+            inputs_spec=(
+                inputs_spec
+                or TorchImageSpec(
                     dim=ImageDimensions.CHW,
                     scale=Scale(dtype=DataType.FLOAT, max=1.0),
                     dtype=torch.float32,
                 )
             ),
-            predictions_accessor=(
-                predictions_accessor or BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
+            predictions_spec=(
+                predictions_spec or NumpyBoundingBoxSpec(format=BBoxFormat.XYXY)
             ),
+            iou_threshold=iou_threshold,
+            score_threshold=score_threshold,
         )
 
-    def predict(self, batch: Batch):
+    def predict(self, batch: ObjectDetectionBatch):
         """
         Invokes the wrapped model using the image inputs in the given batch and
         updates the object detection predictions in the batch.
@@ -83,7 +88,7 @@ class YoloV4ObjectDetector(ObjectDetector):
             batch: Object detection batch
         """
         self.eval()
-        inputs = self.inputs_accessor.get(batch.inputs)
+        inputs = batch.inputs.get(self.inputs_spec)
         _, _, h, w = inputs.shape  # (N, C, H, W)
         outputs = self(inputs)
         outputs = _post_processing(outputs)
@@ -96,7 +101,6 @@ class YoloV4ObjectDetector(ObjectDetector):
                 }
                 for output in outputs
             ]
-            self.predictions_accessor.set(batch.predictions, outputs_dict)
         else:
             outputs_dict = [
                 {
@@ -116,7 +120,7 @@ class YoloV4ObjectDetector(ObjectDetector):
                 }
                 for output in outputs
             ]
-            self.predictions_accessor.set(batch.predictions, outputs_dict)
+        batch.predictions.set(outputs_dict, self.predictions_spec)
 
 
 def _nms_cpu(boxes, confs, nms_thresh=0.5, min_mode=False):
