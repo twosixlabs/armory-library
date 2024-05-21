@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
-from typing import List
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 from mlflow.client import MlflowClient
@@ -34,7 +34,7 @@ def get_predicted_label(filepath: Path, labels: List[str]):
 
 
 def display_image_classification_results(
-    run_id: str, batch_idx: int, batch_size: int, chains: List[str], labels: List[str]
+    chains: Dict[str, str], batch_idx: int, batch_size: int, labels: List[str]
 ):
     suppress_artifact_progress_bar()
     client = get_mlflow_client()
@@ -48,15 +48,15 @@ def display_image_classification_results(
         tmppath = Path(tmpdir)
 
         for sample_idx in range(batch_size):
-            for chain_idx, chain in enumerate(chains):
+            for chain_idx, (chain, run_id) in enumerate(chains.items()):
                 image_filename = Exporter.artifact_path(
-                    chain, batch_idx, sample_idx, "input.png"
+                    batch_idx, sample_idx, "input.png"
                 )
                 client.download_artifacts(run_id, image_filename, tmpdir)
                 image = plt.imread(tmppath / image_filename)
 
                 json_filename = Exporter.artifact_path(
-                    chain, batch_idx, sample_idx, "metadata.txt"
+                    batch_idx, sample_idx, "metadata.txt"
                 )
                 client.download_artifacts(run_id, json_filename, tmpdir)
                 predicted_label = get_predicted_label(tmppath / json_filename, labels)
@@ -71,13 +71,14 @@ def display_image_classification_results(
                 ax.tick_params(
                     bottom=False, left=False, labelbottom=False, labelleft=False
                 )
+                ax.axis("off")
 
     fig.suptitle(f"Batch {batch_idx}")
     fig.tight_layout()
 
 
 def display_object_detection_results(
-    run_id: str, batch_idx: int, batch_size: int, chains: List[str]
+    chains: Dict[str, str], batch_idx: int, batch_size: int
 ):
     suppress_artifact_progress_bar()
     client = get_mlflow_client()
@@ -91,15 +92,15 @@ def display_object_detection_results(
         tmppath = Path(tmpdir)
 
         for sample_idx in range(batch_size):
-            for chain_idx, chain in enumerate(chains):
+            for chain_idx, (chain, run_id) in enumerate(chains.items()):
                 image_filename = Exporter.artifact_path(
-                    chain, batch_idx, sample_idx, "input.png"
+                    batch_idx, sample_idx, "objects.png"
                 )
                 client.download_artifacts(run_id, image_filename, tmpdir)
                 image = plt.imread(tmppath / image_filename)
 
                 json_filename = Exporter.artifact_path(
-                    chain, batch_idx, sample_idx, "metadata.txt"
+                    batch_idx, sample_idx, "metadata.txt"
                 )
                 client.download_artifacts(run_id, json_filename, tmpdir)
 
@@ -112,6 +113,7 @@ def display_object_detection_results(
                 ax.tick_params(
                     bottom=False, left=False, labelbottom=False, labelleft=False
                 )
+                ax.axis("off")
 
     fig.suptitle(f"Batch {batch_idx}")
     fig.tight_layout()

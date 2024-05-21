@@ -1,10 +1,12 @@
 """TIDE metrics"""
 
+from typing import Iterable, Optional
+
 import tidecv
 import tidecv.data
 from torchmetrics import Metric
 
-from armory.data import BBoxFormat, BoundingBoxes
+from armory.data import BBoxFormat, TorchBoundingBoxSpec
 from armory.metric import PredictionMetric
 
 
@@ -15,13 +17,30 @@ class TIDE(Metric):
     """
 
     @classmethod
-    def create(cls, *args, **kwargs):
+    def create(
+        cls,
+        record_as_artifact: bool = True,
+        record_as_metrics: Optional[Iterable[str]] = None,
+    ):
         """
         Creates an instance of the TIDE metric pre-wrapped in a
         `armory.metric.PredictionMetric`
+
+        Args:
+            record_as_artifact: If True, the metric result will be recorded as
+                an artifact to the evaluation run.
+            record_as_metrics: Optional, a set of JSON paths in the metric
+                result pointing to scalar values to record as metrics to the
+                evaluation run. If None, no metrics will be recorded.
+
+        Return:
+            Armory prediction metric for TIDE detection metrics
         """
         return PredictionMetric(
-            cls(*args, **kwargs), BoundingBoxes.as_torch(format=BBoxFormat.XYWH)
+            metric=cls(),
+            spec=TorchBoundingBoxSpec(format=BBoxFormat.XYWH),
+            record_as_artifact=record_as_artifact,
+            record_as_metrics=record_as_metrics,
         )
 
     def __init__(self):

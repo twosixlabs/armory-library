@@ -18,6 +18,8 @@ class Profiler(Protocol):
     def measure(self, name: str):
         yield
 
+    def reset(self) -> None: ...
+
     def results(self) -> Mapping[str, float]: ...
 
 
@@ -30,6 +32,9 @@ class NullProfiler:
     @contextlib.contextmanager
     def measure(self, name):
         yield
+
+    def reset(self):
+        self.measurement_dict = {}
 
     def results(self):
         return {}
