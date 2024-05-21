@@ -78,7 +78,7 @@ class RobustDPatchModule(LightningModule):
         yolo_targets = self._to_yolo_targets(targets, height, width, self.model.device)
 
         # Get loss from model outputs
-        self.model.eval()
+        self.model.train()
         loss_components = self.model(inputs_with_augmentations, yolo_targets)
         loss = loss_components["loss_total"]
 
