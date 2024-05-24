@@ -48,6 +48,7 @@ extras = [
     "adversarial-robustness-toolbox",
     "albumentations",
     "captum",
+    "dash",
     "matplotlib",
     "pandas",
     "tidecv",
