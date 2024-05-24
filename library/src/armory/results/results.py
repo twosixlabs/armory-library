@@ -165,7 +165,7 @@ class RunDataDict(UserDict[str, Any]):
                     style_header={
                         "fontWeight": "bold",
                         "backgroundColor": (
-                            "rgb(5, 5, 5)" if dark else "rgb(230, 230, 230)"
+                            "rgb(10, 10, 10)" if dark else "rgb(229, 229, 229)"
                         ),
                         "color": "white" if dark else "black",
                         "textAlign": "center",
@@ -188,7 +188,7 @@ class RunDataDict(UserDict[str, Any]):
                         {
                             "if": {"row_index": "odd"},
                             "backgroundColor": (
-                                "rgb(15, 15, 15)" if dark else "rgb(240, 240, 240)"
+                                "rgb(23, 23, 23)" if dark else "rgb(250, 250, 250)"
                             ),
                         },
                     ],
