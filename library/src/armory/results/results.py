@@ -134,7 +134,13 @@ class RunDataDict(UserDict[str, Any]):
 
         console.print(table)
 
-    def plot(self, debug: bool = False, height: int = 400, port: Optional[int] = None):
+    def plot(
+        self,
+        dark: bool = False,
+        debug: bool = False,
+        height: int = 400,
+        port: Optional[int] = None,
+    ):
         import dash
 
         data = [{"key": key, "value": value} for key, value in sorted(self.items())]
@@ -142,19 +148,34 @@ class RunDataDict(UserDict[str, Any]):
         app = dash.Dash()
         app.layout = dash.html.Div(
             children=[
-                dash.html.H1(children=self.title, style={"textAlign": "center"}),
+                dash.html.H1(
+                    children=self.title,
+                    style={
+                        "color": "white" if dark else "black",
+                        "textAlign": "center",
+                    },
+                ),
                 dash.dash_table.DataTable(
                     data=data,
                     columns=[
                         {"id": "key", "name": self.key_label},
                         {"id": "value", "name": self.value_label},
                     ],
+                    cell_selectable=False,
                     style_header={
                         "fontWeight": "bold",
-                        "backgroundColor": "rgb(230, 230, 230)",
+                        "backgroundColor": (
+                            "rgb(5, 5, 5)" if dark else "rgb(230, 230, 230)"
+                        ),
+                        "color": "white" if dark else "black",
                         "textAlign": "center",
                     },
                     style_cell={
+                        "backgroundColor": "rgb(30, 30, 30)" if dark else "white",
+                        "border": (
+                            "1px solid dimgray" if dark else "1px solid lightgray"
+                        ),
+                        "color": "white" if dark else "black",
                         "overflow": "hidden",
                         "textAlign": "left",
                         "textOverflow": "ellipsis",
@@ -166,7 +187,9 @@ class RunDataDict(UserDict[str, Any]):
                     style_data_conditional=[
                         {
                             "if": {"row_index": "odd"},
-                            "backgroundColor": "rgb(240, 240, 240)",
+                            "backgroundColor": (
+                                "rgb(15, 15, 15)" if dark else "rgb(240, 240, 240)"
+                            ),
                         },
                     ],
                     tooltip_data=[{"value": str(e["value"])} for e in data],
@@ -174,7 +197,7 @@ class RunDataDict(UserDict[str, Any]):
                     tooltip_duration=None,
                 ),
             ],
-            style={"background": "white"},
+            style={"background": "rgb(30, 30, 30)" if dark else "white"},
         )
 
         app.run(
