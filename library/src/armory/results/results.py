@@ -65,8 +65,27 @@ class EvaluationResults:
 
     @cached_property
     def metrics(self) -> "RunMetricsDict":
-        """Run metrics"""
-        return RunMetricsDict(data=self._run.data.metrics, title="Metrics")
+        """Run model metrics"""
+        return RunMetricsDict(
+            data={
+                k: v
+                for k, v in self._run.data.metrics.items()
+                if not k.startswith("system/")
+            },
+            title="Metrics",
+        )
+
+    @cached_property
+    def system_metrics(self) -> "RunMetricsDict":
+        """Run system metrics"""
+        return RunMetricsDict(
+            data={
+                k: v
+                for k, v in self._run.data.metrics.items()
+                if k.startswith("system/")
+            },
+            title="System Metrics",
+        )
 
     @cached_property
     def children(self) -> Dict[str, "EvaluationResults"]:
@@ -139,6 +158,7 @@ class RunDataDict(UserDict[str, Any]):
 
     def plot(
         self,
+        align_left: bool = True,
         dark: bool = False,
         debug: bool = False,
         format: Callable[[Any], str] = str,
@@ -149,6 +169,7 @@ class RunDataDict(UserDict[str, Any]):
         Displays the contents of the dictionary in an HTML table.
 
         Args:
+            align_left: Optional, align value column text to the left if True
             dark: Optional, use a dark theme if True
             debug: Optional, enable debug output from Dash
             format: Optional, function to format values for printing. Defaults to
@@ -200,7 +221,11 @@ class RunDataDict(UserDict[str, Any]):
                     },
                     style_cell_conditional=[
                         {"if": {"column_id": "key"}, "width": "20%"},
-                        {"if": {"column_id": "value"}, "maxWidth": 0},
+                        {
+                            "if": {"column_id": "value"},
+                            "maxWidth": 0,
+                            "textAlign": "left" if align_left else "right",
+                        },
                     ],
                     style_data_conditional=[
                         {
@@ -277,6 +302,7 @@ class RunMetricsDict(RunDataDict):
 
     def plot(
         self,
+        align_left: bool = False,
         dark: bool = False,
         debug: bool = False,
         format: Optional[Callable[[Any], str]] = None,
@@ -288,6 +314,7 @@ class RunMetricsDict(RunDataDict):
         Displays the contents of the dictionary in an HTML table.
 
         Args:
+            align_left: Optional, align value column text to the left if True
             dark: Optional, use a dark theme if True
             debug: Optional, enable debug output from Dash
             format: Optional, function to format values for printing. Defaults to
@@ -299,6 +326,7 @@ class RunMetricsDict(RunDataDict):
                 available port.
         """
         return super().plot(
+            align_left=align_left,
             dark=dark,
             debug=debug,
             format=format or (lambda v: f"{v:.{precision}f}"),
