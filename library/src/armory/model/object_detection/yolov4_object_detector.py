@@ -70,8 +70,7 @@ class YoloV4ObjectDetector(ObjectDetector):
                 )
             ),
             predictions_spec=(
-                predictions_spec or NumpyBoundingBoxSpec(
-                    format=BBoxFormat.XYXY)
+                predictions_spec or NumpyBoundingBoxSpec(format=BBoxFormat.XYXY)
             ),
             iou_threshold=iou_threshold,
             score_threshold=score_threshold,
@@ -89,7 +88,7 @@ class YoloV4ObjectDetector(ObjectDetector):
             batch: Object detection batch
 
         Model output / predictions format/example:
-        outputs = self(inputs) 
+        outputs = self(inputs)
         Length of outputs: 2, type=list
         outputs[0] shape: torch.Size([1, 22743, 1, 4])
         outputs[1] shape: torch.Size([1, 22743, 3])
@@ -131,8 +130,7 @@ class YoloV4ObjectDetector(ObjectDetector):
                     ),
                 }
             ]
-        batch.predictions.set(
-            preds_dict, self.predictions_spec)  # type: ignore
+        batch.predictions.set(preds_dict, self.predictions_spec)  # type: ignore
 
 
 def _nms_cpu(boxes, confs, nms_thresh=0.5, min_mode=False):
@@ -215,8 +213,7 @@ def _process_single(
 
     bboxes = []
     for j in range(num_classes):
-        bboxes.extend(_nms_for_class(
-            l_box_array, l_max_conf, l_max_id, j, nms_thresh))
+        bboxes.extend(_nms_for_class(l_box_array, l_max_conf, l_max_id, j, nms_thresh))
     return bboxes
 
 
