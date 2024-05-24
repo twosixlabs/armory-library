@@ -70,7 +70,8 @@ class YoloV4ObjectDetector(ObjectDetector):
                 )
             ),
             predictions_spec=(
-                predictions_spec or NumpyBoundingBoxSpec(format=BBoxFormat.XYXY)
+                predictions_spec or NumpyBoundingBoxSpec(
+                    format=BBoxFormat.XYXY)
             ),
             iou_threshold=iou_threshold,
             score_threshold=score_threshold,
@@ -86,41 +87,52 @@ class YoloV4ObjectDetector(ObjectDetector):
 
         Args:
             batch: Object detection batch
+
+        Model output / predictions format/example:
+        outputs = self(inputs) 
+        Length of outputs: 2, type=list
+        outputs[0] shape: torch.Size([1, 22743, 1, 4])
+        outputs[1] shape: torch.Size([1, 22743, 3])
+
+        predictions = _post_processing(outputs)[0]
+        Length of predictions: 1, type=list[lists]
+        predictions: [[-0.016737998, 0.051072836, 0.80007946, 0.96419203, 0.8180811, 0]]
+        predictions[0]: [-0.016737998, 0.051072836, 0.80007946, 0.96419203, 0.8180811, 0]
         """
         self.eval()
         inputs = batch.inputs.get(self.inputs_spec)
         _, _, h, w = inputs.shape  # (N, C, H, W)
         outputs = self(inputs)
-        outputs = _post_processing(outputs)
-        if all(not sublist for sublist in outputs):
-            outputs_dict = [
+        predictions = _post_processing(outputs)[0]
+        if all(not sublist for sublist in predictions):
+            preds_dict = [
                 {
                     "boxes": np.array([]),
                     "labels": np.array([]),
                     "scores": np.array([]),
                 }
-                for output in outputs
+                for _ in predictions
             ]
         else:
-            outputs_dict = [
+            preds_dict = [
                 {
                     "boxes": np.array(
                         [
-                            [output[0] * w, output[1] * h, output[2] * w, output[3] * h]
-                            for output in outputs[0][:4]
+                            [bbox[0] * w, bbox[1] * h, bbox[2] * w, bbox[3] * h]
+                            for bbox in predictions[:4]
                         ],
                         dtype=np.float32,
                     ),
                     "labels": np.array(
-                        [int(output[5]) for output in outputs[0]], dtype=np.int64
+                        [int(labels[5]) for labels in predictions], dtype=np.int64
                     ),
                     "scores": np.array(
-                        [float(output[4]) for output in outputs[0]], dtype=np.float32
+                        [float(scores[4]) for scores in predictions], dtype=np.float32
                     ),
                 }
-                for output in outputs
             ]
-        batch.predictions.set(outputs_dict, self.predictions_spec)
+        batch.predictions.set(
+            preds_dict, self.predictions_spec)  # type: ignore
 
 
 def _nms_cpu(boxes, confs, nms_thresh=0.5, min_mode=False):
@@ -203,7 +215,8 @@ def _process_single(
 
     bboxes = []
     for j in range(num_classes):
-        bboxes.extend(_nms_for_class(l_box_array, l_max_conf, l_max_id, j, nms_thresh))
+        bboxes.extend(_nms_for_class(
+            l_box_array, l_max_conf, l_max_id, j, nms_thresh))
     return bboxes
 
 
