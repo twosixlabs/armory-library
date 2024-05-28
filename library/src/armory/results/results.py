@@ -4,7 +4,7 @@ from collections import UserDict
 from functools import cached_property
 import json
 import os
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Optional, Union
 
 if TYPE_CHECKING:
     import PIL.Image
@@ -31,6 +31,9 @@ class EvaluationResults:
     ):
         self._client = client
         self._run = run
+
+    def __repr__(self) -> str:
+        return f"EvaluationResults(client={self._client}, run={self._run})"
 
     @property
     def run_id(self) -> str:
@@ -104,6 +107,9 @@ class EvaluationResults:
             run.info.run_name or run.info.run_id: EvaluationResults(self._client, run)
             for run in runs
         }
+
+    def batch(self, batch_idx: int) -> "BatchExports":
+        return BatchExports(batch_idx, self.artifacts[f"exports/{batch_idx:05}"])
 
 
 class RunDataDict(UserDict[str, Any]):
@@ -357,6 +363,12 @@ class RunArtifacts:
             children if children is not None else self._list_artifacts(path)
         )
 
+    def __repr__(self) -> str:
+        return f"RunArtifacts(client={self._client}, run_id={self._run_id}, path={self.path}, children={self._children})"
+
+    def paths(self) -> Iterable[str]:
+        return self._children.keys()
+
     def _list_artifacts(self, parent_path) -> Dict[str, "RunArtifact"]:
         artifacts: Dict[str, RunArtifact] = {}
         for child in self._client.list_artifacts(self._run_id, parent_path):
@@ -378,9 +390,6 @@ class RunArtifacts:
         children = {k: v for k, v in self._children.items() if k.startswith(prefix)}
         return RunArtifacts(self._client, self._run_id, path, children)
 
-    def __repr__(self) -> str:
-        return self._children.__repr__()
-
 
 class RunArtifact:
 
@@ -393,6 +402,9 @@ class RunArtifact:
         self._client = client
         self._run_id = run_id
         self.artifact = artifact
+
+    def __repr__(self) -> str:
+        return f"RunArtifact(client={self._client}, run_id={self._run_id}, artifact={self.artifact})"
 
     @cached_property
     def local_path(self) -> str:
@@ -414,5 +426,50 @@ class RunArtifact:
         with open(self.local_path, "r") as f:
             return json.load(f)
 
+
+class BatchExports:
+
+    def __init__(
+        self,
+        batch_idx: int,
+        artifacts: RunArtifacts,
+    ):
+        self.batch_idx = batch_idx
+        self.artifacts = artifacts
+
     def __repr__(self) -> str:
-        return self.artifact.__repr__()
+        return f"BatchExports(batch_idx={self.batch_idx}, artifacts={self.artifacts})"
+
+    @cached_property
+    def samples(self) -> Iterable[int]:
+        return set(sorted([int(p.split("/")[2]) for p in self.artifacts.paths()]))
+
+    def sample(self, sample_idx: int) -> "SampleExports":
+        return SampleExports(
+            self.batch_idx,
+            sample_idx,
+            self.artifacts[f"{sample_idx:02}"],
+        )
+
+
+class SampleExports:
+
+    def __init__(
+        self,
+        batch_idx: int,
+        sample_idx: int,
+        artifacts: RunArtifacts,
+    ):
+        self.batch_idx = batch_idx
+        self.sample_idx = sample_idx
+        self.artifacts = artifacts
+
+    def __repr__(self) -> str:
+        return f"SampleExports(batch_idx={self.batch_idx}, sample_idx={self.sample_idx}, artifacts={self.artifacts})"
+
+    @cached_property
+    def exports(self) -> Iterable[str]:
+        return sorted([p.split("/")[-1] for p in self.artifacts.paths()])
+
+    def __getitem__(self, key: str) -> RunArtifact:
+        return self.artifacts[key]
