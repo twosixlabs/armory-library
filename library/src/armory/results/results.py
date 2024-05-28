@@ -2,10 +2,12 @@
 
 from collections import UserDict
 from functools import cached_property
+import json
 import os
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Union
 
 if TYPE_CHECKING:
+    import PIL.Image
     import mlflow.client
     import mlflow.entities
     import rich.console
@@ -86,6 +88,10 @@ class EvaluationResults:
             },
             title="System Metrics",
         )
+
+    @cached_property
+    def artifacts(self) -> "RunArtifacts":
+        return RunArtifacts(self._client, self.run_id)
 
     @cached_property
     def children(self) -> Dict[str, "EvaluationResults"]:
@@ -333,3 +339,80 @@ class RunMetricsDict(RunDataDict):
             height=height,
             port=port,
         )
+
+
+class RunArtifacts:
+
+    def __init__(
+        self,
+        client: "mlflow.client.MlflowClient",
+        run_id: str,
+        path: str = "",
+        children: Optional[Dict[str, "RunArtifact"]] = None,
+    ):
+        self._client = client
+        self._run_id = run_id
+        self.path = path
+        self._children = (
+            children if children is not None else self._list_artifacts(path)
+        )
+
+    def _list_artifacts(self, parent_path) -> Dict[str, "RunArtifact"]:
+        artifacts: Dict[str, RunArtifact] = {}
+        for child in self._client.list_artifacts(self._run_id, parent_path):
+            if child.is_dir:
+                artifacts.update(self._list_artifacts(child.path))
+            else:
+                artifacts[child.path] = RunArtifact(self._client, self._run_id, child)
+        return artifacts
+
+    def __getitem__(self, key: str) -> Union["RunArtifact", "RunArtifacts"]:
+        if key[-1] == "/":  # remove trailing /, if any
+            key = key[:-1]
+        path = self.path + "/" + key if self.path else key
+        item = self._children.get(path, None)
+        if item:  # if path matches a child artifact, return it
+            return item
+        # else return a new artifacts parent with all items under the path
+        prefix = path + "/"
+        children = {k: v for k, v in self._children.items() if k.startswith(prefix)}
+        return RunArtifacts(self._client, self._run_id, path, children)
+
+    def __repr__(self) -> str:
+        return self._children.__repr__()
+
+
+class RunArtifact:
+
+    def __init__(
+        self,
+        client: "mlflow.client.MlflowClient",
+        run_id: str,
+        artifact: "mlflow.entities.FileInfo",
+    ):
+        self._client = client
+        self._run_id = run_id
+        self.artifact = artifact
+
+    @cached_property
+    def local_path(self) -> str:
+        return self._client.download_artifacts(self._run_id, self.artifact.path)
+
+    @cached_property
+    def data(self) -> bytes:
+        with open(self.local_path, "rb") as f:
+            return f.read()
+
+    @cached_property
+    def image(self) -> "PIL.Image.Image":
+        from PIL import Image
+
+        return Image.open(self.local_path)
+
+    @cached_property
+    def json(self) -> Any:
+        with open(self.local_path, "r") as f:
+            return json.load(f)
+
+    def __repr__(self) -> str:
+        return self.artifact.__repr__()
