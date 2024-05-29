@@ -471,5 +471,31 @@ class SampleExports:
     def exports(self) -> Iterable[str]:
         return sorted([p.split("/")[-1] for p in self.artifacts.paths()])
 
+    @cached_property
+    def metadata(self) -> "SampleMetadata":
+        return SampleMetadata(
+            self.batch_idx, self.sample_idx, self.artifacts["metadata.txt"]
+        )
+
     def __getitem__(self, key: str) -> RunArtifact:
         return self.artifacts[key]
+
+
+class SampleMetadata:
+
+    def __init__(
+        self,
+        batch_idx: int,
+        sample_idx: int,
+        artifact: RunArtifact,
+    ):
+        self.batch_idx = batch_idx
+        self.sample_idx = sample_idx
+        self.artifact = artifact
+
+    @property
+    def json(self) -> Any:
+        return self.artifact.json
+
+    def __getitem__(self, key: str) -> Any:
+        return self.json.get(key)
