@@ -4,7 +4,16 @@ from collections import UserDict
 from functools import cached_property
 import json
 import os
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Optional,
+    Sequence,
+    Union,
+)
 
 if TYPE_CHECKING:
     import PIL.Image
@@ -511,6 +520,10 @@ class SampleExports:
     def __repr__(self) -> str:
         return f"SampleExports(batch_idx={self.batch_idx}, sample_idx={self.sample_idx}, artifacts={self.artifacts})"
 
+    @property
+    def classification(self) -> "ClassificationResults":
+        return ClassificationResults(self)
+
     @cached_property
     def exports(self) -> Iterable[str]:
         return sorted([p.split("/")[-1] for p in self.artifacts.paths()])
@@ -552,3 +565,54 @@ class SampleMetadata:
 
     def __getitem__(self, key: str) -> Any:
         return self.json.get(key)
+
+
+class ClassificationResults:
+
+    def __init__(
+        self,
+        sample: SampleExports,
+    ):
+        self.sample = sample
+
+    def __repr__(self) -> str:
+        return f"ClassificationResults(sample={self.sample})"
+
+    def plot(
+        self, labels: Optional[Sequence[str]] = None
+    ) -> "matplotlib.figure.Figure":
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        with plt.ioff():
+            figure = plt.figure()
+            (ax1, ax2) = figure.subplots(1, 2)
+
+            ax1.imshow(self.sample[self.sample.imagename].image)
+            ax1.axis("off")
+
+            target_class = self.sample.metadata["targets"]
+
+            probs = np.array(self.sample.metadata["predictions"])
+            if np.max(probs) > 1 or np.min(probs) < 0:
+                # perform softmax to turn logits into probabilities
+                probs = np.exp(probs) / np.sum(np.exp(probs))
+            top_ten_indices = list(probs.argsort()[-10:][::-1])
+            top_probs = probs[top_ten_indices]
+
+            barlist = ax2.bar(range(10), top_probs)
+            if target_class in top_ten_indices:
+                barlist[top_ten_indices.index(target_class)].set_color("g")
+
+            if labels is not None:
+                barlabels = [labels[i] for i in top_ten_indices]
+            else:
+                barlabels = [str(i) for i in top_ten_indices]
+
+            ax2.set_ylim([0, 1.1])
+            ax2.set_xticks(range(10))
+            ax2.set_xticklabels(barlabels, rotation="vertical")
+            ax2.set_ylabel("Probability")
+
+            figure.subplots_adjust(bottom=0.2, wspace=0.3)
+            return figure
