@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Optional, Union
 if TYPE_CHECKING:
     import PIL.Image
     import matplotlib.figure
+    import matplotlib.pyplot
     import mlflow.client
     import mlflow.entities
     import rich.console
@@ -452,11 +453,16 @@ class BatchExports:
             self.artifacts[f"{sample_idx:02}"],
         )
 
-    def plot(self, filename: str) -> "matplotlib.figure.Figure":
+    def plot(
+        self, filename: str, figure: Optional["matplotlib.pyplot.Figure"] = None
+    ) -> "matplotlib.figure.Figure":
         import matplotlib.pyplot as plt
 
         with plt.ioff():
-            fig, axes = plt.subplots(
+            if figure is None:
+                figure = plt.figure()
+
+            axes = figure.subplots(
                 nrows=len(list(self.samples)),
                 ncols=1,
             )
@@ -473,9 +479,8 @@ class BatchExports:
                     labelleft=False,
                 )
 
-            fig.suptitle(f"Batch {self.batch_idx}")
-            fig.tight_layout()
-            return fig
+            figure.suptitle(f"Batch {self.batch_idx}")
+            return figure
 
 
 class SampleExports:
