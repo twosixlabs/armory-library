@@ -105,6 +105,7 @@ class EvaluationResults:
             experiment_ids=[self._run.info.experiment_id],
             filter_string=f"tags.mlflow.parentRunId = '{self.run_id}'",
         )
+        runs = sorted(list(runs), key=lambda run: str(run.info.run_name))
         return {
             run.info.run_name or run.info.run_id: EvaluationResults(self._client, run)
             for run in runs
