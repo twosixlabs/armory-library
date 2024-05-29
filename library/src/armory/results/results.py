@@ -454,7 +454,9 @@ class BatchExports:
         )
 
     def plot(
-        self, filename: str, figure: Optional["matplotlib.pyplot.Figure"] = None
+        self,
+        filename: Optional[str] = None,
+        figure: Optional["matplotlib.pyplot.Figure"] = None,
     ) -> "matplotlib.figure.Figure":
         import matplotlib.pyplot as plt
 
@@ -471,7 +473,8 @@ class BatchExports:
                 sample = self.sample(sample_idx)
                 ax = axes[sample_idx]
                 ax.set_ylabel(f"Sample {sample_idx}")
-                ax.imshow(sample[filename].image)
+                artifact = sample[filename] if filename else sample[sample.imagename]
+                ax.imshow(artifact.image)
                 ax.tick_params(
                     bottom=False,
                     left=False,
@@ -501,6 +504,15 @@ class SampleExports:
     @cached_property
     def exports(self) -> Iterable[str]:
         return sorted([p.split("/")[-1] for p in self.artifacts.paths()])
+
+    @cached_property
+    def imagename(self) -> str:
+        for path in self.exports:
+            if path in ("input.png", "objects.png"):
+                return path
+        raise ValueError(
+            f"No default image export found for sample {self.sample_idx} in batch {self.batch_idx}"
+        )
 
     @cached_property
     def metadata(self) -> "SampleMetadata":
