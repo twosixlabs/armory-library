@@ -457,6 +457,7 @@ class BatchExports:
         self,
         filename: Optional[str] = None,
         figure: Optional["matplotlib.pyplot.Figure"] = None,
+        max_samples: Optional[int] = None,
     ) -> "matplotlib.figure.Figure":
         import matplotlib.pyplot as plt
 
@@ -464,12 +465,20 @@ class BatchExports:
             if figure is None:
                 figure = plt.figure()
 
+            if max_samples:
+                num_samples = min(max_samples, len(list(self.samples)))
+            else:
+                num_samples = len(list(self.samples))
+
             axes = figure.subplots(
-                nrows=len(list(self.samples)),
+                nrows=num_samples,
                 ncols=1,
             )
 
-            for sample_idx in self.samples:
+            for idx, sample_idx in enumerate(self.samples):
+                if max_samples and idx == max_samples:
+                    break
+
                 sample = self.sample(sample_idx)
                 ax = axes[sample_idx]
                 ax.set_ylabel(f"Sample {sample_idx}")
