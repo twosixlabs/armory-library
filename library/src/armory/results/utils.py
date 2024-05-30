@@ -1,12 +1,16 @@
 import os
+from typing import TYPE_CHECKING
 
-from mlflow.client import MlflowClient
-
-from armory.evaluation import SysConfig
-from armory.track import init_tracking_uri
+if TYPE_CHECKING:
+    import mlflow.client
 
 
-def get_mlflow_client():
+def get_mlflow_client() -> "mlflow.client.MlflowClient":
+    from mlflow.client import MlflowClient
+
+    from armory.evaluation import SysConfig
+    from armory.track import init_tracking_uri
+
     sysconfig = SysConfig()
     tracking_uri = init_tracking_uri(sysconfig.armory_home)
     return MlflowClient(tracking_uri=tracking_uri)
