@@ -120,3 +120,121 @@ def plot_metrics(
         jupyter_height=height,
         port=str(port) if port is not None else get_next_dash_port(),
     )
+
+
+def plot_params(
+    *runs: EvaluationResults,
+    blacklist: Optional[Sequence[str]] = None,
+    dark: bool = False,
+    debug: bool = False,
+    height: int = 400,
+    hide_same: bool = False,
+    highlight_diff: bool = True,
+    param_label: str = "Parameter",
+    port: Optional[int] = None,
+    title: str = "Parameters",
+    whitelist: Optional[Sequence[str]] = None,
+):
+    import dash
+
+    columns = [
+        {"id": "param_key", "name": param_label},
+    ]
+    param_keys = set()
+    for run in runs:
+        param_keys.update(run.params.keys())
+        columns.append({"id": run.run_id, "name": run.run_name})
+
+    if whitelist:
+        param_keys &= set(whitelist)
+    if blacklist:
+        param_keys -= set(blacklist)
+
+    data = []
+    for param_key in sorted(param_keys):
+        row = {"param_key": param_key}
+        for run in runs:
+            row[run.run_id] = run.params.get(param_key, "")
+        row["diff_key"] = (
+            "true" if len(set([row[run.run_id] for run in runs])) > 1 else "false"
+        )
+        if hide_same and row["diff_key"] == "false":
+            continue
+        if not highlight_diff:
+            row["diff_key"] = "false"
+        data.append(row)
+
+    app = dash.Dash()
+    app.layout = dash.html.Div(
+        children=[
+            dash.html.H1(
+                children=title,
+                style={
+                    "color": "white" if dark else "black",
+                    "textAlign": "center",
+                },
+            ),
+            dash.dash_table.DataTable(
+                data=data,
+                columns=columns,
+                cell_selectable=False,
+                style_header={
+                    "fontWeight": "bold",
+                    "backgroundColor": (
+                        "rgb(10, 10, 10)" if dark else "rgb(229, 229, 229)"
+                    ),
+                    "color": "white" if dark else "black",
+                    "textAlign": "center",
+                },
+                style_cell={
+                    "backgroundColor": "rgb(30, 30, 30)" if dark else "white",
+                    "border": ("1px solid dimgray" if dark else "1px solid lightgray"),
+                    "color": "white" if dark else "black",
+                    "overflow": "hidden",
+                    "textAlign": "left",
+                    "textOverflow": "ellipsis",
+                },
+                style_cell_conditional=[
+                    {
+                        "if": {"column_id": "param_key"},
+                        "backgroundColor": (
+                            "rgb(10, 10, 10)" if dark else "rgb(229, 229, 229)"
+                        ),
+                        "color": "white" if dark else "black",
+                        "fontWeight": "bold",
+                        "width": "20%",
+                    }
+                ]
+                + [
+                    {
+                        "if": {"column_id": run.run_id},
+                        "maxWidth": 0,
+                        "textAlign": "left",
+                    }
+                    for run in runs
+                ],
+                style_data_conditional=[
+                    {
+                        "if": {"column_id": run.run_id, "row_index": "odd"},
+                        "backgroundColor": (
+                            "rgb(23, 23, 23)" if dark else "rgb(250, 250, 250)"
+                        ),
+                    }
+                    for run in runs
+                ]
+                + [
+                    {
+                        "if": {"filter_query": "{diff_key} = 'true'"},
+                        "backgroundColor": "rgb(74, 222, 128)",
+                    }
+                ],
+            ),
+        ],
+        style={"background": "rgb(30, 30, 30)" if dark else "white"},
+    )
+
+    app.run(
+        debug=debug,
+        jupyter_height=height,
+        port=str(port) if port is not None else get_next_dash_port(),
+    )
