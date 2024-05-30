@@ -3,7 +3,6 @@
 from collections import UserDict
 from functools import cached_property
 import json
-import os
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -15,6 +14,8 @@ from typing import (
     Union,
 )
 
+from armory.results.utils import get_mlflow_client, get_next_dash_port
+
 if TYPE_CHECKING:
     import PIL.Image
     import matplotlib.figure
@@ -24,18 +25,13 @@ if TYPE_CHECKING:
     import rich.console
 
 
-_NEXT_PORT = int(os.getenv("PORT", "8050"))
-
-
-def _get_next_port() -> str:
-    global _NEXT_PORT
-    port = _NEXT_PORT
-    _NEXT_PORT += 1
-    return str(port)
-
-
 class EvaluationResults:
     """Armory evaluation results corresponding to a single MLFlow run"""
+
+    @classmethod
+    def for_run(cls, run_id: str) -> "EvaluationResults":
+        client = get_mlflow_client()
+        return cls(client, client.get_run(run_id))
 
     def __init__(
         self, client: "mlflow.client.MlflowClient", run: "mlflow.entities.Run"
@@ -270,7 +266,7 @@ class RunDataDict(UserDict[str, Any]):
         app.run(
             debug=debug,
             jupyter_height=height,
-            port=str(port) if port is not None else _get_next_port(),
+            port=str(port) if port is not None else get_next_dash_port(),
         )
 
     def _ipython_display_(self):
