@@ -28,6 +28,7 @@ def plot_batches(
 
 def plot_metrics(
     *runs: EvaluationResults,
+    blacklist: Optional[Sequence[str]] = None,
     dark: bool = False,
     debug: bool = False,
     height: int = 400,
@@ -35,6 +36,7 @@ def plot_metrics(
     port: Optional[int] = None,
     precision: int = 3,
     title: str = "Metrics",
+    whitelist: Optional[Sequence[str]] = None,
 ):
     import dash
 
@@ -45,6 +47,11 @@ def plot_metrics(
     for run in runs:
         metric_keys.update(run.metrics.keys())
         columns.append({"id": run.run_id, "name": run.run_name})
+
+    if whitelist:
+        metric_keys &= set(whitelist)
+    if blacklist:
+        metric_keys -= set(blacklist)
 
     def format(v):
         return f"{v:.{precision}f}" if v is not None else ""
