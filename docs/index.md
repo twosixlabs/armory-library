@@ -1,6 +1,6 @@
 # Armory-library Documentation Overview
 
-## [Getting Started](./docs)
+## [Getting Started](./)
 - [Contributing](./CONTRIBUTING.md)
 - [getting_started](./getting_started.md)
 - [experiment_tracking](./experiment_tracking.md)
