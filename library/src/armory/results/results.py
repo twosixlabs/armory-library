@@ -148,6 +148,7 @@ class RunDataDict(UserDict[str, Any]):
         self,
         console: Optional["rich.console.Console"] = None,
         format: Callable[[Any], str] = str,
+        title: Optional[str] = None,
         **kwargs,
     ) -> None:
         """
@@ -162,7 +163,7 @@ class RunDataDict(UserDict[str, Any]):
         """
         from rich.table import Table
 
-        table = Table(title=self.title, **kwargs)
+        table = Table(title=title or self.title, **kwargs)
         table.add_column(self.key_label, style="cyan", no_wrap=True)
         table.add_column(self.value_label, style="magenta")
 
@@ -464,6 +465,7 @@ class BatchExports:
         filename: Optional[str] = None,
         figure: Optional["matplotlib.pyplot.Figure"] = None,
         max_samples: Optional[int] = None,
+        samples: Optional[Sequence[int]] = None,
     ) -> "matplotlib.figure.Figure":
         import matplotlib.pyplot as plt
 
@@ -471,10 +473,11 @@ class BatchExports:
             if figure is None:
                 figure = plt.figure()
 
+            num_samples = len(list(self.samples))
             if max_samples:
-                num_samples = min(max_samples, len(list(self.samples)))
-            else:
-                num_samples = len(list(self.samples))
+                num_samples = min(max_samples, num_samples)
+            elif samples:
+                num_samples = min(len(samples), num_samples)
 
             axes = figure.subplots(
                 nrows=num_samples,
@@ -484,9 +487,11 @@ class BatchExports:
             for idx, sample_idx in enumerate(self.samples):
                 if max_samples and idx == max_samples:
                     break
+                elif samples and sample_idx not in samples:
+                    continue
 
                 sample = self.sample(sample_idx)
-                ax = axes[sample_idx]
+                ax = axes[idx] if num_samples > 1 else axes
                 ax.set_ylabel(f"Sample {sample_idx}")
                 artifact = sample[filename] if filename else sample[sample.imagename]
                 ax.imshow(artifact.image)

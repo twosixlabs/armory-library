@@ -8,6 +8,7 @@ def plot_batches(
     *batches: BatchExports,
     filename: Optional[str] = None,
     max_samples: Optional[int] = None,
+    samples: Optional[Sequence[int]] = None,
     titles: Optional[Sequence[str]] = None,
 ):
     import matplotlib.pyplot as plt
@@ -18,7 +19,12 @@ def plot_batches(
 
         for batch_idx, batch in enumerate(batches):
             subfig = subfigures[batch_idx]
-            batch.plot(filename=filename, figure=subfig, max_samples=max_samples)
+            batch.plot(
+                filename=filename,
+                figure=subfig,
+                max_samples=max_samples,
+                samples=samples,
+            )
 
             if titles is not None and batch_idx < len(titles):
                 subfig.suptitle(titles[batch_idx])
