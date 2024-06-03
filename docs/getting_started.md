@@ -8,7 +8,7 @@ The basic dataflow of Armory-library is shown in this diagram:
 
 ![armory-library block diagram](assets/armory-block-diagram.png)
 
-Where the Model and Dataset are the inputs under evaluation and the Attack is an
+Where the Model and Dataset are the inputs under ev_luation and the Attack is an
 adversarial perturbation applied to the Dataset. Typically, the Model and
 Dataset will be provided by the armory-library user and the Attack will be drawn
 from armory-library or the IBM Adversarial Robustness Toolbox (ART).
@@ -19,7 +19,7 @@ pink generated adversarial dataset box.
 
 Armory currently supports image classification and object detection models.
 We look at an image classification example here, with object detection described
-in [Diving Deeper](diving-deeper.md).
+in [Diving Deeper](./diving_deeper.ipynb).
 
 The structure of an image classification dataset is simple, consisting of pairs
 of images and labels. Images are 2-dimensional arrays of pixels and will often
