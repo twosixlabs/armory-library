@@ -197,22 +197,22 @@ def generate_samples(
     files: Iterator[Tuple[str, io.BufferedReader]], annotation_file_ext: str = ".txt"
 ) -> Iterator[Dict[str, Any]]:
     """Generate dataset samples from the given files in a VisDrone2019 archive"""
-    image_to_annotations = {}
-    # This loop relies on the ordering of the files in the archive:
-    # Annotation files come first, then the images.
-    for idx, (path, file) in enumerate(files):
+    annotations = {}
+    images = {}
+    for path, file in files:
         file_name = Path(path).stem
         if Path(path).suffix == annotation_file_ext:
-            image_to_annotations[file_name] = load_annotations(file)
-        elif file_name in image_to_annotations:
-            yield {
-                "image_id": idx,
-                "file_name": file_name,
-                "image": {"path": path, "bytes": file.read()},
-                "objects": image_to_annotations[file_name],
-            }
+            annotations[file_name] = load_annotations(file)
         else:
-            raise ValueError(f"Image {file_name} has no annotations")
+            images[file_name] = {"path": path, "bytes": file.read()}
+
+    for idx, (file_name, annotation) in enumerate(annotations.items()):
+        yield {
+            "image_id": idx,
+            "file_name": file_name,
+            "image": images[file_name],
+            "objects": annotation,
+        }
 
 
 if __name__ == "__main__":
