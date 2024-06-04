@@ -5,7 +5,7 @@ from typing import Callable, Iterable, Optional, Sequence, Set, Union
 
 import torch
 
-from armory.data import Accessor, Batch, DefaultTorchAccessor
+from armory.data import Batch, DataSpecification, TorchSpec
 from armory.export.base import Exporter
 
 
@@ -24,7 +24,7 @@ def always() -> Exporter.Criterion:
         Export criterion function
     """
 
-    def _criterion(chain_name, batch_idx, batch):
+    def _criterion(batch_idx, batch):
         return True
 
     return _criterion
@@ -64,10 +64,10 @@ def all_satisfied(*criteria: Exporter.Criterion) -> Exporter.Criterion:
         Export criterion function
     """
 
-    def _criterion(chain_name, batch_idx, batch):
+    def _criterion(batch_idx, batch):
         aggregate_to_export: Optional[Set[int]] = None
         for c in criteria:
-            to_export = _to_set(c(chain_name, batch_idx, batch), batch)
+            to_export = _to_set(c(batch_idx, batch), batch)
             if aggregate_to_export is None:
                 aggregate_to_export = to_export
             else:
@@ -108,10 +108,10 @@ def any_satisfied(*criteria: Exporter.Criterion) -> Exporter.Criterion:
         Export criterion function
     """
 
-    def _criterion(chain_name, batch_idx, batch):
+    def _criterion(batch_idx, batch):
         aggregate_to_export: Set[int] = set()
         for c in criteria:
-            to_export = _to_set(c(chain_name, batch_idx, batch), batch)
+            to_export = _to_set(c(batch_idx, batch), batch)
             aggregate_to_export.update(to_export)
         return aggregate_to_export
 
@@ -140,8 +140,8 @@ def not_satisfied(criterion: Exporter.Criterion) -> Exporter.Criterion:
         Export criterion function
     """
 
-    def _criterion(chain_name, batch_idx, batch):
-        res = criterion(chain_name, batch_idx, batch)
+    def _criterion(batch_idx, batch):
+        res = criterion(batch_idx, batch)
         if not res:
             return True
         if type(res) is bool:
@@ -173,7 +173,7 @@ def every_n_batches(n: int) -> Exporter.Criterion:
         Export criterion function
     """
 
-    def _criterion(chain_name, batch_idx: int, batch):
+    def _criterion(batch_idx: int, batch):
         if n == 0:
             return False
         return (batch_idx + 1) % n == 0
@@ -203,7 +203,7 @@ def first_n_batches(n: int) -> Exporter.Criterion:
         Export criterion function
     """
 
-    def _criterion(chain_name, batch_idx: int, batch):
+    def _criterion(batch_idx: int, batch):
         if n == 0:
             return False
         return batch_idx < n
@@ -234,7 +234,7 @@ def every_n_samples_of_batch(n: int) -> Exporter.Criterion:
         Export criterion function
     """
 
-    def _criterion(chain_name, batch_idx: int, batch):
+    def _criterion(batch_idx: int, batch):
         if n == 0:
             return False
         return (
@@ -271,7 +271,7 @@ def every_n_samples(n: int) -> Exporter.Criterion:
         Export criterion function
     """
 
-    def _criterion(chain_name, batch_idx: int, batch):
+    def _criterion(batch_idx: int, batch):
         if n == 0:
             return False
         batch_size = len(batch)
@@ -306,7 +306,7 @@ def first_n_samples_of_batch(n: int) -> Exporter.Criterion:
         Export criterion function
     """
 
-    def _criterion(chain_name, batch_idx: int, batch):
+    def _criterion(batch_idx: int, batch):
         if n == 0:
             return False
         return (sample_idx for sample_idx in range(len(batch)) if sample_idx < n)
@@ -340,7 +340,7 @@ def first_n_samples(n: int) -> Exporter.Criterion:
         Export criterion function
     """
 
-    def _criterion(chain_name, batch_idx: int, batch):
+    def _criterion(batch_idx: int, batch):
         if n == 0:
             return False
         batch_size = len(batch)
@@ -351,32 +351,6 @@ def first_n_samples(n: int) -> Exporter.Criterion:
             for sample_idx in range(batch_size)
             if ((batch_idx * batch_size) + sample_idx) < n
         )
-
-    return _criterion
-
-
-def chains(names: Sequence[str]) -> Exporter.Criterion:
-    """
-    Creates an export criterion that matches all samples in every batch for a
-    particular set of perturbation chains.
-
-    Example::
-
-        from armory.export import Exporter
-        from armory.export.criteria import chains
-
-        # Exports every sample in every batch for chains "benign" and "defended"
-        exporter = Exporter(criterion=chains(["benign", "defended"]))
-
-    Args:
-        names: Names of perturbation chains from which to export
-
-    Returns:
-        Export criterion function
-    """
-
-    def _criterion(chain_name: str, batch_idx, batch):
-        return chain_name in names
 
     return _criterion
 
@@ -407,7 +381,7 @@ def samples(indices: Sequence[int]) -> Exporter.Criterion:
         Export criterion function
     """
 
-    def _criterion(chain_name, batch_idx: int, batch):
+    def _criterion(batch_idx: int, batch):
         if len(indices) == 0:
             return False
         batch_size = len(batch)
@@ -421,7 +395,7 @@ def samples(indices: Sequence[int]) -> Exporter.Criterion:
 
 
 def _create_metric_criterion(comp, metric, threshold) -> Exporter.Criterion:
-    def _criterion(chain_name, batch_idx, batch):
+    def _criterion(batch_idx, batch):
         val = metric(batch)
         res = comp(val, threshold)
         if type(res) == torch.Tensor:
@@ -444,14 +418,14 @@ def when_metric_eq(
     Example::
 
         import torch
-        from armory.data import DefaultTorchAccessor
+        from armory.data import TorchSpec
         from armory.export import Exporter
         from armory.export.criteria import when_metric_eq
 
         # Exports samples that have max score of exactly 5
         def max_pred(batch):
             return torch.tensor([
-                torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
+                torch.max(p) for p in batch.predictions.get(TorchSpec())
             ])
         exporter = Exporter(criterion=when_metric_eq(max_pred, 5))
 
@@ -481,14 +455,14 @@ def when_metric_isclose(
     Example::
 
         import torch
-        from armory.data import DefaultTorchAccessor
+        from armory.data import TorchSpec
         from armory.export import Exporter
         from armory.export.criteria import when_metric_isclose
 
         # Exports samples that have max score of 5.0
         def max_pred(batch):
             return torch.tensor([
-                torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
+                torch.max(p) for p in batch.predictions.get(TorchSpec())
             ])
         exporter = Exporter(criterion=when_metric_isclose(max_pred, 5))
 
@@ -527,14 +501,14 @@ def when_metric_lt(
     Example::
 
         import torch
-        from armory.data import DefaultTorchAccessor
+        from armory.data import TorchSpec
         from armory.export import Exporter
         from armory.export.criteria import when_metric_lt
 
         # Exports samples that have max score less than 5
         def max_pred(batch):
             return torch.tensor([
-                torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
+                torch.max(p) for p in batch.predictions.get(TorchSpec())
             ])
         exporter = Exporter(criterion=when_metric_lt(max_pred, 5))
 
@@ -559,14 +533,14 @@ def when_metric_gt(metric, threshold) -> Exporter.Criterion:
     Example::
 
         import torch
-        from armory.data import DefaultTorchAccessor
+        from armory.data import TorchSpec
         from armory.export import Exporter
         from armory.export.criteria import when_metric_gt
 
         # Exports samples that have max score greater than 5
         def max_pred(batch):
             return torch.tensor([
-                torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
+                torch.max(p) for p in batch.predictions.get(TorchSpec())
             ])
         exporter = Exporter(criterion=when_metric_gt(max_pred, 5))
 
@@ -594,14 +568,14 @@ def when_metric_in(
     Example::
 
         import torch
-        from armory.data import DefaultTorchAccessor
+        from armory.data import TorchSpec
         from armory.export import Exporter
         from armory.export.criteria import when_metric_in
 
         # Exports samples that have max score of 5 or 8
         def max_pred(batch):
             return torch.tensor([
-                torch.max(p) for p in DefaultTorchAccessor().get(batch.predictions)
+                torch.max(p) for p in batch.predictions.get(TorchSpec())
             ])
         exporter = Exporter(criterion=when_metric_in(max_pred, [5, 8]))
 
@@ -626,7 +600,7 @@ def when_metric_in(
 
 
 def batch_targets(
-    accessor: Optional[Accessor] = None,
+    spec: Optional[DataSpecification] = None,
 ) -> Callable[[Batch], torch.Tensor]:
     """
     Creates a batch metric callable that returns the targets from the batch.
@@ -640,15 +614,15 @@ def batch_targets(
         exporter = Exporter(criterion=when_metric_lt(batch_targets(), 10))
 
     Args:
-        accessor: Accessor for targets in a batch
+        spec: Data specification for obtaining targets in a batch
 
     Returns:
         Batch metric function
     """
-    if accessor is None:
-        accessor = DefaultTorchAccessor()
+    if spec is None:
+        spec = TorchSpec()
 
     def _metric(batch):
-        return accessor.get(batch.targets)
+        return batch.targets.get(spec)
 
     return _metric

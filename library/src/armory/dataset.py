@@ -1,6 +1,6 @@
 """Armory Dataset Classes"""
 
-from typing import Any, Callable, Iterable, List, Mapping, Sequence, cast
+from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, cast
 
 import numpy as np
 import torch
@@ -115,8 +115,66 @@ def _cast(key, value):
     raise ValueError(f"Dataset {key} is unsupported type: {type(value)}")
 
 
+class ShuffleableDataLoader(DataLoader):
+    """
+    Extension to the PyTorch data loader that enables determinstic shuffling
+    when the data loader is used multiple times.
+
+    Example::
+
+        from armory.dataset import ShuffleableDataLoader
+
+        # assuming `dataset` has been defined elsewhere
+        dataloader = ShuffleableDataLoader(
+            dataset,
+            shuffle=True,
+            seed=8675309,
+        )
+
+        batch1 = next(iter(dataloader))
+        batch2 = next(iter(dataloader))
+        assert batch1 == batch2
+    """
+
+    def __init__(
+        self,
+        *args,
+        seed: Optional[int] = None,
+        shuffle: bool = False,
+        **kwargs,
+    ):
+        """
+        Initializes the data loader.
+
+        Args:
+            *args: All positional arguments will be forwarded to the
+                `torch.utils.data.dataloader.DataLoader` class.
+            seed: Optional, explicit seed to use for shuffling. If not provided,
+                a random seed will be generated.
+            shuffle: Whether to shuffle the dataset.
+            **kwargs: All other keyword arguments will be forwarded to the
+                `torch.utils.data.dataloader.DataLoader` class.
+
+        """
+        super().__init__(*args, shuffle=shuffle, **kwargs)
+        # We require a seed when shuffling so that we get the same sequence of
+        # samples from the dataset each time we use the dataloader
+        if shuffle and seed is None:
+            seed = np.random.randint(0, 2**32)
+        self.seed = seed
+
+    def __iter__(self):
+        """
+        Applies the seed to the random number generator before creating the
+        iterator
+        """
+        if self.seed is not None:
+            torch.manual_seed(self.seed)
+        return super().__iter__()
+
+
 @track_init_params
-class ImageClassificationDataLoader(DataLoader):
+class ImageClassificationDataLoader(ShuffleableDataLoader):
     """
     Data loader for image classification datasets.
 
@@ -149,7 +207,7 @@ class ImageClassificationDataLoader(DataLoader):
 
         Args:
             *args: All positional arguments will be forwarded to the
-                `torch.utils.data.dataloader.DataLoader` class.
+                `ShuffleableDataLoader` class.
             dim: Image dimensions format (either CHW or HWC) of the image data
                 in the samples returned by the dataset.
             image_key: Key in the dataset sample dictionary for the image data.
@@ -157,7 +215,7 @@ class ImageClassificationDataLoader(DataLoader):
             scale: Scale (i.e., data type, max value, normalization parameters)
                 of the image data values in the samples returned by the dataset.
             **kwargs: All other keyword arguments will be forwarded to the
-                `torch.utils.data.dataloader.DataLoader` class.
+                `ShuffleableDataLoader` class.
         """
         kwargs.pop("collate_fn", None)
         super().__init__(*args, collate_fn=self._collate, **kwargs)
@@ -175,8 +233,10 @@ class ImageClassificationDataLoader(DataLoader):
         }
         images = data.Images(
             images=_pop_and_cast(collated, self.image_key),
-            dim=self.dim,
-            scale=self.scale,
+            spec=data.ImageSpec(
+                dim=self.dim,
+                scale=self.scale,
+            ),
         )
         labels = data.NDimArray(_pop_and_cast(collated, self.label_key))
         return data.ImageClassificationBatch(
@@ -187,9 +247,9 @@ class ImageClassificationDataLoader(DataLoader):
 
 
 @track_init_params
-class ObjectDetectionDataLoader(DataLoader):
+class ObjectDetectionDataLoader(ShuffleableDataLoader):
     """
-    data loader for object detection datasets.
+    Data loader for object detection datasets.
 
     Example::
 
@@ -226,7 +286,7 @@ class ObjectDetectionDataLoader(DataLoader):
 
         Args:
             *args: All positional arguments will be forwarded to the
-                `torch.utils.data.dataloader.DataLoader` class.
+                `ShuffleableDataLoader` class.
             boxes_key: Key in each object dictionary for the bounding boxes.
             dim: Image dimensions format (either CHW or HWC) of the image data
                 in the samples returned by the dataset.
@@ -238,7 +298,7 @@ class ObjectDetectionDataLoader(DataLoader):
             scale: Scale (i.e., data type, max value, normalization parameters)
                 of the image data values in the samples returned by the dataset.
             **kwargs: All other keyword arguments will be forwarded to the
-                `torch.utils.data.dataloader.DataLoader` class.
+                `ShuffleableDataLoader` class.
         """
         kwargs.pop("collate_fn", None)
         super().__init__(*args, collate_fn=self._collate, **kwargs)
@@ -268,12 +328,16 @@ class ObjectDetectionDataLoader(DataLoader):
         }
         images = data.Images(
             images=_pop_and_cast(collated, self.image_key),
-            dim=self.dim,
-            scale=self.scale,
+            spec=data.ImageSpec(
+                dim=self.dim,
+                scale=self.scale,
+            ),
         )
         boxes = data.BoundingBoxes(
             boxes=[self._to_bbox(obj) for obj in collated.pop(self.objects_key)],
-            format=self.format,
+            spec=data.BoundingBoxSpec(
+                format=self.format,
+            ),
         )
         return data.ObjectDetectionBatch(
             inputs=images,

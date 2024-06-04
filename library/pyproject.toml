@@ -17,6 +17,7 @@ classifiers = [
 
 # Core dependencies required for general use of Armory
 dependencies = [
+    "jsonpath-ng",
     "lightning",
     "loguru",
     "mlflow",
@@ -33,6 +34,10 @@ dependencies = [
     # and see if it helps. I'd like to do this as a constraints.txt entry but
     # constraints and --editable are mutually exclusive.
     "PyYAML >= 6",
+
+    # Temporary workaround since ART imports pkg_resources.packaging but
+    # setuptools 70.0.0 removed that module from pkg_resources
+    "setuptools<70.0.0",
 ]
 
 
@@ -58,7 +63,7 @@ Documentation = "https://armory-library.readthedocs.io/en/latest/"
 
 
 [project.scripts]
-armory-mlflow-server = "charmory.track:server"
+armory-mlflow-server = "armory.track:server"
 
 
 [build-system]

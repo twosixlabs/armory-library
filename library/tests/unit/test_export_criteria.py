@@ -26,7 +26,7 @@ def batch():
 
 
 def test_always(batch):
-    assert criteria.always()("", 0, batch)
+    assert criteria.always()(0, batch)
 
 
 @pytest.mark.parametrize(
@@ -45,7 +45,7 @@ def test_always(batch):
     ],
 )
 def test_every_n_batches(n, batch_idx, batch, expected):
-    assert criteria.every_n_batches(n)("", batch_idx, batch) == expected
+    assert criteria.every_n_batches(n)(batch_idx, batch) == expected
 
 
 @pytest.mark.parametrize(
@@ -64,7 +64,7 @@ def test_every_n_batches(n, batch_idx, batch, expected):
     ],
 )
 def test_first_n_batches(n, batch_idx, batch, expected):
-    assert criteria.first_n_batches(n)("", batch_idx, batch) == expected
+    assert criteria.first_n_batches(n)(batch_idx, batch) == expected
 
 
 @pytest.mark.parametrize(
@@ -84,7 +84,7 @@ def test_first_n_batches(n, batch_idx, batch, expected):
 def test_every_n_samples(n, batch_idx, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
-    assert to_list(criteria.every_n_samples(n)("", batch_idx, batch)) == expected
+    assert to_list(criteria.every_n_samples(n)(batch_idx, batch)) == expected
 
 
 @pytest.mark.parametrize(
@@ -104,9 +104,7 @@ def test_every_n_samples(n, batch_idx, batch_size, expected):
 def test_every_n_samples_of_batch(n, batch_idx, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
-    assert (
-        to_list(criteria.every_n_samples_of_batch(n)("", batch_idx, batch)) == expected
-    )
+    assert to_list(criteria.every_n_samples_of_batch(n)(batch_idx, batch)) == expected
 
 
 @pytest.mark.parametrize(
@@ -126,7 +124,7 @@ def test_every_n_samples_of_batch(n, batch_idx, batch_size, expected):
 def test_first_n_samples(n, batch_idx, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
-    assert to_list(criteria.first_n_samples(n)("", batch_idx, batch)) == expected
+    assert to_list(criteria.first_n_samples(n)(batch_idx, batch)) == expected
 
 
 @pytest.mark.parametrize(
@@ -146,24 +144,7 @@ def test_first_n_samples(n, batch_idx, batch_size, expected):
 def test_first_n_samples_of_batch(n, batch_idx, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
-    assert (
-        to_list(criteria.first_n_samples_of_batch(n)("", batch_idx, batch)) == expected
-    )
-
-
-@pytest.mark.parametrize(
-    "names,chain_name,expected",
-    [
-        ([], "benign", False),
-        ([], "attack", False),
-        (["benign"], "benign", True),
-        (["benign"], "attack", False),
-        (["benign", "attack"], "benign", True),
-        (["benign", "attack"], "attack", True),
-    ],
-)
-def test_chains(names, chain_name, batch, expected):
-    assert criteria.chains(names)(chain_name, 0, batch) == expected
+    assert to_list(criteria.first_n_samples_of_batch(n)(batch_idx, batch)) == expected
 
 
 @pytest.mark.parametrize(
@@ -180,7 +161,7 @@ def test_chains(names, chain_name, batch, expected):
 def test_samples(indices, batch_idx, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
-    assert to_list(criteria.samples(indices)("", batch_idx, batch)) == expected
+    assert to_list(criteria.samples(indices)(batch_idx, batch)) == expected
 
 
 @pytest.mark.parametrize(
@@ -206,7 +187,7 @@ def test_all_satisfied(n_batch, n_sample, batch_idx, batch_size, expected):
     assert criteria.all_satisfied(
         criteria.every_n_batches(n_batch),
         criteria.every_n_samples_of_batch(n_sample),
-    )("", batch_idx, batch) == set(expected)
+    )(batch_idx, batch) == set(expected)
 
 
 @pytest.mark.parametrize(
@@ -236,7 +217,7 @@ def test_any_satisfied(n_batch, n_sample, batch_idx, batch_size, expected):
     assert criteria.any_satisfied(
         criteria.every_n_batches(n_batch),
         criteria.every_n_samples(n_sample),
-    )("", batch_idx, batch) == set(expected)
+    )(batch_idx, batch) == set(expected)
 
 
 @pytest.mark.parametrize(
@@ -254,7 +235,7 @@ def test_not_satisfied(criteria_value, batch_size, expected):
     batch = MagicMock()
     batch.__len__ = MagicMock(return_value=batch_size)
     assert (
-        criteria.not_satisfied(MagicMock(return_value=criteria_value))("", 0, batch)
+        criteria.not_satisfied(MagicMock(return_value=criteria_value))(0, batch)
         == expected
     )
 
@@ -292,7 +273,7 @@ def test_not_satisfied(criteria_value, batch_size, expected):
 )
 def test_when_metric_eq(metric_value, threshold, batch, expected):
     metric = MagicMock(return_value=metric_value)
-    assert criteria.when_metric_eq(metric, threshold)("", 0, batch) == expected
+    assert criteria.when_metric_eq(metric, threshold)(0, batch) == expected
 
 
 @pytest.mark.parametrize(
@@ -311,8 +292,7 @@ def test_when_metric_eq(metric_value, threshold, batch, expected):
 def test_when_metric_isclose(metric_value, threshold, atol, batch, expected):
     metric = MagicMock(return_value=metric_value)
     assert (
-        criteria.when_metric_isclose(metric, threshold, atol=atol)("", 0, batch)
-        == expected
+        criteria.when_metric_isclose(metric, threshold, atol=atol)(0, batch) == expected
     )
 
 
@@ -333,7 +313,7 @@ def test_when_metric_isclose(metric_value, threshold, atol, batch, expected):
 )
 def test_when_metric_lt(metric_value, threshold, batch, expected):
     metric = MagicMock(return_value=metric_value)
-    assert criteria.when_metric_lt(metric, threshold)("", 0, batch) == expected
+    assert criteria.when_metric_lt(metric, threshold)(0, batch) == expected
 
 
 @pytest.mark.parametrize(
@@ -353,7 +333,7 @@ def test_when_metric_lt(metric_value, threshold, batch, expected):
 )
 def test_when_metric_gt(metric_value, threshold, batch, expected):
     metric = MagicMock(return_value=metric_value)
-    assert criteria.when_metric_gt(metric, threshold)("", 0, batch) == expected
+    assert criteria.when_metric_gt(metric, threshold)(0, batch) == expected
 
 
 @pytest.mark.parametrize(
@@ -374,4 +354,4 @@ def test_when_metric_gt(metric_value, threshold, batch, expected):
 )
 def test_when_metric_in(metric_value, threshold, batch, expected):
     metric = MagicMock(return_value=metric_value)
-    assert criteria.when_metric_in(metric, threshold)("", 0, batch) == expected
+    assert criteria.when_metric_in(metric, threshold)(0, batch) == expected

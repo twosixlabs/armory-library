@@ -12,7 +12,14 @@ from captum.attr import (
 )
 import numpy as np
 
-from armory.data import Accessor, Batch, DataType, ImageDimensions, Images, Scale
+from armory.data import (
+    DataSpecification,
+    DataType,
+    ImageClassificationBatch,
+    ImageDimensions,
+    Scale,
+    TorchImageSpec,
+)
 from armory.export.base import Exporter
 
 if TYPE_CHECKING:
@@ -27,14 +34,15 @@ class CaptumImageClassificationExporter(Exporter):
     def __init__(
         self,
         model: "torch.nn.Module",
+        name: Optional[str] = None,
         do_saliency: bool = True,
         do_integrated_grads: bool = False,
         do_smoothgrad_squared: bool = False,
         do_deeplift: bool = False,
         internal_batch_size: int = 1,
         n_steps: int = 1,
-        inputs_accessor: Optional[Images.Accessor] = None,
-        targets_accessor: Optional[Accessor] = None,
+        inputs_spec: Optional[TorchImageSpec] = None,
+        targets_spec: Optional[DataSpecification] = None,
         criterion: Optional[Exporter.Criterion] = None,
     ):
         """
@@ -42,6 +50,7 @@ class CaptumImageClassificationExporter(Exporter):
 
         Args:
             model: Computer vision model
+            name: Descriptive name of the exporter
             do_saliency: Whether to generate saliency maps
             do_integrated_grads: Whether to generate integrated gradient maps
             do_smoothgrad_squred: Whether to generated integrated gradient maps
@@ -49,17 +58,20 @@ class CaptumImageClassificationExporter(Exporter):
             do_deeplift: Whether to generate DeepLift maps
             internal_batch_size: Batch size to use with Captum
             n_steps: Number of steps to be used when generating maps
-            inputs_accessor: Optional, data exporter used to obtain low-level
-                image data from the highly-structured inputs contained in
-                exported batches. By default, a NumPy images accessor is used.
-            targets_accessor: Optional, data exporter used to obtain low-level
-                ground truth targets data from the high-ly structured targets
-                contained in exported batches. By default, a generic NumPy
-                accessor is used.
-            criterion: Criterion dictating when samples will be exported. If
+            inputs_spec: Optional, data specification used to obtain raw
+                image data from the inputs contained in exported batches. By
+                default, a Torch images specification is used.
+            targets_spec: Optional, data specification used to obtain raw ground
+                truth targets data from the exported batches. By default, a
+                generic NumPy specification is used.
+            criterion: Criterion to determine when samples will be exported. If
                 omitted, no samples will be exported.
         """
-        super().__init__(targets_accessor=targets_accessor, criterion=criterion)
+        super().__init__(
+            name=name or "CaptumImageClassification",
+            targets_spec=targets_spec,
+            criterion=criterion,
+        )
         self.model = model
         self.saliency = Saliency(model) if do_saliency else None
         self.integrated_grads = (
@@ -71,17 +83,20 @@ class CaptumImageClassificationExporter(Exporter):
         self.deeplift = DeepLift(model) if do_deeplift else None
         self.internal_batch_size = internal_batch_size
         self.n_steps = n_steps
-        self.inputs_accessor = inputs_accessor or Images.as_torch(
+        self.inputs_spec = inputs_spec or TorchImageSpec(
             dim=ImageDimensions.CHW, scale=Scale(dtype=DataType.FLOAT, max=1.0)
         )
 
     def export_samples(
-        self, chain_name: str, batch_idx: int, batch: Batch, samples: Iterable[int]
+        self,
+        batch_idx: int,
+        batch: ImageClassificationBatch,
+        samples: Iterable[int],
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
         self.model.eval()
-        images = self.inputs_accessor.get(batch.inputs).to(self.model.device)
-        targets = self.targets_accessor.get(batch.targets)
+        images = batch.inputs.get(self.inputs_spec).to(self.model.device)
+        targets = batch.targets.get(self.targets_spec)
 
         for sample_idx in samples:
             image = images[sample_idx].unsqueeze(0)
@@ -93,9 +108,7 @@ class CaptumImageClassificationExporter(Exporter):
 
             target = targets[sample_idx].item()
 
-            artifact_path = partial(
-                self.artifact_path, chain_name, batch_idx, sample_idx
-            )
+            artifact_path = partial(self.artifact_path, batch_idx, sample_idx)
 
             self._export_saliency(artifact_path, orig_image, image, target)
             self._export_integrated_gradients(artifact_path, orig_image, image, target)

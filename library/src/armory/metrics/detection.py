@@ -1,13 +1,13 @@
 """Object detection metrics"""
 
-from typing import List, Optional, Sequence
+from typing import Iterable, List, Optional, Sequence
 
 import torch
 from torchmetrics import Metric
 from torchmetrics.functional.detection import intersection_over_union
 from torchmetrics.utilities import dim_zero_cat
 
-from armory.data import BBoxFormat, BoundingBoxes
+from armory.data import BBoxFormat, BoundingBoxes, TorchBoundingBoxSpec
 from armory.metric import PredictionMetric
 
 
@@ -31,13 +31,36 @@ class ObjectDetectionRates(Metric):
     hallucinations_per_img: List[torch.Tensor]
 
     @classmethod
-    def create(cls, *args, **kwargs):
+    def create(
+        cls,
+        *args,
+        record_as_artifact: bool = True,
+        record_as_metrics: Optional[Iterable[str]] = None,
+        **kwargs,
+    ):
         """
         Creates an instance of the object detection rates metric pre-wrapped in
         a `armory.metric.PredictionMetric`
+
+        Args:
+            *args: Positional arguments are forwarded to the
+                `ObjectDetectionRates` constructor
+            record_as_artifact: If True, the metric result will be recorded as
+                an artifact to the evaluation run.
+            record_as_metrics: Optional, a set of JSON paths in the metric
+                result pointing to scalar values to record as metrics to the
+                evaluation run. If None, no metrics will be recorded.
+            **kwargs: Keyword arguments are forwarded to the
+                `ObjectDetectionRates` constructor
+
+        Return:
+            Armory prediction metric for object detection rates
         """
         return PredictionMetric(
-            cls(*args, **kwargs), BoundingBoxes.as_torch(format=BBoxFormat.XYXY)
+            metric=cls(*args, **kwargs),
+            spec=TorchBoundingBoxSpec(format=BBoxFormat.XYXY),
+            record_as_artifact=record_as_artifact,
+            record_as_metrics=record_as_metrics,
         )
 
     def __init__(

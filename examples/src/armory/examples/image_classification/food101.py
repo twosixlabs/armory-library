@@ -83,7 +83,7 @@ def load_model():
     armory_model = armory.model.image_classification.ImageClassifier(
         name="ViT-finetuned-food101",
         model=hf_model,
-        accessor=armory.data.Images.as_torch(
+        inputs_spec=armory.data.TorchImageSpec(
             dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
         ),
     )
@@ -111,7 +111,9 @@ def transform(processor, sample):
     return sample
 
 
-def load_huggingface_dataset(batch_size: int, shuffle: bool):
+def load_huggingface_dataset(
+    batch_size: int, shuffle: bool, seed: Optional[int] = None
+):
     """Load food-101 dataset from HuggingFace"""
     import functools
 
@@ -133,6 +135,7 @@ def load_huggingface_dataset(batch_size: int, shuffle: bool):
         label_key="label",
         batch_size=batch_size,
         shuffle=shuffle,
+        seed=seed,
     )
 
     evaluation_dataset = armory.evaluation.Dataset(
@@ -144,7 +147,10 @@ def load_huggingface_dataset(batch_size: int, shuffle: bool):
 
 
 def load_torchvision_dataset(
-    batch_size: int, shuffle: bool, sysconfig: armory.evaluation.SysConfig
+    batch_size: int,
+    shuffle: bool,
+    seed: Optional[int],
+    sysconfig: armory.evaluation.SysConfig,
 ):
     """Load food-101 dataset from TorchVision"""
     from torchvision import datasets
@@ -176,6 +182,7 @@ def load_torchvision_dataset(
         label_key="label",
         batch_size=batch_size,
         shuffle=shuffle,
+        seed=seed,
     )
 
     evaluation_dataset = armory.evaluation.Dataset(
@@ -204,7 +211,9 @@ def create_pgd_attack(classifier: art.estimators.classification.PyTorchClassifie
         name="PGD",
         attack=pgd,
         use_label_for_untargeted=True,
-        inputs_accessor=armory.data.Images.as_numpy(scale=normalized_scale),
+        inputs_spec=armory.data.NumpyImageSpec(
+            dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
+        ),
     )
 
     return evaluation_attack
@@ -231,7 +240,9 @@ def create_adversarial_patch_attack(
         name="AdversarialPatch",
         attack=patch,
         use_label_for_untargeted=False,
-        inputs_accessor=armory.data.Images.as_numpy(scale=normalized_scale),
+        inputs_spec=armory.data.NumpyImageSpec(
+            dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
+        ),
         generate_every_batch=False,
         apply_patch_kwargs={"scale": 0.5},
     )
@@ -256,7 +267,9 @@ def create_compression_defence(
     perturbation = armory.perturbation.ArtPreprocessorDefence(
         name="JPEG_compression",
         defence=jpeg_compression,
-        inputs_accessor=armory.data.Images.as_numpy(scale=unnormalized_scale),
+        inputs_spec=armory.data.NumpyImageSpec(
+            dim=armory.data.ImageDimensions.CHW, scale=unnormalized_scale
+        ),
     )
 
     return perturbation
@@ -307,60 +320,69 @@ def main(
     patch_batch_size,
 ):
     """Perform evaluation"""
-    if seed is not None:
-        torch.manual_seed(seed)
-
     sysconfig = armory.evaluation.SysConfig()
-    model, art_classifier = load_model()
-    dataset, _ = (
-        load_huggingface_dataset(batch_size, shuffle)
-        if dataset_src == "huggingface"
-        else load_torchvision_dataset(batch_size, shuffle, sysconfig)
-    )
-    perturbations = dict()
-    metrics = create_metrics()
-    exporters = create_exporters(model, export_every_n_batches)
     profiler = armory.metrics.compute.BasicProfiler()
-
-    if "benign" in chains:
-        perturbations["benign"] = []
-
-    if "pgd" in chains or "defended" in chains:
-        pgd = create_pgd_attack(art_classifier)
-
-        if "pgd" in chains:
-            perturbations["pgd"] = [pgd]
-
-        if "defended" in chains:
-            compression = create_compression_defence()
-            perturbations["defended"] = [pgd, compression]
-
-    if "patch" in chains:
-        if patch_batch_size is None:
-            patch_batch_size = batch_size
-        patch = create_adversarial_patch_attack(
-            art_classifier, batch_size=patch_batch_size
-        )
-        perturbations["patch"] = [patch]
-
-        with profiler.measure("patch/generate"):
-            patch.generate(next(iter(dataset.dataloader)))
-
     evaluation = armory.evaluation.Evaluation(
         name=f"food101-classification-{dataset_src}",
         description=f"Image classification of food-101 from {dataset_src}",
         author="TwoSix",
-        dataset=dataset,
-        model=model,
-        perturbations=perturbations,
-        metrics=metrics,
-        exporters=exporters,
-        profiler=profiler,
-        sysconfig=sysconfig,
     )
+
+    # Model
+    with evaluation.autotrack():
+        model, art_classifier = load_model()
+    evaluation.use_model(model)
+
+    # Dataset
+    with evaluation.autotrack():
+        dataset, _ = (
+            load_huggingface_dataset(batch_size, shuffle, seed)
+            if dataset_src == "huggingface"
+            else load_torchvision_dataset(batch_size, shuffle, seed, sysconfig)
+        )
+    evaluation.use_dataset(dataset)
+
+    # Metrics/Exporters
+    evaluation.use_metrics(create_metrics())
+    evaluation.use_exporters(create_exporters(model, export_every_n_batches))
+
+    # Perturbations
+    with evaluation.autotrack():
+        pgd = create_pgd_attack(art_classifier)
+
+    with evaluation.autotrack():
+        compression = create_compression_defence()
+
+    # Chains
+    if "benign" in chains:
+        with evaluation.add_chain("benign"):
+            pass
+
+    if "pgd" in chains:
+        with evaluation.add_chain("pgd") as chain:
+            chain.add_perturbation(pgd)
+
+    if "defended" in chains:
+        with evaluation.add_chain("defended") as chain:
+            chain.add_perturbation(pgd)
+            chain.add_perturbation(compression)
+
+    if "patch" in chains:
+        with evaluation.add_chain("patch") as chain:
+            if patch_batch_size is None:
+                patch_batch_size = batch_size
+            patch = create_adversarial_patch_attack(
+                art_classifier, batch_size=patch_batch_size
+            )
+            chain.add_perturbation(patch)
+
+        with profiler.measure("patch/generate"):
+            patch.generate(next(iter(dataset.dataloader)))
 
     engine = armory.engine.EvaluationEngine(
         evaluation,
+        profiler=profiler,
+        sysconfig=sysconfig,
         limit_test_batches=num_batches,
     )
     results = engine.run()
