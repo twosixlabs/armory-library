@@ -10,6 +10,7 @@ from typing import (
     Dict,
     Iterable,
     Optional,
+    Protocol,
     Sequence,
     Union,
 )
@@ -23,6 +24,10 @@ if TYPE_CHECKING:
     import mlflow.client
     import mlflow.entities
     import rich.console
+
+
+class Plottable(Protocol):
+    def plot(self, *args, **kwargs) -> "matplotlib.figure.Figure": ...
 
 
 class EvaluationResults:
@@ -115,6 +120,12 @@ class EvaluationResults:
             run.info.run_name or run.info.run_id: EvaluationResults(self._client, run)
             for run in runs
         }
+
+    @cached_property
+    def batches(self) -> Iterable[int]:
+        return set(
+            sorted([int(p.split("/")[1]) for p in self.artifacts["exports/"].paths()])
+        )
 
     def batch(self, batch_idx: int) -> "BatchExports":
         return BatchExports(batch_idx, self.artifacts[f"exports/{batch_idx:05}"])
@@ -484,7 +495,8 @@ class BatchExports:
                 ncols=1,
             )
 
-            for idx, sample_idx in enumerate(self.samples):
+            idx = 0
+            for sample_idx in self.samples:
                 if max_samples and idx == max_samples:
                     break
                 elif samples and sample_idx not in samples:
@@ -501,6 +513,8 @@ class BatchExports:
                     labelbottom=False,
                     labelleft=False,
                 )
+
+                idx += 1
 
             figure.suptitle(f"Batch {self.batch_idx}")
             return figure
@@ -580,13 +594,17 @@ class ClassificationResults:
         return f"ClassificationResults(sample={self.sample})"
 
     def plot(
-        self, labels: Optional[Sequence[str]] = None
+        self,
+        figure: Optional["matplotlib.pyplot.Figure"] = None,
+        labels: Optional[Sequence[str]] = None,
     ) -> "matplotlib.figure.Figure":
         import matplotlib.pyplot as plt
         import numpy as np
 
         with plt.ioff():
-            figure = plt.figure()
+            if figure is None:
+                figure = plt.figure()
+
             (ax1, ax2) = figure.subplots(1, 2)
 
             ax1.imshow(self.sample[self.sample.imagename].image)

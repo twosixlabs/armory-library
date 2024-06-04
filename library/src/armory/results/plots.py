@@ -1,6 +1,11 @@
-from typing import Optional, Sequence
+from typing import Callable, Optional, Sequence
 
-from armory.results.results import BatchExports, EvaluationResults
+from armory.results.results import (
+    BatchExports,
+    EvaluationResults,
+    Plottable,
+    SampleExports,
+)
 from armory.results.utils import get_next_dash_port
 
 
@@ -28,6 +33,30 @@ def plot_batches(
 
             if titles is not None and batch_idx < len(titles):
                 subfig.suptitle(titles[batch_idx])
+
+        return figure
+
+
+def plot_samples(
+    *batches: BatchExports,
+    samples: Sequence[int],
+    to_plot: Callable[[SampleExports], Plottable],
+    titles: Optional[Sequence[str]] = None,
+    **kwargs,
+):
+    import matplotlib.pyplot as plt
+
+    with plt.ioff():
+        figure = plt.figure()
+        subfigures = figure.subfigures(nrows=len(samples), ncols=len(batches))
+
+        for sample_idx, sample_num in enumerate(samples):
+            for batch_idx, batch in enumerate(batches):
+                subfig = subfigures[sample_idx][batch_idx]
+                to_plot(batch.sample(sample_num)).plot(figure=subfig, **kwargs)
+
+                if sample_idx == 0 and titles is not None and batch_idx < len(titles):
+                    subfig.suptitle(titles[batch_idx])
 
         return figure
 
