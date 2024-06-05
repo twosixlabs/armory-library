@@ -8,7 +8,7 @@ The basic dataflow of Armory-library is shown in this diagram:
 
 ![armory-library block diagram](assets/armory-block-diagram.png)
 
-Where the Model and Dataset are the inputs under ev_luation and the Attack is an
+Where the Model and Dataset are the inputs under evaluation and the Attack is an
 adversarial perturbation applied to the Dataset. Typically, the Model and
 Dataset will be provided by the armory-library user and the Attack will be drawn
 from armory-library or the IBM Adversarial Robustness Toolbox (ART).
