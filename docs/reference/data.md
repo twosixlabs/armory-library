@@ -96,8 +96,8 @@ assert images.get(
             max=255
         ),
         dim=images.spec.dim,
-    ).max() == 255
-)
+    )
+).max() == 255
 
 assert images.get(
     armory.data.ImageSpec(
