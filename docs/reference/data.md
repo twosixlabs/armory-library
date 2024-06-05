@@ -94,7 +94,7 @@ assert images.get(
         scale=armory.data.Scale(
             dtype=armory.data.DataType.UINT8, 
             max=255
-            ),
+        ),
         dim=images.spec.dim,
     ).max() == 255
 )
