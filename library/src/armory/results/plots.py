@@ -1,68 +1,154 @@
-from typing import Callable, Optional, Sequence
+import io
+from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union
 
-from armory.results.results import (
-    BatchExports,
-    EvaluationResults,
-    Plottable,
-    SampleExports,
-)
+import PIL.Image
+
 from armory.results.utils import get_next_dash_port
 
+if TYPE_CHECKING:
+    import matplotlib.figure
 
-def plot_batches(
-    *batches: BatchExports,
-    filename: Optional[str] = None,
-    max_samples: Optional[int] = None,
-    samples: Optional[Sequence[int]] = None,
-    titles: Optional[Sequence[str]] = None,
+    from armory.results.results import EvaluationResults
+
+
+def _to_pil(
+    figure: Union["matplotlib.figure.Figure", PIL.Image.Image]
+) -> PIL.Image.Image:
+    if isinstance(figure, PIL.Image.Image):
+        return figure
+
+    buf = io.BytesIO()
+    figure.savefig(buf, bbox_inches="tight")
+    buf.seek(0)
+    img = PIL.Image.open(buf)
+    return img
+
+
+def plot_in_grid(
+    cells: Union[
+        Sequence[Union["matplotlib.figure.Figure", PIL.Image.Image]],
+        Sequence[Sequence[Union["matplotlib.figure.Figure", PIL.Image.Image]]],
+    ],
+    border: bool = False,
+    columns: Optional[Sequence[str]] = None,
+    figsize: Optional[Tuple[float, float]] = None,
+    rows: Optional[Sequence[str]] = None,
+    title: Optional[str] = None,
+    vertical: bool = False,
 ):
     import matplotlib.pyplot as plt
 
     with plt.ioff():
-        figure = plt.figure()
-        subfigures = figure.subfigures(nrows=1, ncols=len(batches))
+        is_2d = isinstance(cells[0], Sequence)
+        if is_2d:
+            nrows = len(cells)
+            ncols = len(cells[0])
+        elif vertical:
+            nrows = len(cells)
+            ncols = 1
+        else:
+            nrows = 1
+            ncols = len(cells)
 
-        for batch_idx, batch in enumerate(batches):
-            subfig = subfigures[batch_idx]
-            batch.plot(
-                filename=filename,
-                figure=subfig,
-                max_samples=max_samples,
-                samples=samples,
+        figure = plt.figure(figsize=figsize)
+        axes = figure.subplots(nrows=nrows, ncols=ncols)
+
+        for row_idx, row in enumerate(cells):
+            if is_2d:
+                for col_idx, cell in enumerate(row):
+                    ax = axes[row_idx, col_idx]
+                    ax.imshow(_to_pil(cell))
+
+                    if row_idx == 0 and columns is not None and col_idx < len(columns):
+                        ax.set_title(columns[col_idx])
+
+                    if col_idx == 0 and rows is not None and row_idx < len(rows):
+                        ax.set_ylabel(rows[row_idx])
+            else:
+                ax = axes[row_idx]
+                ax.imshow(_to_pil(row))
+
+                if not vertical and columns is not None and row_idx < len(columns):
+                    ax.set_title(columns[row_idx])
+
+                if vertical and rows is not None and row_idx < len(rows):
+                    ax.set_ylabel(rows[row_idx])
+
+        for ax in figure.axes:
+            # Cannot use ax.axis("off") because it will remove any labels, and
+            # we only want to remove the borders and tick marks
+            if not border:
+                for spine in ax.spines.values():
+                    spine.set_visible(False)
+            ax.tick_params(
+                bottom=False,
+                left=False,
+                labelbottom=False,
+                labelleft=False,
             )
 
-            if titles is not None and batch_idx < len(titles):
-                subfig.suptitle(titles[batch_idx])
+        if title:
+            figure.suptitle(title)
+
+        figure.tight_layout()
 
         return figure
 
 
-def plot_samples(
-    *batches: BatchExports,
-    samples: Sequence[int],
-    to_plot: Callable[[SampleExports], Plottable],
-    titles: Optional[Sequence[str]] = None,
-    **kwargs,
-):
-    import matplotlib.pyplot as plt
+# def plot_batches(
+#     *batches: "BatchExports",
+#     filename: Optional[str] = None,
+#     max_samples: Optional[int] = None,
+#     samples: Optional[Sequence[int]] = None,
+#     titles: Optional[Sequence[str]] = None,
+# ):
+#     import matplotlib.pyplot as plt
 
-    with plt.ioff():
-        figure = plt.figure()
-        subfigures = figure.subfigures(nrows=len(samples), ncols=len(batches))
+#     with plt.ioff():
+#         figure = plt.figure()
+#         subfigures = figure.subfigures(nrows=1, ncols=len(batches))
 
-        for sample_idx, sample_num in enumerate(samples):
-            for batch_idx, batch in enumerate(batches):
-                subfig = subfigures[sample_idx][batch_idx]
-                to_plot(batch.sample(sample_num)).plot(figure=subfig, **kwargs)
+#         for batch_idx, batch in enumerate(batches):
+#             subfig = subfigures[batch_idx]
+#             batch.plot(
+#                 filename=filename,
+#                 figure=subfig,
+#                 max_samples=max_samples,
+#                 samples=samples,
+#             )
 
-                if sample_idx == 0 and titles is not None and batch_idx < len(titles):
-                    subfig.suptitle(titles[batch_idx])
+#             if titles is not None and batch_idx < len(titles):
+#                 subfig.suptitle(titles[batch_idx])
 
-        return figure
+#         return figure
+
+
+# def plot_samples(
+#     *batches: "BatchExports",
+#     samples: Sequence[int],
+#     to_plot: Callable[["SampleExports"], "Plottable"],
+#     titles: Optional[Sequence[str]] = None,
+#     **kwargs,
+# ):
+#     import matplotlib.pyplot as plt
+
+#     with plt.ioff():
+#         figure = plt.figure()
+#         subfigures = figure.subfigures(nrows=len(samples), ncols=len(batches))
+
+#         for sample_idx, sample_num in enumerate(samples):
+#             for batch_idx, batch in enumerate(batches):
+#                 subfig = subfigures[sample_idx][batch_idx]
+#                 to_plot(batch.sample(sample_num)).plot(figure=subfig, **kwargs)
+
+#                 if sample_idx == 0 and titles is not None and batch_idx < len(titles):
+#                     subfig.suptitle(titles[batch_idx])
+
+#         return figure
 
 
 def plot_metrics(
-    *runs: EvaluationResults,
+    *runs: "EvaluationResults",
     blacklist: Optional[Sequence[str]] = None,
     dark: bool = False,
     debug: bool = False,
@@ -158,7 +244,7 @@ def plot_metrics(
 
 
 def plot_params(
-    *runs: EvaluationResults,
+    *runs: "EvaluationResults",
     blacklist: Optional[Sequence[str]] = None,
     dark: bool = False,
     debug: bool = False,

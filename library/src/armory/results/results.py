@@ -474,50 +474,29 @@ class BatchExports:
     def plot(
         self,
         filename: Optional[str] = None,
-        figure: Optional["matplotlib.pyplot.Figure"] = None,
         max_samples: Optional[int] = None,
         samples: Optional[Sequence[int]] = None,
+        title: Optional[str] = None,
     ) -> "matplotlib.figure.Figure":
-        import matplotlib.pyplot as plt
+        from armory.results.plots import plot_in_grid
 
-        with plt.ioff():
-            if figure is None:
-                figure = plt.figure()
+        sample_nums = []
+        for idx, sample_num in enumerate(self.samples):
+            if max_samples and idx == max_samples:
+                break
+            elif samples and sample_num not in samples:
+                continue
+            sample_nums.append(sample_num)
 
-            num_samples = len(list(self.samples))
-            if max_samples:
-                num_samples = min(max_samples, num_samples)
-            elif samples:
-                num_samples = min(len(samples), num_samples)
+        if filename is None:
+            filename = self.sample(sample_nums[0]).imagename
 
-            axes = figure.subplots(
-                nrows=num_samples,
-                ncols=1,
-            )
-
-            idx = 0
-            for sample_idx in self.samples:
-                if max_samples and idx == max_samples:
-                    break
-                elif samples and sample_idx not in samples:
-                    continue
-
-                sample = self.sample(sample_idx)
-                ax = axes[idx] if num_samples > 1 else axes
-                ax.set_ylabel(f"Sample {sample_idx}")
-                artifact = sample[filename] if filename else sample[sample.imagename]
-                ax.imshow(artifact.image)
-                ax.tick_params(
-                    bottom=False,
-                    left=False,
-                    labelbottom=False,
-                    labelleft=False,
-                )
-
-                idx += 1
-
-            figure.suptitle(f"Batch {self.batch_idx}")
-            return figure
+        return plot_in_grid(
+            [self.sample(sample_num)[filename].image for sample_num in sample_nums],
+            rows=[f"Sample {sample_num}" for sample_num in sample_nums],
+            title=title or f"Batch {self.batch_idx}",
+            vertical=True,
+        )
 
 
 class SampleExports:
@@ -597,6 +576,7 @@ class ClassificationResults:
         self,
         figure: Optional["matplotlib.pyplot.Figure"] = None,
         labels: Optional[Sequence[str]] = None,
+        top_k: int = 10,
     ) -> "matplotlib.figure.Figure":
         import matplotlib.pyplot as plt
         import numpy as np
@@ -616,10 +596,10 @@ class ClassificationResults:
             if np.max(probs) > 1 or np.min(probs) < 0:
                 # perform softmax to turn logits into probabilities
                 probs = np.exp(probs) / np.sum(np.exp(probs))
-            top_ten_indices = list(probs.argsort()[-10:][::-1])
+            top_ten_indices = list(probs.argsort()[-top_k:][::-1])
             top_probs = probs[top_ten_indices]
 
-            barlist = ax2.bar(range(10), top_probs)
+            barlist = ax2.bar(range(top_k), top_probs)
             if target_class in top_ten_indices:
                 barlist[top_ten_indices.index(target_class)].set_color("g")
 
@@ -629,7 +609,7 @@ class ClassificationResults:
                 barlabels = [str(i) for i in top_ten_indices]
 
             ax2.set_ylim([0, 1.1])
-            ax2.set_xticks(range(10))
+            ax2.set_xticks(range(top_k))
             ax2.set_xticklabels(barlabels, rotation="vertical")
             ax2.set_ylabel("Probability")
 
