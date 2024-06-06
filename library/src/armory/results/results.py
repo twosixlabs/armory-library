@@ -131,7 +131,7 @@ class EvaluationResults:
         return BatchExports(batch_idx, self.artifacts[f"exports/{batch_idx:05}"])
 
 
-class RunDataDict(UserDict[str, Any]):
+class RunDataDict(UserDict):
     """Dictionary of run data that can be printed as a table"""
 
     def __init__(
