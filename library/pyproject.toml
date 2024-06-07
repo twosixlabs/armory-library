@@ -51,6 +51,7 @@ extras = [
     "dash",
     "matplotlib",
     "pandas",
+    "rich",
     "tidecv",
     "transformers",
     "xaitk-saliency",
