@@ -61,7 +61,7 @@ def load_dataset(
     batch_size: int,
     shuffle: bool,
     seed: Optional[int] = None,
-    split: Union[Literal["val"], Literal["train"]] = "val",
+    split: Union[Literal["validation"], Literal["train"]] = "validation",
 ):
     """Load VisDrone dataset"""
     with evaluation.autotrack():

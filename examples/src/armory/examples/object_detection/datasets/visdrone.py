@@ -84,6 +84,7 @@ def create_dataloader(
 
 TRAIN_URL = "https://github.com/ultralytics/yolov5/releases/download/v1.0/VisDrone2019-DET-train.zip"
 VAL_URL = "https://github.com/ultralytics/yolov5/releases/download/v1.0/VisDrone2019-DET-val.zip"
+TEST_URL = "https://github.com/ultralytics/yolov5/releases/download/v1.0/VisDrone2019-DET-test-dev.zip"
 
 
 def load_dataset() -> datasets.DatasetDict:
@@ -95,19 +96,25 @@ def load_dataset() -> datasets.DatasetDict:
     """
     dl_manager = datasets.DownloadManager(dataset_name="VisDrone2019")
     ds_features = features()
-    paths = dl_manager.download({"train": TRAIN_URL, "val": VAL_URL})
+    paths = dl_manager.download({"train": TRAIN_URL, "val": VAL_URL, "test": TEST_URL})
     train_files = dl_manager.iter_archive(paths["train"])
     val_files = dl_manager.iter_archive(paths["val"])
+    test_files = dl_manager.iter_archive(paths["test"])
     return datasets.DatasetDict(
         {
-            "train": datasets.Dataset.from_generator(
+            datasets.Split.TRAIN: datasets.Dataset.from_generator(
                 generate_samples,
                 gen_kwargs={"files": train_files},
                 features=ds_features,
             ),
-            "val": datasets.Dataset.from_generator(
+            datasets.Split.VALIDATION: datasets.Dataset.from_generator(
                 generate_samples,
                 gen_kwargs={"files": val_files},
+                features=ds_features,
+            ),
+            datasets.Split.TEST: datasets.Dataset.from_generator(
+                generate_samples,
+                gen_kwargs={"files": test_files},
                 features=ds_features,
             ),
         }
