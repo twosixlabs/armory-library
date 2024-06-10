@@ -29,9 +29,8 @@ class RobustDPatchModule(LightningModule):
         # TODO non-zero min value
         self.patch_min = 0
         self.patch_max = self.model.inputs_spec.scale.max
-        self.patch = torch.randint(0, 255, self.patch_shape) / 255 * self.patch_max
+        self.patch = torch.randint(0, 256, self.patch_shape) / 255 * self.patch_max
         self.patch.requires_grad = True
-        self.initial_patch = self.patch.clone()
         self.targeted = False
         self.learning_rate = 0.1
         self.augmentation = kornia.augmentation.container.ImageSequential(
@@ -139,14 +138,15 @@ if __name__ == "__main__":
     model = load_model()
 
     module = RobustDPatchModule(model)
-    trainer = Trainer(limit_train_batches=10, max_epochs=20)
-    trainer.fit(module, dataloader)
 
-    patch_np = (
-        module.initial_patch.detach().cpu().numpy().transpose(1, 2, 0) * 255
-    ).astype("uint8")
+    patch_np = (module.patch.detach().cpu().numpy().transpose(1, 2, 0) * 255).astype(
+        "uint8"
+    )
     patch = PIL.Image.fromarray(patch_np)
     patch.save("initial_patch.png")
+
+    trainer = Trainer(limit_train_batches=10, max_epochs=20)
+    trainer.fit(module, dataloader)
 
     patch_np = (module.patch.detach().cpu().numpy().transpose(1, 2, 0) * 255).astype(
         "uint8"
