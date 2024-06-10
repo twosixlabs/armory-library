@@ -607,6 +607,9 @@ class ClassificationResults:
                 barlabels = [labels[i] for i in top_ten_indices]
             else:
                 barlabels = [str(i) for i in top_ten_indices]
+            barlabels = [
+                f"{lbl[:12]}..." if len(lbl) > 15 else lbl for lbl in barlabels
+            ]
 
             ax2.set_ylim([0, 1.1])
             ax2.set_xticks(range(top_k))
