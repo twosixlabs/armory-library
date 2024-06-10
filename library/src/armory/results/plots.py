@@ -80,6 +80,7 @@ def plot_in_grid(
             if not border:
                 for spine in ax.spines.values():
                     spine.set_visible(False)
+            ax.grid(False)
             ax.tick_params(
                 bottom=False,
                 left=False,
