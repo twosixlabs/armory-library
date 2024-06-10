@@ -12,13 +12,13 @@ the chain-specific parameters, metrics, and exports for that chain.
 The following table summarizes how Armory evaluation components map to records
 in MLFlow:
 
-| Armory Component | MLFlow Record |
-|------------------|---------------|
-| Evaluation | Experiment |
-| Evaluation engine run | Parent run |
-| Evaluation chain run | Nested run |
-| Tracked params | Parent or nested run parameters |
-| Metrics | Nested run metrics _or_ JSON artifacts |
+| Armory Component      | MLFlow Record                          |
+|-----------------------|----------------------------------------|
+| Evaluation            | Experiment                             |
+| Evaluation engine run | Parent run                             |
+| Evaluation chain run  | Nested run                             |
+| Tracked params        | Parent or nested run parameters        |
+| Metrics               | Nested run metrics _or_ JSON artifacts |
 | Exports | Nested run artifacts
 
 ## Usage
@@ -246,7 +246,7 @@ python run_my_evaluation.py
 You may also store your credentials
 [in a file](https://mlflow.org/docs/latest/auth/index.html#using-credentials-file).
 
-[MLFlow]: (https://mlflow.org/docs/latest/tracking.html)
-[`mlflow.log_metric`]: (https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_metric)
-[`mlflow.log_artifact`]: (https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_artifact)
-[`mlflow.log_artifacts`]: (https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_artifacts)
+[MLFlow]: https://mlflow.org/docs/latest/tracking.html
+[`mlflow.log_metric`]: https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_metric
+[`mlflow.log_artifact`]: https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_artifact
+[`mlflow.log_artifacts`]: https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_artifacts
