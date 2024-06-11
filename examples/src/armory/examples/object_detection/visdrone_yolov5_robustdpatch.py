@@ -79,7 +79,8 @@ class RobustDPatchModule(LightningModule):
         # Get loss from model outputs
         self.model.train()
         loss_components = self.model(inputs_with_augmentations, yolo_targets)
-        loss = loss_components["loss_total"]
+        # Negate the loss because the optimizer will be minimizing it
+        loss = -loss_components["loss_total"]
 
         self.log("loss", loss)
 
