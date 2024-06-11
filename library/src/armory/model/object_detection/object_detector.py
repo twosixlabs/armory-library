@@ -85,9 +85,10 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
         self.score_threshold = score_threshold
 
     def _apply(self, *args, **kwargs):
-        super()._apply(*args, **kwargs)
+        res = super()._apply(*args, **kwargs)
         if isinstance(self.inputs_spec, TorchSpec):
             self.inputs_spec.to(device=self.device)
+        return res
 
     def _filter_predictions(self, preds):
         for pred in preds:

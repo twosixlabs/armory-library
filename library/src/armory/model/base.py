@@ -68,8 +68,8 @@ class ArmoryModel(Trackable, nn.Module):
         self.device = torch.device("cpu")
 
     def _apply(self, fn, *args, **kwargs):
-        super()._apply(fn, *args, **kwargs)
         self.device = fn(torch.zeros(1)).device
+        return super()._apply(fn, *args, **kwargs)
 
     def forward(self, *args, **kwargs):
         """
