@@ -5,6 +5,7 @@ if TYPE_CHECKING:
 
 
 def get_mlflow_client() -> "mlflow.client.MlflowClient":
+    """Create an MLFlow client"""
     from mlflow.client import MlflowClient
 
     from armory.evaluation import SysConfig

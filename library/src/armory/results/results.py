@@ -10,14 +10,15 @@ from typing import (
     Dict,
     Iterable,
     Optional,
-    Protocol,
     Sequence,
     Union,
+    cast,
 )
 
 from armory.results.utils import get_mlflow_client
 
 if TYPE_CHECKING:
+    import IPython.core.display
     import PIL.Image
     import matplotlib.figure
     import matplotlib.pyplot
@@ -26,21 +27,33 @@ if TYPE_CHECKING:
     import rich.console
 
 
-class Plottable(Protocol):
-    def plot(self, *args, **kwargs) -> "matplotlib.figure.Figure": ...
-
-
 class EvaluationResults:
     """Armory evaluation results corresponding to a single MLFlow run"""
 
     @classmethod
     def for_run(cls, run_id: str) -> "EvaluationResults":
+        """
+        Retrieve the evaluation results for a given MLFlow run ID.
+
+        Args:
+            run_id: MLFlow run ID
+
+        Return:
+            EvaluationResults object
+        """
         client = get_mlflow_client()
         return cls(client, client.get_run(run_id))
 
     def __init__(
         self, client: "mlflow.client.MlflowClient", run: "mlflow.entities.Run"
     ):
+        """
+        Initialize the evaluation results object for the given MLFlow run.
+
+        Args:
+            client: MLFlow client
+            run: MLFlow run
+        """
         self._client = client
         self._run = run
 
@@ -106,11 +119,12 @@ class EvaluationResults:
 
     @cached_property
     def artifacts(self) -> "RunArtifacts":
+        """Run artifacts"""
         return RunArtifacts(self._client, self.run_id)
 
     @cached_property
     def children(self) -> Dict[str, "EvaluationResults"]:
-        """Child runs"""
+        """Child (nested) runs"""
         runs = self._client.search_runs(
             experiment_ids=[self._run.info.experiment_id],
             filter_string=f"tags.mlflow.parentRunId = '{self.run_id}'",
@@ -123,12 +137,21 @@ class EvaluationResults:
 
     @cached_property
     def batches(self) -> Iterable[int]:
+        """Indices of exported batches in the run"""
         return set(
-            sorted([int(p.split("/")[1]) for p in self.artifacts["exports/"].paths()])
+            sorted(
+                [
+                    int(p.split("/")[1])
+                    for p in cast(RunArtifacts, self.artifacts["exports/"]).paths()
+                ]
+            )
         )
 
     def batch(self, batch_idx: int) -> "BatchExports":
-        return BatchExports(batch_idx, self.artifacts[f"exports/{batch_idx:05}"])
+        """Retrieve exports for a specific batch index"""
+        return BatchExports(
+            batch_idx, cast(RunArtifacts, self.artifacts[f"exports/{batch_idx:05}"])
+        )
 
 
 class RunDataDict(UserDict):
@@ -142,7 +165,7 @@ class RunDataDict(UserDict):
         value_label: str = "value",
     ):
         """
-        Initializes the data dictionary.
+        Initialize the data dictionary.
 
         Args:
             data: Dictionary contents
@@ -163,13 +186,15 @@ class RunDataDict(UserDict):
         **kwargs,
     ) -> None:
         """
-        Prints the contents of the dictionary in a rich table.
+        Print the contents of the dictionary in a rich table.
 
         Args:
             console: Optional, rich console to use for printing. Defaults to the
                 standard rich console.
             format: Optional, function to format values for printing. Defaults to
                 the built-in str function.
+            title: Optional, title for the table. Defaults to the title provided
+                when the dictionary was initialized.
             **kwargs: Keyword arguments forwarded to the rich table constructor
         """
         from rich.table import Table
@@ -191,13 +216,16 @@ class RunDataDict(UserDict):
     def plot(
         self,
         format: Callable[[Any], str] = str,
-    ):
+    ) -> "IPython.core.display.HTML":
         """
-        Displays the contents of the dictionary in an HTML table.
+        Create an HTML table for the dictionary.
 
         Args:
             format: Optional, function to format values for printing. Defaults to
                 the built-in str function.
+
+        Return:
+            IPython HTML object for the table
         """
         from IPython.core.display import HTML
 
@@ -226,6 +254,7 @@ class RunDataDict(UserDict):
 
 
 class RunMetricsDict(RunDataDict):
+    """Dictionary of run metrics that can be printed as a table"""
 
     def __init__(
         self,
@@ -235,7 +264,7 @@ class RunMetricsDict(RunDataDict):
         value_label: str = "value",
     ):
         """
-        Initializes the metrics dictionary.
+        Initialize the metrics dictionary.
 
         Args:
             data: Dictionary contents
@@ -252,10 +281,11 @@ class RunMetricsDict(RunDataDict):
         console: Optional["rich.console.Console"] = None,
         format: Optional[Callable[[Any], str]] = None,
         precision: int = 3,
+        title: Optional[str] = None,
         **kwargs,
     ) -> None:
         """
-        Prints the contents of the dictionary in a rich table.
+        Print the contents of the dictionary in a rich table.
 
         Args:
             console: Optional, rich console to use for printing. Defaults to the
@@ -264,11 +294,14 @@ class RunMetricsDict(RunDataDict):
                 a fixed-precision floating point formatter.
             precision: Optional, number of decimal places to display for floating
                 point values
+            title: Optional, title for the table. Defaults to the title provided
+                when the dictionary was initialized.
             **kwargs: Keyword arguments forwarded to the rich table constructor
         """
         return super().table(
             console=console,
             format=format or (lambda v: f"{v:.{precision}f}"),
+            title=title,
             **kwargs,
         )
 
@@ -276,15 +309,18 @@ class RunMetricsDict(RunDataDict):
         self,
         format: Optional[Callable[[Any], str]] = None,
         precision: int = 3,
-    ):
+    ) -> "IPython.core.display.HTML":
         """
-        Displays the contents of the dictionary in an HTML table.
+        Create an HTML table for the metrics.
 
         Args:
             format: Optional, function to format values for printing. Defaults to
                 a fixed-precision floating point formatter.
             precision: Optional, number of decimal places to display for floating
                 point values
+
+        Return:
+            IPython HTML object for the table
         """
         return super().plot(
             format=format or (lambda v: f"{v:.{precision}f}"),
@@ -292,6 +328,7 @@ class RunMetricsDict(RunDataDict):
 
 
 class RunArtifacts:
+    """Attached artifacts for a specific folder path in an MLFlow run"""
 
     def __init__(
         self,
@@ -300,6 +337,18 @@ class RunArtifacts:
         path: str = "",
         children: Optional[Dict[str, "RunArtifact"]] = None,
     ):
+        """
+        Initialize the artifacts.
+
+        Args:
+            client: MLFlow client
+            run_id: MLFlow run ID
+            path: Optional, the folder path within the MLFlow run's artifacts.
+                Default is the root path.
+            children: Optional, dictionary of paths to child artifacts. If not
+                provided, the children will be populated by querying the MLFlow
+                server.
+        """
         self._client = client
         self._run_id = run_id
         self.path = path
@@ -311,9 +360,11 @@ class RunArtifacts:
         return f"RunArtifacts(client={self._client}, run_id={self._run_id}, path={self.path}, children={self._children})"
 
     def paths(self) -> Iterable[str]:
+        """Paths of all artifacts under the current path"""
         return self._children.keys()
 
     def _list_artifacts(self, parent_path) -> Dict[str, "RunArtifact"]:
+        """List all artifacts in the current run under a given path"""
         artifacts: Dict[str, RunArtifact] = {}
         for child in self._client.list_artifacts(self._run_id, parent_path):
             if child.is_dir:
@@ -323,6 +374,17 @@ class RunArtifacts:
         return artifacts
 
     def __getitem__(self, key: str) -> Union["RunArtifact", "RunArtifacts"]:
+        """
+        Retrieve the folder path or an individual artifact at the given path.
+
+        Args:
+            key: Folder path or artifact name, relative to the current path of
+                this object's folder path
+
+        Return:
+            RunArtifacts object if the key is a folder path, RunArtifact object
+            if the key is an artifact name
+        """
         if key[-1] == "/":  # remove trailing /, if any
             key = key[:-1]
         path = self.path + "/" + key if self.path else key
@@ -332,10 +394,13 @@ class RunArtifacts:
         # else return a new artifacts parent with all items under the path
         prefix = path + "/"
         children = {k: v for k, v in self._children.items() if k.startswith(prefix)}
+        if len(children) == 0:
+            raise KeyError(f"Artifact(s) not found: {path}")
         return RunArtifacts(self._client, self._run_id, path, children)
 
 
 class RunArtifact:
+    """An individual artifact attached to an MLFlow run"""
 
     def __init__(
         self,
@@ -343,6 +408,14 @@ class RunArtifact:
         run_id: str,
         artifact: "mlflow.entities.FileInfo",
     ):
+        """
+        Initialize the artifact.
+
+        Args:
+            client: MLFlow client
+            run_id: MLFlow run ID
+            artifact: MLFlow file info object
+        """
         self._client = client
         self._run_id = run_id
         self.artifact = artifact
@@ -352,32 +425,47 @@ class RunArtifact:
 
     @cached_property
     def local_path(self) -> str:
+        """
+        Local path to the downloaded artifact file. If the file is not already
+        available locally, it will be downloaded from the MLFlow server.
+        """
         return self._client.download_artifacts(self._run_id, self.artifact.path)
 
     @cached_property
     def data(self) -> bytes:
+        """Raw data contents of the artifact file"""
         with open(self.local_path, "rb") as f:
             return f.read()
 
     @cached_property
     def image(self) -> "PIL.Image.Image":
+        """Artifact file as a PIL image"""
         from PIL import Image
 
         return Image.open(self.local_path)
 
     @cached_property
     def json(self) -> Any:
+        """Artifact file as a parsed JSON object"""
         with open(self.local_path, "r") as f:
             return json.load(f)
 
 
 class BatchExports:
+    """Exported artifacts for a specific batch in an evaluation run"""
 
     def __init__(
         self,
         batch_idx: int,
         artifacts: RunArtifacts,
     ):
+        """
+        Initialize the batch exports.
+
+        Args:
+            batch_idx: Batch index
+            artifacts: Exported artifacts for the batch
+        """
         self.batch_idx = batch_idx
         self.artifacts = artifacts
 
@@ -386,13 +474,15 @@ class BatchExports:
 
     @cached_property
     def samples(self) -> Iterable[int]:
+        """Indices of exported samples in the batch"""
         return set(sorted([int(p.split("/")[2]) for p in self.artifacts.paths()]))
 
     def sample(self, sample_idx: int) -> "SampleExports":
+        """Retrieve exports for a specific sample index"""
         return SampleExports(
             self.batch_idx,
             sample_idx,
-            self.artifacts[f"{sample_idx:02}"],
+            cast(RunArtifacts, self.artifacts[f"{sample_idx:02}"]),
         )
 
     def plot(
@@ -402,6 +492,21 @@ class BatchExports:
         samples: Optional[Sequence[int]] = None,
         title: Optional[str] = None,
     ) -> "matplotlib.figure.Figure":
+        """
+        Create a matplotlib figure for image samples in the batch.
+
+        Args:
+            filename: Optional, image filename to plot. If not provided, the
+                default image export for each sample will be plotted.
+            max_samples: Optional, maximum number of samples to plot. If not
+                provided, all samples will be plotted.
+            samples: Optional, specific sample indices to plot. If not provided,
+                all samples will be plotted.
+            title: Optional, title for the plot
+
+        Return:
+            Matplotlib figure
+        """
         from armory.results.plots import plot_in_grid
 
         sample_nums = []
@@ -422,8 +527,14 @@ class BatchExports:
             vertical=True,
         )
 
+    def _ipython_display_(self):
+        from IPython.display import display
+
+        display(self.plot())
+
 
 class SampleExports:
+    """Exported artifacts for a specific sample within a batch"""
 
     def __init__(
         self,
@@ -431,6 +542,14 @@ class SampleExports:
         sample_idx: int,
         artifacts: RunArtifacts,
     ):
+        """
+        Initialize the sample exports.
+
+        Args:
+            batch_idx: Batch index
+            sample_idx: Sample index
+            artifacts: Exported artifacts for the sample
+        """
         self.batch_idx = batch_idx
         self.sample_idx = sample_idx
         self.artifacts = artifacts
@@ -440,14 +559,17 @@ class SampleExports:
 
     @property
     def classification(self) -> "ClassificationResults":
+        """Sample as an image classification sample"""
         return ClassificationResults(self)
 
     @cached_property
     def exports(self) -> Iterable[str]:
+        """Artifact filenames for the sample"""
         return sorted([p.split("/")[-1] for p in self.artifacts.paths()])
 
     @cached_property
     def imagename(self) -> str:
+        """Default image export for the sample"""
         for path in self.exports:
             if path in ("input.png", "objects.png"):
                 return path
@@ -457,15 +579,28 @@ class SampleExports:
 
     @cached_property
     def metadata(self) -> "SampleMetadata":
+        """Metadata properties for the sample"""
         return SampleMetadata(
-            self.batch_idx, self.sample_idx, self.artifacts["metadata.txt"]
+            self.batch_idx,
+            self.sample_idx,
+            cast(RunArtifact, self.artifacts["metadata.txt"]),
         )
 
     def __getitem__(self, key: str) -> RunArtifact:
-        return self.artifacts[key]
+        """
+        Retrieve the individual artifact at the given path.
+
+        Args:
+            key: Artifact filename
+
+        Return:
+            RunArtifact object
+        """
+        return cast(RunArtifact, self.artifacts[key])
 
 
 class SampleMetadata:
+    """Metadata properties for a specific sample within a batch"""
 
     def __init__(
         self,
@@ -473,24 +608,49 @@ class SampleMetadata:
         sample_idx: int,
         artifact: RunArtifact,
     ):
+        """
+        Initialize the sample metadata.
+
+        Args:
+            batch_idx: Batch index
+            sample_idx: Sample index
+            artifact: Metadata artifact for the sample
+        """
         self.batch_idx = batch_idx
         self.sample_idx = sample_idx
         self.artifact = artifact
 
     @property
     def json(self) -> Any:
+        """Sample metadata as a parsed JSON object"""
         return self.artifact.json
 
     def __getitem__(self, key: str) -> Any:
+        """
+        Retrieve a specific metadata property.
+
+        Args:
+            key: Metadata property key
+
+        Return:
+            Metadata property value
+        """
         return self.json.get(key)
 
 
 class ClassificationResults:
+    """Image classification results for a specific sample within a batch"""
 
     def __init__(
         self,
         sample: SampleExports,
     ):
+        """
+        Initialize the classification results.
+
+        Args:
+            sample: Sample exports
+        """
         self.sample = sample
 
     def __repr__(self) -> str:
@@ -502,6 +662,20 @@ class ClassificationResults:
         labels: Optional[Sequence[str]] = None,
         top_k: int = 10,
     ) -> "matplotlib.figure.Figure":
+        """
+        Create a matplotlib figure for the image classification input and
+        predictions for this sample.
+
+        Args:
+            figure: Optional, existing matplotlib figure to use for plotting.
+                If not provided, a new figure will be created.
+            labels: Optional, class labels for the predictions. If not provided,
+                class indices will be used.
+            top_k: Optional, number of top predictions to display
+
+        Return:
+            Matplotlib figure
+        """
         import matplotlib.pyplot as plt
         import numpy as np
 

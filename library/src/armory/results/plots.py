@@ -34,6 +34,21 @@ def plot_in_grid(
     title: Optional[str] = None,
     vertical: bool = False,
 ):
+    """
+    Create a matplotlib figure with the given cells arranged in a grid.
+
+    Args:
+        cells: 1D list or 2D array of matplotlib figures or PIL images to display
+        border: If True, draw borders around cell images
+        columns: Labels for columns of the grid
+        figsize: Size of the figure
+        rows: Labels for rows of the grid
+        title: Title for the figure
+        vertical: If True, arrange 1D cells vertically instead of horizontally
+
+    Return:
+        Matplotlib figure
+    """
     import matplotlib.pyplot as plt
 
     with plt.ioff():
@@ -107,7 +122,20 @@ def plot_metrics(
     precision: int = 3,
     whitelist: Optional[Sequence[str]] = None,
 ):
-    """Plot metrics for multiple runs in an HTML table."""
+    """
+    Create an HTML table of metrics from multiple runs.
+
+    Args:
+        runs: EvaluationResults from runs to compare
+        blacklist: Optional, list of metrics to exclude
+        metric_label: Optional, label for the metric column
+        precision: Optional, number of decimal places to display for floating
+            point values
+        whitelist: Optional, list of metrics to include
+
+    Return:
+        IPython HTML object for the table
+    """
     from IPython.core.display import HTML
 
     metric_keys = set()
@@ -148,6 +176,21 @@ def plot_params(
     param_label: str = "Parameter",
     whitelist: Optional[Sequence[str]] = None,
 ):
+    """
+    Create an HTML table of parameters from multiple runs.
+
+    Args:
+        runs: EvaluationResults from runs to compare
+        blacklist: Optional, list of parameters to exclude
+        hide_same: If True, hide parameters that are the same across all runs
+        highlight_diff: If True, highlight parameters that are different across
+            runs
+        param_label: Optional, label for the parameter column
+        whitelist: Optional, list of parameters to include
+
+    Return:
+        IPython HTML object for the table
+    """
     from IPython.core.display import HTML
 
     param_keys = set()
