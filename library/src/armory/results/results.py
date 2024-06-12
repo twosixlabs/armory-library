@@ -15,7 +15,7 @@ from typing import (
     Union,
 )
 
-from armory.results.utils import get_mlflow_client, get_next_dash_port
+from armory.results.utils import get_mlflow_client
 
 if TYPE_CHECKING:
     import PIL.Image
@@ -190,99 +190,39 @@ class RunDataDict(UserDict):
 
     def plot(
         self,
-        align_left: bool = True,
-        dark: bool = False,
-        debug: bool = False,
         format: Callable[[Any], str] = str,
-        height: int = 400,
-        port: Optional[int] = None,
-    ) -> None:
+    ):
         """
         Displays the contents of the dictionary in an HTML table.
 
         Args:
-            align_left: Optional, align value column text to the left if True
-            dark: Optional, use a dark theme if True
-            debug: Optional, enable debug output from Dash
             format: Optional, function to format values for printing. Defaults to
                 the built-in str function.
-            height: Optional, height of the table in pixels
-            port: Optional, port to use for the Dash server. Defaults to the next
-                available port.
         """
-        import dash
+        from IPython.core.display import HTML
 
-        data = [
-            {"key": key, "value": format(value)} for key, value in sorted(self.items())
-        ]
+        table = "<table>"
 
-        app = dash.Dash()
-        app.layout = dash.html.Div(
-            children=[
-                dash.html.H1(
-                    children=self.title,
-                    style={
-                        "color": "white" if dark else "black",
-                        "textAlign": "center",
-                    },
-                ),
-                dash.dash_table.DataTable(
-                    data=data,
-                    columns=[
-                        {"id": "key", "name": self.key_label},
-                        {"id": "value", "name": self.value_label},
-                    ],
-                    cell_selectable=False,
-                    style_header={
-                        "fontWeight": "bold",
-                        "backgroundColor": (
-                            "rgb(10, 10, 10)" if dark else "rgb(229, 229, 229)"
-                        ),
-                        "color": "white" if dark else "black",
-                        "textAlign": "center",
-                    },
-                    style_cell={
-                        "backgroundColor": "rgb(30, 30, 30)" if dark else "white",
-                        "border": (
-                            "1px solid dimgray" if dark else "1px solid lightgray"
-                        ),
-                        "color": "white" if dark else "black",
-                        "overflow": "hidden",
-                        "textAlign": "left",
-                        "textOverflow": "ellipsis",
-                    },
-                    style_cell_conditional=[
-                        {"if": {"column_id": "key"}, "width": "20%"},
-                        {
-                            "if": {"column_id": "value"},
-                            "maxWidth": 0,
-                            "textAlign": "left" if align_left else "right",
-                        },
-                    ],
-                    style_data_conditional=[
-                        {
-                            "if": {"row_index": "odd"},
-                            "backgroundColor": (
-                                "rgb(23, 23, 23)" if dark else "rgb(250, 250, 250)"
-                            ),
-                        },
-                    ],
-                    tooltip_data=[{"value": str(e["value"])} for e in data],
-                    tooltip_delay=1000,
-                    tooltip_duration=None,
-                ),
-            ],
-            style={"background": "rgb(30, 30, 30)" if dark else "white"},
+        table += "<tr>"
+        table += (
+            f"<th style='font-weight: bold; text-align: center;'>{self.key_label}</th>"
         )
+        table += f"<th style='font-weight: bold; text-align: center;'>{self.value_label}</th>"
+        table += "</tr>"
 
-        app.run(
-            debug=debug,
-            jupyter_height=height,
-            port=str(port) if port is not None else get_next_dash_port(),
-        )
+        for key, value in sorted(self.items()):
+            table += "<tr>"
+            table += f"<td style='font-weight: bold; text-align: left; width: 20%'>{key}</td>"
+            table += f"<td style='max-width: 0; overflow: hidden; text-align: left; text-overflow: ellipsis' title='{value}'>"
+            table += f"{format(value)}</td>"
+            table += "</tr>"
 
-    def _ipython_display_(self):
-        self.plot()
+        table += "</table>"
+
+        return HTML(table)
+
+    def _repr_html_(self):
+        return self.plot().data
 
 
 class RunMetricsDict(RunDataDict):
@@ -334,36 +274,20 @@ class RunMetricsDict(RunDataDict):
 
     def plot(
         self,
-        align_left: bool = False,
-        dark: bool = False,
-        debug: bool = False,
         format: Optional[Callable[[Any], str]] = None,
-        height: int = 400,
         precision: int = 3,
-        port: Optional[int] = None,
-    ) -> None:
+    ):
         """
         Displays the contents of the dictionary in an HTML table.
 
         Args:
-            align_left: Optional, align value column text to the left if True
-            dark: Optional, use a dark theme if True
-            debug: Optional, enable debug output from Dash
             format: Optional, function to format values for printing. Defaults to
                 a fixed-precision floating point formatter.
-            height: Optional, height of the table in pixels
             precision: Optional, number of decimal places to display for floating
                 point values
-            port: Optional, port to use for the Dash server. Defaults to the next
-                available port.
         """
         return super().plot(
-            align_left=align_left,
-            dark=dark,
-            debug=debug,
             format=format or (lambda v: f"{v:.{precision}f}"),
-            height=height,
-            port=port,
         )
 
 
