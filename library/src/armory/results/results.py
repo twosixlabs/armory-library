@@ -44,6 +44,49 @@ class EvaluationResults:
         client = get_mlflow_client()
         return cls(client, client.get_run(run_id))
 
+    @classmethod
+    def for_last_run(
+        cls,
+        experiment_id: Optional[str] = None,
+        experiment_name: Optional[str] = None,
+        max_search: int = 10,
+    ) -> "EvaluationResults":
+        """
+        Retrieve the evaluation results for the last run in a given MLFlow
+        experiment (by name or by ID).
+
+        Args:
+            experiment_id: Optional, MLFlow experiment ID (if not using name)
+            experiment_name: Optional, MLFlow experiment name (if not using ID)
+            max_search: Optional, number of runs to search. This should only be
+                necessary if the evaluations have more than 10 chains.
+
+        Return:
+            EvaluationResults object
+        """
+        client = get_mlflow_client()
+        if experiment_id:
+            experiment = client.get_experiment(experiment_id)
+        elif experiment_name:
+            experiment = client.get_experiment_by_name(experiment_name)
+        else:
+            raise ValueError("Either experiment_id or experiment_name must be provided")
+        if experiment is None:
+            raise ValueError(f"Experiment not found: {experiment_name}")
+        runs = client.search_runs(
+            experiment_ids=[experiment.experiment_id],
+            max_results=max_search,
+            order_by=["start_time DESC"],
+        )
+        # Have to filter out child runs here instead of via filter_string,
+        # see https://github.com/mlflow/mlflow/issues/2922
+        runs = [
+            run for run in runs if run.data.tags.get("mlflow.parentRunId", None) is None
+        ]
+        if len(runs) == 0:
+            raise ValueError(f"No runs found in experiment: {experiment_name}")
+        return cls(client, runs[0])
+
     def __init__(
         self, client: "mlflow.client.MlflowClient", run: "mlflow.entities.Run"
     ):
