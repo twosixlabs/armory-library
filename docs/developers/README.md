@@ -12,11 +12,11 @@ These documents cover everything from configuring Git, installing necessary soft
 
 1. [**Software Setup**](./setup.md): You'll find step-by-step instructions for installing all necessary software and tools, such as Visual Studio Code, Python, and various VSCode extensions that we use for our Python development, as well as, instruction on how to set up Git for our project.
 
-2. [**Development Environment**](./development-environment.md): This part guides you through the process of setting up your local development environment, including configuring Python interpreter in VSCode, setting up debugging and tracing, and using Jupyter Notebooks within VSCode.
+2. [**Development Environment**](./development_environment.md): This part guides you through the process of setting up your local development environment, including configuring Python interpreter in VSCode, setting up debugging and tracing, and using Jupyter Notebooks within VSCode.
 
 3. [**Workflow Overview**](./workflow.md): We explain our code development process, version control practices, and how we handle pair programming and code reviews.
 
-4. [**Troubleshooting Guide**](.troubleshooting.md): This guide provides useful tips for debugging and troubleshooting issues using tools like VSCode's debugger and Python's pdb.
+4. [**Troubleshooting Guide**](./troubleshooting.md): This guide provides useful tips for debugging and troubleshooting issues using tools like VSCode's debugger and Python's pdb.
 
 5. [**Coding Standard**](./style.md): We also cover our coding standards, including code formatting and linting standards, testing practices, and documentation guidelines.
 

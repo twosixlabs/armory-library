@@ -23,7 +23,7 @@ mechanical standards before submitting.
 ## Documentation
 
 We assume that contributors will be making small changes to the documentation that
-are in the [code repository `docs` directory](docs/). If you are making larger
+are in the [code repository `docs` directory](./). If you are making larger
 changes that would require more substantial changes to the documentation, you'd
 likely want to talk with us first to discuss your plans.
 

@@ -88,10 +88,7 @@ class CaptumImageClassificationExporter(Exporter):
         )
 
     def export_samples(
-        self,
-        batch_idx: int,
-        batch: ImageClassificationBatch,
-        samples: Iterable[int],
+        self, batch_idx: int, batch: ImageClassificationBatch, samples: Iterable[int]
     ) -> None:
         assert self.sink, "No sink has been set, unable to export"
         self.model.eval()

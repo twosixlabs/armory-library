@@ -1,8 +1,7 @@
 from functools import partial
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple
 
 import torch
-from yolov5.models.yolo import DetectionModel
 
 from armory.data import (
     BBoxFormat,
@@ -17,6 +16,9 @@ from armory.data import (
 )
 from armory.model.object_detection.object_detector import ObjectDetector
 from armory.track import track_init_params
+
+if TYPE_CHECKING:
+    from yolov5.models.yolo import DetectionModel
 
 
 @track_init_params
@@ -41,10 +43,12 @@ class YoloV5ObjectDetector(ObjectDetector):
         self,
         name: str,
         model,
+        detection_model: Optional["DetectionModel"] = None,
         inputs_spec: Optional[ImageSpec] = None,
         predictions_spec: Optional[BoundingBoxSpec] = None,
         iou_threshold: Optional[float] = None,
         score_threshold: Optional[float] = None,
+        compute_loss: Optional[Callable[[Any, Any], Tuple[Any, Any]]] = None,
         **kwargs,
     ):
         """
@@ -53,6 +57,12 @@ class YoloV5ObjectDetector(ObjectDetector):
         Args:
             name: Name of the model.
             model: YOLOv5 model being wrapped.
+            detection_model: Optional, the inner YOLOv5 detection model to use
+                for computing loss. By default, the detection model is assumed
+                to be a property of the inner model property of the given YOLOv5
+                model--that is, `model.model.model`. It is unlikely that this
+                argument will ever be necessary, and may only be required if
+                the upstream `yolov5` package changes its model structure.
             inputs_spec: Optional, data specification used to obtain raw image
                 data from the image inputs contained in object detection
                 batches. Defaults to a specification compatible with typical
@@ -60,6 +70,12 @@ class YoloV5ObjectDetector(ObjectDetector):
             predictions_spec: Optional, data specification used to update the
                 object detection predictions in the batch. Defaults to a
                 bounding box specification compatible with typical YOLOv5 models.
+            compute_loss: Optional, loss function used to calculate loss when the
+                model is in training mode. By default, the standard YOLOv5 loss
+                function is used. The function must accept two arguments: the
+                model predictions and the ground truth targets. The function
+                must return a tuple of the loss and the loss items (the second
+                element is unused).
             **kwargs: All other keyword arguments will be forwarded to the
                 `yolov5.utils.general.non_max_suppression` function used to
                 postprocess the model outputs.
@@ -85,24 +101,20 @@ class YoloV5ObjectDetector(ObjectDetector):
         from yolov5.utils.general import non_max_suppression
         from yolov5.utils.loss import ComputeLoss
 
-        self._detection_model = self._get_detection_model(self._model)
-        self.compute_loss = ComputeLoss(self._detection_model)
+        self._detection_model: "DetectionModel" = (
+            detection_model if detection_model is not None else self._model.model.model
+        )
+        self.compute_loss = (
+            compute_loss
+            if compute_loss is not None
+            else ComputeLoss(self._detection_model)
+        )
 
         if score_threshold is not None:
             kwargs["conf_thres"] = score_threshold
         if iou_threshold is not None:
             kwargs["iou_thres"] = iou_threshold
         self.nms = partial(non_max_suppression, **kwargs)
-
-    @staticmethod
-    def _get_detection_model(model: DetectionModel) -> DetectionModel:
-        detect_model = model
-        try:
-            while type(detect_model) is not DetectionModel:
-                detect_model = detect_model.model
-        except AttributeError:
-            raise TypeError(f"{model} is not a {DetectionModel.__name__}")
-        return detect_model
 
     def forward(self, x, targets=None):
         """
@@ -113,7 +125,7 @@ class YoloV5ObjectDetector(ObjectDetector):
         """
         # inputs: CHW images, 0.0-1.0 float
         # outputs: (N,6) detections (cx,cy,w,h,scores,labels)
-        if self.training and targets is not None:
+        if targets is not None:
             outputs = self._detection_model(x)
             loss, _ = self.compute_loss(outputs, targets)
             return dict(loss_total=loss)
@@ -138,7 +150,7 @@ class YoloV5ObjectDetector(ObjectDetector):
         outputs = [
             {
                 "boxes": output[:, 0:4],
-                "labels": torch.argmax(output[:, 5:], dim=1, keepdim=False),
+                "labels": output[:, 5].to(torch.int64),
                 "scores": output[:, 4],
             }
             for output in outputs
