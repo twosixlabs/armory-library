@@ -25,6 +25,7 @@
 - [labels](./reference/labels.md)
 - [metrics](./reference/metric.md)
 - [profiler](./reference/profiler.md)
+- [results](./reference/results.md)
 - [track](./reference/track.md)
 - [transforms](./reference/transforms.md)
 - [utils](./reference/utils.md)
