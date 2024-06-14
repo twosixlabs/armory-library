@@ -1,6 +1,6 @@
 """Armory evaluation results"""
 
-from collections import UserDict
+from collections import UserDict, UserList
 from functools import cached_property
 import json
 from typing import (
@@ -146,6 +146,8 @@ class EvaluationResults:
                 if not k.startswith("system/")
             },
             title="Metrics",
+            client=self._client,
+            run_id=self.run_id,
         )
 
     @cached_property
@@ -158,6 +160,8 @@ class EvaluationResults:
                 if k.startswith("system/")
             },
             title="System Metrics",
+            client=self._client,
+            run_id=self.run_id,
         )
 
     @cached_property
@@ -303,6 +307,8 @@ class RunMetricsDict(RunDataDict):
         self,
         data: Dict[str, Any],
         title: str,
+        client: "mlflow.client.MlflowClient",
+        run_id: str,
         key_label: str = "metric",
         value_label: str = "value",
     ):
@@ -318,6 +324,22 @@ class RunMetricsDict(RunDataDict):
         super().__init__(
             data=data, title=title, key_label=key_label, value_label=value_label
         )
+        self._client = client
+        self._run_id = run_id
+
+    def history(self, key: str) -> "MetricHistory":
+        """
+        Retrieve the history of a specific metric.
+
+        Args:
+            key: Metric key
+
+        Return:
+            Metric history object
+        """
+        if key not in self.keys():
+            raise KeyError(f"Metric not found: {key}")
+        return MetricHistory(self._client.get_metric_history(self._run_id, key))
 
     def table(
         self,
@@ -368,6 +390,52 @@ class RunMetricsDict(RunDataDict):
         return super().plot(
             format=format or (lambda v: f"{v:.{precision}f}"),
         )
+
+
+class MetricHistory(UserList):
+
+    def __init__(self, history: Sequence["mlflow.entities.Metric"]):
+        """
+        Initialize the metric history object.
+
+        Args:
+            history: List of metric history entries
+        """
+        super().__init__(history)
+
+    def plot(
+        self,
+        figure: Optional["matplotlib.figure.Figure"] = None,
+        timestamp: bool = False,
+    ) -> "matplotlib.figure.Figure":
+        """
+        Create a matplotlib figure for the metric history.
+
+        Args:
+            figure: Optional, existing matplotlib figure to use for plotting.
+                If not provided, a new figure will be created.
+            timestamp: Use timestamps for the x-axis instead of step numbers
+
+        Return:
+            Matplotlib figure
+        """
+        import matplotlib.pyplot as plt
+
+        with plt.ioff():
+            if figure is None:
+                figure = plt.figure()
+
+            steps = [entry.timestamp if timestamp else entry.step for entry in self]
+            values = [entry.value for entry in self]
+
+            ax = figure.add_subplot()
+
+            ax.plot(steps, values)
+            ax.set_xlabel("Timestamp" if timestamp else "Step")
+            ax.set_ylabel("Value")
+            ax.set_title(self[0].key)
+
+            return figure
 
 
 class RunArtifacts:
