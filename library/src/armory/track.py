@@ -343,12 +343,16 @@ def track_metrics(metrics: Mapping[str, Union[float, Sequence[float], torch.Tens
 
 
 @contextmanager
-def track_system_metrics(run_id: str):
+def track_system_metrics(run_id: Optional[str]):
     """
     Create a context in which to track system metrics and log them to the given
     MLflow experiment run. System metrics include CPU, disk, and network utilization
     metrics. If the `pynvml` package is installed, then GPU utilization metrics will
     also be collected.
+
+    If the run ID is empty or undefined (which would be the case if running
+    distributed on anything other than the rank zero node), then no tracking
+    will be enabled.
 
     Example::
 
@@ -361,11 +365,15 @@ def track_system_metrics(run_id: str):
 
     Args:
         run_id: MLflow experiment run ID of the run to which to record the
-            system metrics
+            system metrics. If empty or undefined, no tracking will be enabled
 
     Returns:
         Context manager
     """
+    if not run_id:  # No system tracking will occur
+        yield
+        return
+
     monitor = None
     try:
         from mlflow.system_metrics.system_metrics_monitor import SystemMetricsMonitor

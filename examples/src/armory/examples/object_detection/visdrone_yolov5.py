@@ -3,10 +3,15 @@ Example Armory evaluation of VisDrone object detection with YOLOv5 against
 a custom Robust DPatch attack
 """
 
+from functools import partial
 from pprint import pprint
-from typing import Literal, Optional, Union
+import random
+from typing import Callable, Literal, Optional, Sequence, Tuple, Union
 
+import PIL.Image
+import kornia
 import torch
+import torch.optim
 import torchmetrics.detection
 import yolov5
 
@@ -16,6 +21,7 @@ import armory.evaluation
 import armory.examples.object_detection.datasets.visdrone
 import armory.export.criteria
 import armory.export.object_detection
+import armory.export.sink
 import armory.metric
 import armory.metrics.compute
 import armory.metrics.detection
@@ -122,29 +128,108 @@ def create_exporters(model, export_every_n_batches):
     ]
 
 
-def generate_patch(dataloader, model, num_batches=10, num_epochs=20) -> torch.Tensor:
-    from lightning.pytorch import Trainer
-    from lightning.pytorch.loggers import MLFlowLogger
+class RobustDPatch(armory.evaluation.AttackProtocol):
 
-    from armory.evaluation import SysConfig
-    from armory.examples.object_detection.visdrone_yolov5_robustdpatch import (
-        RobustDPatchModule,
+    name = "RobustDPatch"
+
+    def __init__(
+        self,
+        inputs_spec: armory.data.ImageSpec,
+        optimizer: Optional[
+            Callable[[Sequence[torch.Tensor]], torch.optim.Optimizer]
+        ] = None,
+        patch: Optional[torch.Tensor] = None,
+        patch_shape: Optional[Tuple[int, int, int]] = None,
+        patch_max: int = 255,
+        patch_location: Optional[Tuple[int, int]] = None,
+    ):
+        if not patch and not patch_shape:
+            raise ValueError("Either patch or patch_shape must be provided")
+        elif not patch and patch_shape:
+            self.patch = torch.rand(patch_shape) * patch_max
+        elif patch:
+            self.patch = patch
+        self.patch.requires_grad = True
+
+        self.inputs_spec = inputs_spec
+        self.optimizer = optimizer if optimizer is not None else torch.optim.SGD
+        self.patch_location = patch_location
+
+    def optimizers(self):
+        return self.optimizer([self.patch])
+
+    def apply(self, batch: armory.data.Batch):
+        inputs = batch.inputs.get(self.inputs_spec)
+        assert isinstance(inputs, torch.Tensor)
+        _, _, img_height, img_width = inputs.shape
+        _, patch_height, patch_width = self.patch.shape
+
+        if self.patch_location:
+            x1, y1 = self.patch_location
+        else:
+            x1 = random.randint(0, img_width - patch_width)
+            y1 = random.randint(0, img_height - patch_height)
+        x2 = x1 + patch_width
+        y2 = y1 + patch_height
+
+        inputs_with_patch = inputs.clone()
+        inputs_with_patch[:, :, x1:x2, y1:y2] = self.patch
+
+        batch.inputs.set(inputs_with_patch, self.inputs_spec)
+
+    def export(self, sink: armory.export.sink.Sink, epoch: int):
+        if epoch % 5 == 0:
+            patch_np = self.patch.detach().cpu().numpy().transpose(1, 2, 0) * 255
+            patch = PIL.Image.fromarray(patch_np.astype("uint8"))
+            sink.log_image(patch, f"patch_epoch_{epoch}.png")
+
+
+def generate_patch(dataset, model, num_batches=10, num_epochs=20) -> torch.Tensor:
+
+    attack = RobustDPatch(
+        inputs_spec=model.inputs_spec,
+        optimizer=partial(torch.optim.SGD, lr=0.1, momentum=0.9),
+        patch_shape=(3, 50, 50),
+        patch_location=(295, 295),  # middle of 640x640
     )
-    from armory.track import init_tracking_uri
 
-    sysconfig = SysConfig()
-    logger = MLFlowLogger(
-        experiment_name="visdrone-yolov5-robustdpatch-generation",
-        tracking_uri=init_tracking_uri(sysconfig.armory_home),
+    augmentations = kornia.augmentation.container.ImageSequential(
+        kornia.augmentation.RandomHorizontalFlip(p=0.5),
+        kornia.augmentation.RandomBrightness(brightness=(0.75, 1.25), p=0.5),
+        kornia.augmentation.RandomRotation(degrees=15, p=0.5),
+        random_apply=True,
+    )
+    transform = armory.perturbation.CallablePerturbation(
+        name="kornia",
+        perturbation=augmentations,
+        inputs_spec=armory.data.TorchSpec(),
     )
 
-    module = RobustDPatchModule(model)
-    trainer = Trainer(
-        limit_train_batches=num_batches, max_epochs=num_epochs, logger=logger
+    optimization = armory.evaluation.Optimization(
+        name="visdrone-yolov5-robustdpatch-generation",
+        description="Optimization of a RobustDPatch attack against YOLOv5 using VisDrone2019",
+        author="TwoSix",
+        attack=attack,
+        dataset=dataset,
+        model=model,
+        transforms=[transform],
     )
-    trainer.fit(module, dataloader)
 
-    return module.patch
+    engine = armory.engine.OptimizationEngine(
+        optimization, limit_train_batches=num_batches, max_epochs=num_epochs
+    )
+
+    orig_loss = model.compute_loss
+
+    def opt_loss(*args, **kwargs):
+        # Negate the loss since it is being optimized
+        return -orig_loss(*args, **kwargs)[0], None
+
+    model.compute_loss = opt_loss
+    engine.run()
+    model.compute_loss = orig_loss
+
+    return attack.patch
 
 
 @armory.track.track_params
@@ -172,9 +257,7 @@ def main(
     train_dataset = load_dataset(
         evaluation, patch_batch_size, shuffle, seed, split="train"
     )
-    patch = generate_patch(
-        train_dataset.dataloader, model, patch_num_batches, patch_num_epochs
-    )
+    patch = generate_patch(train_dataset, model, patch_num_batches, patch_num_epochs)
 
     evaluation.use_dataset(dataset)
     evaluation.use_model(model)

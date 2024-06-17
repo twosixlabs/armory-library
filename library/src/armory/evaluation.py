@@ -17,6 +17,7 @@ from typing import (
 
 from armory.data import Batch
 from armory.export import Exporter
+from armory.export.sink import Sink
 from armory.metric import Metric
 from armory.track import Trackable, track_call, trackable_context
 
@@ -46,6 +47,10 @@ class ModelProtocol(Protocol):
         """Executes the model to generate predictions from the given batch"""
         ...
 
+    def loss(self, batch: Batch) -> Any:
+        """Calculates the loss for the given batch"""
+        ...
+
 
 @runtime_checkable
 class PerturbationProtocol(Protocol):
@@ -56,6 +61,29 @@ class PerturbationProtocol(Protocol):
 
     def apply(self, batch: Batch) -> None:
         """Applies a perturbation to the given batch"""
+        ...
+
+
+@runtime_checkable
+class AttackProtocol(Protocol):
+    """An attack against the model that can be optimized"""
+
+    name: str
+    """Descriptive name of the attack"""
+
+    def optimizers(self) -> Any:
+        """
+        Configure and return the optimizer(s) that can be used to refine the
+        attack
+        """
+        ...
+
+    def apply(self, batch: Batch) -> None:
+        """Applies an attack to the given batch"""
+        ...
+
+    def export(self, sink: Sink, epoch: int) -> None:
+        """Exports the attack to the given sink at a specific epoch"""
         ...
 
 
@@ -289,3 +317,54 @@ class Evaluation:
             yield chain
             chain.validate()
             self.chains[name] = chain
+
+
+class Optimization(Trackable):
+    """
+    A collection of dataset, EOT transforms, and model defining an Armory
+    attack optimization.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        author: str,
+        dataset: Dataset,
+        attack: AttackProtocol,
+        model: ModelProtocol,
+        transforms: Optional[Iterable[PerturbationProtocol]] = None,
+    ):
+        super().__init__()
+        self.name = name
+        self.description = description
+        self.author = author
+        self.dataset = dataset
+        self.attack = attack
+        self.model = model
+        self.transforms = transforms
+
+    def get_tracked_params(self) -> Dict[str, Any]:
+        """
+        Return the tracked parameters for this optimization and all trackable
+        components of the optimization
+        """
+        params = {}
+        params.update(self.tracked_params)
+        if isinstance(self.dataset, Trackable):
+            params.update(self.dataset.tracked_params)
+        if self.transforms is not None:
+            for transform in self.transforms:
+                if isinstance(transform, Trackable):
+                    params.update(transform.tracked_params)
+        if isinstance(self.model, Trackable):
+            params.update(self.model.tracked_params)
+        # if self.metrics is not None:
+        #     for metric in self.metrics.values():
+        #         if isinstance(metric, Trackable):
+        #             params.update(metric.tracked_params)
+        # if self.exporters is not None:
+        #     for exporter in self.exporters:
+        #         if isinstance(exporter, Trackable):
+        #             params.update(exporter.tracked_params)
+        return params
