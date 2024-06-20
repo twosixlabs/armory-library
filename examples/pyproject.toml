@@ -19,6 +19,7 @@ dependencies = [
     "adversarial-robustness-toolbox",
     "datasets",
     "huggingface_hub",
+    "rich",
     "transformers",
 ]
 

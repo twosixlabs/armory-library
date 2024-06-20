@@ -1,29 +1,18 @@
 """Armory engine to perform model robustness evaluations"""
 
 from contextlib import nullcontext
-from typing import Any, Dict, Mapping, Optional, TypedDict
+from typing import Any, Dict, Optional
 
 import lightning.pytorch as pl
 import lightning.pytorch.loggers as pl_loggers
 from lightning.pytorch.utilities import rank_zero_only
-from torch import Tensor
 
 from armory.engine.evaluation_module import EvaluationModule
 from armory.evaluation import Chain, Evaluation, SysConfig
 from armory.metrics.compute import NullProfiler, Profiler
+from armory.results import EvaluationResults
 from armory.track import get_current_params, init_tracking_uri, track_system_metrics
 import armory.version
-
-
-class EvaluationResults(TypedDict):
-    """Robustness evaluation results"""
-
-    run_id: str
-    """MLFlow run ID"""
-    compute: Mapping[str, float]
-    """Computational metrics"""
-    metrics: Mapping[str, Tensor]
-    """Task-specific evaluation metrics"""
 
 
 class EvaluationEngine:
@@ -77,7 +66,7 @@ class EvaluationEngine:
             return nullcontext()
         return track_system_metrics(run_id)
 
-    def run(self, verbose: bool = False) -> Dict[str, EvaluationResults]:
+    def run(self, verbose: bool = False) -> Optional[EvaluationResults]:
         """Perform the evaluation"""
         if self._was_run:
             raise RuntimeError(
@@ -95,12 +84,9 @@ class EvaluationEngine:
         self._log_params(logger, get_current_params())
 
         try:
-            results: Dict[str, EvaluationResults] = {}
             with self._track_system_metrics(self.run_id):
                 for chain_name, chain in self.evaluation.chains.items():
-                    results[chain_name] = self._evaluate_chain(
-                        logger.run_id, chain_name, chain, verbose
-                    )
+                    self._evaluate_chain(logger.run_id, chain_name, chain, verbose)
             logger.finalize()
 
         except BaseException as err:
@@ -109,7 +95,10 @@ class EvaluationEngine:
                 f"Error performing evaluation of chain {chain_name}"
             ) from err
 
-        return results
+        # run_id will only be valid if we are running on the rank zero node
+        if self.run_id:
+            return EvaluationResults.for_run(self.run_id)
+        return None
 
     def _evaluate_chain(
         self,
@@ -117,7 +106,7 @@ class EvaluationEngine:
         chain_name: str,
         chain: Chain,
         verbose: bool = False,
-    ) -> EvaluationResults:
+    ) -> None:
         assert chain.dataset
 
         logger = pl_loggers.MLFlowLogger(
@@ -140,9 +129,3 @@ class EvaluationEngine:
 
         profiler_results = self.profiler.results()
         module.sink.log_dict(dict(profiler_results), "profiler_results.txt")
-
-        return EvaluationResults(
-            run_id=logger.run_id or "",
-            compute=profiler_results,
-            metrics=trainer.callback_metrics,
-        )
