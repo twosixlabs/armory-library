@@ -200,7 +200,7 @@ def create_metrics():
     }
 
 
-def create_exporters(model, export_every_n_batches):
+def create_exporters(model, export_every_n_batches, num_masks: int = 10):
     """Create sample exporters"""
     return [
         armory.export.object_detection.ObjectDetectionExporter(
@@ -210,7 +210,7 @@ def create_exporters(model, export_every_n_batches):
             model,
             criterion=armory.export.criteria.every_n_batches(export_every_n_batches),
             num_classes=2,
-            num_masks=10,
+            num_masks=num_masks,
         ),
     ]
 

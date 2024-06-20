@@ -593,7 +593,7 @@ def when_metric_in(
 
     def _comp(lhs, rhs):
         if isinstance(lhs, torch.Tensor):
-            return lhs.apply_(lambda x: x in rhs).bool()
+            return lhs.clone().apply_(lambda x: x in rhs).bool()
         return lhs in rhs
 
     return _create_metric_criterion(_comp, metric, threshold)

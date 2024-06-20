@@ -41,7 +41,7 @@ class Metric(Trackable, nn.Module, ABC):
         """
         super().__init__()
         self.metric = metric
-        self.spec = spec or TorchSpec(device=self.metric.device)
+        self.spec = spec or TorchSpec()
         self.record_as_artifact = record_as_artifact
         self.record_as_metrics = (
             {path: jsonpath_ng.parse(path) for path in record_as_metrics}

@@ -3,8 +3,7 @@ Example Armory evaluation of food-101 image classification against projected
 gradient descent (PGD) adversarial perturbation
 """
 
-from pprint import pprint
-from typing import Optional
+from typing import Optional, Sequence
 
 import art.attacks.evasion
 import art.defences.preprocessor
@@ -112,7 +111,10 @@ def transform(processor, sample):
 
 
 def load_huggingface_dataset(
-    batch_size: int, shuffle: bool, seed: Optional[int] = None
+    batch_size: int,
+    shuffle: bool,
+    seed: Optional[int] = None,
+    only_classes: Optional[Sequence[str]] = None,
 ):
     """Load food-101 dataset from HuggingFace"""
     import functools
@@ -123,6 +125,10 @@ def load_huggingface_dataset(
     assert isinstance(hf_dataset, datasets.Dataset)
 
     labels = hf_dataset.features["label"].names
+
+    if only_classes:
+        only_class_labels = [labels.index(class_name) for class_name in only_classes]
+        hf_dataset = hf_dataset.filter(lambda x: x["label"] in only_class_labels)
 
     hf_processor = transformers.AutoImageProcessor.from_pretrained("nateraw/food")
     hf_dataset.set_transform(functools.partial(transform, hf_processor))
@@ -284,26 +290,55 @@ def create_metrics():
         "accuracy": armory.metric.PredictionMetric(
             torchmetrics.classification.Accuracy(task="multiclass", num_classes=101),
         ),
+        "precision": armory.metric.PredictionMetric(
+            torchmetrics.classification.Precision(
+                average="macro", task="multiclass", num_classes=101
+            ),
+        ),
+        "recall": armory.metric.PredictionMetric(
+            torchmetrics.classification.Recall(
+                average="macro", task="multiclass", num_classes=101
+            ),
+        ),
+        "confusion_matrix": armory.metric.PredictionMetric(
+            torchmetrics.classification.ConfusionMatrix(
+                task="multiclass", num_classes=101
+            ),
+        ),
     }
 
 
-def create_exporters(model, export_every_n_batches):
+def create_exporters(
+    model,
+    export_every_n_batches,
+    saliency_classes: Optional[Sequence[int]] = None,
+    saliency_n_steps: int = 1,
+):
     """Create sample exporters"""
+    if not saliency_classes:
+        saliency_classes = [6, 23]  # beignets(6), churros(23)
+
+    every_n = armory.export.criteria.every_n_batches(export_every_n_batches)
+    is_saliency_class = armory.export.criteria.when_metric_in(
+        armory.export.criteria.batch_targets(), saliency_classes
+    )
+
+    either = armory.export.criteria.any_satisfied(every_n, is_saliency_class)
+
     return [
         armory.export.image_classification.ImageClassificationExporter(
-            criterion=armory.export.criteria.every_n_batches(export_every_n_batches)
+            criterion=either
         ),
         armory.export.captum.CaptumImageClassificationExporter(
             model,
-            criterion=armory.export.criteria.every_n_batches(export_every_n_batches),
+            criterion=is_saliency_class,
+            n_steps=saliency_n_steps,
         ),
         armory.export.xaitksaliency.XaitkSaliencyBlackboxImageClassificationExporter(
             name="slidingwindow",
             model=model,
-            classes=[6, 23],  # beignets(6), churros(23)
-            criterion=armory.export.criteria.when_metric_in(
-                armory.export.criteria.batch_targets(), [6, 23]
-            ),
+            classes=saliency_classes,
+            criterion=is_saliency_class,
         ),
     ]
 
@@ -387,7 +422,9 @@ def main(
     )
     results = engine.run()
 
-    pprint(results)
+    if results:
+        for chain_name, chain_results in results.children.items():
+            chain_results.metrics.table(title=f"{chain_name} Metrics")
 
 
 if __name__ == "__main__":

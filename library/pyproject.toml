@@ -50,6 +50,7 @@ extras = [
     "captum",
     "matplotlib",
     "pandas",
+    "rich",
     "tidecv",
     "transformers",
     "xaitk-saliency",
