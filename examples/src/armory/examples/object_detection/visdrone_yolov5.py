@@ -222,7 +222,10 @@ def generate_patch(dataset, model, num_batches=10, num_epochs=20) -> torch.Tenso
     orig_loss = model.compute_loss
 
     def opt_loss(*args, **kwargs):
-        # Negate the loss since it is being optimized
+        # The Armory optimization engine works by optimizing the loss--that is,
+        # the loss is minimized. Therefore in order to maximize the loss, we
+        # need to negate it so that optimization results in a more effective
+        # attack.
         return -orig_loss(*args, **kwargs)[0], None
 
     model.compute_loss = opt_loss

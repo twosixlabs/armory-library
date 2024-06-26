@@ -359,12 +359,4 @@ class Optimization(Trackable):
                     params.update(transform.tracked_params)
         if isinstance(self.model, Trackable):
             params.update(self.model.tracked_params)
-        # if self.metrics is not None:
-        #     for metric in self.metrics.values():
-        #         if isinstance(metric, Trackable):
-        #             params.update(metric.tracked_params)
-        # if self.exporters is not None:
-        #     for exporter in self.exporters:
-        #         if isinstance(exporter, Trackable):
-        #             params.update(exporter.tracked_params)
         return params
