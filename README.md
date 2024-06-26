@@ -51,7 +51,7 @@ run for free on Google Colab to get a taste of how Armory works.
 
 # Documentation
 
-The Armory-library documentation is [published on Read the Docs][docs-url] or
+The Armory-library documentation is [published on GitHub][docs-url] or
 can be viewed directly in [the docs directory](docs/index.md) of this repository.
 
 # The historic GARD-Armory
@@ -82,7 +82,7 @@ Defense Advanced Research Projects Agency (DARPA) or JATIC.
 [license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
 [license-url]: https://opensource.org/licenses/MIT
 [docs-badge]: https://readthedocs.org/projects/armory/badge/
-[docs-url]: https://readthedocs.org/projects/armory/
+[docs-url]: [https://twosixlabs.github.io/armory-library/]
 [style-badge]: https://img.shields.io/badge/code%20style-black-000000.svg
 [style-url]: https://github.com/psf/black
 [gardproject]: https://www.gardproject.org
