@@ -1,6 +1,5 @@
 """Armory engine to perform model robustness evaluations"""
 
-from contextlib import nullcontext
 from typing import Any, Dict, Optional
 
 import lightning.pytorch as pl
@@ -59,13 +58,6 @@ class EvaluationEngine:
         params["Armory.version"] = armory.version.__version__
         logger.log_hyperparams(params)
 
-    def _track_system_metrics(self, run_id: Optional[str]):
-        """Track system metrics with MLFlow"""
-        # run_id will only be valid if we are running on the rank zero node
-        if run_id is None:
-            return nullcontext()
-        return track_system_metrics(run_id)
-
     def run(self, verbose: bool = False) -> Optional[EvaluationResults]:
         """Perform the evaluation"""
         if self._was_run:
@@ -84,7 +76,7 @@ class EvaluationEngine:
         self._log_params(logger, get_current_params())
 
         try:
-            with self._track_system_metrics(self.run_id):
+            with track_system_metrics(self.run_id):
                 for chain_name, chain in self.evaluation.chains.items():
                     self._evaluate_chain(logger.run_id, chain_name, chain, verbose)
             logger.finalize()
@@ -124,7 +116,7 @@ class EvaluationEngine:
             **self.trainer_kwargs,
         )
         self.profiler.reset()
-        with self._track_system_metrics(logger.run_id):
+        with track_system_metrics(logger.run_id):
             trainer.test(module, dataloaders=chain.dataset.dataloader, verbose=verbose)
 
         profiler_results = self.profiler.results()

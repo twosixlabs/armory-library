@@ -1,10 +1,11 @@
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Tuple
 
 import torch
 
 from armory.data import (
     BBoxFormat,
+    BoundingBoxes,
     BoundingBoxSpec,
     DataType,
     ImageDimensions,
@@ -46,6 +47,7 @@ class YoloV5ObjectDetector(ObjectDetector):
         detection_model: Optional["DetectionModel"] = None,
         inputs_spec: Optional[ImageSpec] = None,
         predictions_spec: Optional[BoundingBoxSpec] = None,
+        targets_spec: Optional[BoundingBoxSpec] = None,
         iou_threshold: Optional[float] = None,
         score_threshold: Optional[float] = None,
         compute_loss: Optional[Callable[[Any, Any], Tuple[Any, Any]]] = None,
@@ -70,6 +72,10 @@ class YoloV5ObjectDetector(ObjectDetector):
             predictions_spec: Optional, data specification used to update the
                 object detection predictions in the batch. Defaults to a
                 bounding box specification compatible with typical YOLOv5 models.
+            targets_spec: Optional, data specification used to obtain ground
+                truth targets from object detection batches in order to
+                calculate loss. Defaults to a bounding box specification
+                compatible with typical YOLOv5 models.
             compute_loss: Optional, loss function used to calculate loss when the
                 model is in training mode. By default, the standard YOLOv5 loss
                 function is used. The function must accept two arguments: the
@@ -109,6 +115,9 @@ class YoloV5ObjectDetector(ObjectDetector):
             if compute_loss is not None
             else ComputeLoss(self._detection_model)
         )
+        self.targets_spec = targets_spec or TorchBoundingBoxSpec(
+            format=BBoxFormat.CXCYWH
+        )
 
         if score_threshold is not None:
             kwargs["conf_thres"] = score_threshold
@@ -146,7 +155,7 @@ class YoloV5ObjectDetector(ObjectDetector):
         self.eval()
         inputs = batch.inputs.get(self.inputs_spec)
         outputs = self(inputs)
-        outputs = self.nms(outputs)
+        outputs = self.nms(outputs)  # CXCYWH -> XYXY
         outputs = [
             {
                 "boxes": output[:, 0:4],
@@ -156,3 +165,47 @@ class YoloV5ObjectDetector(ObjectDetector):
             for output in outputs
         ]
         batch.predictions.set(outputs, self.predictions_spec)
+
+    def loss(self, batch: ObjectDetectionBatch) -> torch.Tensor:
+        """
+        Computes the loss for the given batch.
+
+        Args:
+            batch: Object detection batch
+
+        Returns:
+            The total loss
+        """
+        self.train()
+        inputs = batch.inputs.get(self.inputs_spec)
+        _, _, height, width = inputs.shape
+
+        targets = batch.targets.get(self.targets_spec)
+        yolo_targets = self._to_yolo_targets(targets, height, width, inputs.device)
+
+        loss_components = self(inputs, yolo_targets)
+        return loss_components["loss_total"]
+
+    @staticmethod
+    def _to_yolo_targets(
+        targets: Sequence[BoundingBoxes.BoxesTorch],
+        height: int,
+        width: int,
+        device,
+    ) -> torch.Tensor:
+        targets_list = []
+
+        for i, target in enumerate(targets):
+            labels = torch.zeros(len(target["boxes"]), 6, device=device)
+            labels[:, 0] = i
+            labels[:, 1] = target["labels"]
+            labels[:, 2:6] = target["boxes"]
+
+            # normalize bounding boxes to [0, 1]}
+            labels[:, 2:6:2] = labels[:, 2:6:2] / width
+            labels[:, 3:6:2] = labels[:, 3:6:2] / height
+
+            targets_list.append(labels)
+
+        r = torch.vstack(targets_list)
+        return r
