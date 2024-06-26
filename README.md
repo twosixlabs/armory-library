@@ -82,7 +82,7 @@ Defense Advanced Research Projects Agency (DARPA) or JATIC.
 [license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
 [license-url]: https://opensource.org/licenses/MIT
 [docs-badge]: https://readthedocs.org/projects/armory/badge/
-[docs-url]: [https://twosixlabs.github.io/armory-library/]
+[docs-url]: https://twosixlabs.github.io/armory-library/
 [style-badge]: https://img.shields.io/badge/code%20style-black-000000.svg
 [style-url]: https://github.com/psf/black
 [gardproject]: https://www.gardproject.org
