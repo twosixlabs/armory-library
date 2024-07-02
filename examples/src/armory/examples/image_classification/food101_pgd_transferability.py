@@ -35,6 +35,22 @@ models = {
     "vit": {
         "name": "ViT-finetuned-food101",
         "hf_path": "nateraw/food",
+        "inputs_spec": armory.data.TorchImageSpec(
+            dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
+        ),
+    },
+    "swin": {
+        "name": "swin-finetuned-food101",
+        "hf_path": "skylord/swin-finetuned-food101",
+        "inputs_spec": armory.data.TorchImageSpec(
+            dim=armory.data.ImageDimensions.CHW,
+            scale=armory.data.Scale(
+                dtype=armory.data.DataType.FLOAT,
+                max=1.0,
+                mean=(0.485, 0.456, 0.406),
+                std=(0.229, 0.224, 0.225),
+            ),
+        ),
     },
 }
 
@@ -151,9 +167,7 @@ def load_model(model_name: str):
     armory_model = armory.model.image_classification.ImageClassifier(
         name=model["name"],
         model=hf_model,
-        inputs_spec=armory.data.TorchImageSpec(
-            dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
-        ),
+        inputs_spec=model["inputs_spec"],
     )
 
     art_classifier = armory.track.track_init_params(
