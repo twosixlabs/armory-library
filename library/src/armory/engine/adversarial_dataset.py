@@ -2,8 +2,10 @@
 
 from typing import TYPE_CHECKING, Any, Callable, Generator, Mapping, Optional
 
+from armory.data import DataSpecification, NumpySpec
 from armory.engine.evaluation_module import EvaluationModule
-from armory.evaluation import Evaluation
+from armory.evaluation import Chain
+from armory.metrics.compute import NullProfiler, Profiler
 from armory.track import get_current_params
 
 if TYPE_CHECKING:
@@ -39,12 +41,16 @@ class AdversarialDatasetEngine:
 
     def __init__(
         self,
-        evaluation: Evaluation,
-        chain_name: str,
+        chain: Chain,
+        inputs_key: str,
+        targets_key: str,
+        inputs_spec: Optional[DataSpecification] = None,
+        targets_spec: Optional[DataSpecification] = None,
         output_dir: Optional[str] = None,
         adapter: Optional[SampleAdapter] = None,
         features: Optional["datasets.Features"] = None,
         num_batches: Optional[int] = None,
+        profiler: Optional[Profiler] = None,
     ):
         """
         Initializes the engine.
@@ -56,10 +62,15 @@ class AdversarialDatasetEngine:
             features: Optional, dataset features
             num_batches: Optional, number of batches from the original dataset to
                 attack and include in the generated dataset
+            profiler: Optional, profiler to collect computational metrics. By
+                default, no computational metrics will be collected.
         """
-        self.evaluation = evaluation
-        self.chain_name = chain_name
-        self.module = EvaluationModule(evaluation)
+        self.chain = chain
+        self.module = EvaluationModule(chain, profiler or NullProfiler())
+        self.inputs_key = inputs_key
+        self.inputs_spec = inputs_spec or NumpySpec()
+        self.targets_key = targets_key or NumpySpec()
+        self.targets_spec = targets_spec
         self.output_dir = output_dir
         self.features = features
         self.adapter: SampleAdapter = (
@@ -92,17 +103,19 @@ class AdversarialDatasetEngine:
         Iterates over every batch in the source dataset, applies the adversarial
         attack, and yields the pre-attacked samples.
         """
+        assert self.chain.dataset
+
         batch_idx = 0
-        for batch in iter(self.evaluation.dataset.dataloader):
-            self.module.apply_perturbations(
-                self.chain_name, batch, self.evaluation.perturbations[self.chain_name]
-            )
+        for batch in iter(self.chain.dataset.dataloader):
+            self.module.apply_perturbations(batch)
+
+            inputs = batch.inputs.get(self.inputs_spec)
+            targets = batch.targets.get(self.targets_spec)
 
             for idx in range(len(batch)):
                 sample = {key: val[idx] for key, val in batch.metadata["data"].items()}
-                # TODO dynamic keys, accessors
-                sample["image"] = batch.inputs.numpy()
-                sample["label"] = batch.targets.numpy()
+                sample[self.inputs_key] = inputs[idx]
+                sample[self.targets_key] = targets[idx]
                 yield self.adapter(sample)
 
             batch_idx += 1

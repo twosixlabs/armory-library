@@ -74,6 +74,9 @@ class ImageClassifier(ArmoryModel, ModelProtocol):
             return output.scores
         return output
 
+    def loss(self, batch: ImageClassificationBatch):
+        raise NotImplementedError()
+
     def predict(self, batch: ImageClassificationBatch):
         """
         Invokes the wrapped model using the image inputs in the given batch and
