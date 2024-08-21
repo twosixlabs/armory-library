@@ -34,7 +34,7 @@ _logger: logging.Logger = logging.getLogger(__name__)
 # Params are recorded globally in a stack of parameter stores, where the
 # first stack entry is the default, implicit parameter store. Creation of
 # subsequent parameter stores only occurs by using the `tracking_context`
-# context manager. Params are ways recorded in the top-most store in the
+# context manager. Params are always recorded in the top-most store in the
 # stack at the time of recording. This is modeled after the way MLFlow handles
 # nested calls to `start_run`.
 _params_stack: List[Dict[str, Any]] = []
@@ -251,14 +251,56 @@ def track_init_params(
     """
 
     def _decorator(cls: T) -> T:
-        _prefix = prefix if prefix else getattr(cls, "__name__", "")
-        cls.__init__ = track_params(prefix=_prefix, ignore=ignore)(cls.__init__)  # type: ignore
+        if not getattr(cls, "_has_init_tracking", False):
+            _prefix = prefix if prefix else getattr(cls, "__name__", "")
+            cls.__init__ = track_params(prefix=_prefix, ignore=ignore)(cls.__init__)  # type: ignore
+            setattr(cls, "_has_init_tracking", True)
         return cls
 
     if _cls is None:
         return _decorator
     else:
         return _decorator(_cls)
+
+
+def track_call(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+    """
+    Invoke the given function or class's initializer with the given arguments,
+    recording keyword arguments as parameters in the current tracking context to
+    be logged with MLFlow.
+
+    The effect is functionally equivalent to using the `track_params` or
+    `track_init_params` decorators in an inline fashion with no prefix or
+    ignored arguments. In order to use a custom prefix or to ignore arguments,
+    the `track_params` or `track_init_params` functions must be used directly.
+
+    Example::
+
+        from armory.track import track_call
+
+        class MyDataset:
+            def __init__(self, batch_size: int):
+                pass
+
+
+        def load_model(name: str):
+            pass
+
+        ds = track_call(MyDataset, batch_size=32)
+        model = track_call(load_model, name="model")
+
+    Args:
+        func: Function or class to be invoked
+        *args: Positional arguments to be passed to the function or class
+        **kwargs: Keyword arguments to be passed to the function or class, which
+            will be recorded as parameters
+
+    Return:
+        Result of the function or class invocation
+    """
+    if isinstance(func, type):
+        return track_init_params(func)(*args, **kwargs)
+    return track_params(func)(*args, **kwargs)
 
 
 def init_tracking_uri(armory_home: Path) -> str:
@@ -279,48 +321,6 @@ def init_tracking_uri(armory_home: Path) -> str:
         uri = armory_home / "mlruns"
         mlflow.set_tracking_uri(uri)
     return mlflow.get_tracking_uri()
-
-
-def track_evaluation(
-    name: str, description: Optional[str] = None, uri: Optional[Union[str, Path]] = None
-):
-    """
-    Create a context manager for tracking an evaluation run with MLFlow.
-    Parameters that have been recorded in the current tracking context will be
-    logged with MLFlow.
-
-    Example::
-
-        from charmory.track import track_evaluation
-
-        with track_evaluation("my_experiment"):
-            # Perform evaluation run
-
-    Args:
-        name: Experiment name (should be the same between runs)
-        description: Optional description of the run
-        uri: Optional MLFlow server URI, defaults to ~/.armory/mlruns
-    """
-
-    if not os.environ.get("MLFLOW_TRACKING_URI"):
-        if uri is None:
-            uri = Path(Path.home(), ".armory/mlruns")
-        mlflow.set_tracking_uri(uri)
-
-    experiment = mlflow.get_experiment_by_name(name)
-    if experiment:
-        experiment_id = experiment.experiment_id
-    else:
-        experiment_id = mlflow.create_experiment(name)
-
-    run = mlflow.start_run(
-        experiment_id=experiment_id,
-        description=description,
-    )
-
-    mlflow.log_params(get_current_params())
-
-    return run
 
 
 def track_metrics(metrics: Mapping[str, Union[float, Sequence[float], torch.Tensor]]):
@@ -344,12 +344,16 @@ def track_metrics(metrics: Mapping[str, Union[float, Sequence[float], torch.Tens
 
 
 @contextmanager
-def track_system_metrics(run_id: str):
+def track_system_metrics(run_id: Optional[str]):
     """
     Create a context in which to track system metrics and log them to the given
     MLflow experiment run. System metrics include CPU, disk, and network utilization
     metrics. If the `pynvml` package is installed, then GPU utilization metrics will
     also be collected.
+
+    If the run ID is empty or undefined (which would be the case if running
+    distributed on anything other than the rank zero node), then no tracking
+    will be enabled.
 
     Example::
 
@@ -362,11 +366,15 @@ def track_system_metrics(run_id: str):
 
     Args:
         run_id: MLflow experiment run ID of the run to which to record the
-            system metrics
+            system metrics. If empty or undefined, no tracking will be enabled
 
     Returns:
         Context manager
     """
+    if not run_id:  # No system tracking will occur
+        yield
+        return
+
     monitor = None
     try:
         from mlflow.system_metrics.system_metrics_monitor import SystemMetricsMonitor
@@ -388,6 +396,99 @@ def track_system_metrics(run_id: str):
                 _logger.warning(
                     f"Exception shutting down system metrics monitor, {err}"
                 )
+
+
+# Trackables are recorded globally in a stack of lists, where the first stack
+# entry is the default, global list. Creation of subsequent lists only occurs by
+# using the `trackable_context` context manager. Trackables are always
+# registered in the top-most list in the stack at the time of creation.
+_trackables: List[List["Trackable"]] = []
+
+
+def get_current_trackables() -> List["Trackable"]:
+    """Get the trackables from the current context"""
+    if len(_trackables) == 0:
+        _trackables.append([])
+    return _trackables[-1]
+
+
+class Trackable:
+    """
+    A mixin to make a class a trackable, meaning that it will automatically
+    receive the parameters recorded during a tracking context in which the
+    trackable instance is created.
+
+    If the subclass has an `__init__` function, it must call
+    `super().__init__()` in order for the mixin to be activated.
+
+    This has to be first mixin to work correctly with multiple inheritance.
+
+    Example::
+
+        from armory.track import Trackable, trackable_context, track_param
+
+        class MyClass(Trackable):
+            pass
+
+        with trackable_context():
+            track_param("key", "value")
+            my_obj = MyClass()
+
+        assert my_obj.tracked_params == {"key": "value"}
+    """
+
+    def __init__(self):
+        super().__init__()
+        # In case the subclass is a dataclass, it will not invoke our
+        # `__init__`, but it will invoke a `__post_init__`, so we do the
+        # initialization there
+        self.__post_init__()
+
+    def __post_init__(self):
+        get_current_trackables().append(self)
+        self.tracked_params: Dict[str, Any] = {}
+
+
+@contextmanager
+def trackable_context(nested: bool = False):
+    """
+    Create a new trackable context. Parameters recorded while the context is
+    active will be automatically associated with any Trackable objects creating
+    while the context is active. When the context begins, a new tracking context
+    is created to isolate parameters from other contexts. Upon completion of the
+    context, the tracked parameters are associated with the trackables and all
+    parameters will be cleared.
+
+    Example::
+
+        from armory.track import Trackable, trackable_context, track_param
+
+        class MyClass(Trackable):
+            pass
+
+        with trackable_context():
+            track_param("key", "value")
+            my_obj = MyClass()
+            assert get_current_params() == {"key": "value"}
+
+        assert get_current_params() == {}
+        assert my_obj.tracked_params == {"key": "value"}
+
+    Args:
+        nested: Copy parameters from the current context into the new
+            tracking context
+
+    Returns:
+        Context manager
+    """
+    with tracking_context(nested):
+        _trackables.append([])
+        try:
+            yield
+        finally:
+            params = get_current_params()
+            for trackable in _trackables.pop():
+                trackable.tracked_params = params
 
 
 def server():

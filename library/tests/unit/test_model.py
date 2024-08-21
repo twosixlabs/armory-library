@@ -58,5 +58,5 @@ def test_ImageClassifier(prop):
 
     model = Mock(return_value=output)
 
-    wrapper = ImageClassifier("test", model, armory.data.Images.as_torch())
+    wrapper = ImageClassifier("test", model, armory.data.TorchSpec())
     assert wrapper([1, 2, 3]) == [0.1, 0.6, 0.3]

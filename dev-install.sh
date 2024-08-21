@@ -26,3 +26,12 @@ $PYTHON -m pip install --editable .
 $PYTHON -m pip install --editable library
 $PYTHON -m pip install --editable matrix
 $PYTHON -m pip install --editable examples[all]
+set +x
+
+LOCAL_REPO=$(git rev-parse --show-toplevel)
+read -p "Do you want to install the pre-commit hook into the local git repository ($LOCAL_REPO)? " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    set -x
+    $PYTHON -m pre_commit install
+fi

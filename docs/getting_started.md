@@ -19,7 +19,7 @@ pink generated adversarial dataset box.
 
 Armory currently supports image classification and object detection models.
 We look at an image classification example here, with object detection described
-in [Diving Deeper](diving-deeper.md).
+in [Diving Deeper](./diving_deeper.ipynb).
 
 The structure of an image classification dataset is simple, consisting of pairs
 of images and labels. Images are 2-dimensional arrays of pixels and will often

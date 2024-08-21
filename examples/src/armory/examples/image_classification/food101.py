@@ -3,8 +3,7 @@ Example Armory evaluation of food-101 image classification against projected
 gradient descent (PGD) adversarial perturbation
 """
 
-from pprint import pprint
-from typing import Optional
+from typing import Optional, Sequence
 
 import art.attacks.evasion
 import art.defences.preprocessor
@@ -19,7 +18,10 @@ import armory.data
 import armory.dataset
 import armory.engine
 import armory.evaluation
+import armory.export.captum
+import armory.export.criteria
 import armory.export.image_classification
+import armory.export.xaitksaliency
 import armory.metric
 import armory.metrics.compute
 import armory.metrics.perturbation
@@ -80,7 +82,9 @@ def load_model():
     armory_model = armory.model.image_classification.ImageClassifier(
         name="ViT-finetuned-food101",
         model=hf_model,
-        accessor=armory.data.Images.as_torch(scale=normalized_scale),
+        inputs_spec=armory.data.TorchImageSpec(
+            dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
+        ),
     )
 
     art_classifier = armory.track.track_init_params(
@@ -106,7 +110,12 @@ def transform(processor, sample):
     return sample
 
 
-def load_huggingface_dataset(batch_size: int, shuffle: bool):
+def load_huggingface_dataset(
+    batch_size: int,
+    shuffle: bool,
+    seed: Optional[int] = None,
+    only_classes: Optional[Sequence[str]] = None,
+):
     """Load food-101 dataset from HuggingFace"""
     import functools
 
@@ -116,6 +125,10 @@ def load_huggingface_dataset(batch_size: int, shuffle: bool):
     assert isinstance(hf_dataset, datasets.Dataset)
 
     labels = hf_dataset.features["label"].names
+
+    if only_classes:
+        only_class_labels = [labels.index(class_name) for class_name in only_classes]
+        hf_dataset = hf_dataset.filter(lambda x: x["label"] in only_class_labels)
 
     hf_processor = transformers.AutoImageProcessor.from_pretrained("nateraw/food")
     hf_dataset.set_transform(functools.partial(transform, hf_processor))
@@ -128,6 +141,7 @@ def load_huggingface_dataset(batch_size: int, shuffle: bool):
         label_key="label",
         batch_size=batch_size,
         shuffle=shuffle,
+        seed=seed,
     )
 
     evaluation_dataset = armory.evaluation.Dataset(
@@ -139,7 +153,10 @@ def load_huggingface_dataset(batch_size: int, shuffle: bool):
 
 
 def load_torchvision_dataset(
-    batch_size: int, shuffle: bool, sysconfig: armory.evaluation.SysConfig
+    batch_size: int,
+    shuffle: bool,
+    seed: Optional[int],
+    sysconfig: armory.evaluation.SysConfig,
 ):
     """Load food-101 dataset from TorchVision"""
     from torchvision import datasets
@@ -161,11 +178,7 @@ def load_torchvision_dataset(
 
     labels = tv_dataset.classes
 
-    armory_dataset = armory.dataset.TupleDataset(
-        tv_dataset,
-        x_key="image",
-        y_key="label",
-    )
+    armory_dataset = armory.dataset.TupleDataset(tv_dataset, ("image", "label"))
 
     dataloader = armory.dataset.ImageClassificationDataLoader(
         armory_dataset,
@@ -175,6 +188,7 @@ def load_torchvision_dataset(
         label_key="label",
         batch_size=batch_size,
         shuffle=shuffle,
+        seed=seed,
     )
 
     evaluation_dataset = armory.evaluation.Dataset(
@@ -203,7 +217,9 @@ def create_pgd_attack(classifier: art.estimators.classification.PyTorchClassifie
         name="PGD",
         attack=pgd,
         use_label_for_untargeted=True,
-        inputs_accessor=armory.data.Images.as_numpy(scale=normalized_scale),
+        inputs_spec=armory.data.NumpyImageSpec(
+            dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
+        ),
     )
 
     return evaluation_attack
@@ -230,7 +246,9 @@ def create_adversarial_patch_attack(
         name="AdversarialPatch",
         attack=patch,
         use_label_for_untargeted=False,
-        inputs_accessor=armory.data.Images.as_numpy(scale=normalized_scale),
+        inputs_spec=armory.data.NumpyImageSpec(
+            dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
+        ),
         generate_every_batch=False,
         apply_patch_kwargs={"scale": 0.5},
     )
@@ -255,7 +273,9 @@ def create_compression_defence(
     perturbation = armory.perturbation.ArtPreprocessorDefence(
         name="JPEG_compression",
         defence=jpeg_compression,
-        inputs_accessor=armory.data.Images.as_numpy(scale=unnormalized_scale),
+        inputs_spec=armory.data.NumpyImageSpec(
+            dim=armory.data.ImageDimensions.CHW, scale=unnormalized_scale
+        ),
     )
 
     return perturbation
@@ -270,7 +290,57 @@ def create_metrics():
         "accuracy": armory.metric.PredictionMetric(
             torchmetrics.classification.Accuracy(task="multiclass", num_classes=101),
         ),
+        "precision": armory.metric.PredictionMetric(
+            torchmetrics.classification.Precision(
+                average="macro", task="multiclass", num_classes=101
+            ),
+        ),
+        "recall": armory.metric.PredictionMetric(
+            torchmetrics.classification.Recall(
+                average="macro", task="multiclass", num_classes=101
+            ),
+        ),
+        "confusion_matrix": armory.metric.PredictionMetric(
+            torchmetrics.classification.ConfusionMatrix(
+                task="multiclass", num_classes=101
+            ),
+        ),
     }
+
+
+def create_exporters(
+    model,
+    export_every_n_batches,
+    saliency_classes: Optional[Sequence[int]] = None,
+    saliency_n_steps: int = 1,
+):
+    """Create sample exporters"""
+    if not saliency_classes:
+        saliency_classes = [6, 23]  # beignets(6), churros(23)
+
+    every_n = armory.export.criteria.every_n_batches(export_every_n_batches)
+    is_saliency_class = armory.export.criteria.when_metric_in(
+        armory.export.criteria.batch_targets(), saliency_classes
+    )
+
+    either = armory.export.criteria.any_satisfied(every_n, is_saliency_class)
+
+    return [
+        armory.export.image_classification.ImageClassificationExporter(
+            criterion=either
+        ),
+        armory.export.captum.CaptumImageClassificationExporter(
+            model,
+            criterion=is_saliency_class,
+            n_steps=saliency_n_steps,
+        ),
+        armory.export.xaitksaliency.XaitkSaliencyBlackboxImageClassificationExporter(
+            name="slidingwindow",
+            model=model,
+            classes=saliency_classes,
+            criterion=is_saliency_class,
+        ),
+    ]
 
 
 @armory.track.track_params(prefix="main")
@@ -285,65 +355,76 @@ def main(
     patch_batch_size,
 ):
     """Perform evaluation"""
-    if seed is not None:
-        torch.manual_seed(seed)
-
     sysconfig = armory.evaluation.SysConfig()
-    model, art_classifier = load_model()
-    dataset, _ = (
-        load_huggingface_dataset(batch_size, shuffle)
-        if dataset_src == "huggingface"
-        else load_torchvision_dataset(batch_size, shuffle, sysconfig)
-    )
-    perturbations = dict()
-    metrics = create_metrics()
     profiler = armory.metrics.compute.BasicProfiler()
-
-    if "benign" in chains:
-        perturbations["benign"] = []
-
-    if "pgd" in chains or "defended" in chains:
-        pgd = create_pgd_attack(art_classifier)
-
-        if "pgd" in chains:
-            perturbations["pgd"] = [pgd]
-
-        if "defended" in chains:
-            compression = create_compression_defence()
-            perturbations["defended"] = [pgd, compression]
-
-    if "patch" in chains:
-        if patch_batch_size is None:
-            patch_batch_size = batch_size
-        patch = create_adversarial_patch_attack(
-            art_classifier, batch_size=patch_batch_size
-        )
-        perturbations["patch"] = [patch]
-
-        with profiler.measure("patch/generate"):
-            patch.generate(next(iter(dataset.dataloader)))
-
     evaluation = armory.evaluation.Evaluation(
         name=f"food101-classification-{dataset_src}",
         description=f"Image classification of food-101 from {dataset_src}",
         author="TwoSix",
-        dataset=dataset,
-        model=model,
-        perturbations=perturbations,
-        metrics=metrics,
-        exporter=armory.export.image_classification.ImageClassificationExporter(),
-        profiler=profiler,
-        sysconfig=sysconfig,
     )
+
+    # Model
+    with evaluation.autotrack():
+        model, art_classifier = load_model()
+    evaluation.use_model(model)
+
+    # Dataset
+    with evaluation.autotrack():
+        dataset, _ = (
+            load_huggingface_dataset(batch_size, shuffle, seed)
+            if dataset_src == "huggingface"
+            else load_torchvision_dataset(batch_size, shuffle, seed, sysconfig)
+        )
+    evaluation.use_dataset(dataset)
+
+    # Metrics/Exporters
+    evaluation.use_metrics(create_metrics())
+    evaluation.use_exporters(create_exporters(model, export_every_n_batches))
+
+    # Perturbations
+    with evaluation.autotrack():
+        pgd = create_pgd_attack(art_classifier)
+
+    with evaluation.autotrack():
+        compression = create_compression_defence()
+
+    # Chains
+    if "benign" in chains:
+        with evaluation.add_chain("benign"):
+            pass
+
+    if "pgd" in chains:
+        with evaluation.add_chain("pgd") as chain:
+            chain.add_perturbation(pgd)
+
+    if "defended" in chains:
+        with evaluation.add_chain("defended") as chain:
+            chain.add_perturbation(pgd)
+            chain.add_perturbation(compression)
+
+    if "patch" in chains:
+        with evaluation.add_chain("patch") as chain:
+            if patch_batch_size is None:
+                patch_batch_size = batch_size
+            patch = create_adversarial_patch_attack(
+                art_classifier, batch_size=patch_batch_size
+            )
+            chain.add_perturbation(patch)
+
+        with profiler.measure("patch/generate"):
+            patch.generate(next(iter(dataset.dataloader)))
 
     engine = armory.engine.EvaluationEngine(
         evaluation,
-        export_every_n_batches=export_every_n_batches,
+        profiler=profiler,
+        sysconfig=sysconfig,
         limit_test_batches=num_batches,
     )
     results = engine.run()
 
-    pprint(results)
+    if results:
+        for chain_name, chain_results in results.children.items():
+            chain_results.metrics.table(title=f"{chain_name} Metrics")
 
 
 if __name__ == "__main__":

@@ -32,18 +32,44 @@ def test_ArmoryDataset_with_custom_adapter():
     assert_array_equal(sample["y"], np.array([4]), strict=True)
 
 
-def test_TupleDataset():
+def test_TupleDataset_with_two_elements():
     raw_dataset = [
         ([1, 2, 3], 4),
         ([5, 6, 7], 8),
     ]
 
-    dataset = TupleDataset(raw_dataset, x_key="data", y_key="target")
+    dataset = TupleDataset(raw_dataset, ("data", "target"))
     assert len(dataset) == 2
 
-    sample = dataset[1]
-    assert sample["data"] == [5, 6, 7]
-    assert sample["target"] == 8
+    assert dataset[0] == {
+        "data": [1, 2, 3],
+        "target": 4,
+    }
+    assert dataset[1] == {
+        "data": [5, 6, 7],
+        "target": 8,
+    }
+
+
+def test_TupleDataset_with_three_elements():
+    raw_dataset = [
+        (7, [1, 2, 3], 4),
+        (3, [5, 6, 7], 8),
+    ]
+
+    dataset = TupleDataset(raw_dataset, ("image_id", "data", "target"))
+    assert len(dataset) == 2
+
+    assert dataset[0] == {
+        "image_id": 7,
+        "data": [1, 2, 3],
+        "target": 4,
+    }
+    assert dataset[1] == {
+        "image_id": 3,
+        "data": [5, 6, 7],
+        "target": 8,
+    }
 
 
 def test_ImageClassificationDataLoader():
@@ -63,12 +89,12 @@ def test_ImageClassificationDataLoader():
     assert isinstance(batch, armory.data.ImageClassificationBatch)
 
     assert_array_equal(
-        batch.inputs.to_numpy(dtype=np.uint8),
+        batch.inputs.get(armory.data.NumpySpec(dtype=np.uint8)),
         np.array([[1, 2, 3], [5, 6, 7]], dtype=np.uint8),
         strict=True,
     )
     assert_array_equal(
-        batch.targets.to_numpy(dtype=np.uint8),
+        batch.targets.get(armory.data.NumpySpec(dtype=np.uint8)),
         np.array([[4], [8]], dtype=np.uint8),
         strict=True,
     )
@@ -100,12 +126,12 @@ def test_ObjectDetectionDataLoader():
     assert isinstance(batch, armory.data.ObjectDetectionBatch)
 
     assert_array_equal(
-        batch.inputs.to_numpy(dtype=np.uint8),
+        batch.inputs.get(armory.data.NumpySpec(dtype=np.uint8)),
         np.array([[1, 2, 3], [5, 7, 9]], dtype=np.uint8),
         strict=True,
     )
 
-    targets = batch.targets.to_numpy(np.uint8)
+    targets = batch.targets.get(armory.data.NumpySpec(dtype=np.uint8))
     assert len(targets) == 2
     assert_array_equal(
         targets[0]["boxes"],

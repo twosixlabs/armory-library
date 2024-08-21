@@ -20,10 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
 
@@ -44,17 +44,17 @@ jobs:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install
         run: |
           pip3 install --no-compile .
-          pip3 install --no-compile ./library
+          pip3 install --no-compile ./library[extras]
           pip3 install --no-compile ./matrix
 
       - name: Test
@@ -98,20 +98,18 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install
-        # Consider switching to a non-yolo OD example and removing the yolo install,
-        # it adds 2-ish minutes to this install step.
         run: |
           pip3 install --no-compile ./library
           pip3 install --no-compile ./matrix
-          pip3 install --no-compile ./examples[huggingface,yolo]
+          pip3 install --no-compile ./examples[all]
           pip3 install ipykernel papermill
 
       - name: Test
@@ -126,10 +124,10 @@ jobs:
       - integration-tests
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
 
@@ -140,7 +138,7 @@ jobs:
         run: task docs
 
       - name: Upload Docs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: armory-library-docs
           path: public
@@ -161,10 +159,10 @@ jobs:
           - matrix
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
 
@@ -177,7 +175,7 @@ jobs:
         run: cd ${{ matrix.package }} && hatch build --clean --target wheel
 
       - name: Upload Wheel
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: armory-${{ matrix.package }}-wheel
           path: ${{ matrix.package }}/dist/*.whl

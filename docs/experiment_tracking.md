@@ -1,21 +1,38 @@
 # Experiment Tracking
 
-Armory provides integration with [MLFlow] to provide tracking of runs (i.e.,
-evaluations) within an experiment.
+Armory provides integration with [MLFlow] to provide tracking of evaluation
+runs and storage of results from evaluations.
+
+When the Armory evaluation engine runs, an experiment is created using the
+`evaluation.name` if one doesn't already exist. Then a parent run is created to
+store any global parameters that aren't chain-specific. Each chain within the
+evaluation results in a separate nested run. This nested run will contain all
+the chain-specific parameters, metrics, and exports for that chain.
+
+The following table summarizes how Armory evaluation components map to records
+in MLFlow:
+
+| Armory Component      | MLFlow Record                          |
+|-----------------------|----------------------------------------|
+| Evaluation            | Experiment                             |
+| Evaluation engine run | Parent run                             |
+| Evaluation chain run  | Nested run                             |
+| Tracked params        | Parent or nested run parameters        |
+| Metrics               | Nested run metrics _or_ JSON artifacts |
+| Exports | Nested run artifacts
 
 ## Usage
 
-The primary interface is the `track_params` and `track_init_params` function
-decorators. The Armory `EvaluationEngine` automatically handles the creating and
-closing of the MLFlow run session.
+Creation and management of runs in MLFlow is handled automatically by the Armory
+`EvaluationEngine`.
 
 ### Logging Parameters
 
 To automatically record keyword arguments to any function as parameters,
-decorate the function with `charmory.track.track_params`.
+decorate the function with `armory.track.track_params`.
 
 ```python
-from charmory.track import track_params
+from armory.track import track_params
 
 @track_params
 def load_model(name, batch_size):
@@ -24,18 +41,11 @@ def load_model(name, batch_size):
 model = load_model(name=..., batch_size=...)
 ```
 
-Or for a third-party function that cannot have the decorator already applied,
-wrap the function with `track_params` before calling it.
-
-```python
-model = track_params(load_model)(name=..., batch_size=...)
-```
-
 To automatically record keyword arguments to a class initializer as parameters,
-decorate the class with `charmory.track.track_init_params`.
+decorate the class with `armory.track.track_init_params`.
 
 ```python
-from charmory.track import track_init_params
+from armory.track import track_init_params
 
 @track_init_params
 class TheDataset:
@@ -45,23 +55,124 @@ class TheDataset:
 dataset = TheDataset(batch_size=...)
 ```
 
-Or for a third-party class that cannot have the decorator already applied,
-wrap the class with `track_init_params` before creating an instance of it.
+For third-party functions or classes that cannot have the decorator already
+applied, use the `track_call` utility function.
 
 ```python
-dataset = track_init_params(TheDataset)(batch_size=...)
+from armory.track import track_call
+
+model = track_call(load_model, name=..., batch_size=...)
+dataset = track_call(TheDataset, batch_size=...)
 ```
+
+`track_call` will invoke the function or class initializer given as the first
+positional argument, forwarding all following arguments to the function or class
+and recording the keyword arguments as parameters.
 
 Additional parameters may be recorded manually using the
-`charmory.track.track_param` function before the evaluation is run.
+`armory.track.track_param` function before the evaluation is run.
 
 ```python
-from charmory.track import track_param
+from armory.track import track_param
 
 track_param("batch_size", 16)
-engine = EvaluationEngine(task)
-engine.run()
 ```
+
+### Tracking Contexts
+
+By default, tracked parameters are recorded in a global context. When
+multiple evaluations are executed in a single process, one should take care
+with the parameters being recorded. Additionally, all globally recorded
+parameters are only associated with the evaluation run's parent run in MLFlow.
+
+The primary way to automatically address these scoping concerns is to use the
+evaluation's `autotrack` and `add_chain` contexts.
+
+During an `add_chain` context, all parameters recorded with `track_call`,
+`track_params`, or `track_init_params` are scoped to that chain. As a
+convenience, the `track_call` function is available as a method on the context's
+chain object.
+
+```python
+with evaluation.add_chain(...) as chain:
+    chain.use_dataset(
+        chain.track_call(TheDataset, batch_size=...)
+    )
+    chain.use_model(
+        chain.track_call(load_model, name=..., batch_size=...)
+    )
+```
+
+For components that are shared among multiple chains, they should be
+instantiated within an `autotrack` context. All parameters recorded with
+`track_call`, `track_params`, or `track_init_params` are scoped to instances of
+`armory.track.Trackable` created during the `autotrack` context. All Armory
+dataset, perturbation, model, metric, and exporter wrappers are `Trackable`
+subclasses. When a `Trackable` component is associated with an evaluation chain,
+all parameters associated with the `Trackable` are then associated with the
+chain. As a convenience, the `track_call` function is provided as the context
+object for `autotrack`.
+
+```python
+with evaluation.autotrack() as track_call:
+    model = track_call(load_model, name=..., batch_size=...)
+
+with evaluation.autotrack() as track_call:
+    dataset = track_call(TheDataset, batch_size=...)
+
+# All chains will receive the dataset's tracked parameters
+evaluation.use_dataset(dataset)
+
+with evaluation.add_chain(...) as chain:
+    # Only this chain will receive the model's tracked parameters
+    chain.use_model(model)
+```
+
+When a parameter is recorded that has already recorded a value, the newer value
+will overwrite the old value. When `track_call`, a function decorated with
+`track_params`, or a class decorated with `track_init_params` is invoked, all
+old values with the same parameter prefix are removed.
+
+```python
+from armory.track import track_call
+
+model = track_call(load_model, name="a", extra=True)
+
+# The parameter `load_model.name` is overwritten, `load_model.extra` is removed
+model = track_call(load_model, name="b")
+```
+
+Parameters can be manually cleared using the `reset_params` function.
+
+```python
+from armory.track import reset_params, track_param
+
+track_param("key", "value")
+
+reset_params()
+```
+
+While seldomly needed, the `tracking_context` context manager will create a
+scoped session for recording of parameters.
+
+```python
+from armory.track import tracking_context, track_param
+
+track_param("global", "value")
+
+with tracking_context():
+    # `global` parameter will not be recorded within this context
+    track_param("parent", "value")
+
+    with tracking_context(nested=True):
+        track_param("child", "value")
+        # This context contains both `parent` and `child` params, while the
+        # outer context still only has `parent`
+```
+
+When the evaluation's `autotrack` and `add_chain` contexts are used properly,
+there should be no need to explicitly manage tracking contexts or deal with
+parameter overwrites.
 
 ### Logging Metrics
 
@@ -74,74 +185,28 @@ the evaluation has been run and calling [`mlflow.log_metric`].
 ```python
 import mlflow
 
-engine = EvaluationEngine(task)
+engine = EvaluationEngine(evaluation)
 engine.run()
-with mlflow.start_run(run_id=engine.run_id):
+with mlflow.start_run(run_id=engine.chains["..."].run_id):
     mlflow.log_metric("custom_metric", 42)
 ```
 
 ### Logging Artifacts
 
-Currently, Armory does not automaically log any artifacts with MLFlow. However,
-you may log artifacts manually by resuming the MLFlow session after the
-evaulation has been run and calling [`mlflow.log_artifact`] or
+Artifacts generated by exporters are automatically attached to the appropriate
+MLFlow runs.
+
+Additional artifacts may be attached manually by resuming the MLFlow session
+after the evaulation has been run and calling [`mlflow.log_artifact`] or
 [`mlflow.log_artifacts`].
 
 ```python
 import mlflow
 
-engine = EvaluationEngine(task)
+engine = EvaluationEngine(evaluation)
 engine.run()
-with mlflow.start_run(run_id=engine.run_id):
+with mlflow.start_run(run_id=engine.chains["..."].run_id):
     mlflow.log_artifacts("path/to/artifacts")
-```
-
-### Tracking Contexts
-
-By default, all tracked parameters are recorded in a global context. When
-multiple evaluations are executed in a single process, one should take care
-with the parameters being recorded.
-
-When a parameter is recorded that had already has a recorded value, the newer
-value will overwrite the old value. When the `track_params` or
-`track_init_params` decorators are used, all old values with the parameter
-prefix are removed.
-
-```python
-from charmory.track import track_params
-
-model = track_params(load_model)(name="a", extra=True)
-
-# The parameter `load_model.name` is overwritten, `load_model.extra` is removed
-model = track_params(load_model)(name="b")
-```
-
-Parameters can be manually cleared using the `reset_params` function.
-
-```python
-from charmory.track import reset_params, track_param
-
-track_param("key", "value")
-
-reset_params()
-```
-
-Alternatively, the `tracking_context` context manager will create a scoped
-session for recording of parameters.
-
-```python
-from charmory.track import tracking_context, track_param
-
-track_param("global", "value")
-
-with tracking_context():
-    # `global` parameter will not be recorded within this context
-    track_param("parent", "value")
-
-    with tracking_context(nested=True):
-        track_param("child", "value")
-        # This context contains both `parent` and `child` params, while the
-        # outer context still only has `parent`
 ```
 
 ## Tracking Server
@@ -181,7 +246,7 @@ python run_my_evaluation.py
 You may also store your credentials
 [in a file](https://mlflow.org/docs/latest/auth/index.html#using-credentials-file).
 
-[MLFlow]: (https://mlflow.org/docs/latest/tracking.html)
-[`mlflow.log_metric`]: (https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_metric)
-[`mlflow.log_artifact`]: (https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_artifact)
-[`mlflow.log_artifacts`]: (https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_artifacts)
+[MLFlow]: https://mlflow.org/docs/latest/tracking.html
+[`mlflow.log_metric`]: https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_metric
+[`mlflow.log_artifact`]: https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_artifact
+[`mlflow.log_artifacts`]: https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_artifacts

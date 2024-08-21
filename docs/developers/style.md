@@ -54,7 +54,7 @@ python -m pre_commit run black
 # run all tools on all files in the repo
 python -m pre_commit run --all-files
 ```
-For more information about how to contribute to armory, see [Contributing to Armory](/CONTRIBUTING.md).
+For more information about how to contribute to armory, see [Contributing to Armory](../CONTRIBUTING.md).
 
 
 # Import Style

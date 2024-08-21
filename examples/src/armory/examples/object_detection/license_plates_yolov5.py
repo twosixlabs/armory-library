@@ -20,6 +20,8 @@ import armory.data
 import armory.dataset
 import armory.engine
 import armory.evaluation
+import armory.export.criteria
+import armory.export.drise
 import armory.export.object_detection
 import armory.metric
 import armory.metrics.compute
@@ -162,7 +164,7 @@ def create_blur():
     evaluation_perturbation = armory.perturbation.CallablePerturbation(
         name="blur",
         perturbation=blur,
-        inputs_accessor=armory.data.Images.as_torch(),
+        inputs_spec=armory.data.TorchSpec(),
     )
 
     return evaluation_perturbation
@@ -175,11 +177,26 @@ def create_metrics():
         ),
         "map": armory.metric.PredictionMetric(
             torchmetrics.detection.MeanAveragePrecision(class_metrics=False),
-            armory.data.BoundingBoxes.as_torch(format=armory.data.BBoxFormat.XYXY),
+            armory.data.TorchBoundingBoxSpec(format=armory.data.BBoxFormat.XYXY),
         ),
         "tide": armory.metrics.tide.TIDE.create(),
         "detection": armory.metrics.detection.ObjectDetectionRates.create(),
     }
+
+
+def create_exporters(model, export_every_n_batches):
+    """Create sample exporters"""
+    return [
+        armory.export.object_detection.ObjectDetectionExporter(
+            criterion=armory.export.criteria.every_n_batches(export_every_n_batches)
+        ),
+        armory.export.drise.DRiseSaliencyObjectDetectionExporter(
+            model,
+            criterion=armory.export.criteria.every_n_batches(export_every_n_batches),
+            num_classes=1,
+            num_masks=10,
+        ),
+    ]
 
 
 @armory.track.track_params(prefix="main")
@@ -188,30 +205,36 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     if seed is not None:
         torch.manual_seed(seed)
 
-    model, art_detector = load_model()
-
-    dataset = load_dataset(batch_size, shuffle)
-    attack = create_attack(art_detector, batch_size)
-    metrics = create_metrics()
-
     evaluation = armory.evaluation.Evaluation(
         name="license-plate-detection-yolov5",
         description="License plate object detection using yolov5",
         author="TwoSix",
-        dataset=dataset,
-        model=model,
-        perturbations={
-            "benign": [],
-            "attack": [attack],
-        },
-        metrics=metrics,
-        exporter=armory.export.object_detection.ObjectDetectionExporter(),
-        profiler=armory.metrics.compute.BasicProfiler(),
     )
+
+    # Model
+    with evaluation.autotrack():
+        model, art_detector = load_model()
+    evaluation.use_model(model)
+
+    # Dataset
+    with evaluation.autotrack():
+        dataset = load_dataset(batch_size, shuffle)
+    evaluation.use_dataset(dataset)
+
+    # Metrics/Exporters
+    evaluation.use_metrics(create_metrics())
+    evaluation.use_exporters(create_exporters(model, export_every_n_batches))
+
+    # Chains
+    with evaluation.add_chain("benign"):
+        pass
+
+    with evaluation.add_chain("attack") as chain:
+        chain.add_perturbation(create_attack(art_detector, batch_size))
 
     engine = armory.engine.EvaluationEngine(
         evaluation,
-        export_every_n_batches=export_every_n_batches,
+        profiler=armory.metrics.compute.BasicProfiler(),
         limit_test_batches=num_batches,
     )
     results = engine.run()
