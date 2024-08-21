@@ -10,7 +10,6 @@ import pstats
 import time
 from typing import Mapping, Protocol, runtime_checkable
 
-# from armory.logs import log
 _logger: logging.Logger = logging.getLogger(__name__)
 
 
