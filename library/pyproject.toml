@@ -19,7 +19,6 @@ classifiers = [
 dependencies = [
     "jsonpath-ng",
     "lightning",
-    "loguru",
     "mlflow",
     "numpy",
     "Pillow",
