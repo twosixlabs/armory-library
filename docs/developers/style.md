@@ -76,6 +76,8 @@ import os
 from art import defences
 import numpy as np
 
+import armory.evaluation
+
 
 _logger = logging.getLogger(__name__)
 # ...
