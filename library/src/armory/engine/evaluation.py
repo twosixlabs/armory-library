@@ -3,6 +3,7 @@
 from typing import Any, Dict, Optional
 
 import lightning.pytorch as pl
+from lightning.pytorch.callbacks import RichProgressBar
 import lightning.pytorch.loggers as pl_loggers
 from lightning.pytorch.utilities import rank_zero_only
 
@@ -12,6 +13,17 @@ from armory.metrics.compute import NullProfiler, Profiler
 from armory.results import EvaluationResults
 from armory.track import get_current_params, init_tracking_uri, track_system_metrics
 import armory.version
+
+
+class EvaluationProgressBar(RichProgressBar):
+
+    def __init__(self, chain_name: str, **kwargs):
+        super().__init__(**kwargs)
+        self.chain_name = chain_name
+
+    @property
+    def test_description(self):
+        return f"Evaluating {self.chain_name}"
 
 
 class EvaluationEngine:
@@ -111,6 +123,7 @@ class EvaluationEngine:
 
         module = EvaluationModule(chain, self.profiler)
         trainer = pl.Trainer(
+            callbacks=[EvaluationProgressBar(chain_name=chain_name)],
             inference_mode=False,
             logger=logger,
             **self.trainer_kwargs,
