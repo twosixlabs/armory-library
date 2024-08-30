@@ -1,5 +1,6 @@
 """Armory engine to perform model robustness evaluations"""
 
+import logging
 from typing import Any, Dict, Optional
 
 import lightning.pytorch as pl
@@ -13,6 +14,8 @@ from armory.metrics.compute import NullProfiler, Profiler
 from armory.results import EvaluationResults
 from armory.track import get_current_params, init_tracking_uri, track_system_metrics
 import armory.version
+
+_logger = logging.getLogger(__name__)
 
 
 class EvaluationProgressBar(RichProgressBar):
@@ -130,7 +133,9 @@ class EvaluationEngine:
         )
         self.profiler.reset()
         with track_system_metrics(logger.run_id):
+            _logger.info(f"Beginning evaluation of {chain_name}")
             trainer.test(module, dataloaders=chain.dataset.dataloader, verbose=verbose)
+            _logger.info(f"Completed evaluation of {chain_name}")
 
         profiler_results = self.profiler.results()
         module.sink.log_dict(dict(profiler_results), "profiler_results.txt")
