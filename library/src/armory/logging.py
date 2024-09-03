@@ -32,6 +32,14 @@ def configure_logging(
 
     if not enable_progress_bars:
         os.environ["TQDM_DISABLE"] = "1"
+        try:
+            from functools import partialmethod
+
+            from tqdm import tqdm
+
+            tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)  # type: ignore
+        except ModuleNotFoundError:
+            pass
 
     try:
         import datasets
