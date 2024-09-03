@@ -1,6 +1,7 @@
 """Utilities to autoconfigure logging for Armory."""
 
 import logging
+import os
 import sys
 
 
@@ -28,6 +29,9 @@ def configure_logging(
 
     mlflow = logging.getLogger("mlflow")
     mlflow.setLevel(mlflow_level)
+
+    if not enable_progress_bars:
+        os.environ["TQDM_DISABLE"] = "1"
 
     try:
         import datasets
