@@ -29,7 +29,7 @@ cv = [
     # 1.4.1 adds version constraints to scikit-learn and numpy that are incompatible with ART
     "albumentations<1.4.1",
     "captum",
-    "scikit-learn>=1.2", # required by xaitk-saliency
+    "scikit-learn>=1.5", # required by xaitk-saliency
     "tidecv",
     "xaitk-saliency",
     "yolov5",
