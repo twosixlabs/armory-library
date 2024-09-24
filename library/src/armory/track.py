@@ -3,6 +3,7 @@
 from contextlib import contextmanager
 from copy import deepcopy
 from functools import wraps
+import logging
 import os
 from pathlib import Path
 import sys
@@ -28,7 +29,7 @@ import torch
 # so we have to use `typing_extensions` for 3.8 support
 from typing_extensions import ParamSpec
 
-from armory.logs import log
+_logger: logging.Logger = logging.getLogger(__name__)
 
 # Params are recorded globally in a stack of parameter stores, where the
 # first stack entry is the default, implicit parameter store. Creation of
@@ -62,7 +63,7 @@ def track_param(key: str, value: Any):
     """
     params = get_current_params()
     if key in params:
-        log.warning(
+        _logger.warning(
             f"Parameter {key} has already been logged with value {params[key]}, "
             f"and will be overwritten with value {value}. Use a unique parameter "
             "key argument or start a new tracking context with `tracking_context` "
@@ -172,7 +173,7 @@ def track_params(
             params = get_current_params()
 
             if f"{_prefix}._func" in params:
-                log.warning(
+                _logger.warning(
                     f"Parameters with prefix {_prefix} have already been logged and will "
                     "be overwritten. Use a unique prefix or start a new tracking context "
                     "with `tracking_context` to avoid this warning."
@@ -381,7 +382,7 @@ def track_system_metrics(run_id: Optional[str]):
         monitor = SystemMetricsMonitor(run_id)
         monitor.start()
     except Exception as err:
-        log.warning(
+        _logger.warning(
             f"Exception creating system metrics monitor, {err}, system metrics will be unavailable for this run"
         )
 
@@ -392,7 +393,9 @@ def track_system_metrics(run_id: Optional[str]):
             try:
                 monitor.finish()
             except Exception as err:
-                log.warning(f"Exception shutting down system metrics monitor, {err}")
+                _logger.warning(
+                    f"Exception shutting down system metrics monitor, {err}"
+                )
 
 
 # Trackables are recorded globally in a stack of lists, where the first stack

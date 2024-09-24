@@ -22,6 +22,7 @@ import armory.export.captum
 import armory.export.criteria
 import armory.export.image_classification
 import armory.export.xaitksaliency
+import armory.logging
 import armory.metric
 import armory.metrics.compute
 import armory.metrics.perturbation
@@ -428,4 +429,5 @@ def main(
 
 
 if __name__ == "__main__":
+    armory.logging.configure_logging()
     main(**vars(parse_cli_args()))

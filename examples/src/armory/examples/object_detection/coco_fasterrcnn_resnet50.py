@@ -3,8 +3,6 @@ Example Armory evaluation of COCO object detection with Faster R-CNN with
 ResNet-50 against a DPatch attack
 """
 
-from pprint import pprint
-
 import albumentations as A
 import albumentations.pytorch.transforms
 import art.attacks.evasion
@@ -22,6 +20,7 @@ import armory.evaluation
 import armory.export.criteria
 import armory.export.drise
 import armory.export.object_detection
+import armory.logging
 import armory.metric
 import armory.metrics.compute
 import armory.metrics.detection
@@ -47,7 +46,7 @@ def parse_cli_args():
 
 def load_model():
     tv_model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
-        torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights
+        weights=torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights.COCO_V1
     )
 
     armory_model = armory.model.object_detection.ObjectDetector(
@@ -238,8 +237,11 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     )
     results = engine.run()
 
-    pprint(results)
+    if results:
+        for chain_name, chain_results in results.children.items():
+            chain_results.metrics.table(title=f"{chain_name} Metrics")
 
 
 if __name__ == "__main__":
+    armory.logging.configure_logging()
     main(**vars(parse_cli_args()))

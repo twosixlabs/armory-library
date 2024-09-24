@@ -3,8 +3,6 @@ Example Armory evaluation of license plate object detection with YOLOv5 against
 a DPatch attack
 """
 
-from pprint import pprint
-
 import albumentations as A
 import albumentations.pytorch.transforms
 import art.attacks.evasion
@@ -23,6 +21,7 @@ import armory.evaluation
 import armory.export.criteria
 import armory.export.drise
 import armory.export.object_detection
+import armory.logging
 import armory.metric
 import armory.metrics.compute
 import armory.metrics.detection
@@ -239,8 +238,11 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     )
     results = engine.run()
 
-    pprint(results)
+    if results:
+        for chain_name, chain_results in results.children.items():
+            chain_results.metrics.table(title=f"{chain_name} Metrics")
 
 
 if __name__ == "__main__":
+    armory.logging.configure_logging()
     main(**vars(parse_cli_args()))
