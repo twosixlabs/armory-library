@@ -33,13 +33,13 @@ def product(
     to support dynamic, or dependent, parameter ranges that are created based
     on the preceding parameter values.
 
-    Args:
-        prior: Key-value parameter mapping of parameters generated so far
-        remaining: List of remaining key and value-iterable pairs
-
-    Yields:
-        Key-value parameter mappings for each row in the cartesian product
+    :param prior: Key-value parameter mapping of parameters generated so far
+    :type prior: Dict[str, Any]
+    :param remaining: List of remaining key and value-iterable pairs
+    :type remaining: List[Tuple[str, Any]]
+    :return: Key-value parameter mappings for each row in the cartesian product
         matrix
+    :rtype: Iterable[Mapping[str, Any]]
     """
     if not remaining:
         yield prior
@@ -57,7 +57,16 @@ def product(
 
 
 def is_in_partition(index: int, partition: slice) -> bool:
-    """Checks if the given row index is included in the partition, or slice"""
+    """
+    Checks if the given row index is included in the partition, or slice
+
+    :param index: index
+    :type index: int
+    :param partition: partition
+    :type partition: slice
+    :return: If row is in partition or slice
+    :rtype: bool
+    """
     if partition.start is not None and index < partition.start:
         return False
     if partition.stop is not None and index >= partition.stop:
@@ -91,15 +100,14 @@ def create_matrix(
         >>> list(create_matrix()(a=[1, 2], b=lambda a: (3, 4) if a == 1 else (5, 6)))
         [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 5}, {'a': 2, 'b': 6}]
 
-    Args:
-        partition: Partition, or slice, of the matrix rows to be executed.
-        filter: A callable to determine whether a row of the matrix should be
+    :param partition: Partition, or slice, of the matrix rows to be executed., defaults to None
+    :type partition: slice, optional
+    :param filter: _A callable to determine whether a row of the matrix should be
             omitted. If the callable returns `True` for a given set of
             parameters, that parameter set, or row, will be omitted from the
-            returned matrix.
-
-    Returns:
-        A generator of key-value mappings. The generator function accepts
+            returned matrix. Defaults to None.
+    :type filter: Callable[..., bool], optional
+    :return: A generator of key-value mappings. The generator function accepts
         keyword arguments of iterables, ranges, or sequences specifying the
         allowable values for each argument. The yielded value of the generator
         is a key-value mapping of arguments corresponding to a row of the
@@ -109,7 +117,7 @@ def create_matrix(
         the preceding keyword parameter values for the current row. The return
         of the callable is the value--or iterable--for the keyword, from which
         to generate additional rows in the matrix.
-    """
+    """  
 
     def _generate(**kwargs) -> Iterable[Mapping[str, Any]]:
         index = 0
@@ -145,6 +153,18 @@ class Matrix(Generic[P, T]):
         partition: Optional[slice] = None,
         filter: Optional[Callable[P, bool]] = None,
     ):
+        """
+        Init function
+
+        :param func: func
+        :type func: Callable[P, T]
+        :param kwargs: kwargs
+        :type kwargs: Dict
+        :param partition: partition, defaults to None
+        :type partition: slice, optional
+        :param filter: filter, defaults to None
+        :type filter: Callable[P, bool], optional
+        """
         self.func = func
         self.kwargs = kwargs
         self._partition = partition
@@ -152,7 +172,9 @@ class Matrix(Generic[P, T]):
 
     @property
     def matrix(self):
-        """The generated matrix of arguments"""
+        """
+        The generated matrix of arguments
+        """
         return create_matrix(
             partition=self._partition,
             filter=self._filter,
@@ -160,22 +182,25 @@ class Matrix(Generic[P, T]):
 
     @property
     def num_rows(self):
-        """Count of all rows in the matrix."""
+        """
+        Count of all rows in the matrix.
+
+        :return: Count of all rows in the matrix.
+        :rtype: int
+        """
         return sum(1 for _ in self.matrix)
 
     def __call__(self, *args, **kwargs) -> Sequence[Union[T, Exception]]:
         """
         Invokes the function once for each row of the matrix. Any given keyword
-        arguments are merged with the keyword arguments from the matrix row.
+        arguments are merged with the keyword arguments from the mat
 
-        Args:
-            *args: Positional arguments to be included with each function
+        :param *args: Positional arguments to be included with each function
                 invocation
-            **kwargs: Keyword arguments to be merged with the matrix row
+        :param **kwargs: Keyword arguments to be merged with the matrix row
                 arguments for each function invocation
-
-        Returns:
-            List of return values from each function invocation
+        :return: List of return values from each function invocation
+        :rtype: Sequence[Union[T, Exception]]
         """
         results: List[Union[T, Exception]] = []
         for it in self.matrix:
@@ -189,7 +214,9 @@ class Matrix(Generic[P, T]):
         return results
 
     def override(self, **kwargs):
-        """Creates a modified matrix with overridden input parameter constraints."""
+        """
+        Creates a modified matrix with overridden input parameter constraints."
+        """
         new_kwargs = deepcopy(self.kwargs)
         new_kwargs.update(kwargs)
         return Matrix(
@@ -200,7 +227,14 @@ class Matrix(Generic[P, T]):
         )
 
     def __getitem__(self, partition: slice) -> "Matrix[P, T]":
-        """Creates a modified matrix that executes a partition, or slice, of rows."""
+        """
+        Creates a modified matrix that executes a partition, or slice, of rows.
+
+        :param partition: Partition of rows
+        :type partition: slice
+        :return: Modified matrix
+        :rtype: Matrix[P, T]
+        """
         return Matrix(
             self.func,
             kwargs=deepcopy(self.kwargs),
@@ -209,7 +243,12 @@ class Matrix(Generic[P, T]):
         )
 
     def filter(self, filter: Optional[Callable[P, bool]]):
-        """Creates a modified matrix that executes a filtered set of rows of the matrix."""
+        """
+        Creates a modified matrix that executes a filtered set of rows of the matrix.
+
+        :param filter: Filter
+        :type filter: Optional[Callable[P, bool]]
+        """
         return Matrix(
             self.func,
             kwargs=deepcopy(self.kwargs),
@@ -230,13 +269,12 @@ class Matrix(Generic[P, T]):
 
             perform.parallel(2)()  # Will use up to 2 threads
 
-        Args:
-            max_workers: Maximum number of workers to use in the thread pool
-            timeout: Maximum number of seconds to wait. If None, then there is
-                no limit on the wait time.
-
-        Returns:
-            A function that will accept additional arguments to be forwarded to
+        :param max_workers: Maximum number of workers to use in the thread pool
+        :type max_workers: int
+        :param timeout: Maximum number of seconds to wait. If None, then there is
+                no limit on the wait time. Defaults to None
+        :type timeout: float, optional
+        :return: A function that will accept additional arguments to be forwarded to
             the invoked function and execute all rows of the matrix within the
             thread pool. The return of the function will be a list of all return
             values from each invocation of the matrix rows.
@@ -293,13 +331,11 @@ def matrix(**kwargs):
         >>> perform.override(x=range(3, 7))(2, b=3)
         [9, 11, 13, 15]
 
-    Args:
-        **kwargs: Keyword arguments to produce the parameter matrix. Argument
+    :param **kwargs: Keyword arguments to produce the parameter matrix. Argument
             values should be iterables (e.g., generator, list) of the allowable
             values for their respective named argument.
-
-    Returns:
-        Function decorator to wrap a given function in a callable `Matrix` object.
+    :type **kwargs: list
+    :return: Function decorator to wrap a given function in a callable `Matrix` object.
     """
 
     def decorator(func: Callable[..., T]):

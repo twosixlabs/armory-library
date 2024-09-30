@@ -56,33 +56,43 @@ class YoloV5ObjectDetector(ObjectDetector):
         """
         Initializes the model wrapper.
 
-        Args:
-            name: Name of the model.
-            model: YOLOv5 model being wrapped.
-            detection_model: Optional, the inner YOLOv5 detection model to use
+        :param name: Name of the model.
+        :type name: str
+        :param model: YOLOv5 model being wrapped.
+        :type model: _type_
+        :param detection_model: Optional, the inner YOLOv5 detection model to use
                 for computing loss. By default, the detection model is assumed
                 to be a property of the inner model property of the given YOLOv5
                 model--that is, `model.model.model`. It is unlikely that this
                 argument will ever be necessary, and may only be required if
-                the upstream `yolov5` package changes its model structure.
-            inputs_spec: Optional, data specification used to obtain raw image
+                the upstream `yolov5` package changes its model structure. Defaults to None
+        :type detection_model: "DetectionModel", optional
+        :param inputs_spec: Optional, data specification used to obtain raw image
                 data from the image inputs contained in object detection
                 batches. Defaults to a specification compatible with typical
                 YOLOv5 models.
-            predictions_spec: Optional, data specification used to update the
+        :type inputs_spec: ImageSpec, optional
+        :param predictions_spec: Optional, data specification used to update the
                 object detection predictions in the batch. Defaults to a
                 bounding box specification compatible with typical YOLOv5 models.
-            targets_spec: Optional, data specification used to obtain ground
+        :type predictions_spec: BoundingBoxSpec, optional
+        :param targets_spec: Optional, data specification used to obtain ground
                 truth targets from object detection batches in order to
                 calculate loss. Defaults to a bounding box specification
                 compatible with typical YOLOv5 models.
-            compute_loss: Optional, loss function used to calculate loss when the
+        :type targets_spec: BoundingBoxSpec, optional
+        :param iou_threshold: iou threshold, defaults to None
+        :type iou_threshold: float, optional
+        :param score_threshold: score threshold, defaults to None
+        :type score_threshold: float, optional
+        :param compute_loss: Optional, loss function used to calculate loss when the
                 model is in training mode. By default, the standard YOLOv5 loss
                 function is used. The function must accept two arguments: the
                 model predictions and the ground truth targets. The function
                 must return a tuple of the loss and the loss items (the second
                 element is unused).
-            **kwargs: All other keyword arguments will be forwarded to the
+        :type compute_loss: Callable[[Any, Any], Tuple[Any, Any]], optional
+        :param **kwargs: All other keyword arguments will be forwarded to the
                 `yolov5.utils.general.non_max_suppression` function used to
                 postprocess the model outputs.
         """
@@ -149,8 +159,8 @@ class YoloV5ObjectDetector(ObjectDetector):
         Non-maximum suppression processing is applied to the model's outputs
         before the batch predictions are updated.
 
-        Args:
-            batch: Object detection batch
+        :param batch: Object detection batch
+        :type batch: ObjectDetectionBatch
         """
         self.eval()
         inputs = batch.inputs.get(self.inputs_spec)
@@ -170,11 +180,10 @@ class YoloV5ObjectDetector(ObjectDetector):
         """
         Computes the loss for the given batch.
 
-        Args:
-            batch: Object detection batch
-
-        Returns:
-            The total loss
+        :param batch: Object detection batch
+        :type batch: ObjectDetectionBatch
+        :return: The total loss
+        :rtype: torch.Tensor
         """
         self.train()
         inputs = batch.inputs.get(self.inputs_spec)

@@ -40,7 +40,12 @@ _params_stack: List[Dict[str, Any]] = []
 
 
 def get_current_params() -> Dict[str, Any]:
-    """Get the parameters from the current tracking context"""
+    """
+    Get the parameters from the current tracking context
+
+    :return: Current parameters
+    :rtype: Dict[str, Any]
+    """
     if len(_params_stack) == 0:
         _params_stack.append({})
     return _params_stack[-1]
@@ -56,9 +61,10 @@ def track_param(key: str, value: Any):
 
         track_param("key", "value")
 
-    Args:
-        key: Parameter name (should be unique or will overwrite previous values)
-        value: Parameter value
+    :param key: Parameter name (should be unique or will overwrite previous values)
+    :type key: str
+    :param value: Parameter value
+    :type value: Any
     """
     params = get_current_params()
     if key in params:
@@ -72,7 +78,9 @@ def track_param(key: str, value: Any):
 
 
 def reset_params():
-    """Clear all parameters in the current tracking context"""
+    """
+    Clear all parameters in the current tracking context
+    """
     params = get_current_params()
     params.clear()
 
@@ -94,12 +102,11 @@ def tracking_context(nested: bool = False):
         with tracking_context():
             track_param("key", "value2")
 
-    Args:
-        nested: Copy parameters from the current context into the new
-            tracking context
-
-    Returns:
-        Context manager
+    :param nested: Copy parameters from the current context into the new
+            tracking context, defaults to False
+    :type nested: bool, optional
+    :return: Context manager
+    :rtype: _type_
     """
     new_context = {}
     if nested:
@@ -154,14 +161,15 @@ def track_params(
         # already applied, you can apply it inline
         track_params(third_party_func)(arg=42)
 
-    Args:
-        _func: Optional function to be decorated
-        prefix: Optional prefix for all keyword argument names (default is
-            inferred from decorated function name)
-        ignore: Optional list of keyword arguments to be ignored
-
-    Returns:
-        Decorated function if `_func` was provided, else a function decorator
+    :param _func:Optional function to be decorated, defaults to None
+    :type _func: Callable, optional
+    :param prefix: Optional prefix for all keyword argument names (default is
+            inferred from decorated function name), defaults to None
+    :type prefix: str, optional
+    :param ignore: Optional list of keyword arguments to be ignored, defaults to None
+    :type ignore: Sequence[str], optional
+    :return: Decorated function if `_func` was provided, else a function decorator
+    :rtype: Callable
     """
 
     def _decorator(func: Callable[P, T]) -> Callable[P, T]:
@@ -239,14 +247,14 @@ def track_init_params(
         # already applied, you can apply it inline
         obj = track_init_params(ThirdPartyClass)(arg=42)
 
-    Args:
-        _cls: Optional class to be decorated
-        prefix: Optional prefix for all keyword argument names (default is
+    :param _cls: Optional class to be decorated, defaults to None
+    :type _cls: object, optional
+    :param prefix: Optional prefix for all keyword argument names (default is
             inferred from decorated class name)
-        ignore: Optional list of keyword arguments to be ignored
-
-    Returns:
-        Decorated class if `_cls` was provided, else a class decorator
+    :type prefix: str, optional
+    :param ignore: Optional list of keyword arguments to be ignored, defaults to None
+    :type ignore: Sequence[str], optional
+    :return: Decorated class if `_cls` was provided, else a class decorator
     """
 
     def _decorator(cls: T) -> T:
@@ -288,14 +296,13 @@ def track_call(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
         ds = track_call(MyDataset, batch_size=32)
         model = track_call(load_model, name="model")
 
-    Args:
-        func: Function or class to be invoked
-        *args: Positional arguments to be passed to the function or class
-        **kwargs: Keyword arguments to be passed to the function or class, which
+    :param func: Function or class to be invoked
+    :type func: Callable[P, T]
+    :param *args: Positional arguments to be passed to the function or class
+    :param **kwargs: Keyword arguments to be passed to the function or class, which
             will be recorded as parameters
-
-    Return:
-        Result of the function or class invocation
+    :return: Result of the function or class invocation
+    :rtype: T
     """
     if isinstance(func, type):
         return track_init_params(func)(*args, **kwargs)
@@ -310,11 +317,10 @@ def init_tracking_uri(armory_home: Path) -> str:
     to the default tracking URI. Otherwise, the `mlruns` directory under the
     given armory home path will be set as the tracking URI.
 
-    Args:
-        armory_home: Path to armory home directory
-
-    Return:
-        Current MLFlow tracking URI
+    :param armory_home: Path to armory home directory
+    :type armory_home: Path
+    :return: Current MLFlow tracking URI
+    :rtype: str
     """
     if not os.environ.get("MLFLOW_TRACKING_URI"):
         uri = armory_home / "mlruns"
@@ -326,8 +332,8 @@ def track_metrics(metrics: Mapping[str, Union[float, Sequence[float], torch.Tens
     """
     Log the given metrics with MLFlow.
 
-    Args:
-        metrics: Mapping of metrics names to values
+    :param metrics: _Mapping of metrics names to values
+    :type metrics: Mapping[str, Union[float, Sequence[float], torch.Tensor]]
     """
     if not mlflow.active_run():
         return
@@ -363,12 +369,11 @@ def track_system_metrics(run_id: Optional[str]):
             with track_system_metrics(active_run.info.run_id)
                 # Do something
 
-    Args:
-        run_id: MLflow experiment run ID of the run to which to record the
+    :param run_id: MLflow experiment run ID of the run to which to record the
             system metrics. If empty or undefined, no tracking will be enabled
-
-    Returns:
-        Context manager
+    :type run_id: str, optional
+    :return: Context manager
+    :rtype: _type_
     """
     if not run_id:  # No system tracking will occur
         yield
@@ -403,7 +408,9 @@ _trackables: List[List["Trackable"]] = []
 
 
 def get_current_trackables() -> List["Trackable"]:
-    """Get the trackables from the current context"""
+    """
+    Get the trackables from the current context
+    """
     if len(_trackables) == 0:
         _trackables.append([])
     return _trackables[-1]
@@ -471,12 +478,10 @@ def trackable_context(nested: bool = False):
         assert get_current_params() == {}
         assert my_obj.tracked_params == {"key": "value"}
 
-    Args:
-        nested: Copy parameters from the current context into the new
-            tracking context
-
-    Returns:
-        Context manager
+    :param nested: Copy parameters from the current context into the new
+            tracking context, defaults to False
+    :type nested: bool, optional
+    :return: Context manager
     """
     with tracking_context(nested):
         _trackables.append([])
@@ -489,7 +494,9 @@ def trackable_context(nested: bool = False):
 
 
 def server():
-    """Start the MLFlow server"""
+    """
+    Start the MLFlow server
+    """
     args = sys.argv[1:]
     if "--backend-store-uri" not in sys.argv:
         if not os.environ.get("MLFLOW_TRACKING_URI"):

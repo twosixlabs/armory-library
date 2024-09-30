@@ -55,15 +55,28 @@ class AdversarialDatasetEngine:
         """
         Initializes the engine.
 
-        Args:
-            evaluation: Configuration for the evaluation
-            output_dir: Optional, directory to which to write the generated dataset
-            adapter: Optional, adapter to perform additional modifications to samples
-            features: Optional, dataset features
-            num_batches: Optional, number of batches from the original dataset to
-                attack and include in the generated dataset
-            profiler: Optional, profiler to collect computational metrics. By
+        :param chain: Evaluation chain
+        :type chain: Chain
+        :param inputs_key: Inputs key
+        :type inputs_key: str
+        :param targets_key: Targets key
+        :type targets_key: str
+        :param inputs_spec: Inputs specification, defaults to None
+        :type inputs_spec: DataSpecification, optional
+        :param targets_spec: Targets specification, defaults to None
+        :type targets_spec: DataSpecification, optional
+        :param output_dir: directory to which to write the generated dataset, defaults to None
+        :type output_dir: str, optional
+        :param adapter: adapter to perform additional modifications to samples, defaults to None
+        :type adapter: SampleAdapter, optional
+        :param features: dataset features, defaults to None
+        :type features: "datasets.Features", optional
+        :param num_batches: number of batches from the original dataset to
+                attack and include in the generated dataset, defaults to None
+        :type num_batches: int, optional
+        :param profiler: profiler to collect computational metrics. By
                 default, no computational metrics will be collected.
+        :type profiler: Profiler, optional
         """
         self.chain = chain
         self.module = EvaluationModule(chain, profiler or NullProfiler())
@@ -80,11 +93,24 @@ class AdversarialDatasetEngine:
 
     @staticmethod
     def _default_adapter(sample: Mapping[str, Any]) -> Mapping[str, Any]:
+        """
+        Do nothing
+
+        :param sample: Sample
+        :type sample: Mapping[str, Any]
+        :return: Sample
+        :rtype: Mapping[str, Any]
+        """
         # do nothing
         return sample
 
     def generate(self) -> "datasets.Dataset":
-        """Create the adversarial dataset"""
+        """
+        Create the adversarial dataset
+
+        :return: Adversarial dataset
+        :rtype: datasets.Dataset
+        """
         import datasets
 
         dataset = datasets.Dataset.from_generator(
@@ -102,6 +128,8 @@ class AdversarialDatasetEngine:
         """
         Iterates over every batch in the source dataset, applies the adversarial
         attack, and yields the pre-attacked samples.
+
+        :rtype: Generator[Mapping[str, Any], None, None]
         """
         assert self.chain.dataset
 

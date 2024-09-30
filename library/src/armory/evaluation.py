@@ -287,8 +287,7 @@ class Evaluation:
             with evaluation.autotrack() as track:
                 model = track(load_model, split="test")
 
-        Return:
-            Utility function to invoke functions or classes while recording
+        :return: Utility function to invoke functions or classes while recording
             keyword arguments as parameters
         """
         with trackable_context():
@@ -299,11 +298,10 @@ class Evaluation:
         """
         Add a new evaluation chain to the evaluation
 
-        Args:
-            name: Name of the evaluation chain
-
-        Return:
-            Chain: The evaluation chain to be configured
+        :param name: Name of the evaluation chain
+        :type name: str
+        :yield: The evaluation chain to be configured
+        :rtype: Chain
         """
         with trackable_context():
             chain = Chain(
@@ -348,6 +346,10 @@ class Optimization(Trackable):
         """
         Return the tracked parameters for this optimization and all trackable
         components of the optimization
+
+        :return: The tracked parameters for this optimization and all trackable
+        components of the optimization
+        :rtype: Dict[str, Any]
         """
         params = {}
         params.update(self.tracked_params)

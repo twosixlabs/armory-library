@@ -13,15 +13,7 @@ def always() -> Exporter.Criterion:
     """
     Creates an export criterion that matches all samples of all batches.
 
-    Example::
-
-        from armory.export import Exporter
-        from armory.export.criteria import always
-
-        exporter = Exporter(criterion=always())
-
-    Returns:
-        Export criterion function
+    :return: Export criterion function
     """
 
     def _criterion(batch_idx, batch):
@@ -31,6 +23,14 @@ def always() -> Exporter.Criterion:
 
 
 def _to_set(value: Union[bool, Iterable[int]], batch) -> Set[int]:
+    """
+    _to_set function
+
+    :param value: Value
+    :type value: Union[bool, Iterable[int]]
+    :param batch: Batch
+    :type batch: _type_
+    """
     if not value:
         return set()
     if type(value) is bool:
@@ -56,12 +56,11 @@ def all_satisfied(*criteria: Exporter.Criterion) -> Exporter.Criterion:
             )
         )
 
-    Args:
-        *criteria: Nested criteria that must all be satisfied for a sample to
+    :param *criteria: Nested criteria that must all be satisfied for a sample to
             be exported
-
-    Returns:
-        Export criterion function
+    :type value: Exporter.Criterion
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
 
     def _criterion(batch_idx, batch):
@@ -100,12 +99,11 @@ def any_satisfied(*criteria: Exporter.Criterion) -> Exporter.Criterion:
             )
         )
 
-    Args:
-        *criteria: Nested criteria of which at least one must be satisfied for
-            a sample to be exported
-
-    Returns:
-        Export criterion function
+    :param *criteria: Nested criteria that must all be satisfied for a sample to
+            be exported
+    :type value: Exporter.Criterion
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
 
     def _criterion(batch_idx, batch):
@@ -132,12 +130,11 @@ def not_satisfied(criterion: Exporter.Criterion) -> Exporter.Criterion:
         # batch_idx is 0, 1, 3, etc.)
         exporter = Exporter(criterion=not_satisfied(every_n_batches(3)))
 
-    Args:
-        criterion: Nested criterion for which unsatisfied samples are to be
+    :param criterion: Nested criterion for which unsatisfied samples are to be
             exported
-
-    Returns:
-        Export criterion function
+    :type criterion: Exporter.Criterion
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
 
     def _criterion(batch_idx, batch):
@@ -166,11 +163,10 @@ def every_n_batches(n: int) -> Exporter.Criterion:
         # Exports every sample in every 5th batch (when batch_idx is 4, 9, 14, etc.)
         exporter = Exporter(criterion=every_n_batches(5))
 
-    Args:
-        n: Interval at which to export batches based on the index of the batch
-
-    Returns:
-        Export criterion function
+    :param n: Interval at which to export batches based on the index of the batch
+    :type n: int
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
 
     def _criterion(batch_idx: int, batch):
@@ -196,11 +192,10 @@ def first_n_batches(n: int) -> Exporter.Criterion:
         # Exports every sample in the first 3 batches (when batch_idx is 0, 1, and 2)
         exporter = Exporter(criterion=every_n_batches(3))
 
-    Args:
-        n: Number of batches to be exported
-
-    Returns:
-        Export criterion function
+    :param n: Number of batches to be exported
+    :type n: int
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
 
     def _criterion(batch_idx: int, batch):
@@ -226,12 +221,11 @@ def every_n_samples_of_batch(n: int) -> Exporter.Criterion:
         # Exports every other sample in every batch (when sample_idx is 1, 3, 5, etc.)
         exporter = Exporter(criterion=every_n_samples_of_batch(5))
 
-    Args:
-        n: Interval at which to export samples based on the index of the sample
+    :param n: Interval at which to export samples based on the index of the sample
             within each batch
-
-    Returns:
-        Export criterion function
+    :type n: int
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
 
     def _criterion(batch_idx: int, batch):
@@ -263,12 +257,11 @@ def every_n_samples(n: int) -> Exporter.Criterion:
         #  - batch 2, samples 0 and 3
         exporter = Exporter(criterion=every_n_samples(3))
 
-    Args:
-        n: Interval at which to export samples based on the index of the sample
+    :param n: Interval at which to export samples based on the index of the sample
             within the dataset
-
-    Returns:
-        Export criterion function
+    :type n: int
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
 
     def _criterion(batch_idx: int, batch):
@@ -299,11 +292,10 @@ def first_n_samples_of_batch(n: int) -> Exporter.Criterion:
         # Exports the first 2 samples in every batches (when sample_idx is 0 and 1)
         exporter = Exporter(criterion=first_n_samples_of_batch(2))
 
-    Args:
-        n: Number of samples to be exported from each batch
-
-    Returns:
-        Export criterion function
+    :param n:Number of samples to be exported from each batch
+    :type n: int
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
 
     def _criterion(batch_idx: int, batch):
@@ -333,11 +325,10 @@ def first_n_samples(n: int) -> Exporter.Criterion:
         #  - batch 2, sample 0
         exporter = Exporter(criterion=first_n_samples(5))
 
-    Args:
-        n: Number of samples to be exported
-
-    Returns:
-        Export criterion function
+    :param n: Number of samples to be exported
+    :type n: int
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
 
     def _criterion(batch_idx: int, batch):
@@ -374,11 +365,10 @@ def samples(indices: Sequence[int]) -> Exporter.Criterion:
         #  - batch 2, samples 2 and 3
         exporter = Exporter(criterion=samples([2, 4, 5, 10, 11]))
 
-    Args:
-        indices: Indices of samples within the dataset to be exported
-
-    Returns:
-        Export criterion function
+    :param indices: Indices of samples within the dataset to be exported
+    :type indices: Sequence[int]
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
 
     def _criterion(batch_idx: int, batch):
@@ -395,6 +385,21 @@ def samples(indices: Sequence[int]) -> Exporter.Criterion:
 
 
 def _create_metric_criterion(comp, metric, threshold) -> Exporter.Criterion:
+    """
+    Create metric criterion
+
+    :param comp: Comp
+    :type comp: _type_
+    :param metric: Callable that computes a metric for a batch. The return value
+            may be a single boolean or number, or it can be a tensor array of
+            the computed metric values for each sample in the batch.
+    :type metric: _type_
+    :param threshold: Value the computed metric (either batchwise or samplewise)
+            must be equal to in order for the batch or samples to be exported
+    :type threshold: _type_
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
+    """
     def _criterion(batch_idx, batch):
         val = metric(batch)
         res = comp(val, threshold)
@@ -429,15 +434,15 @@ def when_metric_eq(
             ])
         exporter = Exporter(criterion=when_metric_eq(max_pred, 5))
 
-    Args:
-        metric: Callable that computes a metric for a batch. The return value
+    :param metric: Callable that computes a metric for a batch. The return value
             may be a single boolean or number, or it can be a tensor array of
             the computed metric values for each sample in the batch.
-        threshold: Value the computed metric (either batchwise or samplewise)
+    :type metric: Callable[[Batch], Union[bool, float, torch.Tensor]]
+    :param threshold: Value the computed metric (either batchwise or samplewise)
             must be equal to in order for the batch or samples to be exported
-
-    Returns:
-        Export criterion function
+    :type threshold: Union[bool, float, torch.Tensor]
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
     return _create_metric_criterion(lambda lhs, rhs: lhs == rhs, metric, threshold)
 
@@ -466,17 +471,19 @@ def when_metric_isclose(
             ])
         exporter = Exporter(criterion=when_metric_isclose(max_pred, 5))
 
-    Args:
-        metric: Callable that computes a metric for a batch. The return value
+    :param metric: Callable that computes a metric for a batch. The return value
             may be a single boolean or number, or it can be a tensor array of
             the computed metric values for each sample in the batch.
-        threshold: Value the computed metric (either batchwise or samplewise)
+    :type metric: Callable[[Batch], Union[float, torch.Tensor]]
+    :param threshold: Value the computed metric (either batchwise or samplewise)
             must be equal to in order for the batch or samples to be exported
-        rtol: Optional, relative tolerance
-        atol: Optional, absolute tolerance
-
-    Returns:
-        Export criterion function
+    :type threshold: Union[float, torch.Tensor]
+    :param rtol: Optional, relative tolerance, defaults to 1e-05
+    :type rtol: float, optional
+    :param atol: Optional, absolute tolerance, defaults to 1e-08
+    :type atol: float, optional
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
 
     def isclose(lhs, rhs):
@@ -512,15 +519,15 @@ def when_metric_lt(
             ])
         exporter = Exporter(criterion=when_metric_lt(max_pred, 5))
 
-    Args:
-        metric: Callable that computes a metric for a batch. The return value
+    :param metric: Callable that computes a metric for a batch. The return value
             may be a single number, or it can be a tensor array of the computed
             metric values for each sample in the batch.
-        threshold: Value the computed metric (either batchwise or samplewise)
+    :type metric: Callable[[Batch], Union[float, torch.Tensor]]
+    :param threshold: Value the computed metric (either batchwise or samplewise)
             must be less than in order for the batch or samples to be exported
-
-    Returns:
-        Export criterion function
+    :type threshold: Union[float, torch.Tensor]
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
     return _create_metric_criterion(lambda lhs, rhs: lhs < rhs, metric, threshold)
 
@@ -544,15 +551,15 @@ def when_metric_gt(metric, threshold) -> Exporter.Criterion:
             ])
         exporter = Exporter(criterion=when_metric_gt(max_pred, 5))
 
-    Args:
-        metric: Callable that computes a metric for a batch. The return value
+    :param metric: Callable that computes a metric for a batch. The return value
             may be a single number, or it can be a tensor array of the computed
             metric values for each sample in the batch.
-        threshold: Value the computed metric (either batchwise or samplewise)
-            must be greater than in order for the batch or samples to be exported
-
-    Returns:
-        Export criterion function
+    :type metric: Callable[[Batch], Union[float, torch.Tensor]]
+    :param threshold: Value the computed metric (either batchwise or samplewise)
+            must be less than in order for the batch or samples to be exported
+    :type threshold: Union[float, torch.Tensor]
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
     return _create_metric_criterion(lambda lhs, rhs: lhs > rhs, metric, threshold)
 
@@ -579,16 +586,15 @@ def when_metric_in(
             ])
         exporter = Exporter(criterion=when_metric_in(max_pred, [5, 8]))
 
-    Args:
-        metric: Callable that computes a metric for a batch. The return value
-            may be a single boolean or number, or it can be a tensor array of
-            the computed metric values for each sample in the batch.
-        threshold: Possible values the computed metric (either batchwise or
-            samplewise) must be equal to in order for the batch or samples to
-            be exported
-
-    Returns:
-        Export criterion function
+    :param metric: Callable that computes a metric for a batch. The return value
+            may be a single number, or it can be a tensor array of the computed
+            metric values for each sample in the batch.
+    :type metric: Callable[[Batch], Union[float, torch.Tensor]]
+    :param threshold: Value the computed metric (either batchwise or samplewise)
+            must be less than in order for the batch or samples to be exported
+    :type threshold: Union[Sequence[float], Sequence[torch.Tensor]]
+    :return: Export criterion function
+    :rtype: Exporter.Criterion
     """
 
     def _comp(lhs, rhs):
@@ -613,11 +619,10 @@ def batch_targets(
         # Exports samples that have a target value less than 10
         exporter = Exporter(criterion=when_metric_lt(batch_targets(), 10))
 
-    Args:
-        spec: Data specification for obtaining targets in a batch
-
-    Returns:
-        Batch metric function
+    :param spec: Data specification for obtaining targets in a batch, defaults to None
+    :type spec: DataSpecification, optional
+    :return: Batch metric function
+    :rtype: Callable[[Batch], torch.Tensor]
     """
     if spec is None:
         spec = TorchSpec()

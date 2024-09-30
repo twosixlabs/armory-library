@@ -39,10 +39,11 @@ class ArmoryDataset(Dataset):
         """
         Initializes the dataset.
 
-        Args:
-            dataset: Source dataset to be wrapped. It must be subscriptable and
+        :param dataset: Source dataset to be wrapped. It must be subscriptable and
                 support the `len` operator.
-            adapter: Dataset sample adapter
+        :type dataset: _type_
+        :param adapter: Dataset sample adapter
+        :type adapter: DatasetOutputAdapter
         """
         self._dataset = dataset
         self._adapter = adapter
@@ -80,10 +81,11 @@ class TupleDataset(ArmoryDataset):
         """
         Initializes the dataset.
 
-        Args:
-            dataset: Source dataset where samples are a tuples of data
-            keys: List of key names to use for each element in the sample tuple
+        :param dataset: Source dataset where samples are a tuples of data
+        :type dataset: _type_
+        :param keys: List of key names to use for each element in the sample tuple
                 when converted to a dictionary
+        :type keys: Iterable[str]
         """
         super().__init__(dataset, self._adapt)
         self._keys = keys
@@ -146,15 +148,15 @@ class ShuffleableDataLoader(DataLoader):
         """
         Initializes the data loader.
 
-        Args:
-            *args: All positional arguments will be forwarded to the
-                `torch.utils.data.dataloader.DataLoader` class.
-            seed: Optional, explicit seed to use for shuffling. If not provided,
+        :param seed: Optional, explicit seed to use for shuffling. If not provided,
                 a random seed will be generated.
-            shuffle: Whether to shuffle the dataset.
-            **kwargs: All other keyword arguments will be forwarded to the
+        :type seed: int, optional
+        :param shuffle: Whether to shuffle the dataset, defaults to False
+        :type shuffle: bool, optional
+        :param *args: All positional arguments will be forwarded to the
                 `torch.utils.data.dataloader.DataLoader` class.
-
+        :param **kwargs: All other keyword arguments will be forwarded to the
+                `torch.utils.data.dataloader.DataLoader` class.
         """
         super().__init__(*args, shuffle=shuffle, **kwargs)
         # We require a seed when shuffling so that we get the same sequence of
@@ -205,16 +207,19 @@ class ImageClassificationDataLoader(ShuffleableDataLoader):
         """
         Initializes the data loader.
 
-        Args:
-            *args: All positional arguments will be forwarded to the
+        :param *args: All positional arguments will be forwarded to the
                 `ShuffleableDataLoader` class.
-            dim: Image dimensions format (either CHW or HWC) of the image data
+        :param dim: Image dimensions format (either CHW or HWC) of the image data
                 in the samples returned by the dataset.
-            image_key: Key in the dataset sample dictionary for the image data.
-            label_key: Key in the dataset sample dictionary for the natural labels.
-            scale: Scale (i.e., data type, max value, normalization parameters)
+        :type dim: data.ImageDimensions
+        :param image_key: Key in the dataset sample dictionary for the image data.
+        :type image_key: str
+        :param label_key: Key in the dataset sample dictionary for the natural labels.
+        :type label_key: str
+        :param scale: Scale (i.e., data type, max value, normalization parameters)
                 of the image data values in the samples returned by the dataset.
-            **kwargs: All other keyword arguments will be forwarded to the
+        :type scale: data.Scale
+        :param **kwargs: All other keyword arguments will be forwarded to the
                 `ShuffleableDataLoader` class.
         """
         kwargs.pop("collate_fn", None)
@@ -284,20 +289,26 @@ class ObjectDetectionDataLoader(ShuffleableDataLoader):
         """
         Initializes the data loader.
 
-        Args:
-            *args: All positional arguments will be forwarded to the
+        :param *args: All positional arguments will be forwarded to the
                 `ShuffleableDataLoader` class.
-            boxes_key: Key in each object dictionary for the bounding boxes.
-            dim: Image dimensions format (either CHW or HWC) of the image data
+        :param boxes_key: Key in each object dictionary for the bounding boxes.
+        :type boxes_key: str
+        :param dim: Image dimensions format (either CHW or HWC) of the image data
                 in the samples returned by the dataset.
-            format: Bounding box format (e.g., XYXY, XYWH) of the boxes for the
+        :type dim: data.ImageDimensions
+        :param format: Bounding box format (e.g., XYXY, XYWH) of the boxes for the
                 objects in the samples returned by the dataset.
-            image_key: Key in the dataset sample dictionary for the image data.
-            label_key: Key in each object dictionary for the natural labels.
-            objects_key: Key in the dataset sample dictionary for the objects.
-            scale: Scale (i.e., data type, max value, normalization parameters)
+        :type format: data.BBoxFormat
+        :param image_key: Key in the dataset sample dictionary for the image data.
+        :type image_key: str
+        :param labels_key: Key in each object dictionary for the natural labels.
+        :type labels_key: str
+        :param objects_key: Key in the dataset sample dictionary for the objects.
+        :type objects_key: str
+        :param scale: Scale (i.e., data type, max value, normalization parameters)
                 of the image data values in the samples returned by the dataset.
-            **kwargs: All other keyword arguments will be forwarded to the
+        :type scale: data.Scale
+        :param **kwargs: All other keyword arguments will be forwarded to the
                 `ShuffleableDataLoader` class.
         """
         kwargs.pop("collate_fn", None)

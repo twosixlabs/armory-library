@@ -58,7 +58,12 @@ logfile_directory = None
 
 
 def is_debug() -> bool:
-    """return true if there is a filter set to DEBUG or lower"""
+    """
+    return true if there is a filter set to DEBUG or lower
+
+    :return: return true if there is a filter set to DEBUG or lower
+    :rtype: bool
+    """
     global filters
 
     for level in filters.values():
@@ -70,7 +75,12 @@ def is_debug() -> bool:
 
 
 def is_progress() -> bool:
-    """return true if detailed progress messages are needed"""
+    """
+    return true if detailed progress messages are needed
+
+    :return: return true if detailed progress messages are needed
+    :rtype: bool
+    """
     # this is used by the progress meters which should not be shown if false
 
     global filters
@@ -81,7 +91,9 @@ def is_progress() -> bool:
 
 
 def format_log(record) -> str:
-    """loads the record.extra with a friendly elapsed and return a format using it"""
+    """
+    loads the record.extra with a friendly elapsed and return a format using it
+    """
     record["extra"]["duration"] = duration_string(record["elapsed"])
     message = (
         "{time:YYYY-MM-DD HH:mm:ss} {extra[duration]:>3} "
@@ -109,7 +121,14 @@ def duration_string(dt: datetime.timedelta) -> str:
 
 
 def update_filters(specs: List[str], armory_debug=None):
-    """add or replace specs of the form module:level and restart the 0th sink"""
+    """
+    Add or replace specs of the form module:level and restart the 0th sink
+
+    :param specs: specs
+    :type specs: List[str]
+    :param armory_debug: armory_debug, defaults to None
+    :type armory_debug: _type_, optional
+    """
     global filters
     global logfile_directory
 

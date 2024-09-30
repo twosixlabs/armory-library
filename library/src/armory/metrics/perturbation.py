@@ -26,8 +26,8 @@ class PerturbationNormMetric(Metric):
         """
         Initializes the perturbation norm distance metric.
 
-        Args:
-            ord: order of norm
+        :param ord: order of norm, defaults to torch.inf
+        :type ord: Union[float, int], optional
         """
         super().__init__()
         self.ord = ord

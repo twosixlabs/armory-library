@@ -48,24 +48,34 @@ class CaptumImageClassificationExporter(Exporter):
         """
         Initializes the exporter.
 
-        Args:
-            model: Computer vision model
-            name: Descriptive name of the exporter
-            do_saliency: Whether to generate saliency maps
-            do_integrated_grads: Whether to generate integrated gradient maps
-            do_smoothgrad_squred: Whether to generated integrated gradient maps
-                with SmoothGrad Squared
-            do_deeplift: Whether to generate DeepLift maps
-            internal_batch_size: Batch size to use with Captum
-            n_steps: Number of steps to be used when generating maps
-            inputs_spec: Optional, data specification used to obtain raw
+        :param model: Computer vision model
+        :type model: torch.nn.Module
+        :param name: Descriptive name of the exporter, defaults to None
+        :type name: str, optional
+        :param do_saliency: Whether to generate saliency maps, defaults to True
+        :type do_saliency: bool, optional
+        :param do_integrated_grads: Whether to generate integrated gradient maps, defaults to False
+        :type do_integrated_grads: bool, optional
+        :param do_smoothgrad_squared: Whether to generated integrated gradient maps
+                with SmoothGrad Squared, defaults to False
+        :type do_smoothgrad_squared: bool, optional
+        :param do_deeplift: Whether to generate DeepLift maps, defaults to False
+        :type do_deeplift: bool, optional
+        :param internal_batch_size: Batch size to use with Captum, defaults to 1
+        :type internal_batch_size: int, optional
+        :param n_steps: Number of steps to be used when generating maps, defaults to 1
+        :type n_steps: int, optional
+        :param inputs_spec: Optional, data specification used to obtain raw
                 image data from the inputs contained in exported batches. By
                 default, a Torch images specification is used.
-            targets_spec: Optional, data specification used to obtain raw ground
+        :type inputs_spec: TorchImageSpec, optional
+        :param targets_spec: Optional, data specification used to obtain raw ground
                 truth targets data from the exported batches. By default, a
                 generic NumPy specification is used.
-            criterion: Criterion to determine when samples will be exported. If
+        :type targets_spec: DataSpecification, optional
+        :param criterion: Criterion to determine when samples will be exported. If
                 omitted, no samples will be exported.
+        :type criterion: Exporter.Criterion, optional
         """
         super().__init__(
             name=name or "CaptumImageClassification",
@@ -87,6 +97,19 @@ class CaptumImageClassificationExporter(Exporter):
             dim=ImageDimensions.CHW, scale=Scale(dtype=DataType.FLOAT, max=1.0)
         )
 
+    def export_samples(
+        self, batch_idx: int, batch: ImageClassificationBatch, samples: Iterable[int]
+    ) -> None:
+        """
+        Exports samples from the given batch.
+
+        :param batch_idx: The index/number of this batch.
+        :type batch_idx: int
+        :param batch: The batch to be exported.
+        :type batch: Batch
+        :param samples: The indices of samples in the batch to be exported.
+        :type samples: Iterable[int]
+        """
     def export_samples(
         self, batch_idx: int, batch: ImageClassificationBatch, samples: Iterable[int]
     ) -> None:
@@ -114,10 +137,26 @@ class CaptumImageClassificationExporter(Exporter):
 
     @staticmethod
     def _tensor2np(as_tensor: "torch.Tensor") -> np.ndarray:
+        """
+        Tensor to numpy
+
+        :param as_tensor: as_tensor
+        :type as_tensor: torch.Tensor
+        :return: np.ndarray
+        :rtype: np.ndarray
+        """
         return np.transpose(as_tensor.squeeze().cpu().detach().numpy(), (1, 2, 0))
 
     @staticmethod
     def _fig2img(figure: "matplotlib.figure.Figure") -> PIL.Image.Image:
+        """
+        Figure to image
+
+        :param figure: Figure
+        :type figure: matplotlib.figure.Figure
+        :return: PIL.Image.Image
+        :rtype: PIL.Image.Image
+        """
         buf = BytesIO()
         figure.savefig(buf)
         buf.seek(0)
@@ -130,6 +169,18 @@ class CaptumImageClassificationExporter(Exporter):
         image: "torch.Tensor",
         target,
     ):
+        """
+        Export saliency
+
+        :param artifact_path: Artifact path
+        :type artifact_path: Callable[[str], str]
+        :param orig_image: Origin image
+        :type orig_image: np.ndarray
+        :param image: Image
+        :type image: torch.Tensor
+        :param target: Target
+        :type target: _type_
+        """
         if self.saliency is None:
             return
 
@@ -156,6 +207,18 @@ class CaptumImageClassificationExporter(Exporter):
         image: "torch.Tensor",
         target,
     ):
+        """
+        Export integrated gradients
+
+        :param artifact_path: Artifact path
+        :type artifact_path: Callable[[str], str]
+        :param orig_image: Origin image
+        :type orig_image: np.ndarray
+        :param image: Image
+        :type image: torch.Tensor
+        :param target: Target
+        :type target: _type_
+        """
         if self.integrated_grads is None:
             return
 
@@ -188,6 +251,18 @@ class CaptumImageClassificationExporter(Exporter):
         image: "torch.Tensor",
         target,
     ):
+        """
+        Export SmoothGrad Squared
+
+        :param artifact_path: Artifact path
+        :type artifact_path: Callable[[str], str]
+        :param orig_image: Origin image
+        :type orig_image: np.ndarray
+        :param image: Image
+        :type image: torch.Tensor
+        :param target: Target
+        :type target: _type_
+        """
         if self.smoothgrad_sq is None:
             return
 
@@ -224,6 +299,18 @@ class CaptumImageClassificationExporter(Exporter):
         image: "torch.Tensor",
         target,
     ):
+        """
+        Export DeepLift
+
+        :param artifact_path: Artifact path
+        :type artifact_path: Callable[[str], str]
+        :param orig_image: Origin image
+        :type orig_image: np.ndarray
+        :param image: Image
+        :type image: torch.Tensor
+        :param target: Target
+        :type target: _type_
+        """
         if self.deeplift is None:
             return
 

@@ -40,12 +40,14 @@ class frange:
         """
         Initializes the floating point range.
 
-        Args:
-            start: The first value to be generated (or `0.0` if the parameter was
+        :param start: The first value to be generated (or `0.0` if the parameter was
                 not supplied)
-            stop: The exclusive upper bound for values to be generated
-            step: Difference between generated values (or `1.0` if the parameter was
-                not supplied)
+        :type start: float
+        :param stop: The exclusive upper bound for values to be generated, defaults to None
+        :type stop: float, optional
+        :param step: Difference between generated values (or `1.0` if the parameter was
+                not supplied), defaults to None
+        :type step: float, optional
         """
         # If only start is given, then treat it as the stop and start from 0.0
         if stop is None:
@@ -63,9 +65,9 @@ class frange:
         """
         Creates iterable floating point generator.
 
-        Returns:
-            Generator of floating point numbers in the range `[start,stop)`
+        :yield: Generator of floating point numbers in the range `[start,stop)`
             incrementing by `step`
+        :rtype: Generator[float, None, None]
         """
         count = 0
         while True:

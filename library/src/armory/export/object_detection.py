@@ -32,21 +32,26 @@ def draw_boxes_on_image(
     Ground truth bounding boxes will be drawn first, then the predicted bounding
     boxes.
 
-    Args:
-        image: 3-dimensional array of image data in shape (C, H, W) and type uint8
-        ground_truth_boxes: Optional array of shape (N, 4) containing ground truth
+    :param image: 3-dimensional array of image data in shape (C, H, W) and type uint8
+    :type image: np.ndarray
+    :param ground_truth_boxes: Optional array of shape (N, 4) containing ground truth
             bounding boxes in (xmin, ymin, xmax, ymax) format.
-        ground_truth_color: Color to use for ground truth bounding boxes. Color can
-            be represented as PIL strings (e.g., "red").
-        ground_truth_width: Width of ground truth bounding boxes.
-        pred_boxes: Optional array of shape (N, 4) containing predicted
+    :type ground_truth_boxes: np.ndarray, optional
+    :param ground_truth_color: Color to use for ground truth bounding boxes. Color can
+            be represented as PIL strings (e.g., "red"). Defaults to "red"
+    :type ground_truth_color: str, optional
+    :param ground_truth_width: Width of ground truth bounding boxes, defaults to 2
+    :type ground_truth_width: int, optional
+    :param pred_boxes: Optional array of shape (N, 4) containing predicted
             bounding boxes in (xmin, ymin, xmax, ymax) format.
-        pred_color: Color to use for predicted bounding boxes. Color can
-            be represented as PIL strings (e.g., "red").
-        pred_width: Width of ground truth bounding boxes.
-
-    Return:
-        uint8 tensor of (C, H, W) image with bounding boxes data
+    :type pred_boxes: np.ndarray, optional
+    :param pred_color: Color to use for predicted bounding boxes. Color can
+            be represented as PIL strings (e.g., "red"). Defaults to "white"
+    :type pred_color: str, optional
+    :param pred_width: Width of ground truth bounding boxes, defaults to 2
+    :type pred_width: int, optional
+    :return: uint8 tensor of (C, H, W) image with bounding boxes data
+    :rtype: np.ndarray
     """
     with_boxes = torch.as_tensor(image)
 
@@ -72,6 +77,40 @@ def draw_boxes_on_image(
 class ObjectDetectionExporter(Exporter):
     """An exporter for object detection samples."""
 
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        score_threshold: float = 0.5,
+        inputs_spec: Optional[NumpyImageSpec] = None,
+        predictions_spec: Optional[NumpyBoundingBoxSpec] = None,
+        targets_spec: Optional[NumpyBoundingBoxSpec] = None,
+        criterion: Optional[Exporter.Criterion] = None,
+    ):
+        """
+        Initializes the exporter.
+
+        :param name: Description of the exporter, defaults to None
+        :type name: str, optional
+        :param score_threshold: Optional, minimum score for object detection
+                predictions to be included as drawn bounding boxes in the
+                exported images. Defaults to 0.5.
+        :type score_threshold: float, optional
+        :param inputs_spec: Optional, data specification used to obtain raw
+                image data from the inputs contained in exported batches. By
+                default, a NumPy images specification is used.
+        :type inputs_spec: NumpyImageSpec, optional
+        :param predictions_spec: Optional, data specification used to obtain raw
+                predictions data from the exported batches. By default, an XYXY
+                NumPy bounding box specification is used.
+        :type predictions_spec: NumpyBoundingBoxSpec, optional
+        :param targets_spec: Optional, data specification used to obtain raw ground
+                truth targets data from the exported batches. By default, an XYXY
+                NumPy bounding box specification is used.
+        :type targets_spec: NumpyBoundingBoxSpec, optional
+        :param criterion: Criterion to determine when samples will be exported. If
+                omitted, no samples will be exported.
+        :type criterion: Exporter.Criterion, optional
+        """
     def __init__(
         self,
         name: Optional[str] = None,
@@ -121,6 +160,16 @@ class ObjectDetectionExporter(Exporter):
     def export_samples(
         self, batch_idx: int, batch: ObjectDetectionBatch, samples: Iterable[int]
     ) -> None:
+        """
+        Export samples
+
+        :param batch_idx: Batch index
+        :type batch_idx: int
+        :param batch: Batch
+        :type batch: ObjectDetectionBatch
+        :param samples: Samples
+        :type samples: Iterable[int]
+        """
         assert self.sink, "No sink has been set, unable to export"
 
         self._export_metadata(batch_idx, batch, samples)

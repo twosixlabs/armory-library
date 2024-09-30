@@ -58,20 +58,27 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
         score_threshold: Optional[float] = None,
     ):
         """
-        Initializes the model wrapper.
+        _summary_
 
-        Args:
-            name: Name of the model.
-            model: Object detection model being wrapped.
-            inputs_spec: Data specification used to obtain raw image data from
+        :param name: Name of the model
+        :type name: str
+        :param model: Object detection model being wrapped
+        :type model: _type_
+        :param inputs_spec: Data specification used to obtain raw image data from
                 the image inputs contained in object detection batches.
-            predictions_spec: Data specification used to update the raw object
+        :type inputs_spec: ImageSpec
+        :param predictions_spec: Data specification used to update the raw object
                 detection predictions data in the batch.
-            preadapter: Optional, model input adapter.
-            postadapter: Optional, model output adapter.
-            iou_threshold: Optional, IOU threshold for non-maximum suppression
-            score_threshold: Optional, minimum score for predictions to be
-                retained
+        :type predictions_spec: BoundingBoxSpec
+        :param preadapter: Optional, model input adapter., defaults to None
+        :type preadapter: ModelInputAdapter, optional
+        :param postadapter: Optional, model output adapter., defaults to None
+        :type postadapter: ModelOutputAdapter, optional
+        :param iou_threshold: Optional, IOU threshold for non-maximum suppression, defaults to None
+        :type iou_threshold: float, optional
+        :param score_threshold: Optional, minimum score for predictions to be
+                retained, defaults to None
+        :type score_threshold: float, optional
         """
         super().__init__(
             name=name,
@@ -131,8 +138,8 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
         threshold, the predictions will be filtered before the batch predictions
         are updated.
 
-        Args:
-            batch: Object detection batch
+        :param batch: Object detection batch
+        :type batch: ObjectDetectionBatch
         """
         self.eval()
         inputs = batch.inputs.get(self.inputs_spec)

@@ -11,6 +11,14 @@ from tqdm import tqdm
 
 
 def imgpath2tensor(directory, file_name):
+    """
+    Image path to tensor
+
+    :param directory: Directory
+    :type directory: str
+    :param file_name: File name
+    :type file_name: str
+    """
     full_path = os.path.join(directory, file_name)
     no_ext = os.path.splitext(full_path)[0]
     mat = None
@@ -36,6 +44,18 @@ def imgpath2tensor(directory, file_name):
 
 
 def generate_masks(w=16, h=16, p=0.5, number_of_masks=5000):
+    """
+    Generate masks
+
+    :param w: Width, defaults to 16
+    :type w: int, optional
+    :param h: Height defaults to 16
+    :type h: int, optional
+    :param p: P, defaults to 0.5
+    :type p: float, optional
+    :param number_of_masks: Number of masks, defaults to 5000
+    :type number_of_masks: int, optional
+    """
     masks = torch.randint(0, 256, (number_of_masks, h, w), dtype=torch.uint8) < int(
         p * 256
     )
@@ -44,6 +64,20 @@ def generate_masks(w=16, h=16, p=0.5, number_of_masks=5000):
 
 
 def masked_dataloader(img_pt, masks_all, rand_offset_nums, batch_size=4, device="cpu"):
+    """
+    Masked dataloader
+
+    :param img_pt: image_pt
+    :type img_pt: _type_
+    :param masks_all: masks_all
+    :type masks_all: _type_
+    :param rand_offset_nums: rand_offset_nums
+    :type rand_offset_nums: _type_
+    :param batch_size: Batch size, defaults to 4
+    :type batch_size: int, optional
+    :param device: Device, defaults to "cpu"
+    :type device: str, optional
+    """
     _, W, H = img_pt.shape
     number_of_masks, w, h = masks_all.shape
     imagenet_mean = torch.tensor([0.485, 0.456, 0.406]).to(device)
@@ -88,6 +122,28 @@ def get_proposal_data(
     object_thres=0.5,
     device="cpu",
 ):
+    """
+    Get proposal data
+
+    :param img_pt: img_pt
+    :type img_pt: _type_
+    :param model: Model
+    :type model: _type_
+    :param w: Width, defaults to 16
+    :type w: int, optional
+    :param h: Height, defaults to 16
+    :type h: int, optional
+    :param p: P, defaults to 0.5
+    :type p: float, optional
+    :param number_of_masks: Number of masks, defaults to 5000
+    :type number_of_masks: int, optional
+    :param batch_size: Batch size, defaults to 16
+    :type batch_size: int, optional
+    :param object_thres: Object threshold, defaults to 0.5
+    :type object_thres: float, optional
+    :param device: Device, defaults to "cpu"
+    :type device: str, optional
+    """
     _, H, W = img_pt.shape
     masks, rand_offset_nums = generate_masks(
         w=w, h=h, p=p, number_of_masks=number_of_masks
@@ -125,6 +181,28 @@ def make_saliency_map(
     objectiveness,
     device="cpu",
 ):
+    """
+    Make saliency map
+
+    :param img_pt: img_pt
+    :type img_pt: _type_
+    :param gt_box: gt_box
+    :type gt_box: _type_
+    :param gt_prob: gt_prob
+    :type gt_prob: _type_
+    :param masks: Masks
+    :type masks: _type_
+    :param rand_offset_nums: rand_offset_nums
+    :type rand_offset_nums: _type_
+    :param boxes: Box
+    :type boxes: _type_
+    :param cls_probs: cls_probs
+    :type cls_probs: _type_
+    :param objectiveness: Objectiveness
+    :type objectiveness: _type_
+    :param device: Device, defaults to "cpu"
+    :type device: str, optional
+    """
     _, H, W = img_pt.shape
     num_vecs = gt_box.shape[0]
     saliency_map = torch.zeros((num_vecs, H, W), device=device)
@@ -156,8 +234,19 @@ def make_saliency_map(
 
 def draw_contour(img_pt, cpu_map, thickness=1, levels=[0.95, 0.99], pixel_weight=True):
     """
-    pixel_weight: if true, uses the pixels that contain <level> of the total value (after subtracting the min)
-                  if false, <level> is quartiles.
+    Draw contour
+
+    :param img_pt: img_pt
+    :type img_pt: _type_
+    :param cpu_map: cpu_map
+    :type cpu_map: _type_
+    :param thickness: Thickness, defaults to 1
+    :type thickness: int, optional
+    :param levels: Levels, defaults to [0.95, 0.99]
+    :type levels: list, optional
+    :param pixel_weight: If true, uses the pixels that contain <level> of the total value (after subtracting the min)
+                  if false, <level> is quartiles. Defaults to True
+    :type pixel_weight: bool, optional
     """
     quarter_thick = 1 * thickness
     half_thick = 2 * thickness
@@ -212,6 +301,16 @@ def draw_contour(img_pt, cpu_map, thickness=1, levels=[0.95, 0.99], pixel_weight
 
 
 def draw_heatmap(image, saliency_map: torch.Tensor, box):
+    """
+    Draw heatmap
+
+    :param image: Image
+    :type image: _type_
+    :param saliency_map: Saliency map
+    :type saliency_map: torch.Tensor
+    :param box: Box
+    :type box: _type_
+    """
     fig = Figure(figsize=(6, 6))
     axes = fig.subplots()
     assert isinstance(axes, Axes)
@@ -241,6 +340,16 @@ def draw_heatmap(image, saliency_map: torch.Tensor, box):
 
 
 def draw_box(image, box, color="red"):
+    """
+    Draw box
+
+    :param image: Image
+    :type image: _type_
+    :param box: Box
+    :type box: _type_
+    :param color: Color, defaults to "red"
+    :type color: str, optional
+    """
     img_c = image.copy()
     img = ImageDraw.Draw(img_c)
     img.rectangle(box, outline=color, width=2)
@@ -255,6 +364,22 @@ def make_saliency_img(
     levels=[0.9, 0.95, 0.975, 0.99],
     contour=False,
 ):
+    """
+    Make saliency image
+
+    :param img_pt: img_pt
+    :type img_pt: _type_
+    :param saliency_map: Saliency map
+    :type saliency_map: _type_
+    :param box: Box
+    :type box: _type_
+    :param color: Color, defaults to "black"
+    :type color: str, optional
+    :param levels: Levels, defaults to [0.9, 0.95, 0.975, 0.99]
+    :type levels: list, optional
+    :param contour: Contour, defaults to False
+    :type contour: bool, optional
+    """
     if contour:
         img_with_saliency = draw_contour(
             img_pt, saliency_map.unsqueeze(0), levels=levels
