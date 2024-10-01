@@ -17,6 +17,7 @@ class OptimizationEngine:
     """
     Armory engine to perform adversarial attack optimization
     """
+
     def __init__(
         self,
         optimization: Optimization,
@@ -51,7 +52,7 @@ class OptimizationEngine:
         :param logger: pl_loggers.MLFlowLogger
         :type logger: pl_loggers.MLFlowLogger
         """
-    
+
     def run(self) -> None:
         """
         Perform the optimization

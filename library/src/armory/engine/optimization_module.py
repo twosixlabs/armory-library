@@ -15,7 +15,7 @@ class OptimizationModule(pl.LightningModule):
     """
     Armory lightning module to perform attack optimizations
     """
-    
+
     def __init__(self, optimization: Optimization):
         """
         Initializes the lightning module.
