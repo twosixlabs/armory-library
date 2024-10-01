@@ -111,35 +111,6 @@ class ObjectDetectionExporter(Exporter):
                 omitted, no samples will be exported.
         :type criterion: Exporter.Criterion, optional
         """
-    def __init__(
-        self,
-        name: Optional[str] = None,
-        score_threshold: float = 0.5,
-        inputs_spec: Optional[NumpyImageSpec] = None,
-        predictions_spec: Optional[NumpyBoundingBoxSpec] = None,
-        targets_spec: Optional[NumpyBoundingBoxSpec] = None,
-        criterion: Optional[Exporter.Criterion] = None,
-    ):
-        """
-        Initializes the exporter.
-
-        Args:
-            name: Description of the exporter
-            score_threshold: Optional, minimum score for object detection
-                predictions to be included as drawn bounding boxes in the
-                exported images. Defaults to 0.5.
-            inputs_spec: Optional, data specification used to obtain raw
-                image data from the inputs contained in exported batches. By
-                default, a NumPy images specification is used.
-            predictions_spec: Optional, data specification used to obtain raw
-                predictions data from the exported batches. By default, an XYXY
-                NumPy bounding box specification is used.
-            targets_spec: Optional, data specification used to obtain raw ground
-                truth targets data from the exported batches. By default, an XYXY
-                NumPy bounding box specification is used.
-            criterion: Criterion to determine when samples will be exported. If
-                omitted, no samples will be exported.
-        """
         super().__init__(
             name=name or "ObjectDetection",
             predictions_spec=(

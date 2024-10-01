@@ -9,6 +9,7 @@ from art.defences.preprocessor import Preprocessor
 from art.estimators import BaseEstimator
 import numpy as np
 
+
 def apply_art_postprocessor_defense(estimator: BaseEstimator, defense: Postprocessor):
     """
     Applies the given postprocessor defense to the model, handling the presence
@@ -35,6 +36,7 @@ def apply_art_postprocessor_defense(estimator: BaseEstimator, defense: Postproce
     else:
         defenses = [defense]
     estimator.set_params(postprocessing_defences=defenses)
+
 
 def apply_art_preprocessor_defense(estimator: BaseEstimator, defense: Preprocessor):
     """
@@ -114,6 +116,7 @@ def create_jatic_dataset_transform(preprocessor, image_key="image"):
 
     return transform
 
+
 def is_defended(estimator: BaseEstimator) -> bool:
     """
     Checks if the given estimator has any preprocessor or postprocessor defenses
@@ -160,6 +163,7 @@ class PILtoNumpy(object):
             )
         )
     """
+
     def __call__(self, sample):
         """
         The __call__ method takes a sample of type PIL.Image.Image
@@ -177,6 +181,7 @@ class Unnormalize:
     """
     Inverse of `torchvision.transforms.Normalize` transform.
     """
+
     def __init__(self, mean, std):
         """
         Initialize the transform.
@@ -196,6 +201,7 @@ class Unnormalize:
         :param data: data
         :type data: _type_
         """
+
     def __call__(self, data):
         unnormalized = deepcopy(data)
         for t, m, s in zip(unnormalized, self.mean, self.std):

@@ -117,7 +117,7 @@ def create_matrix(
         the preceding keyword parameter values for the current row. The return
         of the callable is the value--or iterable--for the keyword, from which
         to generate additional rows in the matrix.
-    """  
+    """
 
     def _generate(**kwargs) -> Iterable[Mapping[str, Any]]:
         index = 0

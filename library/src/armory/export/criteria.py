@@ -400,6 +400,7 @@ def _create_metric_criterion(comp, metric, threshold) -> Exporter.Criterion:
     :return: Export criterion function
     :rtype: Exporter.Criterion
     """
+
     def _criterion(batch_idx, batch):
         val = metric(batch)
         res = comp(val, threshold)

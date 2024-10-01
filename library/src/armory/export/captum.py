@@ -110,9 +110,6 @@ class CaptumImageClassificationExporter(Exporter):
         :param samples: The indices of samples in the batch to be exported.
         :type samples: Iterable[int]
         """
-    def export_samples(
-        self, batch_idx: int, batch: ImageClassificationBatch, samples: Iterable[int]
-    ) -> None:
         assert self.sink, "No sink has been set, unable to export"
         self.model.eval()
         images = batch.inputs.get(self.inputs_spec).to(self.model.device)
