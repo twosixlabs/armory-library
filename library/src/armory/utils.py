@@ -195,14 +195,6 @@ class Unnormalize:
         self.std = std
 
     def __call__(self, data):
-        """
-        __call__ function
-
-        :param data: data
-        :type data: _type_
-        """
-
-    def __call__(self, data):
         unnormalized = deepcopy(data)
         for t, m, s in zip(unnormalized, self.mean, self.std):
             t *= s

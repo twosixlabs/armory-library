@@ -9,8 +9,7 @@ from lightning.pytorch.utilities import rank_zero_only
 from armory.engine.optimization_module import OptimizationModule
 from armory.evaluation import Optimization, SysConfig
 from armory.metrics.compute import NullProfiler, Profiler
-from armory.track import get_current_params, init_tracking_uri, track_system_metrics
-import armory.version
+from armory.track import init_tracking_uri, track_system_metrics
 
 
 class OptimizationEngine:
