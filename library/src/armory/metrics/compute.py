@@ -5,11 +5,12 @@ Profilers to collect computational metrics
 import cProfile
 import contextlib
 import io
+import logging
 import pstats
 import time
 from typing import Mapping, Protocol, runtime_checkable
 
-from armory.logs import log
+_logger: logging.Logger = logging.getLogger(__name__)
 
 
 @runtime_checkable
@@ -62,7 +63,7 @@ class BasicProfiler(NullProfiler):
         results = {}
         for name, entry in self.measurement_dict.items():
             if "execution_count" not in entry or "total_time" not in entry:
-                log.warning(
+                _logger.warning(
                     "Computation resource dictionary entry {name} corrupted, missing data."
                 )
                 continue
@@ -80,7 +81,7 @@ class DeterministicProfiler(NullProfiler):
 
     def __init__(self):
         super().__init__()
-        log.warning(
+        _logger.warning(
             "Using Deterministic profiler. This may reduce timing accuracy and result in a large results file."
         )
 
@@ -113,7 +114,7 @@ class DeterministicProfiler(NullProfiler):
         results = {}
         for name, entry in self.measurement_dict.items():
             if any(x not in entry for x in ("execution_count", "total_time", "stats")):
-                log.warning(
+                _logger.warning(
                     "Computation resource dictionary entry {name} corrupted, missing data."
                 )
                 continue

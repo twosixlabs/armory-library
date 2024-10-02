@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 import numpy as np
@@ -12,8 +13,9 @@ from armory.data import (
     to_torch,
 )
 from armory.evaluation import ModelProtocol
-from armory.logs import log
 from armory.model.base import ArmoryModel, ModelInputAdapter, ModelOutputAdapter
+
+_logger: logging.Logger = logging.getLogger(__name__)
 
 
 class ObjectDetector(ArmoryModel, ModelProtocol):
@@ -101,17 +103,17 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
         for pred in preds:
             # Filter based on score shreshold, if configured
             if self.score_threshold is not None:
-                log.info(
+                _logger.debug(
                     f"started with {len(pred['boxes'])} boxes before score threshold"
                 )
                 keep = pred["scores"] > self.score_threshold
                 pred["boxes"] = pred["boxes"][keep]
                 pred["scores"] = pred["scores"][keep]
                 pred["labels"] = pred["labels"][keep]
-                log.info(f"keeping {len(pred['boxes'])} boxes")
+                _logger.debug(f"keeping {len(pred['boxes'])} boxes")
             # Perform non-maximum suppression, if configured
             if self.iou_threshold is not None:
-                log.info(
+                _logger.debug(
                     f"started with {len(pred['boxes'])} boxes before iou threshold"
                 )
                 keep = torchvision.ops.nms(
@@ -126,7 +128,7 @@ class ObjectDetector(ArmoryModel, ModelProtocol):
                 pred["boxes"] = pred["boxes"][keep]
                 pred["scores"] = pred["scores"][keep]
                 pred["labels"] = pred["labels"][keep]
-                log.info(f"keeping {len(pred['boxes'])} boxes")
+                _logger.debug(f"keeping {len(pred['boxes'])} boxes")
         return preds
 
     def predict(self, batch: ObjectDetectionBatch):

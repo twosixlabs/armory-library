@@ -1,5 +1,7 @@
 """Armory Dataset Classes"""
 
+import logging
+import multiprocessing
 from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, cast
 
 import numpy as np
@@ -15,6 +17,9 @@ DatasetOutputAdapter = Callable[..., Mapping[str, Any]]
 An adapter for dataset samples. The output must be a dictionary of column names
 to values.
 """
+
+
+_logger = logging.getLogger(__name__)
 
 
 class ArmoryDataset(Dataset):
@@ -223,6 +228,11 @@ class ImageClassificationDataLoader(ShuffleableDataLoader):
                 `ShuffleableDataLoader` class.
         """
         kwargs.pop("collate_fn", None)
+        if "num_workers" not in kwargs:
+            kwargs["num_workers"] = multiprocessing.cpu_count() - 1
+            _logger.debug(
+                f"Defaulting dataloader num_workers to {kwargs['num_workers']}"
+            )
         super().__init__(*args, collate_fn=self._collate, **kwargs)
         self.dim = dim
         self.image_key = image_key
@@ -312,6 +322,11 @@ class ObjectDetectionDataLoader(ShuffleableDataLoader):
                 `ShuffleableDataLoader` class.
         """
         kwargs.pop("collate_fn", None)
+        if "num_workers" not in kwargs:
+            kwargs["num_workers"] = multiprocessing.cpu_count() - 1
+            _logger.debug(
+                f"Defaulting dataloader num_workers to {kwargs['num_workers']}"
+            )
         super().__init__(*args, collate_fn=self._collate, **kwargs)
         self.boxes_key = boxes_key
         self.dim = dim

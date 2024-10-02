@@ -307,3 +307,4 @@ if __name__ == "__main__":
 # need to instantiate the filters early, replacing the default
 log.remove()
 add_sink(sys.stdout)
+
