@@ -35,11 +35,10 @@ class EvaluationResults:
         """
         Retrieve the evaluation results for a given MLFlow run ID.
 
-        Args:
-            run_id: MLFlow run ID
-
-        Return:
-            EvaluationResults object
+        :param run_id: MLFlow run ID
+        :type run_id: str
+        :return: EvaluationResults object
+        :rtype: EvaluationResults
         """
         client = get_mlflow_client()
         return cls(client, client.get_run(run_id))
@@ -55,14 +54,15 @@ class EvaluationResults:
         Retrieve the evaluation results for the last run in a given MLFlow
         experiment (by name or by ID).
 
-        Args:
-            experiment_id: Optional, MLFlow experiment ID (if not using name)
-            experiment_name: Optional, MLFlow experiment name (if not using ID)
-            max_search: Optional, number of runs to search. This should only be
-                necessary if the evaluations have more than 10 chains.
-
-        Return:
-            EvaluationResults object
+        :param experiment_id: Optional, MLFlow experiment ID (if not using name), defaults to None
+        :type experiment_id: str, optional
+        :param experiment_name: Optional, MLFlow experiment name (if not using ID), defaults to None
+        :type experiment_name: str, optional
+        :param max_search: Optional, number of runs to search. This should only be
+                necessary if the evaluations have more than 10 chains, defaults to 10
+        :type max_search: int, optional
+        :return: EvaluationResults object
+        :rtype: EvaluationResults
         """
         client = get_mlflow_client()
         if experiment_id:
@@ -93,9 +93,10 @@ class EvaluationResults:
         """
         Initialize the evaluation results object for the given MLFlow run.
 
-        Args:
-            client: MLFlow client
-            run: MLFlow run
+        :param client: MLFlow client
+        :type client: mlflow.client.MlflowClient
+        :param run: MLFlow run
+        :type run: mlflow.entities.Run
         """
         self._client = client
         self._run = run
@@ -214,11 +215,14 @@ class RunDataDict(UserDict):
         """
         Initialize the data dictionary.
 
-        Args:
-            data: Dictionary contents
-            title: Title for the dictionary when printed as a table
-            key_label: Optional, label for the key column when printed as a table
-            value_label: Optional, label for the value column when printed as a table
+        :param data: Dictionary contents
+        :type data: Dict[str, Any]
+        :param title: Title for the dictionary when printed as a table
+        :type title: str
+        :param key_label: Optional, label for the key column when printed as a table, defaults to "key"
+        :type key_label: str, optional
+        :param value_label: Optional, label for the value column when printed as a table, defaults to "value"
+        :type value_label: str, optional
         """
         super().__init__(data)
         self.title = title
@@ -235,14 +239,16 @@ class RunDataDict(UserDict):
         """
         Print the contents of the dictionary in a rich table.
 
-        Args:
-            console: Optional, rich console to use for printing. Defaults to the
+        :param console: Optional, rich console to use for printing. Defaults to the
                 standard rich console.
-            format: Optional, function to format values for printing. Defaults to
+        :type console: "rich.console.Console", optional
+        :param format: Optional, function to format values for printing. Defaults to
                 the built-in str function.
-            title: Optional, title for the table. Defaults to the title provided
+        :type format: Callable[[Any], str], optional
+        :param title: Optional, title for the table. Defaults to the title provided
                 when the dictionary was initialized.
-            **kwargs: Keyword arguments forwarded to the rich table constructor
+        :type title: str, optional
+        :param **kwargs: Keyword arguments forwarded to the rich table constructor
         """
         from rich.table import Table
 
@@ -267,12 +273,11 @@ class RunDataDict(UserDict):
         """
         Create an HTML table for the dictionary.
 
-        Args:
-            format: Optional, function to format values for printing. Defaults to
+        :param format: Optional, function to format values for printing. Defaults to
                 the built-in str function.
-
-        Return:
-            IPython HTML object for the table
+        :type format: Callable[[Any], str], optional
+        :return: IPython HTML object for the table
+        :rtype: IPython.core.display.HTML
         """
         from IPython.core.display import HTML
 
@@ -315,11 +320,18 @@ class RunMetricsDict(RunDataDict):
         """
         Initialize the metrics dictionary.
 
-        Args:
-            data: Dictionary contents
-            title: Title for the dictionary when printed as a table
-            key_label: Optional, label for the key column when printed as a table
-            value_label: Optional, label for the value column when printed as a table
+        :param data: Dictionary contents
+        :type data: Dict[str, Any]
+        :param title: Title for the dictionary when printed as a table
+        :type title: str
+        :param client: MLflow client
+        :type client: mlflow.client.MlflowClient
+        :param run_id: Run ID
+        :type run_id: str
+        :param key_label: Optional, label for the key column when printed as a table, defaults to "metric"
+        :type key_label: str, optional
+        :param value_label: Optional, label for the value column when printed as a table, defaults to "value"
+        :type value_label: str, optional
         """
         super().__init__(
             data=data, title=title, key_label=key_label, value_label=value_label
@@ -331,11 +343,10 @@ class RunMetricsDict(RunDataDict):
         """
         Retrieve the history of a specific metric.
 
-        Args:
-            key: Metric key
-
-        Return:
-            Metric history object
+        :param key: Metric key
+        :type key: str
+        :return: Metric history object
+        :rtype: MetricHistory
         """
         if key not in self.keys():
             raise KeyError(f"Metric not found: {key}")
@@ -352,16 +363,19 @@ class RunMetricsDict(RunDataDict):
         """
         Print the contents of the dictionary in a rich table.
 
-        Args:
-            console: Optional, rich console to use for printing. Defaults to the
+        :param console: Optional, rich console to use for printing. Defaults to the
                 standard rich console.
-            format: Optional, function to format values for printing. Defaults to
+        :type console: "rich.console.Console", optional
+        :param format: Optional, function to format values for printing. Defaults to
                 a fixed-precision floating point formatter.
-            precision: Optional, number of decimal places to display for floating
-                point values
-            title: Optional, title for the table. Defaults to the title provided
-                when the dictionary was initialized.
-            **kwargs: Keyword arguments forwarded to the rich table constructor
+        :type format: Callable[[Any], str], optional
+        :param precision: Optional, number of decimal places to display for floating
+                point values, defaults to 3
+        :type precision: int, optional
+        :param title: Optional, title for the table. Defaults to the title provided
+                when the dictionary was initialized, defaults to None
+        :type title: str, optional
+        :param **kwargs: Keyword arguments forwarded to the rich table constructor
         """
         return super().table(
             console=console,
@@ -378,14 +392,14 @@ class RunMetricsDict(RunDataDict):
         """
         Create an HTML table for the metrics.
 
-        Args:
-            format: Optional, function to format values for printing. Defaults to
+        :param format: Optional, function to format values for printing. Defaults to
                 a fixed-precision floating point formatter.
-            precision: Optional, number of decimal places to display for floating
-                point values
-
-        Return:
-            IPython HTML object for the table
+        :type format: Callable[[Any], str], optional
+        :param precision: Optional, number of decimal places to display for floating
+                point values, defaults to 3
+        :type precision: int, optional
+        :return: IPython HTML object for the table
+        :rtype: IPython.core.display.HTML
         """
         return super().plot(
             format=format or (lambda v: f"{v:.{precision}f}"),
@@ -398,8 +412,8 @@ class MetricHistory(UserList):
         """
         Initialize the metric history object.
 
-        Args:
-            history: List of metric history entries
+        :param history: List of metric history entries
+        :type history: Sequence["mlflow.entities.Metric"]
         """
         super().__init__(history)
 
@@ -411,13 +425,13 @@ class MetricHistory(UserList):
         """
         Create a matplotlib figure for the metric history.
 
-        Args:
-            figure: Optional, existing matplotlib figure to use for plotting.
+        :param figure: Optional, existing matplotlib figure to use for plotting.
                 If not provided, a new figure will be created.
-            timestamp: Use timestamps for the x-axis instead of step numbers
-
-        Return:
-            Matplotlib figure
+        :type figure: "matplotlib.figure.Figure", optional
+        :param timestamp: Use timestamps for the x-axis instead of step numbers, defaults to False
+        :type timestamp: bool, optional
+        :return: Matplotlib figure
+        :rtype: matplotlib.figure.Figure
         """
         import matplotlib.pyplot as plt
 
@@ -451,14 +465,17 @@ class RunArtifacts:
         """
         Initialize the artifacts.
 
-        Args:
-            client: MLFlow client
-            run_id: MLFlow run ID
-            path: Optional, the folder path within the MLFlow run's artifacts.
+        :param client: MLFlow client
+        :type client: mlflow.client.MlflowClient
+        :param run_id: MLFlow run ID
+        :type run_id: str
+        :param path: Optional, the folder path within the MLFlow run's artifacts.
                 Default is the root path.
-            children: Optional, dictionary of paths to child artifacts. If not
+        :type path: str, optional
+        :param children: Optional, dictionary of paths to child artifacts. If not
                 provided, the children will be populated by querying the MLFlow
-                server.
+                server, defaults to None
+        :type children: Dict[str, "RunArtifact"], optional
         """
         self._client = client
         self._run_id = run_id
@@ -488,13 +505,12 @@ class RunArtifacts:
         """
         Retrieve the folder path or an individual artifact at the given path.
 
-        Args:
-            key: Folder path or artifact name, relative to the current path of
+        :param key: Folder path or artifact name, relative to the current path of
                 this object's folder path
-
-        Return:
-            RunArtifacts object if the key is a folder path, RunArtifact object
+        :type key: str
+        :return: RunArtifacts object if the key is a folder path, RunArtifact object
             if the key is an artifact name
+        :rtype: Union["RunArtifact", "RunArtifacts"]
         """
         if key[-1] == "/":  # remove trailing /, if any
             key = key[:-1]
@@ -522,10 +538,12 @@ class RunArtifact:
         """
         Initialize the artifact.
 
-        Args:
-            client: MLFlow client
-            run_id: MLFlow run ID
-            artifact: MLFlow file info object
+        :param client: MLFlow client
+        :type client: mlflow.client.MlflowClient
+        :param run_id: MLFlow run ID
+        :type run_id: str
+        :param artifact: MLFlow file info object
+        :type artifact: mlflow.entities.FileInfo
         """
         self._client = client
         self._run_id = run_id
@@ -573,9 +591,10 @@ class BatchExports:
         """
         Initialize the batch exports.
 
-        Args:
-            batch_idx: Batch index
-            artifacts: Exported artifacts for the batch
+        :param batch_idx: Batch index
+        :type batch_idx: int
+        :param artifacts: Exported artifacts for the batch
+        :type artifacts: RunArtifacts
         """
         self.batch_idx = batch_idx
         self.artifacts = artifacts
@@ -606,17 +625,19 @@ class BatchExports:
         """
         Create a matplotlib figure for image samples in the batch.
 
-        Args:
-            filename: Optional, image filename to plot. If not provided, the
+        :param filename: Optional, image filename to plot. If not provided, the
                 default image export for each sample will be plotted.
-            max_samples: Optional, maximum number of samples to plot. If not
+        :type filename: str, optional
+        :param max_samples: Optional, maximum number of samples to plot. If not
                 provided, all samples will be plotted.
-            samples: Optional, specific sample indices to plot. If not provided,
+        :type max_samples: int, optional
+        :param samples: Optional, specific sample indices to plot. If not provided,
                 all samples will be plotted.
-            title: Optional, title for the plot
-
-        Return:
-            Matplotlib figure
+        :type samples: Sequence[int], optional
+        :param title: Optional, title for the plot
+        :type title: str, optional
+        :return: Matplotlib figure
+        :rtype: matplotlib.figure.Figure
         """
         from armory.results.plots import plot_in_grid
 
@@ -656,10 +677,12 @@ class SampleExports:
         """
         Initialize the sample exports.
 
-        Args:
-            batch_idx: Batch index
-            sample_idx: Sample index
-            artifacts: Exported artifacts for the sample
+        :param batch_idx: Batch index
+        :type batch_idx: int
+        :param sample_idx: Sample index
+        :type sample_idx: int
+        :param artifacts: Exported artifacts for the sample
+        :type artifacts: RunArtifacts
         """
         self.batch_idx = batch_idx
         self.sample_idx = sample_idx
@@ -701,11 +724,10 @@ class SampleExports:
         """
         Retrieve the individual artifact at the given path.
 
-        Args:
-            key: Artifact filename
-
-        Return:
-            RunArtifact object
+        :param key: Artifact filename
+        :type key: str
+        :return: RunArtifact object
+        :rtype: RunArtifact
         """
         return cast(RunArtifact, self.artifacts[key])
 
@@ -722,10 +744,12 @@ class SampleMetadata:
         """
         Initialize the sample metadata.
 
-        Args:
-            batch_idx: Batch index
-            sample_idx: Sample index
-            artifact: Metadata artifact for the sample
+        :param batch_idx: Batch index
+        :type batch_idx: int
+        :param sample_idx: Sample index
+        :type sample_idx: int
+        :param artifact: Metadata artifact for the sample
+        :type artifact: RunArtifact
         """
         self.batch_idx = batch_idx
         self.sample_idx = sample_idx
@@ -740,11 +764,10 @@ class SampleMetadata:
         """
         Retrieve a specific metadata property.
 
-        Args:
-            key: Metadata property key
-
-        Return:
-            Metadata property value
+        :param key: Metadata property key
+        :type key: str
+        :return: Metadata property value
+        :rtype: Any
         """
         return self.json.get(key)
 
@@ -759,8 +782,8 @@ class ClassificationResults:
         """
         Initialize the classification results.
 
-        Args:
-            sample: Sample exports
+        :param sample: Sample exports
+        :type sample: SampleExports
         """
         self.sample = sample
 
@@ -777,15 +800,16 @@ class ClassificationResults:
         Create a matplotlib figure for the image classification input and
         predictions for this sample.
 
-        Args:
-            figure: Optional, existing matplotlib figure to use for plotting.
+        :param figure: Optional, existing matplotlib figure to use for plotting.
                 If not provided, a new figure will be created.
-            labels: Optional, class labels for the predictions. If not provided,
+        :type figure: "matplotlib.pyplot.Figure", optional
+        :param labels: Optional, class labels for the predictions. If not provided,
                 class indices will be used.
-            top_k: Optional, number of top predictions to display
-
-        Return:
-            Matplotlib figure
+        :type labels: Sequence[str], optional
+        :param top_k: Optional, number of top predictions to display, defaults to 10
+        :type top_k: int, optional
+        :return: Matplotlib figure
+        :rtype: matplotlib.figure.Figure
         """
         import matplotlib.pyplot as plt
         import numpy as np

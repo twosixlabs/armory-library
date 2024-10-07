@@ -28,16 +28,19 @@ class Metric(Trackable, nn.Module, ABC):
         """
         Initializes the metric.
 
-        Args:
-            metric: torchmetrics metric to be wrapped.
-            spec: Optional, data specification for the batch fields used for the
+        :param metric: torchmetrics metric to be wrapped.
+        :type metric: TorchMetric
+        :param spec: Optional, data specification for the batch fields used for the
                 metric. This may be used for input data or for predictions from
                 the batch. By default, a generic torch spec is used.
-            record_as_artifact: If True, the metric result will be recorded as
-                an artifact to the evaluation run.
-            record_as_metrics: Optional, a set of JSON paths in the metric
+        :type spec: DataSpecification, optional
+        :param record_as_artifact: If True, the metric result will be recorded as
+                an artifact to the evaluation run, defaults to True
+        :type record_as_artifact: bool, optional
+        :param record_as_metrics: Optional, a set of JSON paths in the metric
                 result pointing to scalar values to record as metrics to the
                 evaluation run. If None, no metrics will be recorded.
+        :type record_as_metrics: Iterable[str], optional
         """
         super().__init__()
         self.metric = metric
@@ -55,11 +58,15 @@ class Metric(Trackable, nn.Module, ABC):
             self.spec.to(device=self.metric.device)
 
     def compute(self):
-        """Computes the metric value(s)."""
+        """
+        Computes the metric value(s).
+        """
         return self.metric.compute()
 
     def reset(self):
-        """Resets the metric."""
+        """
+        Resets the metric.
+        """
         self.metric.reset()
 
     @classmethod
@@ -101,7 +108,12 @@ class Metric(Trackable, nn.Module, ABC):
         return scalars
 
     def clone(self) -> Self:
-        """Creates a clone of the metric."""
+        """
+        Creates a clone of the metric.
+
+        :return: Clone of the metric
+        :rtype: Self
+        """
         return self.__class__(
             metric=self.metric,
             spec=self.spec,
@@ -111,7 +123,12 @@ class Metric(Trackable, nn.Module, ABC):
 
     @abstractmethod
     def update(self, batch: Batch) -> None:
-        """Updates the metric with a batch from the evaluation."""
+        """
+        Updates the metric with a batch from the evaluation.
+
+        :param batch: Batch from the evaluation
+        :type batch: Batch
+        """
         ...
 
 

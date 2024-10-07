@@ -47,16 +47,23 @@ class YoloV4ObjectDetector(ObjectDetector):
         """
         Initializes the model wrapper.
 
-        Args:
-            name: Name of the model.
-            model: YOLOv4 model being wrapped.
-            inputs_spec: Optional, data specification used to obtain raw image
+        :param name: Name of the model
+        :type name: str
+        :param model: YOLOv4 model being wrapped
+        :type model: _type_
+        :param inputs_spec: Optional, data specification used to obtain raw image
                 data from the image inputs contained in object detection
                 batches. Defaults to a specification compatible with typical
                 YOLOv5 models.
-            predictions_spec: Optional, data specification used to update the
+        :type inputs_spec: ImageSpec, optional
+        :param predictions_spec: Optional, data specification used to update the
                 object detection predictions in the batch. Defaults to a
                 bounding box specification compatible with typical YOLOv5 models.
+        :type predictions_spec: BoundingBoxSpec, optional
+        :param iou_threshold: iou threshold, defaults to None
+        :type iou_threshold: float, optional
+        :param score_threshold: score threshold, defaults to None
+        :type score_threshold: float, optional
         """
         super().__init__(
             name=name,
@@ -84,9 +91,6 @@ class YoloV4ObjectDetector(ObjectDetector):
         Non-maximum suppression processing is applied to the model's outputs
         before the batch predictions are updated.
 
-        Args:
-            batch: Object detection batch
-
         Model output / predictions format/example:
         outputs = self(inputs)
         Length of outputs: 2, type=list
@@ -97,6 +101,9 @@ class YoloV4ObjectDetector(ObjectDetector):
         Length of predictions: 1, type=list[lists]
         predictions: [[-0.016737998, 0.051072836, 0.80007946, 0.96419203, 0.8180811, 0]]
         predictions[0]: [-0.016737998, 0.051072836, 0.80007946, 0.96419203, 0.8180811, 0]
+
+        :param batch: Object detection batch
+        :type batch: ObjectDetectionBatch
         """
         self.eval()
         inputs = batch.inputs.get(self.inputs_spec)

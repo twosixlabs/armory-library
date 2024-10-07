@@ -27,8 +27,10 @@ class EvaluationModule(pl.LightningModule):
         """
         Initializes the lightning module.
 
-        Args:
-            chain: Evaluation chain
+        :param chain: Evaluation chain
+        :type chain: Chain
+        :param profiler: profiler to collect computational metrics.
+        :type profiler: Profiler
         """
         super().__init__()
         self.chain = chain
@@ -51,13 +53,28 @@ class EvaluationModule(pl.LightningModule):
 
     class MetricsDict(torch.nn.ModuleDict):
         def update_metrics(self, batch: "Batch") -> None:
+            """
+            Update Metrics
+
+            :param batch: Batch
+            :type batch: Batch
+            """
             for metric in self.values():
                 metric.update(batch)
 
         def compute(self) -> Mapping[str, torch.Tensor]:
+            """
+            Compute
+
+            :return: Mapping[str, torch.Tensor]
+            :rtype: Mapping[str, torch.Tensor]
+            """
             return {name: metric.compute() for name, metric in self.items()}
 
         def reset(self) -> None:
+            """
+            Reset
+            """
             for metric in self.values():
                 metric.reset()
 
@@ -69,6 +86,9 @@ class EvaluationModule(pl.LightningModule):
         """
         Applies the chain's perturbations to the batch to produce the perturbed data
         to be given to the model
+
+        :param batch: Batch
+        :type batch: Batch
         """
         with self.profiler.measure("perturbation"):
             for perturbation in self.chain.perturbations:
@@ -76,11 +96,19 @@ class EvaluationModule(pl.LightningModule):
                     perturbation.apply(batch)
 
     def evaluate(self, batch: "Batch"):
-        """Perform evaluation on batch"""
+        """
+        Perform evaluation on batch
+
+        :param batch: Batch
+        :type batch: Batch
+        """
         with self.profiler.measure("predict"):
             self.model.predict(batch)
 
     def record_metrics(self):
+        """
+        Record metrics
+        """
         for metric_name, metric in self.metrics.items():
             result = metric.compute()
             as_json = metric.to_json(result)
@@ -96,7 +124,12 @@ class EvaluationModule(pl.LightningModule):
     ###
 
     def setup(self, stage: str) -> None:
-        """Sets up the exporters"""
+        """
+        Sets up the exporters
+
+        :param stage: Stage
+        :type stage: str
+        """
         super().setup(stage)
         logger = self.logger
         self.sink = (
@@ -108,13 +141,20 @@ class EvaluationModule(pl.LightningModule):
             exporter.use_sink(self.sink)
 
     def on_test_epoch_start(self) -> None:
-        """Resets all metrics"""
+        """
+        Resets all metrics
+        """
         self.metrics.reset()
         return super().on_test_epoch_start()
 
     def test_step(self, batch, batch_idx):
         """
         Performs evaluations of the model for each configured perturbation chain
+
+        :param batch: Batch
+        :type batch: Batch
+        :param batch_idx: Batch index
+        :type batch_idx: int
         """
         try:
             with torch.enable_grad():
@@ -131,6 +171,8 @@ class EvaluationModule(pl.LightningModule):
             ) from err
 
     def on_test_epoch_end(self) -> None:
-        """Logs all metric results"""
+        """
+        Logs all metric results
+        """
         self.record_metrics()
         return super().on_test_epoch_end()

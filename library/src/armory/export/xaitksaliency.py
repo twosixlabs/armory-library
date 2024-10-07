@@ -68,13 +68,18 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
         """
         Initializes the exporter.
 
-        Args:
-            model: Armory image classifier
-            classes: List of classes for which to generate saliency maps
-            algorithm: XAITK saliency algorithm. By default the sliding window
+        :param name: Name
+        :type name: str
+        :param model: Armory image classifier
+        :type model: ImageClassifier
+        :param classes: List of classes for which to generate saliency maps
+        :type classes: Sequence[int]
+        :param algorithm: XAITK saliency algorithm. By default the sliding window
                 stack algorithm is used.
-            criterion: Criterion to determine when samples will be exported. If
+        :type algorithm: GenerateImageClassifierBlackboxSaliency, optional
+        :param criterion: Criterion to determine when samples will be exported. If
                 omitted, no samples will be exported.
+        :type criterion: Exporter.Criterion, optional
         """
         super().__init__(
             name=name,
@@ -94,6 +99,16 @@ class XaitkSaliencyBlackboxImageClassificationExporter(Exporter):
         batch: ImageClassificationBatch,
         samples: Iterable[int],
     ) -> None:
+        """
+        Export samples
+
+        :param batch_idx: Batch index
+        :type batch_idx: int
+        :param batch: Batch
+        :type batch: ImageClassificationBatch
+        :param samples: Samples
+        :type samples: Iterable[int]
+        """
         assert self.sink, "No sink has been set, unable to export"
 
         images = batch.inputs.get(self.inputs_spec)

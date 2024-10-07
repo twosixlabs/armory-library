@@ -446,10 +446,11 @@ class Images(DataWithSpecification):
                 ),
             )
 
-        Args:
-            images: Raw images data as either a NumPy array or a PyTorch Tensor
-            spec: Specification for the structure, format, and values of the raw
+        :param images: Raw images data as either a NumPy array or a PyTorch Tensor
+        :type images: _RawDataTypes
+        :param spec: Specification for the structure, format, and values of the raw
                 images data
+        :type spec: ImageSpec
         """
         self.images = images
         self.spec = spec
@@ -522,12 +523,11 @@ class Images(DataWithSpecification):
                 ),
             ))
 
-        Args:
-            spec: Specification for the structure, format, and values of the raw
+        :param spec: Specification for the structure, format, and values of the raw
                 images data to be returned
-
-        Return:
-            Raw images data matching the requested specification
+        :type spec: Union[ImageSpec, NumpySpec, TorchSpec]
+        :return: Raw images data matching the requested specification
+        :rtype: _RawDataTypes
         """
         images = self.images
         # If requested type is torch, convert it and move to device first before
@@ -551,9 +551,10 @@ class Images(DataWithSpecification):
         """
         Replaces the image data.
 
-        Args:
-            images: New raw images data
-            spec: New image data specification
+        :param images: New raw images data
+        :type images: _RawDataTypes
+        :param spec: New image data specification
+        :type spec: ImageSpec
         """
         self.images = images
         if isinstance(spec, ImageSpec):
@@ -571,8 +572,8 @@ class NDimArray(DataWithSpecification):
         """
         Initializes the data array.
 
-        Args:
-            contents: Raw data array
+        :param contents: Raw data array
+        :type contents: _RawDataTypes
         """
         self.contents = contents
 
@@ -604,12 +605,11 @@ class NDimArray(DataWithSpecification):
 
             data_np = data.get(NumpySpec())
 
-        Args:
-            spec: Specification for the data type of the raw data array to be
+        :param spec: Specification for the data type of the raw data array to be
                 returned
-
-        Return:
-            Raw data array matching the requested specification
+        :type spec: Union[NumpySpec, TorchSpec]
+        :return: Raw data array matching the requested specification
+        :rtype: _RawDataTypes
         """
         contents = self.contents
         if isinstance(spec, NumpySpec):
@@ -625,8 +625,8 @@ class NDimArray(DataWithSpecification):
         """
         Replaces the data array.
 
-        Args:
-            contents: New raw data array
+        :param contents: New raw data array
+        :type contents: _RawDataTypes
         """
         self.contents = contents
 
@@ -726,10 +726,11 @@ class BoundingBoxes(DataWithSpecification):
                 spec=BoundingBoxSpec(format=BBoxFormat.XYXY),
             )
 
-        Args:
-            boxes: Raw bounding boxes data
-            spec: Specification for the structure, format, and values of the raw
+        :param boxes: Raw bounding boxes data
+        :type boxes: _RawDataTypes
+        :param spec: Specification for the structure, format, and values of the raw
                 bounding boxes data
+        :type spec: BoundingBoxSpec
         """
         self.boxes = boxes
         self.spec = spec
@@ -775,12 +776,11 @@ class BoundingBoxes(DataWithSpecification):
                 format=BBoxFormat.CXCYWH,
             ))
 
-        Args:
-            spec: Specification for the structure, format, and values of the raw
+        :param spec: Specification for the structure, format, and values of the raw
                 bounding boxes data to be returned
-
-        Return:
-            Raw bounding boxes data matching the requested specification
+        :type spec: Union[BoundingBoxSpec, NumpySpec, TorchSpec]
+        :return: Raw bounding boxes data matching the requested specification
+        :rtype: _RawDataTypes
         """
         boxes = [x["boxes"] for x in self.boxes]
         labels = [x["labels"] for x in self.boxes]
@@ -846,9 +846,10 @@ class BoundingBoxes(DataWithSpecification):
         """
         Replaces the bounding boxes data.
 
-        Args:
-            images: New raw bounding boxes data
-            spec: New bounding box data specification
+        :param boxes: New raw bounding boxes data
+        :type boxes: _RawDataTypes
+        :param spec: New bounding box data specification
+        :type spec: BoundingBoxSpec
         """
         self.boxes = boxes
         if isinstance(spec, BoundingBoxSpec):
@@ -875,13 +876,16 @@ class ImageClassificationBatch(Batch):
         """
         Initializes the batch.
 
-        Args:
-            inputs: Images to be classified
-            targets: Ground truth labels/categories of each image in the batch
-            metadata: Optional, additional metadata about the samples in the
-                batch
-            predictions: Optional, the predicted labels/categories of each image
-                in the batch
+        :param inputs: Images to be classified
+        :type inputs: Images
+        :param targets: Ground truth labels/categories of each image in the batch
+        :type targets: NDimArray
+        :param metadata: Optional, additional metadata about the samples in the
+                batch, defaults to None
+        :type metadata: Metadata, optional
+        :param predictions: Optional, the predicted labels/categories of each image
+                in the batch, defaults to None
+        :type predictions: NDimArray, optional
         """
         self._initial_inputs = inputs.clone()
         self._inputs = inputs
@@ -943,13 +947,16 @@ class ObjectDetectionBatch(Batch):
         """
         Initializes the batch.
 
-        Args:
-            inputs: Images in which to detect objects
-            targets: Ground truth objects in each image in the batch
-            metadata: Optional, additional metadata about the samples in the
-                batch
-            predictions: Optional, the predicted object bounding boxes in each
-                image in the batch
+        :param inputs: Images in which to detect objects
+        :type inputs: Images
+        :param targets: Ground truth objects in each image in the batch
+        :type targets: BoundingBoxes
+        :param metadata: Optional, additional metadata about the samples in the
+                batch, defaults to None
+        :type metadata: Metadata, optional
+        :param predictions: Optional, the predicted object bounding boxes in each
+                image in the batch, defaults to None
+        :type predictions: BoundingBoxes, optional
         """
         self._initial_inputs = inputs.clone()
         self._inputs = inputs

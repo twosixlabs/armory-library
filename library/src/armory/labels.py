@@ -28,8 +28,8 @@ class FixedLabelTargeter:
         """
         Initializes the label targeter.
 
-        Args:
-            value: Fixed integer value
+        :param value: Fixed integer value
+        :type value: int
         """
         if not isinstance(value, int) or value < 0:
             raise ValueError(f"value {value} must be a nonnegative int")
@@ -48,8 +48,8 @@ class FixedStringTargeter:
         """
         Initializes the label targeter.
 
-        Args:
-            value: Fixed string value
+        :param value: Fixed string value
+        :type value: str
         """
         if not isinstance(value, str):
             raise ValueError(f"target value {value} is not a string")
@@ -69,9 +69,9 @@ class RandomLabelTargeter:
         """
         Initializes the label targeter.
 
-        Args:
-            num_classes: Total number of classes, the returned value will be a
+        :param num_classes: Total number of classes, the returned value will be a
                 random value in the range of [0,num_classes)
+        :type num_classes: int
         """
         if not isinstance(num_classes, int) or num_classes < 2:
             raise ValueError(f"num_classes {num_classes} must be an int >= 2")
@@ -91,10 +91,11 @@ class RoundRobinTargeter:
         """
         Initializes the label targeter.
 
-        Args:
-            num_classes: Total number of classes, used to determine when an
+        :param num_classes: Total number of classes, used to determine when an
                 offset input value wraps back to 0
-            offset: Fixed integer offset value to be added to input label values
+        :type num_classes: int
+        :param offset: Fixed integer offset value to be added to input label values, defaults to 1
+        :type offset: int, optional
         """
         if not isinstance(num_classes, int) or num_classes < 1:
             raise ValueError(f"num_classes {num_classes} must be a positive int")
@@ -119,12 +120,14 @@ class ManualTargeter:
         """
         Initializes the label targeter.
 
-        Args:
-            values: Ordered list of fixed values to return. Values are consumed
+        :param values: Ordered list of fixed values to return. Values are consumed
                 from the list with each call to `generate`.
-            repeat: Whether to wrap back to the beginning of the `values` list
-                after reaching the end, defaults to `False`
-            dtype: The type of the values, defaults to `int`
+        :type values: Sequence[Any]
+        :param repeat: Whether to wrap back to the beginning of the `values` list
+                after reaching the end, defaults to `False`, defaults to False
+        :type repeat: bool, optional
+        :param dtype: _description_, defaults to int
+        :type dtype: The type of the values, defaults to `int`, optional
         """
         if not values:
             raise ValueError('"values" cannot be an empty list')
@@ -169,9 +172,10 @@ class ObjectDetectionFixedLabelTargeter:
         """
         Initializes the label targeter.
 
-        Args:
-            value: Fixed integer value for the label
-            score: Fixed score floating point value
+        :param value: Fixed integer value for the label
+        :type value: int
+        :param score: Fixed score floating point value, defaults to 1.0
+        :type score: float, optional
         """
         if not isinstance(value, int) or value < 0:
             raise ValueError(f"value {value} must be a nonnegative int")
@@ -205,8 +209,8 @@ class MatchedTranscriptLengthTargeter:
         """
         Initializes the label targeter.
 
-        Args:
-            transcripts: List of replacement transcripts from which to choose
+        :param transcripts: List of replacement transcripts from which to choose
+        :type transcripts: Sequence[Union[bytes, str]]
         """
         if not transcripts:
             raise ValueError('"transcripts" cannot be None or an empty list')

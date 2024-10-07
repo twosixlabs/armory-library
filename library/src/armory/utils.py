@@ -25,9 +25,10 @@ def apply_art_postprocessor_defense(estimator: BaseEstimator, defense: Postproce
         defense = JpegCompression(...)
         apply_art_postprocessor_defense(classifier, defense)
 
-    Args:
-        estimator: ART estimator to which to apply the postprocessor defense
-        defense: ART postprocessor defense to be applied to the model
+    :param estimator: ART estimator to which to apply the postprocessor defense
+    :type estimator: BaseEstimator
+    :param defense: ART postprocessor defense to be applied to the model
+    :type defense: Postprocessor
     """
     defenses = estimator.get_params().get("postprocessing_defences")
     if defenses:
@@ -52,9 +53,10 @@ def apply_art_preprocessor_defense(estimator: BaseEstimator, defense: Preprocess
         defense = JpegCompression(...)
         apply_art_preprocessor_defense(classifier, defense)
 
-    Args:
-        estimator: ART estimator to which to apply the preprocessor defense
-        defense: ART preprocessor defense to be applied to the model
+    :param estimator: ART estimator to which to apply the preprocessor defense
+    :type estimator: BaseEstimator
+    :param defense: ART preprocessor defense to be applied to the model
+    :type defense: Preprocessor
     """
     defenses = estimator.get_params().get("preprocessing_defences")
     if defenses:
@@ -89,14 +91,14 @@ def create_jatic_dataset_transform(preprocessor, image_key="image"):
         )
         dataset.set_transform(transform)
 
-    Args:
-        preprocessor: JATIC-wrapped model preprocessor. A function that accepts
+    :param preprocessor: JATIC-wrapped model preprocessor. A function that accepts
           the image data and returns a dictionary with an "image" key containing
           the processed image data (i.e., `{"image": [...] }`)
-        image_key: Key for the image data in the input dataset sample dictionary
+    :type preprocessor: _type_
+    :param image_key: Key for the image data in the input dataset sample dictionary, defaults to "image"
+    :type image_key: str, optional
 
-    Returns:
-        A function that will transform a sample from a JATIC-wrapped image
+    :return: A function that will transform a sample from a JATIC-wrapped image
         classification dataset for a particular model
     """
 
@@ -129,11 +131,10 @@ def is_defended(estimator: BaseEstimator) -> bool:
         if is_defended(classifier):
             pass
 
-    Args:
-        estimator: ART estimator to be checked for defenses
-
-    Returns:
-        True if ART estimator has defenses, else False
+    :param estimator: ART estimator to be checked for defenses
+    :type estimator: BaseEstimator
+    :return: True if ART estimator has defenses, else False
+    :rtype: bool
     """
     preprocessor_defenses = estimator.get_params().get("preprocessing_defences")
     if preprocessor_defenses:
@@ -161,14 +162,16 @@ class PILtoNumpy(object):
                 ]
             )
         )
-
-    Args:
-        the __call__ method takes a sample of type PIL.Image.Image
-    Returns:
-        the sample PIL Image converted to a numpy array.
     """
 
     def __call__(self, sample):
+        """
+        The __call__ method takes a sample of type PIL.Image.Image
+
+        :param sample: Sample of type PIL.Image.Image
+        :type sample: PIL.Image.Image
+        :return: the sample PIL Image converted to a numpy array.
+        """
         assert isinstance(sample, PIL.Image.Image)
         np_image = np.array(sample)
         return np_image
@@ -183,9 +186,10 @@ class Unnormalize:
         """
         Initialize the transform.
 
-        Args:
-            mean: Sequence of means for each channel
-            std: Sequence of standard deviations for each channel
+        :param mean: Sequence of means for each channel
+        :type mean: _type_
+        :param std: Sequence of standard deviations for each channel
+        :type std: _type_
         """
         self.mean = mean
         self.std = std
