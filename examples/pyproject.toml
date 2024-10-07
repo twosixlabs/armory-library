@@ -29,6 +29,7 @@ cv = [
     # 1.4.1 adds version constraints to scikit-learn and numpy that are incompatible with ART
     "albumentations<1.4.1",
     "captum",
+    "huggingface_hub<0.25.0", # 0.25.0 breaks yolov5
     "scikit-learn>=1.2", # required by xaitk-saliency
     "tidecv",
     "xaitk-saliency",
