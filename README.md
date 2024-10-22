@@ -10,6 +10,23 @@
 [![Code style: black][style-badge]][style-url]
 [![DOI](https://zenodo.org/badge/673882087.svg)](https://zenodo.org/doi/10.5281/zenodo.10041829)
 
+- [Overview](#overview)
+    - [History](#history)
+        - [What is Adversarial AI?](#what-is-adversarial-ai)
+        - [Broader Impact](#broader-impact)
+    - [How It Works](#how-it-works)
+        - [Data Ingestion and Model Loading](#data-ingestion-and-model-loading)
+        - [Adversarial Attack Integration](#adversarial-attack-integration)
+        - [Defensive Techniques](#defensive-techniques)
+        - [Pipeline Orchestration and Evaluation](#pipeline-orchestration-and-evaluation)
+        - [Visualization and Exporting Results](#visualization-and-exporting-results)
+- [Installation & Configuration](#installation--configuration)
+    - [Examples](#examples)
+- [Quick Look](#quick-look)
+- [Documentation](#documentation)
+- [The historic GARD-Armory repository](#the-historic-gard-armory-repository)
+- [Acknowledgment](#acknowledgment)
+
 # Overview
 
 Armory is a comprehensive platform for evaluating the robustness of machine learning models against adversarial attacks. It is a pure Python library built on top of existing libraries such as PyTorch, Hugging Face, and IBM's Adversarial Robustness Toolbox (ART). The primary focus of Armory is to help machine learning engineers understand how models behave under various adversarial conditions and how defenses may mitigate these attacks. 
