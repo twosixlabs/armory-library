@@ -21,16 +21,19 @@ class Exporter(Trackable, ABC):
         """
         Initializes the exporter.
 
-        Args:
-            name: Descriptive name of the exporter
-            predictions_spec: Optional, data specification used to obtain raw
+        :param name: Descriptive name of the exporter
+        :type name: str
+        :param predictions_spec: Optional, data specification used to obtain raw
                 predictions data from the exported batches. By default, a generic
                 NumPy specification will be used.
-            targets_spec: Optional, data specification used to obtain raw ground
+        :type predictions_spec: DataSpecification, optional
+        :param targets_spec: Optional, data specification used to obtain raw ground
                 truth targets data from the exported batches. By default, a
                 generic NumPy specification is used.
-            criterion: Criterion to determine when samples will be exported. If
+        :type targets_spec: DataSpecification, optional
+        :param criterion: Criterion to determine when samples will be exported. If
                 omitted, no samples will be exported.
+        :type criterion: Criterion, optional
         """
         super().__init__()
         self.name = name
@@ -40,16 +43,22 @@ class Exporter(Trackable, ABC):
         self.criterion = criterion
 
     def use_sink(self, sink: Sink) -> None:
-        """Sets the export sink to be used by the exporter."""
+        """
+        Sets the export sink to be used by the exporter.
+
+        :param sink: Sink
+        :type sink: Sink
+        """
         self.sink = sink
 
     def export(self, batch_idx: int, batch: Batch) -> None:
         """
         Exports the given batch.
 
-        Args:
-            batch_idx: The index/number of this batch.
-            batch: The batch to be exported.
+        :param batch_idx: The index/number of this batch.
+        :type batch_idx: int
+        :param batch: The batch to be exported.
+        :type batch: Batch
         """
         assert self.sink, "No sink has been set, unable to export"
         if self.criterion is None:
@@ -69,10 +78,12 @@ class Exporter(Trackable, ABC):
         """
         Exports samples from the given batch.
 
-        Args:
-            batch_idx: The index/number of this batch.
-            batch: The batch to be exported.
-            samples: The indices of samples in the batch to be exported.
+        :param batch_idx: The index/number of this batch.
+        :type batch_idx: int
+        :param batch: The batch to be exported.
+        :type batch: Batch
+        :param samples: The indices of samples in the batch to be exported.
+        :type samples: Iterable[int]
         """
         ...
 
@@ -81,18 +92,27 @@ class Exporter(Trackable, ABC):
         """
         Creates the full artifact path for a particular sample export.
 
-        Args:
-            batch_idx: The index/number of the sample's batch.
-            sample_idx: The index/number of the sample within the batch.
-            filename: The name of the exported file.
-
-        Returns:
-            Full artifact path as a string.
+        :param batch_idx: The index/number of the sample's batch.
+        :type batch_idx: int
+        :param sample_idx: The index/number of the sample within the batch.
+        :type sample_idx: int
+        :param filename: The name of the exported file.
+        :type filename: str
+        :return: Full artifact path as a string.
+        :rtype: str
         """
         return f"exports/{batch_idx:05}/{sample_idx:02}/{filename}"
 
     @staticmethod
     def _from_list(maybe_list, idx):
+        """
+        from_list static method
+
+        :param maybe_list: maybe_list
+        :type maybe_list: _type_
+        :param idx: Index
+        :type idx: _type_
+        """
         try:
             return maybe_list[idx]
         except:  # noqa: E722
@@ -102,6 +122,16 @@ class Exporter(Trackable, ABC):
     def _export_metadata(
         self, batch_idx: int, batch: Batch, samples: Iterable[int]
     ) -> None:
+        """
+        Export metadata
+
+        :param batch_idx: Batch index
+        :type batch_idx: int
+        :param batch: The batch to be exported
+        :type batch: Batch
+        :param samples: The indices of samples in the batch to be exported.
+        :type samples: Iterable[int]
+        """
         assert self.sink, "No sink has been set, unable to export"
 
         targets = batch.targets.get(self.targets_spec)

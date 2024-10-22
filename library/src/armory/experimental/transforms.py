@@ -83,22 +83,26 @@ def create_image_transform(
         result = transform(image=np.random.rand(400, 400, 3))
         image = result["image"]
 
-    Args:
-        max_size: Maximum width or height to which the image will be resized and
-            padded. When omitted, no resizing will be performed.
-        float_max_value: Maximum possible input value with which to divide pixel
+    :param max_size: Maximum width or height to which the image will be resized and
+            padded. When omitted, no resizing will be performed
+    :type max_size: int, optional
+    :param float_max_value: Maximum possible input value with which to divide pixel
             values to rescale into a range of 0.0 to 1.0. When omitted, no
-            rescaling will be performed.
-        mean: Tuple of mean values for each channel to be used for normalization
+            rescaling will be performed. Defaults to False.
+    :type float_max_value: Union[int, float]
+    :param mean: Tuple of mean values for each channel to be used for normalization
             into z-scores. When omitted, no normalization will be performed.
-        std: Tuple of standard deviation values for each channel to be used for
+    :type mean: Tuple[float, float, float], optional
+    :param std: Tuple of standard deviation values for each channel to be used for
             normalization into z-scores. When omitted, no normalization will be
             performed.
-        **kwargs: All other keyword arguments will be forwarded to the
-            `albumentations.Compose` class.
-
-    Returns:
-        Albumentations transform instance
+    :type std: Tuple[float, float, float], optional
+    :param to_tensor: to_tensor, defaults to False
+    :type to_tensor: bool, optional
+    :param **kwargs: All other keyword arguments will be forwarded
+                to the `albumentations.Compose` class.
+    :return: Albumentations transform instance
+    :rtype: A.Compose
     """
     transforms = []
     if max_size is not None:
@@ -151,18 +155,25 @@ def create_image_bbox_transform(
         image = result["image"]
         boxes = result["bboxes"]  # In XYXY format
 
-    Args:
-        format: Format of the input bounding boxes
-        label_fields: List of fields that are joined with the boxes, e.g. labels
-        min_area: Minimum area of a bounding box. All bounding boxes whose
-            visible area in pixels is less than this value will be removed.
-        min_visibility: Minimum fraction of area for a bounding box to remain.
-        min_width: Minimum width of a bounding box. All bounding boxes whose
-            width is less than this value will be removed.
-        min_height: Minimum height of a bounding box. All bounding boxes whose
-            height is less than this value will be removed.
-        **kwargs: All other keyword arguments will be forwarded to the
-            `create_image_transform` function.
+    :param format: Format of the input bounding boxes
+    :type format: BboxFormat
+    :param label_fields: List of fields that are joined with the boxes, e.g. labels, defaults to None
+    :type label_fields: List[str], optional
+    :param min_area: Minimum area of a bounding box. All bounding boxes whose
+            visible area in pixels is less than this value will be removed, defaults to 0
+    :type min_area: float, optional
+    :param min_visibility: Minimum fraction of area for a bounding box to remain, defaults to 0
+    :type min_visibility: float, optional
+    :param min_width: Minimum width of a bounding box. All bounding boxes whose
+            width is less than this value will be removed, defaults to 0
+    :type min_width: float, optional
+    :param min_height: Minimum height of a bounding box. All bounding boxes whose
+            height is less than this value will be removed, defaults to 0
+    :type min_height: float, optional
+    :param **kwargs: All other keyword arguments will be forwarded
+                to the `albumentations.Compose` c
+    :return: Albumentations transform instance
+    :rtype: A.Compose
     """
     return create_image_transform(
         bbox_params=A.BboxParams(
@@ -190,13 +201,14 @@ def convert_boxes(
 
         boxes = convert_boxes(np.random.rand(3, 4), BboxFormat.COCO, BboxFormat.XYXY)
 
-    Args:
-        boxes: A (N,4) numpy array of bounding boxes
-        from_format: Input bounding box format
-        to_format: Output bounding box format
-
-    Returns:
-        (N, 4) numpy array of bounding boxes in output format
+    :param boxes: A (N,4) numpy array of bounding boxes
+    :type boxes: torch.Tensor
+    :param from_format: Input bounding box format
+    :type from_format: BboxFormat
+    :param to_format: Output bounding box format
+    :type to_format: BboxFormat
+    :return: (N, 4) numpy array of bounding boxes in output format
+    :rtype: torch.Tensor
     """
     if from_format.value.torchvision == to_format.value.torchvision:
         return boxes
@@ -206,7 +218,14 @@ def convert_boxes(
 
 
 def default_transpose(img: np.ndarray) -> np.ndarray:
-    """Transposes the input image array from (H,W,C) to (C,H,W)"""
+    """
+    Transposes the input image array from (H,W,C) to (C,H,W)
+
+    :param img: Image array (H,W,C)
+    :type img: np.ndarray
+    :return: Image array (C,H,W)
+    :rtype: np.ndarray
+    """
     return img.transpose(2, 0, 1)
 
 
@@ -241,21 +260,22 @@ def create_image_classification_transform(
         image = sample["image"][0]  # A CHW numpy array
         label = sample["labels"][0]
 
-    Args:
-        image_to_np: Callable to convert the input image to a numpy array
-        image_from_np: Callable to convert the augmented image numpy array (from
-            albumentations) to the output image type
-        image_key: Key in the input batch dictionary for the images. Defaults to
+    :param image_to_np: Callable to convert the input image to a numpy array, defaults to np.asarray
+    :type image_to_np: Callable[..., np.ndarray], optional
+    :param image_from_np: Callable to convert the augmented image numpy array (from
+            albumentations) to the output image type, defaults to default_transpose
+    :type image_from_np: Callable[[np.ndarray], Any], optional
+    :param image_key: Key in the input batch dictionary for the images. Defaults to
             "image".
-        preprocessor: Optional, arbitrary transform to apply to the sample prior
-            to performing image transforms.
-        postprocessor: Optional, arbitrary transform to apply to final output
-            sample.
-        **kwargs: All other keyword arguments will be forwarded to the
-            `create_image_transform` function.
-
-    Returns:
-        Sample transform function
+    :type image_key: str, optional
+    :param preprocessor: Arbitrary transform to apply to the sample prior
+            to performing image transforms, defaults to None
+    :type preprocessor: Transform, optional
+    :param postprocessor: Arbitrary transform to apply to final output
+            sample, defaults to None
+    :type postprocessor: Transform, optional
+    :return: Sample transform function
+    :rtype: Transform
     """
     img_transform = create_image_transform(**kwargs)
 
@@ -292,7 +312,7 @@ def create_object_detection_transform(
     **kwargs,
 ) -> Transform:
     """
-    Creates a sample or batch transform capable of performing the following operations:
+        Creates a sample or batch transform capable of performing the following operations:
 
     - Image and bounding box transformations
     - Bounding box format conversion
@@ -330,28 +350,33 @@ def create_object_detection_transform(
         boxes = objects["bbox"]  # XYXY boxes
         labels = objects["label"]
 
-    Args:
-        image_to_np: Callable to convert the input image to a numpy array
-        image_from_np: Callable to convert the augmented image numpy array (from
-            albumentations) to the output image type
-        image_key: Key in the input batch dictionary for the images. Defaults to
+    :param format: Bounding box format
+    :type format: BboxFormat
+    :param image_to_np: Callable to convert the input image to a numpy array, defaults to np.asarray
+    :type image_to_np: Callable[..., np.ndarray], optional
+    :param image_from_np: Callable to convert the augmented image numpy array (from
+            albumentations) to the output image type, defaults to default_transpose
+    :type image_from_np: Callable[[np.ndarray], Any], optional
+    :param image_key: Key in the input batch dictionary for the images, defaults to
             "image".
-        objects_key: Key in the input batch dictionary for the objects. Defaults
-            to "objects".
-        bbox_key: Key in the input objects dictionary for the bounding boxes.
-            Defaults to "bbox".
-        target_format: Desired output bounding box format
-        rename_object_fields: Optional, mapping of original object field names
-            to desired field names (e.g., to rename "bbox" to "boxes")
-        preprocessor: Optional, arbitrary transform to apply to the sample prior
-            to performing image and bounding box transforms.
-        postprocessor: Optional, arbitrary transform to apply to final output
-            sample.
-        **kwargs: All other keyword arguments will be forwarded to the
-            `create_image_bbox_transform` function.
-
-    Returns:
-        Sample transform function
+    :type image_key: str, optional
+    :param objects_key: Key in the input batch dictionary for the objects, defaults to "objects"
+    :type objects_key: str, optional
+    :param bbox_key: Key in the input objects dictionary for the bounding boxes, defaults to "bbox"
+    :type bbox_key: str, optional
+    :param target_format: Desired output bounding box format, defaults to BboxFormat.XYXY
+    :type target_format: BboxFormat, optional
+    :param rename_object_fields: mapping of original object field names
+            to desired field names (e.g., to rename "bbox" to "boxes"), defaults to None
+    :type rename_object_fields: Dict[str, str], optional
+    :param preprocessor: Arbitrary transform to apply to the sample prior
+            to performing image and bounding box transforms, defaults to None
+    :type preprocessor: Transform, optional
+    :param postprocessor: Arbitrary transform to apply to final output
+            sample, defaults to None
+    :type postprocessor: Transform, optional
+    :return: Sample transform function
+    :rtype: Transform
     """
     img_bbox_transform = create_image_bbox_transform(format=format, **kwargs)
 

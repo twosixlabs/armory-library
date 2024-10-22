@@ -9,8 +9,7 @@ from lightning.pytorch.utilities import rank_zero_only
 from armory.engine.optimization_module import OptimizationModule
 from armory.evaluation import Optimization, SysConfig
 from armory.metrics.compute import NullProfiler, Profiler
-from armory.track import get_current_params, init_tracking_uri, track_system_metrics
-import armory.version
+from armory.track import init_tracking_uri, track_system_metrics
 
 
 class OptimizationEngine:
@@ -28,11 +27,15 @@ class OptimizationEngine:
         """
         Initializes the optimization engine.
 
-        Args:
-            optimization: Configuration for the optimization
-            sysconfig: Optional, custom system configuration
-            **kwargs: All other keyword arguments will be forwarded to the
-                `lightning.pytorch.Trainer` class.
+        :param optimization: Configuration for the optimization
+        :type optimization: Optimization
+        :param profiler: Profiler to collect computational metrics. By
+                default, no computational metrics will be collected.
+        :type profiler: Profiler, optional
+        :param sysconfig: Custom system configuration, defaults to None
+        :type sysconfig: SysConfig, optional
+        :param **kwargs: All other keyword arguments will be forwarded
+                to the `lightning.pytorch.Trainer` class.
         """
         self.optimization = optimization
         self.profiler = profiler or NullProfiler()
@@ -42,14 +45,17 @@ class OptimizationEngine:
 
     @rank_zero_only
     def _log_params(self, logger: pl_loggers.MLFlowLogger):
-        """Log tracked params with MLFlow"""
-        params = get_current_params()
-        params.update(self.optimization.get_tracked_params())
-        params["Armory.version"] = armory.version.__version__
-        logger.log_hyperparams(params)
+        """
+        Log tracked params with MLFlow
+
+        :param logger: pl_loggers.MLFlowLogger
+        :type logger: pl_loggers.MLFlowLogger
+        """
 
     def run(self) -> None:
-        """Perform the optimization"""
+        """
+        Perform the optimization
+        """
         if self._was_run:
             raise RuntimeError(
                 "Optimization engine has already been run. Create a new OptimizationEngine "

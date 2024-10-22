@@ -52,14 +52,15 @@ class EvaluationEngine:
         """
         Initializes the engine.
 
-        Args:
-            evaluation: Configuration for the evaluation
-            profiler: Optional, profiler to collect computational metrics. By
+        :param evaluation: Configuration for the evaluation
+        :type evaluation: Evaluation
+        :param profiler: profiler to collect computational metrics. By
                 default, no computational metrics will be collected.
-            sysconfig: Optional, custom system configuration
-            run_id: Optional, MLflow run ID to which to record evaluation results
-            **kwargs: All other keyword arguments will be forwarded to the
-                `lightning.pytorch.Trainer` class.
+        :type profiler: Profiler, optional
+        :param sysconfig: custom system configuration, defaults to None
+        :type sysconfig: SysConfig, optional
+        :param **kwargs: All other keyword arguments will be forwarded
+                to the `lightning.pytorch.Trainer` class.
         """
         self.evaluation = evaluation
         self.profiler = profiler or NullProfiler()
@@ -69,12 +70,26 @@ class EvaluationEngine:
 
     @rank_zero_only
     def _log_params(self, logger: pl_loggers.MLFlowLogger, params: Dict[str, Any]):
-        """Log tracked params with MLFlow"""
+        """
+        Log tracked params with MLFlow
+
+        :param logger: pl_loggers.MLFlowLogger
+        :type logger: pl_loggers.MLFlowLogger
+        :param params: Parameters
+        :type params: Dict[str, Any]
+        """
         params["Armory.version"] = armory.version.__version__
         logger.log_hyperparams(params)
 
     def run(self, verbose: bool = False) -> Optional[EvaluationResults]:
-        """Perform the evaluation"""
+        """
+        Perform the evaluation
+
+        :param verbose: Verbose output, defaults to False
+        :type verbose: bool, optional
+        :return: Evaluation results if running on the rank zero node
+        :rtype: Optional[EvaluationResults]
+        """
         if self._was_run:
             raise RuntimeError(
                 "Evaluation engine has already been run. Create a new EvaluationEngine "
@@ -114,6 +129,18 @@ class EvaluationEngine:
         chain: Chain,
         verbose: bool = False,
     ) -> None:
+        """
+        Evaluate chain
+
+        :param parent_run_id: Parent run id
+        :type parent_run_id: str, optional
+        :param chain_name: Evaluation chain name
+        :type chain_name: str
+        :param chain: Evaluation chain
+        :type chain: Chain
+        :param verbose: Verbose output, defaults to False
+        :type verbose: bool, optional
+        """
         assert chain.dataset
 
         logger = pl_loggers.MLFlowLogger(

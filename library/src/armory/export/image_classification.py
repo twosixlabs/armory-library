@@ -25,19 +25,23 @@ class ImageClassificationExporter(Exporter):
         """
         Initializes the exporter.
 
-        Args:
-            name: Descriptive name of the exporter
-            inputs_spec: Optional, data specification used to obtain raw
+        :param name: Descriptive name of the exporter, defaults to None
+        :type name: str, optional
+        :param inputs_spec: Optional, data specification used to obtain raw
                 image data from the inputs contained in exported batches. By
                 default, a NumPy images specification is used.
-            predictions_spec: Optional, data specification used to obtain raw
+        :type inputs_spec: NumpyImageSpec, optional
+        :param predictions_spec: Optional, data specification used to obtain raw
                 predictions data from the exported batches. By default, a generic
                 NumPy specification is used.
-            targets_spec: Optional, data specification used to obtain raw ground
+        :type predictions_spec: DataSpecification, optional
+        :param targets_spec: Optional, data specification used to obtain raw ground
                 truth targets data from the exported batches. By default, a
                 generic NumPy specification is used.
-            criterion: Criterion to determine when samples will be exported. If
+        :type targets_spec: DataSpecification, optional
+        :param criterion: Criterion to determine when samples will be exported. If
                 omitted, no samples will be exported.
+        :type criterion: Exporter.Criterion, optional
         """
         super().__init__(
             name=name or "ImageClassification",
@@ -52,6 +56,16 @@ class ImageClassificationExporter(Exporter):
     def export_samples(
         self, batch_idx: int, batch: ImageClassificationBatch, samples: Iterable[int]
     ) -> None:
+        """
+        Export samples
+
+        :param batch_idx: Batch index
+        :type batch_idx: int
+        :param batch: Batch
+        :type batch: ImageClassificationBatch
+        :param samples: Samples
+        :type samples: Iterable[int]
+        """
         assert self.sink, "No sink has been set, unable to export"
         self._export_metadata(batch_idx, batch, samples)
         images = batch.inputs.get(self.inputs_spec)

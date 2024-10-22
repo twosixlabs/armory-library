@@ -57,21 +57,30 @@ class YolosTransformer(ObjectDetector):
         """
         Initializes the model wrapper.
 
-        Args:
-            name: Name of the model.
-            model: YOLOS model being wrapped.
-            image_processor: HuggingFace YOLOS image processor corresponding to
-                the model.
-            inputs_spec: Optional, data specification used to obtain raw image
+        :param name: Name of the model
+        :type name: str
+        :param model: YOLOS model being wrapped
+        :type model: YolosModel
+        :param image_processor: HuggingFace YOLOS image processor corresponding to
+                the model
+        :type image_processor: YolosImageProcessor
+        :param inputs_spec: Optional, data specification used to obtain raw image
                 data from the image inputs contained in object detection
                 batches. Defaults to a specification compatible with typical
                 YOLOS models.
-            predictions_spec: Optional, data specification used to update the
+        :type inputs_spec: ImageSpec, optional
+        :param predictions_spec: Optional, data specification used to update the
                 raw object detection predictions in the batch. Defaults to a
                 bounding box specification compatible with typical YOLOS models.
-            target_size: Size (as a `height, width` tuple) of images, used for
+        :type predictions_spec: BoundingBoxSpec, optional
+        :param target_size: Size (as a `height, width` tuple) of images, used for
                 correct postprocessing and resizing of the bounding box
-                predictions.
+                predictions, defaults to (512, 512)
+        :type target_size: Tuple[int, int], optional
+        :param iou_threshold: iou threshold, defaults to None
+        :type iou_threshold: float, optional
+        :param score_threshold: score threshold, defaults to None
+        :type score_threshold: float, optional
         """
         super().__init__(
             name=name,

@@ -37,17 +37,21 @@ def plot_in_grid(
     """
     Create a matplotlib figure with the given cells arranged in a grid.
 
-    Args:
-        cells: 1D list or 2D array of matplotlib figures or PIL images to display
-        border: If True, draw borders around cell images
-        columns: Labels for columns of the grid
-        figsize: Size of the figure
-        rows: Labels for rows of the grid
-        title: Title for the figure
-        vertical: If True, arrange 1D cells vertically instead of horizontally
-
-    Return:
-        Matplotlib figure
+    :param cells: 1D list or 2D array of matplotlib figures or PIL images to display
+    :type cells: Union[Sequence[Union["matplotlib.figure.Figure", PIL.Image.Image]], Sequence[Sequence[Union["matplotlib.figure.Figure", PIL.Image.Image]]], ]
+    :param border: If True, draw borders around cell images, defaults to False
+    :type border: bool, optional
+    :param columns: Labels for columns of the grid, defaults to None
+    :type columns: Sequence[str], optional
+    :param figsize: Size of the figure, defaults to None
+    :type figsize: Tuple[float, float], optional
+    :param rows: Labels for rows of the grid, defaults to None
+    :type rows: Sequence[str], optional
+    :param title: Title for the figure, defaults to None
+    :type title: str, optional
+    :param vertical: If True, arrange 1D cells vertically instead of horizontally, defaults to False
+    :type vertical: bool, optional
+    :return: Matplotlib figure
     """
     import matplotlib.pyplot as plt
 
@@ -125,16 +129,18 @@ def plot_metrics(
     """
     Create an HTML table of metrics from multiple runs.
 
-    Args:
-        runs: EvaluationResults from runs to compare
-        blacklist: Optional, list of metrics to exclude
-        metric_label: Optional, label for the metric column
-        precision: Optional, number of decimal places to display for floating
-            point values
-        whitelist: Optional, list of metrics to include
-
-    Return:
-        IPython HTML object for the table
+    :param *runs: EvaluationResults from runs to compare
+    :type *runs: "EvaluationResults"
+    :param blacklist: Optional, list of metrics to exclude, defaults to None
+    :type blacklist: Sequence[str], optional
+    :param metric_label: Optional, label for the metric column, defaults to "Metric"
+    :type metric_label: str, optional
+    :param precision: Optional, number of decimal places to display for floating
+            point values, defaults to 3
+    :type precision: int, optional
+    :param whitelist: Optional, list of metrics to include, defaults to None
+    :type whitelist: Sequence[str], optional
+    :return: IPython HTML object for the table
     """
     from IPython.core.display import HTML
 
@@ -179,17 +185,20 @@ def plot_params(
     """
     Create an HTML table of parameters from multiple runs.
 
-    Args:
-        runs: EvaluationResults from runs to compare
-        blacklist: Optional, list of parameters to exclude
-        hide_same: If True, hide parameters that are the same across all runs
-        highlight_diff: If True, highlight parameters that are different across
-            runs
-        param_label: Optional, label for the parameter column
-        whitelist: Optional, list of parameters to include
-
-    Return:
-        IPython HTML object for the table
+    :param *runs: EvaluationResults from runs to compare
+    :type *runs: "EvaluationResults"
+    :param blacklist: Optional, list of parameters to exclude, defaults to None
+    :type blacklist: Sequence[str], optional
+    :param hide_same: If True, hide parameters that are the same across all runs, defaults to False
+    :type hide_same: bool, optional
+    :param highlight_diff: If True, highlight parameters that are different across
+            runs, defaults to True
+    :type highlight_diff: bool, optional
+    :param param_label: Optional, label for the parameter column, defaults to "Parameter"
+    :type param_label: str, optional
+    :param whitelist: Optional, list of parameters to include, defaults to None
+    :type whitelist: Sequence[str], optional
+    :return: IPython HTML object for the table
     """
     from IPython.core.display import HTML
 

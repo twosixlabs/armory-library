@@ -26,15 +26,14 @@ class TIDE(Metric):
         Creates an instance of the TIDE metric pre-wrapped in a
         `armory.metric.PredictionMetric`
 
-        Args:
-            record_as_artifact: If True, the metric result will be recorded as
-                an artifact to the evaluation run.
-            record_as_metrics: Optional, a set of JSON paths in the metric
+        :param record_as_artifact: If True, the metric result will be recorded as
+                an artifact to the evaluation run, defaults to True
+        :type record_as_artifact: bool, optional
+        :param record_as_metrics: Optional, a set of JSON paths in the metric
                 result pointing to scalar values to record as metrics to the
-                evaluation run. If None, no metrics will be recorded.
-
-        Return:
-            Armory prediction metric for TIDE detection metrics
+                evaluation run. If None, no metrics will be recorded, defaults to None
+        :type record_as_metrics: Iterable[str], optional
+        :return: Armory prediction metric for TIDE detection metrics
         """
         return PredictionMetric(
             metric=cls(),

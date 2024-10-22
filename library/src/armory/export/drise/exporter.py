@@ -40,6 +40,16 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         """
 
         def __init__(self, model: ObjectDetector, num_classes: int, spec):
+            """
+            Initialization of ModelWrapper
+
+            :param model: ObjectDetector model
+            :type model: ObjectDetector
+            :param num_classes: Number of classes
+            :type num_classes: int
+            :param spec: spec
+            :type spec: ?
+            """
             super().__init__()
             self.model = model
             self.num_classes = num_classes
@@ -50,6 +60,9 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
             """
             Invokes the wrapped model and returns the resulting boxes, class
             probabilities, and objectness as a tuple.
+
+            :param images_pt: images_pt
+            :type images_pt: torch.Tensor
             """
             batch = ObjectDetectionBatch(
                 inputs=Images(
@@ -84,13 +97,13 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
             with all other classes receiving the evenly divided remaining
             probability.
 
-            Args:
-                scores: N-length tensor of predicted scores
-                labels: N-length tensor of assigned labels
-
-            Returns:
-                (N, C) tensor of probabilities, where C is the total number of
+            :param scores: N-length tensor of predicted scores
+            :type scores: torch.Tensor
+            :param labels: N-length tensor of assigned labels
+            :type labels: torch.Tensor
+            :return: (N, C) tensor of probabilities, where C is the total number of
                     classes
+            :rtype: torch.Tensor
             """
             expanded_scores = torch.ones(scores.shape[0], self.num_classes)
             for i, (score, label) in enumerate(zip(scores, labels)):
@@ -112,17 +125,23 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         """
         Initializes the exporter.
 
-        Args:
-            model: Armory object detector
-            num_classes: Number of classes supported by the model
-            batch_size: Number of images per batch when generating D-RISE
-                saliency maps
-            name: Description of the exporter
-            num_masks: Number of masks to evaluate
-            score_threshold: Minimum score for predicted objects to be included
-                for D-RISE saliency map generation
-            criterion: Criterion to determine when samples will be exported. If
+        :param model: Armory object detector
+        :type model: ObjectDetector
+        :param num_classes: Number of classes supported by the model
+        :type num_classes: int
+        :param batch_size: Number of images per batch when generating D-RISE
+                saliency maps, defaults to 1
+        :type batch_size: int, optional
+        :param name: Description of the exporter, defaults to None
+        :type name: str, optional
+        :param num_masks: Number of masks to evaluate, defaults to 1000
+        :type num_masks: int, optional
+        :param score_threshold: Minimum score for predicted objects to be included
+                for D-RISE saliency map generation, defaults to 0.5
+        :type score_threshold: float, optional
+        :param criterion: _Criterion to determine when samples will be exported. If
                 omitted, no samples will be exported.
+        :type criterion: Exporter.Criterion, optional
         """
         super().__init__(name=name or "D-RISE", criterion=criterion)
         self.model = model
@@ -139,6 +158,16 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         batch: ObjectDetectionBatch,
         samples: Iterable[int],
     ) -> None:
+        """
+        Export samples
+
+        :param batch_idx: Batch index
+        :type batch_idx: int
+        :param batch: Batch
+        :type batch: ObjectDetectionBatch
+        :param samples: Samples
+        :type samples: Iterable[int]
+        """
         assert self.sink, "No sink has been set, unable to export"
         self.model.eval()
 
@@ -202,6 +231,13 @@ class DRiseSaliencyObjectDetectionExporter(Exporter):
         """
         Produces single lists containing all target and predicted boxes and
         class probabilities.
+
+        :param targets: Target boxes
+        :type targets: BoundingBoxes.BoxesTorch
+        :param preds: Predicted boxes
+        :type preds: BoundingBoxes.BoxesTorch
+        :return: Tuple[torch.Tensor, torch.Tensor]
+        :rtype: Tuple[torch.Tensor, torch.Tensor]
         """
         assert preds["scores"] is not None
 

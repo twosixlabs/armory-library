@@ -54,11 +54,14 @@ class ArmoryModel(Trackable, nn.Module):
         """
         Initializes the model wrapper.
 
-        Args:
-            name: Name of the model
-            model: Model being wrapped
-            preadapter: Optional, model input adapter
-            postadapter: Optional, model output adapter
+        :param name: Name of the model
+        :type name: str
+        :param model: Model being wrapped
+        :type model: _type_
+        :param preadapter: Optional, model input adapter, defaults to None
+        :type preadapter: ModelInputAdapter, optional
+        :param postadapter: Optional, model output adapter, defaults to None
+        :type postadapter: ModelOutputAdapter, optional
         """
         super().__init__()
         self.name = name

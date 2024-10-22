@@ -42,19 +42,18 @@ class ObjectDetectionRates(Metric):
         Creates an instance of the object detection rates metric pre-wrapped in
         a `armory.metric.PredictionMetric`
 
-        Args:
-            *args: Positional arguments are forwarded to the
+        :param *args: Positional arguments are forwarded to the
                 `ObjectDetectionRates` constructor
-            record_as_artifact: If True, the metric result will be recorded as
-                an artifact to the evaluation run.
-            record_as_metrics: Optional, a set of JSON paths in the metric
+        :param record_as_artifact: If True, the metric result will be recorded as
+                an artifact to the evaluation run, defaults to True
+        :type record_as_artifact: bool, optional
+        :param record_as_metrics: Optional, a set of JSON paths in the metric
                 result pointing to scalar values to record as metrics to the
-                evaluation run. If None, no metrics will be recorded.
-            **kwargs: Keyword arguments are forwarded to the
+                evaluation run. If None, no metrics will be recorded, defaults to None
+        :type record_as_metrics: Iterable[str], optional
+        :param **kwargs: Keyword arguments are forwarded to the
                 `ObjectDetectionRates` constructor
-
-        Return:
-            Armory prediction metric for object detection rates
+        :return: Armory prediction metric for object detection rates
         """
         return PredictionMetric(
             metric=cls(*args, **kwargs),
@@ -73,16 +72,19 @@ class ObjectDetectionRates(Metric):
         """
         Initialize the metric.
 
-        Args:
-            mean: `True` to return the mean values across all images or `False`
-                to return the individual values per image
-            iou_threshold: The minimum IoU for detected boxes to be considered
-                and evaluated against the target boxes
-            score_threshold: The minimum prediction score for boxes to be
-                considered and evaluated against the target boxes
-            class_list: Optional list of classes, such that all predictions with
+        :param mean: `True` to return the mean values across all images or `False`
+                to return the individual values per image, defaults to True
+        :type mean: bool, optional
+        :param iou_threshold: The minimum IoU for detected boxes to be considered
+                and evaluated against the target boxes, defaults to 0.5
+        :type iou_threshold: float, optional
+        :param score_threshold: The minimum prediction score for boxes to be
+                considered and evaluated against the target boxes, defaults to 0.5
+        :type score_threshold: float, optional
+        :param class_list: Optional list of classes, such that all predictions with
                 labels and ground-truths with labels _not_ in the class list are
-                to be ignored
+                to be ignored, defaults to None
+        :type class_list: Optional[Sequence[int]], optional
         """
         super().__init__()
         self.mean = mean
