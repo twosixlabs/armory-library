@@ -12,31 +12,33 @@
 
 # Overview
 
-Armory is a comprehensive platform for evaluating the robustness of machine learning models against adversarial attacks. It is a pure Python library built on top of existing libraries such as PyTorch, Hugging Face, and IBM's Adversarial Robustness Toolbox (ART). The primary focus of Armory is to help machine learning engineers understand how models behave under various adversarial conditions and how effective defenses are in mitigating these attacks. 
+Armory is a comprehensive platform for evaluating the robustness of machine learning models against adversarial attacks. It is a pure Python library built on top of existing libraries such as PyTorch, Hugging Face, and IBM's Adversarial Robustness Toolbox (ART). The primary focus of Armory is to help machine learning engineers understand how models behave under various adversarial conditions and how defenses may mitigate these attacks. 
 
 ## History
 
-Armory was developed as part of the [Guaranteeing AI Robustness against Deception (GARD) program][gardproject], which was initiated by the Defense Advanced Research Projects Agency (DARPA). The GARD program's mission was to secure artificial intelligence (AI) systems against a growing threat: adversarial AI.
+Armory was developed as part of the [Guaranteeing AI Robustness against Deception (GARD) program][gardproject] under the Defense Advanced Research Projects Agency (DARPA). The GARD program's mission was to establish theoretical foundations for machine learning system vulnerabilities, to characterize properties that will enhance system robustness, and to advance the creation of effective defenses.
 
 ### What is Adversarial AI?
 
-Adversarial AI refers to the manipulation of AI models through carefully crafted inputs designed to exploit vulnerabilities in machine learning algorithms. These inputs are often imperceptible to humans but can cause AI systems to make incorrect decisions, such as misclassifying images or failing in critical tasks. For instance, an adversarial attack might slightly alter an image of a stop sign, leading a self-driving car to misinterpret it as a yield sign, with potentially dangerous consequences.
+Adversarial AI refers to the manipulation of AI models through carefully crafted inputs designed to exploit vulnerabilities in machine learning algorithms. These inputs are often imperceptible to humans but can cause AI systems to make incorrect decisions, such as misclassifying images or generating incorrect text. For instance, an adversarial attack might slightly alter an image of a stop sign, leading a self-driving car to misinterpret it as a yield sign with potentially catastrophic consequences.
 
 There are various types of adversarial attacks:
 
 - Evasion attacks: Introduce small perturbations to inputs during model inference to trick the model into making incorrect predictions.
 - Poisoning attacks: Manipulate training data to compromise the model during its learning phase.
-- Model extraction and inversion: Attempt to recover sensitive information about a model or its training data.
+- Model extraction: Recreate a machine learning model by exploiting access to the model's outputs.
+- Model inversion: Reverse-engineer sensitive information about the data used to train a model.
+- Model membership: Determine whether a specific data point was used to train the model.
 
-The GARD program was established to tackle these threats by developing defensive techniques that make AI systems more robust and resistant to adversarial manipulations. The program brought together industry experts, including Two Six Technologies, IBM and MITRE, along with academic researchers from institutions including MIT, and aimed to explore the limits of adversarial attacks and develop cutting-edge defenses.
+The GARD program was established to tackle these threats by developing defensive techniques that make AI systems more robust and resilient to adversarial manipulations. The program brought together industry experts, including Two Six Technologies, IBM and MITRE, along with researchers from academic institutions to explore the limits of adversarial attacks and develop cutting-edge defenses.
 
 ### Broader Impact
 
-While the GARD program focused on government and military use cases, the potential for adversarial attacks extends to numerous fields, including healthcare, autonomous vehicles, finance, and cybersecurity. Armory is an open-source tool available to the wider AI community, helping researchers and engineers evaluate the robustness of their models across industries. The goal of Armory is to ensure that AI systems, used in anything from medical diagnosis to autonomous drones, can remain secure and effective even under adversarial conditions.
+While the GARD program focused on government and military use cases, the potential for adversarial attacks extends to numerous domains, including healthcare, autonomous vehicles, finance, and cybersecurity. Armory is an open-source tool available to the wider AI community, helping researchers and engineers evaluate the robustness of their models across industries. The goal of Armory is to ensure that AI systems used in applications from medical diagnosis to autonomous drones can remain secure and effective even under adversarial conditions.
 
 ## How It Works
 
-Armory provides a comprehensive platform to evaluate the robustness of AI models against adversarial attacks. It integrates several key features into a streamlined pipeline that allows users to conduct robust model evaluations, implement defenses, and visualize results.
+Armory provides a comprehensive platform to evaluate the robustness of AI models against adversarial attacks. It integrates several key features into user-defined pipelines that allow machine learning engineers to conduct robust model evaluations, implement novel attacks and defenses, and visualize results.
 
 ![pipeline diagram](docs/assets/evasion-pipeline-diagram.png)
 
@@ -48,15 +50,15 @@ Armory provides a comprehensive platform to evaluate the robustness of AI models
 
 #### Adversarial Attack Integration
 
-- Armory currently specializes in evasion attacks. Other attack types like poisoning attacks (which compromise training data) are also planned for future releases.
+- Armory currently specializes in evasion attacks. Other attack types like poisoning attacks (which compromise model training) and model inversion (which infers training data) are also planned for future releases.
 
 - Attacks are implemented using the Adversarial Robustness Toolbox (ART), which provides standard attacks like Projected Gradient Descent (PGD). Users can also implement custom attacks by following Armory’s API.
 
 #### Defensive Techniques
 
-- Armory includes defenses that can be applied either before or after model predictions. These defenses aim to reduce the impact of adversarial attacks. For instance, JPEG compression/decompression filters out adversarial artifacts by removing high-frequency noise from images.
+- Armory includes defenses that can be applied either before or after model predictions. These defenses aim to reduce the impact of adversarial attacks. For instance, the JPEG compression/decompression pre-processing defense filters out adversarial artifacts by removing high-frequency noise from images. Post-processor defenses may seek to rectify model outputs in the presence of adversarial inputs.
 
-- Users can configure pre-processing defenses (applied before model inference) or post-processing defenses (applied after model predictions) within the evaluation pipeline.
+- Users can configure both pre-processing defenses (applied before model inference) and post-processing defenses (applied after model predictions) within the evaluation pipeline.
 
 #### Pipeline Orchestration and Evaluation
 
@@ -101,9 +103,9 @@ evaluations using Armory.
 
 # Quick Look
 
-We have provided an sample notebook using Armory to evaluate a food101 classifier
-in the presence of a Project Gradient Descent (PGD) attack. The notebook can be
-run for free on Google Colab to get a taste of how Armory works.
+We have provided an sample notebook that uses Armory to evaluate a food101 classifier
+in the presence of a Project Gradient Descent (PGD) attack. The notebook can be run for free
+on Google Colab to get a preview of how Armory works.
 
 [![Open In Colab][colab-badge]][colab-url]
 
@@ -111,13 +113,14 @@ run for free on Google Colab to get a taste of how Armory works.
 
 The Armory-library documentation is [published on GitHub][docs-url] or
 can be viewed directly in [the docs directory](docs/index.md) of this repository.
+The development team for Armory-library can be reached at <armory@twosixtech.com>.
+
 
 # The historic GARD-Armory repository
 
 Armory-library is the successor to the [GARD-Armory research program run under
-DARPA][GARD-Armory]. As that program is nearing its conclusion, that repository
-will be archived sometime in 2024 and there will be no further development in
-GARD-Armory. The development teams for both GARD-Armory and Armory-library can be reached at <armory@twosixtech.com>
+DARPA][GARD-Armory]. As that program has reached its conclusion, the GARD-Armory
+repository has been archived sometime in 2024 and there will be no further developmen.
 
 # Acknowledgment
 
