@@ -39,10 +39,12 @@ def debug(arg) -> str:
         return "{" + ", ".join([f"'{k}': {debug(v)}" for k, v in arg.items()]) + "}"
     if isinstance(arg, list):
         return (
-            f"[{debug(arg[0])}], ..., {debug(arg[-1])}]"
+            f"[{debug(arg[0])}, ..., {debug(arg[-1])}]"
             if len(arg) > 2
             else "[" + ", ".join([debug(i) for i in arg]) + "]"
         )
+    if isinstance(arg, str) and len(arg) > 50:
+        return f'"{arg[:50]}..."'
     return repr(arg)
 
 
@@ -858,6 +860,27 @@ class BoundingBoxes(DataWithSpecification):
             self.spec = spec
 
 
+class Text(DataWithSpecification):
+
+    def __init__(self, text: Sequence[str]):
+        self.text = text
+
+    def __repr__(self) -> str:
+        return f"Text(text={debug(self.text)})"
+
+    def __len__(self) -> int:
+        return len(self.text)
+
+    def clone(self):
+        return Text(text=self.text)
+
+    def get(self, spec) -> Sequence[str]:
+        return self.text
+
+    def set(self, text: Sequence[str], spec) -> None:
+        self.text = text
+
+
 ###
 # Batch types
 ###
@@ -998,6 +1021,67 @@ class ObjectDetectionBatch(Batch):
     def clone(self) -> "ObjectDetectionBatch":
         return ObjectDetectionBatch(
             inputs=self._inputs.clone(),
+            targets=self._targets.clone(),
+            metadata=deepcopy(self._metadata),
+            predictions=self._predictions.clone(),
+        )
+
+    def __len__(self) -> int:
+        return len(self.inputs)
+
+
+class TextPromptBatch(Batch):
+
+    def __init__(
+        self,
+        inputs: Text,
+        contexts: Optional[Text] = None,
+        targets: Optional[Text] = None,
+        metadata: Optional[Metadata] = None,
+        predictions: Optional[Text] = None,
+    ):
+        self._initial_inputs = inputs.clone()
+        self._inputs = inputs
+        self._contexts = contexts if contexts is not None else Text(text=[])
+        self._targets = targets if targets is not None else Text(text=[])
+        self._metadata = (
+            metadata
+            if metadata is not None
+            else Metadata(data=dict(), perturbations=dict())
+        )
+        self._predictions = predictions if predictions is not None else Text([])
+
+    def __repr__(self) -> str:
+        return f"TextPromptBatch(inputs={self.inputs}, contexts={self.contexts}, targets={self.targets}, metadata={self.metadata}, predictions={self.predictions})"
+
+    @property
+    def initial_inputs(self) -> Text:
+        return self._initial_inputs
+
+    @property
+    def inputs(self) -> Text:
+        return self._inputs
+
+    @property
+    def contexts(self) -> Text:
+        return self._contexts
+
+    @property
+    def targets(self) -> Text:
+        return self._targets
+
+    @property
+    def metadata(self) -> Metadata:
+        return self._metadata
+
+    @property
+    def predictions(self) -> Text:
+        return self._predictions
+
+    def clone(self) -> "TextPromptBatch":
+        return TextPromptBatch(
+            inputs=self._inputs.clone(),
+            contexts=self._contexts.clone(),
             targets=self._targets.clone(),
             metadata=deepcopy(self._metadata),
             predictions=self._predictions.clone(),

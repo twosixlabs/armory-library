@@ -122,6 +122,12 @@ def _cast(key, value):
     raise ValueError(f"Dataset {key} is unsupported type: {type(value)}")
 
 
+def _tolist(value) -> list:
+    if not isinstance(value, list):
+        raise ValueError(f"Expected list, got {type(value)}")
+    return value
+
+
 class ShuffleableDataLoader(DataLoader):
     """
     Extension to the PyTorch data loader that enables determinstic shuffling
@@ -368,5 +374,46 @@ class ObjectDetectionDataLoader(ShuffleableDataLoader):
         return data.ObjectDetectionBatch(
             inputs=images,
             targets=boxes,
+            metadata=data.Metadata(data=collated, perturbations=dict()),
+        )
+
+
+@track_init_params
+class TextPromptDataLoader(ShuffleableDataLoader):
+
+    def __init__(
+        self,
+        *args,
+        inputs_key: str,
+        context_key: Optional[str] = None,
+        targets_key: Optional[str] = None,
+        **kwargs,
+    ):
+        collate_fn = kwargs.pop("collate_fn", self._collate)
+        super().__init__(*args, collate_fn=collate_fn, **kwargs)
+        self.inputs_key = inputs_key
+        self.context_key = context_key
+        self.targets_key = targets_key
+
+    def _collate(self, samples: Sequence[Mapping[str, Any]]):
+        collated = {
+            key: _collate_by_type([s[key] for s in samples])
+            for key in samples[0].keys()
+        }
+        inputs = data.Text(text=_tolist(collated.pop(self.inputs_key)))
+        contexts = (
+            data.Text(text=_tolist(collated.pop(self.context_key)))
+            if self.context_key
+            else None
+        )
+        targets = (
+            data.Text(text=_tolist(collated.pop(self.targets_key)))
+            if self.targets_key
+            else None
+        )
+        return data.TextPromptBatch(
+            inputs=inputs,
+            contexts=contexts,
+            targets=targets,
             metadata=data.Metadata(data=collated, perturbations=dict()),
         )
