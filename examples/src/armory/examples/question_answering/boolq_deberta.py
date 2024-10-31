@@ -5,6 +5,7 @@ Example Armory evaluation of DeBERTa on the BoolQ dataset.
 from typing import Optional
 
 import datasets
+import torchmetrics.classification
 import transformers
 
 import armory.data
@@ -12,6 +13,7 @@ import armory.dataset
 import armory.engine
 import armory.evaluation
 import armory.logging
+import armory.metric
 import armory.metrics.compute
 import armory.model.question_answering
 import armory.track
@@ -50,6 +52,12 @@ def load_model():
     return armory_model
 
 
+def transform(sample):
+    """Convert True/False targets to classification labels"""
+    sample["answer"] = [int(a) for a in sample["answer"]]
+    return sample
+
+
 def load_dataset(batch_size: int, shuffle: bool, seed: Optional[int] = None):
     """Load BoolQ dataset from HuggingFace"""
 
@@ -57,6 +65,7 @@ def load_dataset(batch_size: int, shuffle: bool, seed: Optional[int] = None):
         path="google/boolq", split="validation"
     )
     assert isinstance(hf_dataset, datasets.Dataset)
+    hf_dataset.set_transform(transform)
 
     dataloader = armory.dataset.TextClassificationDataLoader(
         hf_dataset,
@@ -74,6 +83,15 @@ def load_dataset(batch_size: int, shuffle: bool, seed: Optional[int] = None):
     )
 
     return dataset
+
+
+def create_metrics():
+    """Create evaluation metrics"""
+    return {
+        "accuracy": armory.metric.PredictionMetric(
+            torchmetrics.classification.Accuracy(task="multiclass", num_classes=2)
+        ),
+    }
 
 
 @armory.track.track_params(prefix="main")
@@ -96,12 +114,17 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
         dataset = load_dataset(batch_size, shuffle, seed)
     evaluation.use_dataset(dataset)
 
+    # Metrics/Exporters
+    metrics = create_metrics()
+
     from pprint import pprint
 
     batch = next(iter(dataset.dataloader))
     pprint(batch)
     model.predict(batch)
     pprint(batch)
+    metrics["accuracy"].update(batch)
+    pprint(metrics["accuracy"].compute())
 
 
 if __name__ == "__main__":
