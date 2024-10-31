@@ -97,7 +97,7 @@ def create_metrics():
 @armory.track.track_params(prefix="main")
 def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     """Perform evaluation"""
-    # profiler = armory.metrics.compute.BasicProfiler()
+    profiler = armory.metrics.compute.BasicProfiler()
     evaluation = armory.evaluation.Evaluation(
         name="boolq-deberta",
         description="Question answering on BoolQ with DeBERTa",
@@ -115,16 +115,22 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     evaluation.use_dataset(dataset)
 
     # Metrics/Exporters
-    metrics = create_metrics()
+    evaluation.use_metrics(create_metrics())
 
-    from pprint import pprint
+    # Chains
+    with evaluation.add_chain("benign"):
+        pass
 
-    batch = next(iter(dataset.dataloader))
-    pprint(batch)
-    model.predict(batch)
-    pprint(batch)
-    metrics["accuracy"].update(batch)
-    pprint(metrics["accuracy"].compute())
+    engine = armory.engine.EvaluationEngine(
+        evaluation,
+        profiler=profiler,
+        limit_test_batches=num_batches,
+    )
+    results = engine.run()
+
+    if results:
+        for chain_name, chain_results in results.children.items():
+            chain_results.metrics.table(title=f"{chain_name} Metrics")
 
 
 if __name__ == "__main__":

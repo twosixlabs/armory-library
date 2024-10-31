@@ -59,7 +59,7 @@ class SequenceClassificationTransformer(ArmoryModel, ModelProtocol):
 
         encoded_input = self.tokenizer(
             inputs, padding=True, truncation=True, return_tensors="pt"
-        )
+        ).to(self.device)
         outputs = self._model(**encoded_input)
         probabilities = torch.softmax(outputs.logits, dim=-1).cpu()
         batch.predictions.set(probabilities)
