@@ -15,7 +15,7 @@ import armory.evaluation
 import armory.logging
 import armory.metric
 import armory.metrics.compute
-import armory.model.question_answering
+import armory.model.llm
 import armory.track
 import armory.utils
 
@@ -43,7 +43,7 @@ def load_model():
         "nfliu/deberta-v3-large_boolq"
     )
 
-    armory_model = armory.model.question_answering.SequenceClassificationTransformer(
+    armory_model = armory.model.llm.SequenceClassificationTransformer(
         name="deberta",
         model=hf_model,
         tokenizer=hf_tokenizer,
