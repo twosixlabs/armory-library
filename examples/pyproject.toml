@@ -36,8 +36,13 @@ cv = [
     "yolov5",
 ]
 
+llm = [
+    "litgpt",
+]
+
 all = [
     "armory-examples[cv]",
+    "armory-examples[llm]",
 ]
 
 [build-system]
