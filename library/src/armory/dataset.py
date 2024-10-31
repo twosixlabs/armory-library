@@ -379,6 +379,43 @@ class ObjectDetectionDataLoader(ShuffleableDataLoader):
 
 
 @track_init_params
+class TextClassificationDataLoader(ShuffleableDataLoader):
+
+    def __init__(
+        self,
+        *args,
+        inputs_key: str,
+        targets_key: str,
+        context_key: Optional[str] = None,
+        **kwargs,
+    ):
+        collate_fn = kwargs.pop("collate_fn", self._collate)
+        super().__init__(*args, collate_fn=collate_fn, **kwargs)
+        self.inputs_key = inputs_key
+        self.targets_key = targets_key
+        self.context_key = context_key
+
+    def _collate(self, samples: Sequence[Mapping[str, Any]]):
+        collated = {
+            key: _collate_by_type([s[key] for s in samples])
+            for key in samples[0].keys()
+        }
+        inputs = data.Text(text=_tolist(collated.pop(self.inputs_key)))
+        targets = data.NDimArray(_pop_and_cast(collated, self.targets_key))
+        contexts = (
+            data.Text(text=_tolist(collated.pop(self.context_key)))
+            if self.context_key
+            else None
+        )
+        return data.TextClassificationBatch(
+            inputs=inputs,
+            contexts=contexts,
+            targets=targets,
+            metadata=data.Metadata(data=collated, perturbations=dict()),
+        )
+
+
+@track_init_params
 class TextPromptDataLoader(ShuffleableDataLoader):
 
     def __init__(

@@ -874,10 +874,10 @@ class Text(DataWithSpecification):
     def clone(self):
         return Text(text=self.text)
 
-    def get(self, spec) -> Sequence[str]:
+    def get(self) -> Sequence[str]:
         return self.text
 
-    def set(self, text: Sequence[str], spec) -> None:
+    def set(self, text: Sequence[str]) -> None:
         self.text = text
 
 
@@ -1022,6 +1022,69 @@ class ObjectDetectionBatch(Batch):
         return ObjectDetectionBatch(
             inputs=self._inputs.clone(),
             targets=self._targets.clone(),
+            metadata=deepcopy(self._metadata),
+            predictions=self._predictions.clone(),
+        )
+
+    def __len__(self) -> int:
+        return len(self.inputs)
+
+
+class TextClassificationBatch(Batch):
+
+    def __init__(
+        self,
+        inputs: Text,
+        targets: NDimArray,
+        contexts: Optional[Text] = None,
+        metadata: Optional[Metadata] = None,
+        predictions: Optional[NDimArray] = None,
+    ):
+        self._initial_inputs = inputs.clone()
+        self._inputs = inputs
+        self._targets = targets
+        self._contexts = contexts if contexts is not None else Text(text=[])
+        self._metadata = (
+            metadata
+            if metadata is not None
+            else Metadata(data=dict(), perturbations=dict())
+        )
+        self._predictions = (
+            predictions if predictions is not None else NDimArray(np.array([]))
+        )
+
+    def __repr__(self) -> str:
+        return f"TextClassificationBatch(inputs={self.inputs}, targets={self.targets}, contexts={self.contexts}, metadata={self.metadata}, predictions={self.predictions})"
+
+    @property
+    def initial_inputs(self) -> Text:
+        return self._initial_inputs
+
+    @property
+    def inputs(self) -> Text:
+        return self._inputs
+
+    @property
+    def contexts(self) -> Text:
+        return self._contexts
+
+    @property
+    def targets(self) -> NDimArray:
+        return self._targets
+
+    @property
+    def metadata(self) -> Metadata:
+        return self._metadata
+
+    @property
+    def predictions(self) -> NDimArray:
+        return self._predictions
+
+    def clone(self) -> "TextClassificationBatch":
+        return TextClassificationBatch(
+            inputs=self._inputs.clone(),
+            targets=self._targets.clone(),
+            contexts=self._contexts.clone(),
             metadata=deepcopy(self._metadata),
             predictions=self._predictions.clone(),
         )
