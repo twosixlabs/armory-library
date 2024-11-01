@@ -16,16 +16,28 @@ We will update black versioning annually following their [Stability Policy](http
 
 As of version 0.16.1 `tools/format_json.py` no longer exists. Instead the built-in [json.tool](https://docs.python.org/3/library/json.html#module-json.tool) is used along with the `--sort-keys` and `--indent=4` flags.
 
+We use [isort](https://pycqa.github.io/isort/) to sort Python imports.
+
+    isort --profile black *
+
 We use [Flake8](https://flake8.pycqa.org/) for non-formatting PEP style enforcement.
 
     flake8
 
 Our repo-specific Flake8 configuration is detailed in `.flake8`.
 
-We use [isort](https://pycqa.github.io/isort/) to sort Python imports.
+We use [mypy](https://mypy-lang.org/) for static type checking.
 
-    isort --profile black *
+    mypy
 
+Notebooks are type checked using [nbqa](https://github.com/nbQA-dev/nbQA) and output stripped using [nbstripout](https://github.com/kynan/nbstripout).
+    
+    nbqa mypy
+    nbstripout
+
+Once clean, the notebook JSON source is checked and formatted.
+
+Finally, large file commits are prevented with `check-added-large-files`.
 
 ### Pre-commit Hooks
 
@@ -37,8 +49,7 @@ python -m pip install pre-commit
 python -m pre_commit install
 ```
 
-Note: the `pre-commit` package is already installed as part of the `developer`
-flavor dependencies.
+Note: the `pre-commit` package is already installed as part of the `developer` flavor dependencies.
 
 ```bash
 pip install .[developer]
