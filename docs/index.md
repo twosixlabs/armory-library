@@ -5,7 +5,7 @@
 - [Getting Started](./getting_started.md)
 - [Experiment Tracking](./experiment_tracking.md)
 - [Exporting Data](./exporting_data.md)
-- [Open Source Strategy](./open_source_strategy.md)
+- [Open-Source Strategy](./open_source_strategy.md)
 
 ## [Developers](./developers/)
 - [Development Environment](./developers/development_environment.md)
