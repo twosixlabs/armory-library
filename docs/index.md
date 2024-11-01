@@ -7,9 +7,9 @@
 - [Exporting Data](./exporting_data.md)
 
 ## [Developers](./developers/)
-- [Development Environment](./developers/development_environment.md)
-- [New Dataset to Armory](./developers/new_dataset_to_armory.md)
 - [README.md](./developers/README.md)
+- [Development Environment](./developers/development_environment.md)
+- [New Model to Armory](./developers/new_model_to_armory.md)
 - [Setup](./developers/setup.md)
 - [Style](./developers/style.md)
 - [Troubleshooting](./developers/troubleshooting.md)
