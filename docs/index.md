@@ -28,3 +28,6 @@
 - [Track](./reference/track.md)
 - [Transforms](./reference/transforms.md)
 - [Utils](./reference/utils.md)
+
+## [API Documentation](./source/)
+- [Read the Docs](https://armory-library.readthedocs.io/en/latest/)
