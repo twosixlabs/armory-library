@@ -42,13 +42,13 @@ You can also configure the interpreter used by VSCode by modifying the `.vscode/
 
 To set up debugging in Python with VSCode, see the [Troubleshooting Guide](./troubleshooting.md#visual-studio-codes-debugger).
 
-## 4. Enabling Pair Programming in VSCode
-
-To enable pair programming, install the "Live Share" extension. This allows you to share your workspace with others for collaborative work.
-
-## 5. Configuring Jupyter Notebook Support in VSCode
+## 4. Configuring Jupyter Notebook Support in VSCode
 
 With the Jupyter extension installed, you can create a new Jupyter notebook by clicking on the new file button in the Explorer view and giving the file a .ipynb extension.
+
+## 5. Enabling Pair Programming in VSCode
+
+To enable pair programming, install the "Live Share" extension. This allows you to share your workspace with others for collaborative work.
 
 
 With these steps, you will have a robust and efficient Python development environment set up in VSCode.
