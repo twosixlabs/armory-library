@@ -22,9 +22,9 @@ mechanical standards before submitting.
 
 ## Documentation
 
-We assume that contributors will be making small changes to the documentation that
-are in the [code repository `docs` directory](./). If you are making larger
-changes that would require more substantial changes to the documentation, you'd
+We assume that contributors will be making small changes to the documentation files
+that are in the code repository [`docs`](./) directory. If you are making larger
+changes that would require more substantial changes to the documentation, you would
 likely want to talk with us first to discuss your plans.
 
 ## Code of Conduct
