@@ -4,16 +4,15 @@ This tutorial will walk you through the pieces needed to build and execute an
 Armory evaluation. In the process, we'll look at the basic concepts of adversarial
 evaluation and how Armory provides components needed to effect them.
 
-The basic dataflow of Armory-library is shown in this diagram:
+The basic dataflow of Armory-library is shown in the diagram below.
 
 ![armory-library block diagram](assets/armory-block-diagram.png)
 
-Where the Model and Dataset are the inputs under evaluation and the Attack is an
-adversarial perturbation applied to the Dataset. Typically, the Model and
-Dataset will be provided by the armory-library user and the Attack will be drawn
-from armory-library or the IBM Adversarial Robustness Toolbox (ART).
-In this tutorial we will not deal with the green defense boxes or the
-pink generated adversarial dataset box.
+The Model and Dataset are the inputs under evaluation, and the Attack is an
+adversarial perturbation applied to the Dataset. Typically, the Model and Dataset
+will be provided by the armory-library user and the Attack will be drawn from
+`armory-library` or the IBM Adversarial Robustness Toolbox (ART). In this tutorial
+we will not deal with the green defense boxes or the pink generated adversarial dataset.
 
 ## Dataset
 
@@ -22,20 +21,20 @@ We look at an image classification example here, with object detection described
 in [Diving Deeper](./diving_deeper.ipynb).
 
 The structure of an image classification dataset is simple, consisting of pairs
-of images and labels. Images are 2-dimensional arrays of pixels and will often
-come as PNG or JPEG images. Labels are integers that correspond to the class of
+of images and labels. Images are 2-dimensional arrays of pixels, often supplied
+as PNG or JPEG images. Labels are integers that correspond to the class label of
 the image. For example, in the standard MNIST dataset, the images are 28×28 grayscale
-handwritten digits and the labels are integers from 0 to 9. The label represent
+handwritten digits, and the labels are integers from 0 to 9. The label represents
 the "ground truth" for the image, or what the model should predict when shown the
 image. Again using MNIST digits, the label associated with a handwritten digit 8
-will be 8; we expect the model to predict the label 8 when shown the image.
+will be 8; we expect the model to predict the label 8 when receiving the image.
 
 ![MNIST handwritten 8](assets/mnist-handwritten-8.png)
 
 A dataset is a collection of images (samples) in a sequence-like structure such
-as a tuple, map, or numpy array. Each can have a target (label) assigned.
+as a tuple, map, or NumPy array. Each can have a target label assigned.
 Datasets can be imported from a variety of sources such as PyTorch, Hugging
-Face, or GitHub.
+Face or GitHub.
 
 #### Basic
 
@@ -53,21 +52,22 @@ keyed_dataset = TupleDataset(raw_dataset, x_key="data", y_key="target")
 pprint(keyed_dataset)
 ```
 
-You'll see that we have turned the raw dataset into a map with keys "data" and
-"target". These keys are arbitrary; the same ones just need to be provided in
-the evaluation later and correspond to the images and labels respectively.
+You'll see that we have turned the raw dataset into a map with keys `data` and
+`target`. These keys are arbitrary, but the same keys correponding to the image
+and labels, respectively, must be provided in the evaluation.
 
-For this dataset we need a adapter because ????.
+For the raw dataset we need an adapter to apply the keys to the data tuples --
+note that this adapter is included by default in the `TupleDataset` constructor.
 
 ```python
 def adapter(data):
-    # ??? What goes here?
+    return dict(zip(["data", "target"], data))
 dataset = ArmoryDataset(keyed_dataset, adapter)
 ```
 
 #### Hugging Face
 
-The following is an example of how to load a dataset from [Hugging Face][huggingface]:
+The following is an example of how to load a dataset from [Hugging Face][huggingface].
 
 ```python
 import datasets # Hugging Face dataset library
@@ -84,20 +84,19 @@ dataset.set_transform(functools.partial(transform, processor))
 dataloader = ArmoryDataLoader(dataset, batch_size=batch_size, num_workers=5)
 ```
 
-The `load_dataset` functions imports the [MNIST][mnist] (handwritten digit)
+The `load_dataset` function imports the [MNIST][mnist] (handwritten digit)
 dataset from Hugging Face. It is the same dataset that was used to train the
 model in this example. The `split` parameter specifies which subset of the
-dataset to load, is usually either `train` or `test` or possibly `validation`,
+dataset to load and is usually either `train`, `test` or possibly `validation`,
 depending on the dataset.
 
-The function `transform` then cycles through the dataset and converts each image
-into Hugging Face's 'RGB' form. The `set_transform` method is used the the
-Hugging Face dataset and applied the transform function to the entire Hugging
-Face dataset.
+The function `transform` loops through the images in a sample and converts
+each image into Hugging Face's 'RGB' form. The `set_transform` method ensures that
+the transform function will be applied to the entire Hugging Face dataset on load.
 
-`AutoImageProcessor.from_pretrained` expects a Hugging Face name for the model
-card. Then the PyTorch `ArmoryDataLoader` generates the numpy arrays that are
-required by ART for the evaluation.
+`AutoImageProcessor.from_pretrained` expects a Hugging Face model name.
+Then the PyTorch `ArmoryDataLoader` generates the NumPy arrays that are
+required by, for example, an ART attack in the evaluation.
 
 [huggingface]: https://huggingface.co/
 [mnist]: https://huggingface.co/datasets/mnist
@@ -106,12 +105,23 @@ required by ART for the evaluation.
 
 A model is the output of a machine learning algorithm run on a training set of
 data. It is used to identify patterns or make predictions on unseen datasets.
-Models can be imported from a variety of sources, including Hugging Face,
-GitHub, PyPI, and jatic_toolbox.
+Models can be imported from a variety of sources, including TorchVision, Hugging Face,
+GitHub and PyPI.
+
+#### TorchVision
+
+The following is an example of how to import a model from TorchVision.
+```python
+model = JaticImageClassificationModel(
+        track_params(AutoModelForImageClassification.from_pretrained)(
+            "farleyknight-org-username/vit-base-mnist"
+        ),
+    )
+```
 
 #### Hugging Face
 
-The following is an example of how to import a model from Hugging Face:
+The following is an example of how to import a model from Hugging Face.
 ```python
 model = JaticImageClassificationModel(
         track_params(AutoModelForImageClassification.from_pretrained)(
@@ -121,7 +131,7 @@ model = JaticImageClassificationModel(
 ```
 Here, `farleyknight-org-username/vit-base-mnist` is the Hugging Face model card
 name. `track_params` is a function wrapper that stores the argument values as
-parameters in MLflow and `JaticImageClassificationModel` is a wrapper to make
+parameters in MLflow, and `JaticImageClassificationModel` is a wrapper to make
 the model compatible with Armory.
 
 #### GitHub
@@ -167,19 +177,6 @@ model = JaticImageClassificationModel(
 ```
 Here, we import the library and create a model from the case with a weights path
 added.
-
-#### jatic_toolbox
-
-The following is an example of loading a Torchvision model from the jatic_toolbox:
-
-```python
-model = track_params(load_jatic_model)(
-        provider="torchvision",
-        model_name="resnet34",
-        task="image-classification",
-    )
-```
-
 
 In each case, we use the `PyTorchClassifier` wrapper to make the model
 compatible with the ART library. Note that this is specific to image
