@@ -1,5 +1,5 @@
 ---
-name: CUDA GPU
+name: 🔥 CUDA GPU
 
 on:
   workflow_dispatch:
