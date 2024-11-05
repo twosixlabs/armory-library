@@ -112,27 +112,40 @@ GitHub and PyPI.
 
 The following is an example of how to import a model from TorchVision.
 ```python
-model = JaticImageClassificationModel(
-        track_params(AutoModelForImageClassification.from_pretrained)(
-            "farleyknight-org-username/vit-base-mnist"
-        ),
-    )
+from torchvision.models import resnet18, ResNet18_Weights
+weights = ResNet18_Weights.DEFAULT
+tv_model = resnet18(weights=weights, progress=False)
+armory_model = armory.model.image_classification.ImageClassifier(
+    name="ViT-finetuned-food101",
+    model=tv_model,
+    inputs_spec=armory.data.TorchImageSpec(
+        dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
+    ),
+)
 ```
+Here, we use `armory.model.image_classification.ImageClassifier` to make the
+model compatible with Armory.
 
 #### Hugging Face
 
 The following is an example of how to import a model from Hugging Face.
 ```python
-model = JaticImageClassificationModel(
-        track_params(AutoModelForImageClassification.from_pretrained)(
-            "farleyknight-org-username/vit-base-mnist"
-        ),
-    )
+model_name = "farleyknight-org-username/vit-base-mnist"
+hf_model = armory.track.track_params(
+    transformers.AutoModelForObjectDetection.from_pretrained
+)(pretrained_model_name_or_path=model_name)
+armory_model = armory.model.image_classification.ImageClassifier(
+    name="ViT-finetuned-food101",
+    model=hf_model,
+    inputs_spec=armory.data.TorchImageSpec(
+        dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
+    ),
+)
 ```
 Here, `farleyknight-org-username/vit-base-mnist` is the Hugging Face model card
 name. `track_params` is a function wrapper that stores the argument values as
-parameters in MLflow, and `JaticImageClassificationModel` is a wrapper to make
-the model compatible with Armory.
+parameters in MLflow. Like with TorchVision, we use `armory.model.image_classification.ImageClassifier` 
+to make the model compatible with Armory.
 
 #### GitHub
 
@@ -150,12 +163,16 @@ from SRGAN-PyTorch import model as pytorch_new_model
 
 SRRmodel = pytorch_new_model.SRResNet()
 
-model = JaticImageClassificationModel(
-    SRRmodel
+armory_model = armory.model.image_classification.ImageClassifier(
+    name="ViT-finetuned-food101",
+    model=SRRmodel,
+    inputs_spec=armory.data.TorchImageSpec(
+        dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
+    ),
 )
 ```
 Here, we add the GitHub folder to the system path and import the mode. Then, as
-in the last example, we use the `JaticImageClassificationModel` to make the
+in the last example, we use the `armory.model.image_classification.ImageClassifier` to make the
 model compatible with Armory.
 
 #### PyPI
@@ -171,8 +188,12 @@ weights_path = EfficientnetLite0ModelFile.get_model_file_path()
 
 lite0_model = EfficientNet.from_pretrained('efficientnet-lite0', weights_path = weights_path )
 
-model = JaticImageClassificationModel(
-    SRRmodel
+armory_model = armory.model.image_classification.ImageClassifier(
+    name="ViT-finetuned-food101",
+    model=lite0_model,
+    inputs_spec=armory.data.TorchImageSpec(
+        dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
+    ),
 )
 ```
 Here, we import the library and create a model from the case with a weights path
@@ -186,7 +207,7 @@ are also tracked in MLflow.
 
 ```python
 classifier = track_init_params(PyTorchClassifier)(
-    model,
+    model=armory_model,
     loss=torch.nn.CrossEntropyLoss(),
     optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
     input_shape=(3, 224, 224),
