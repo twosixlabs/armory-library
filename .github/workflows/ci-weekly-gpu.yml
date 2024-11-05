@@ -1,0 +1,182 @@
+---
+name: 🚧 Build & Test - Weekly GPU
+
+on:
+  workflow_dispatch:
+
+  push:
+
+  pull_request:
+    branches:
+      - master
+
+  schedule:
+    # run this every Monday at 8:20am UTC
+    - cron: '20 8 * * 1'
+
+jobs:
+  code-linting:
+    name: 🧹 Code Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.8
+
+      - name: Install pre-commit
+        run: pip3 install pre-commit taskipy
+
+      - name: Lint
+        run: task lint
+
+
+  unit-tests:
+    name: 🧪 Unit Tests
+    runs-on: ubuntu-gpu
+    needs: code-linting
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: |
+          pip3 install --no-compile .
+          pip3 install --no-compile ./library[extras]
+          pip3 install --no-compile ./matrix
+
+      - name: Test
+        run: task test
+
+
+  integration-tests:
+    name: 🧪 Integration Tests - ${{ matrix.test.name }}
+    runs-on: ubuntu-gpu
+    needs: code-linting
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - name: Image Classification Food-101 HuggingFace
+            dir: examples/src/armory/examples/image_classification
+            script: python food101.py --batch-size 2 --num-batches 1 --export-every-n-batches 1 --dataset huggingface
+          - name: Image Classification Food-101 TorchVision
+            dir: examples/src/armory/examples/image_classification
+            script: python food101.py --batch-size 2 --num-batches 1 --export-every-n-batches 1 --dataset torchvision
+          - name: Object Detection License Plates YOLOS
+            dir: examples/src/armory/examples/object_detection
+            script: python license_plates_yolos.py --batch-size 1 --num-batches 1 --export-every-n-batches 1
+          - name: Object Detection License Plates YOLOv5
+            dir: examples/src/armory/examples/object_detection
+            script: python license_plates_yolov5.py --batch-size 2 --num-batches 1 --export-every-n-batches 1
+          - name: Tutorial Notebook
+            dir: examples/notebooks
+            script: papermill armory_evaluation_walkthrough.ipynb ./out.ipynb -p batch_size 2 -p num_batches 1
+          - name: Image Classification Food-101 Notebook
+            dir: examples/notebooks
+            script: papermill image_classification_food101.ipynb ./out.ipynb -p batch_size 2 -p num_batches 1
+          - name: Object Detection License Plates Notebook
+            dir: examples/notebooks
+            script: papermill object_detection_license_plates.ipynb ./out.ipynb -p batch_size 2 -p num_batches 1
+        python-version: ["3.8"]
+    steps:
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: |
+          pip3 install --no-compile ./library
+          pip3 install --no-compile ./matrix
+          pip3 install --no-compile ./examples[all]
+          pip3 install ipykernel papermill
+
+      - name: Test
+        run: cd ${{ matrix.test.dir }} && ${{ matrix.test.script }}
+
+
+  generate-docs:
+    name: 📖 Generate Docs
+    runs-on: ubuntu-latest
+    needs:
+      - unit-tests
+      - integration-tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.8
+
+      - name: Install tools
+        run: pip install mkdocs mkdocstrings-python mkdocs-exclude mkdocs-material taskipy
+
+      - name: Generate
+        run: task docs
+
+      - name: Upload Docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: armory-library-docs
+          path: public
+          retention-days: 1
+
+
+  build:
+    name: 🔨 Build - ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    needs:
+      - unit-tests
+      - integration-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - library
+          - matrix
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.8
+
+      - name: Install
+        run: |
+          pip install pip>=23
+          pip install hatch
+
+      - name: Build Wheel
+        run: cd ${{ matrix.package }} && hatch build --clean --target wheel
+
+      - name: Upload Wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: armory-${{ matrix.package }}-wheel
+          path: ${{ matrix.package }}/dist/*.whl
+          retention-days: 7
