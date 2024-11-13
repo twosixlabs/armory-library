@@ -23,7 +23,7 @@ dependencies = [
     "numpy",
     "Pillow",
     "rich",
-    "torch",
+    "torch==2.5.1",
     "torchmetrics",
     "torchvision",
     "tqdm",
