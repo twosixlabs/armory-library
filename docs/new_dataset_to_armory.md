@@ -15,6 +15,8 @@ The MSTAR dataset contains SAR imagery of 10 types of military vehicles illustra
 The SAMPLE dataset is organized according to the `ImageFolder` pattern. The imagery is split into two normalizations -- decibel and quarter power magnitude (QPM).
 For each normalization type, real and synthetic SAR gray-scale imagery is partitioned into folders according to vehicle type.
 ```
+git clone https://github.com/benjaminlewis-afrl/SAMPLE_dataset_public $1
+
  |-SAMPLE_dataset_public
  | |-png_images
  | | |-qpm
