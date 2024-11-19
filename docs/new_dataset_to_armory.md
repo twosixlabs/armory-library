@@ -12,11 +12,16 @@ The MSTAR dataset contains SAR imagery of 10 types of military vehicles illustra
 
 [Anas, H., Majdoulayne, H., Chaimae, A., & Nabil, S. M. (2020). Deep learning for sar image classification. In Intelligent Systems and Applications: Proceedings of the 2019 Intelligent Systems Conference (IntelliSys) Volume 1 (pp. 890-898). Springer International Publishing.](https://link.springer.com/chapter/10.1007/978-3-030-29516-5_67)
 
+```python
+tmp_dir = Path('/tmp')
+sample_dir = tmp_dir / Path('SAMPLE_dataset_public')
+
+!git clone https://github.com/benjaminlewis-afrl/SAMPLE_dataset_public $sample_dir
+```
 The SAMPLE dataset is organized according to the `ImageFolder` pattern. The imagery is split into two normalizations -- decibel and quarter power magnitude (QPM).
 For each normalization type, real and synthetic SAR gray-scale imagery is partitioned into folders according to vehicle type.
-```
-git clone https://github.com/benjaminlewis-afrl/SAMPLE_dataset_public $1
 
+```bash
  |-SAMPLE_dataset_public
  | |-png_images
  | | |-qpm
@@ -42,8 +47,6 @@ import numpy as np
 import torchvision as tv
 from tv import transforms as T
 
-tmp_dir = Path('/tmp')
-sample_dir = tmp_dir / Path('SAMPLE_dataset_public')
 data_dir = sample_dir / Path("png_images", "qpm", "real")
 
 tv_dataset = tv.datasets.ImageFolder(
