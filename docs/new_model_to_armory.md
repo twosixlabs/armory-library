@@ -1,7 +1,8 @@
 # How to add a new model into armory
-In this file, I will show 3 different examples of how to add a model into armory-library. I will show how to use a model from HuggingFace, how to use a model from github, and how to use a model from a different python library.
+This file demonstrates three different examples of integrating a new model into armory-library: utilizing a model from HuggingFace, incorporating a model from GitHub, and integrating a model from another Python library.
 
-Common imports shared acrossed all examples
+The imports below are shared acrossed all examples. Each example creates the model and classifier objects to be used by armory-library.
+
 ```python
 from armory.model.image_classification import ImageClassifier
 from armory.track import track_init_params, track_params
@@ -11,15 +12,16 @@ from art.estimators.classification import PyTorchClassifier
 import torch
 from transformers import AutoModelForImageClassification
 ```
-In each example the model and classifier objects are created to be used by armory-library
 
 ## Example 1: Using model from HuggingFace
-This example using built in armory library capabilities since we support direct ability to use model from HuggingFace
+This example uses built-in armory library capabilities since we support directly the use of models from HuggingFace.
 ```python 
 model_name = "tianzhihui-isc/vit-base-patch16-224-in21k-finetuned-pokemon-classification"
+
 hf_model = track_params(
     transformers.AutoModelForObjectDetection.from_pretrained
 )(pretrained_model_name_or_path=model_name)
+
 armory_model = ImageClassifier(
     name="ViT-finetuned-food101",
     model=hf_model,
@@ -38,22 +40,25 @@ classifier = track_init_params(PyTorchClassifier)(
     clip_values=(-1, 1),
 )
 ```
-For this section of code we create two variables `model` and `classifier`. We found a model on HuggingFace that is trained on the same pokemon image dataset with the model card 'tianzhihui-isc/vit-base-patch16-224-in21k-finetuned-pokemon-classification'. This can be replaced with another model off of Huggingface.
-- The model variable uses `AutoModelForImageClassification.from_pretrained` which takes in a HuggingFace model card name as a variable. This retrieves the model from
-    HuggingFace that we will use for this example. `track_params` is a function wrapper that stores the argument values as parameters in MLflow. Lastly,
-    the `ImageClassifier` is another wrapper to make the model compatible with Armory. This allows the model to have a standard output like other
-    JATIC image classification models.
-- The `PyTorchClassifier` class wraps the model to be usable by the ART library. It is specific to image classifier models written within the PyTorch framework. It takes in as arguments the model, loss function, and optimizer. The input image sizes are the shape of all the images inside the dataset. The `channels_first` variable is true because the images in the pokemon dataset are in a channels-first (C, H, W) multi-dimensional array. The `nb_classes` describe the number of classes model predicts on. Lastly the clip value  is the values that will be the min and max values of the input after scaling.We use `track_init_params` so that the constructor parameters for the ART wrapper are also tracked in MLflow.
+This section of code defines the three variables `hf_model`, `armory_model` and `classifier`. We found a model on HuggingFace with the model card 'tianzhihui-isc/vit-base-patch16-224-in21k-finetuned-pokemon-classification' that is trained on the Pokemon image classiication dataset. This model can be replaced with other models on Hugging Face that have been trained on the same dataset.
+- The `hf_model` variable uses `AutoModelForImageClassification.from_pretrained` to load the model from Hugging Face specified by the model card name parameter.
+    `track_params` is a function wrapper that stores the argument values as parameters in MLflow. Next, the `ImageClassifier` class wraps the Hugging Face model
+     to make it compatible with Armory. This casts `armory-model` to have a standard output matching other armory-library image classification models.
+- The `PyTorchClassifier` class wraps the armory-library model to be usable by the ART library. This ART class is specific to image classifier models written
+     with the PyTorch framework and takes as arguments the armory-library model, loss function, and optimizer. The input image sizes are the shape of all the images
+     in the dataset. The `channels_first` parameter is true because the images in the Pokemon dataset are in a (C, H, W) multi-dimensional array. The `nb_classes`
+     describe the number of Pokemon classes predicted. Lastly the clip value specifies the min and max values of the input after scaling. We use `track_init_params`
+     so that the constructor parameters for the ART wrapper are also tracked in MLflow.
 
 ## Example 2: Using model from GitHub
-In this example case, a model will be downloaded from github and used by armory-library.
+In this example, a model downloaded from Github is used by armory-library.
 
-First I will clone the repo from github of the example model I will be using.
+First, clone the Github repo that contains the desired model.
 ```bash
 git clone 'https://github.com/Lornatang/SRGAN-PyTorch'
 ```
 
-I first add the project folder of SRGAN-PyTorch to my system path, so that I can import the file into my example file. I also import SRGAN-PyTorch and create an instance of the model class.
+Next, add the project folder of SRGAN-PyTorch to the system path, so that I can import the file into my example file. I also import SRGAN-PyTorch and create an instance of the model class.
 ```python
 import sys
 sys.path.insert(0,'/SRGAN-PyTorch')
@@ -83,7 +88,7 @@ classifier = track_init_params(PyTorchClassifier)(
 )
 ```
 
-## Example 3: Using model from another python library
+## Example 3: Using model from PyPI
 For the third example, I will be showing an example of using a python model from a python library on PyPI. I will be using the EfficientNet Lite PyTorch library.
 
 This code will import the python library and create an example model from the case with a weights path added.
