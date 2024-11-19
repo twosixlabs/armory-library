@@ -1,8 +1,14 @@
 # How to add a new dataset into armory
 
-In this file, I will show 2 different examples of how to add a dataset into armory-library.
+This file presents two examples of how to add new datasets into armory-library.
 
 ## Torchvision
+
+The [SAMPLE (Synthetic and Measured Paired Labeled Experiment) dataset](https://github.com/benjaminlewis-afrl/SAMPLE_dataset_public) consists of measured SAR imagery from the MSTAR collection (Moving and Stationary Target Acquisition and Recognition) paired with synthetic SAR imagery. 
+
+The MSTAR dataset contains SAR imagery of 10 types of military vehicles illustrated in the EO images below.
+
+[Song, Haibo & Ji, Kefeng & Zhang, Yunshu & Xing, Xiang & Zou, Huanxin. (2016). Sparse Representation-Based SAR Image Target Classification on the 10-Class MSTAR Data Set. Applied Sciences. 6. 26. 10.3390/app6010026.](https://www.mdpi.com/2076-3417/6/1/26)
 
 For a Torchvision dataset, we load the dataset using the `ImageFolder` dataset builder, which automatically infers the class labels based on the directory names.
 ```python
