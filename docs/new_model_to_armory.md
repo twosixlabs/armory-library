@@ -14,9 +14,9 @@ from transformers import AutoModelForImageClassification
 ```
 
 ## Example 1: Using model from HuggingFace
-This example uses built-in armory library capabilities since we support directly the use of models from HuggingFace.
+This example uses built-in armory library capabilities since we support directly the use of models from Hugging Face.
 ```python 
-model_name = "tianzhihui-isc/vit-base-patch16-224-in21k-finetuned-pokemon-classification"
+model_name = "nateraw/food"
 
 hf_model = track_params(
     transformers.AutoModelForObjectDetection.from_pretrained
@@ -36,11 +36,11 @@ classifier = track_init_params(PyTorchClassifier)(
     optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
     input_shape=(3, 224, 224),
     channels_first=True,
-    nb_classes=150,
+    nb_classes=101,
     clip_values=(-1, 1),
 )
 ```
-This section of code defines the three variables `hf_model`, `armory_model` and `classifier`. We found a model on HuggingFace with the model card 'tianzhihui-isc/vit-base-patch16-224-in21k-finetuned-pokemon-classification' that is trained on the Pokemon image classiication dataset. This model can be replaced with other models on Hugging Face that have been trained on the same dataset.
+The section of code above defines the three variables `hf_model`, `armory_model` and `classifier`. We found a model on HuggingFace with model card ['nateraw/food'](https://huggingface.co/nateraw/food) that is trained on the Food 101 ([ethz/food101](https://huggingface.co/datasets/ethz/food101)) image classication dataset also available on Hugging Face. This model can be replaced with other models on Hugging Face that have been trained on the same dataset.
 - The `hf_model` variable uses `AutoModelForImageClassification.from_pretrained` to load the model from Hugging Face specified by the model card name parameter.
     `track_params` is a function wrapper that stores the argument values as parameters in MLflow. Next, the `ImageClassifier` class wraps the Hugging Face model
      to make it compatible with Armory. This casts `armory-model` to have a standard output matching other armory-library image classification models.
@@ -50,28 +50,27 @@ This section of code defines the three variables `hf_model`, `armory_model` and 
      describe the number of Pokemon classes predicted. Lastly the clip value specifies the min and max values of the input after scaling. We use `track_init_params`
      so that the constructor parameters for the ART wrapper are also tracked in MLflow.
 
-## Example 2: Using model from GitHub
-In this example, a model downloaded from Github is used by armory-library.
+## Example 2: Using model from PyTorch Image Models (timm)
+In this example, a model downloaded from PyTorch Image Models is used by armory-library.
 
-First, clone the Github repo that contains the desired model.
+First, clone the `timm` Github repo and perform an editable install.
 ```bash
-git clone 'https://github.com/Lornatang/SRGAN-PyTorch'
+git clone https://github.com/rwightman/pytorch-image-models
+cd pytorch-image-models && pip install -e .
 ```
 
-Next, add the project folder of SRGAN-PyTorch to the system path, so that I can import the file into my example file. I also import SRGAN-PyTorch and create an instance of the model class.
+Next, create a ResNet34 model pre-trained on the ImageNet-1K image classification dataset.
 ```python
-import sys
-sys.path.insert(0,'/SRGAN-PyTorch')
-from SRGAN-PyTorch import model as pytorch_new_model
+import timm
 
-SRRmodel = pytorch_new_model.SRResNet()
+timm_model = timm.create_model('resnet34', pretrained=True)
 ```
 
-Lastly, I run the same code from the first example for creating the model and classifier variables.
+Lastly, run the same code from the first example for creating the armory-library model and classifier.
 ```python
 armory_model = ImageClassifier(
-    name="ViT-finetuned-food101",
-    model=SRRmodel,
+    name="resnet34-imagenet",
+    model=timm_model,
     inputs_spec=armory.data.TorchImageSpec(
         dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
     ),
@@ -83,15 +82,20 @@ classifier = track_init_params(PyTorchClassifier)(
     optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
     input_shape=(3, 224, 224),
     channels_first=True,
-    nb_classes=10,
+    nb_classes=1000,
     clip_values=(-1, 1),
 )
 ```
 
 ## Example 3: Using model from PyPI
-For the third example, I will be showing an example of using a python model from a python library on PyPI. I will be using the EfficientNet Lite PyTorch library.
+The third example demonstrates use of a model from a Python library on PyPI - the EfficientNet Lite PyTorch library.
+First, install the `efficientnet_lite_pytorch` library into your environment.
 
-This code will import the python library and create an example model from the case with a weights path added.
+```bash
+pip install efficientnet_lite_pytorch
+```
+
+This code imports the Python library and creates a pre-trained ImageNet model from the specified weights path.
 ```python
 from efficientnet_lite_pytorch import EfficientNet
 
@@ -101,10 +105,10 @@ weights_path = EfficientnetLite0ModelFile.get_model_file_path()
 lite0_model = EfficientNet.from_pretrained('efficientnet-lite0', weights_path = weights_path )
 ```
 
-This is the same code from the last two examples to create a model and classifier variables.
+This is the same code from the last two examples that creates an armory-library model and classifier.
 ```python
 armory_model = armory.model.image_classification.ImageClassifier(
-    name="ViT-finetuned-food101",
+    name="efficientnet-lite-imagenet",
     model=lite0_model,
     inputs_spec=armory.data.TorchImageSpec(
         dim=armory.data.ImageDimensions.CHW, scale=normalized_scale
@@ -117,8 +121,7 @@ classifier = track_init_params(PyTorchClassifier)(
     optimizer=torch.optim.Adam(model.parameters(), lr=0.003),
     input_shape=(3, 224, 224),
     channels_first=True,
-    nb_classes=10,
+    nb_classes=1000,
     clip_values=(-1, 1),
 )
-
 ```
