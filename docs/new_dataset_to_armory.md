@@ -6,9 +6,11 @@ This file presents two examples of how to add new datasets into armory-library.
 
 The [SAMPLE (Synthetic and Measured Paired Labeled Experiment) dataset](https://github.com/benjaminlewis-afrl/SAMPLE_dataset_public) consists of measured SAR imagery from the MSTAR collection (Moving and Stationary Target Acquisition and Recognition) paired with synthetic SAR imagery. 
 
-The MSTAR dataset contains SAR imagery of 10 types of military vehicles illustrated in the EO images below.
+The MSTAR dataset contains SAR imagery of 10 types of military vehicles illustrated in the figure below.
 
-[Song, Haibo & Ji, Kefeng & Zhang, Yunshu & Xing, Xiang & Zou, Huanxin. (2016). Sparse Representation-Based SAR Image Target Classification on the 10-Class MSTAR Data Set. Applied Sciences. 6. 26. 10.3390/app6010026.](https://www.mdpi.com/2076-3417/6/1/26)
+![MSTAR classes](./assets/MSTAR-classes.png)
+
+[Anas, H., Majdoulayne, H., Chaimae, A., & Nabil, S. M. (2020). Deep learning for sar image classification. In Intelligent Systems and Applications: Proceedings of the 2019 Intelligent Systems Conference (IntelliSys) Volume 1 (pp. 890-898). Springer International Publishing.](https://link.springer.com/chapter/10.1007/978-3-030-29516-5_67)
 
 For a Torchvision dataset, we load the dataset using the `ImageFolder` dataset builder, which automatically infers the class labels based on the directory names.
 ```python
