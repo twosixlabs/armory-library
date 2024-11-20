@@ -1,129 +1,115 @@
 # Exporting Data
 ## What is Data Exporting?
 
-Armory provides the functionality to save benign and adversarial examples to the Armory output directory. The type of output file you receive depends on the scenario, as indicated in the table below:
+An exporter enables individual samples from an Armory evaluation to be saved
+for inspection, visualization, processing, etc.
 
-| Scenario               | Output File Type(s) |
-|------------------------|---------------------|
-| audio_asr              | .wav                |
-| audio_classification   | .wav                |          |
-| carla_video_tracking   | .png, .mp4          |
-| dapricot_scenario      | .png                |
-| image_classification   | .png                |
-| object_detection       | .png, .json         |
-| video_ucf101_scenario  | .png, .mp4          |
+Task-specific exporters typically include all metadata for the sample
+(e.g. ground truth targets, model predictions) and a task-specific representation
+of the input data. For example, exporters for computer vision tasks will export
+the input data as images.
 
-Armory also exports a pickle file containing ground-truth labels, benign predictions, and adversarial predictions.
-
+Exporters use a criteria function to determine which batches or samples are exported.
+The `armory.export.criteria` module provides various criteria implementations.
 
 ### How to Export Data
-To enable data export, in the `"scenario"` section of the configuration, set the `"export_batches"` field to `True`. This will result in exporting all batches. If you do not want to export data, you can set this field to `False` or simply omit it from the configuration; see [configuration_files.md](configuration_files.md#exporting-data).
 
-Here is an example where data will be exported:
-
-```python
-  "scenario": {
-        "kwargs": {},
-        "module": "armory.scenarios.image_classification",
-        "name": "ImageClassificationTask",
-        "export_batches": True
-    },
-
-```
-
-
-### Exporting/Viewing Data Interactively
-If you are running Armory with the `--interactive` flag, you can interactively view and/or save off data examples.
-Please see [docker.md](docker.md#interactive-use) for instructions on how to run Armory interactively and [running_armory_scenarios_interactively.ipynb](../notebooks/running_armory_scenarios_interactively.ipynb) for a tutorial which includes instructions for exporting samples. Once you've attached
-to the container, please see the following code snippets for an example of how to view and/or save off data examples:
-
-First, we'll simply load our scenario config and evaluate on one batch of data:
-```python
->>> from armory.scenarios.main import get as get_scenario
->>> s = get_scenario("/armory/tmp/2022-03-18T163008.249437/interactive-config.json").load()  # load config
->>> s.next()  # load batch of data
->>> s.evaluate_current()  # make benign prediction, generate adversarial sample, make adversarial prediction
-```
-
-Now at this point, let's say you'd like to save off the benign and adversarial example:
-```python
->>> s.x.shape
-(1, 32, 32, 3)
->>> s.sample_exporter.export(s.x[0], "benign_x")
->>> s.sample_exporter.export(s.x_adv[0], "adversarial_x")
-```
-
-After calling this method, the images are saved to the scenario output directory:
-```python
-ls ~/.armory/outputs/2022-03-18T163008.249437/saved_samples/
-adversarial_x.png  benign_x.png
-```
-
-If, instead of writing to disk, you'd like to return an individual sample, use the `get_sample()` method:
-```python
->>> img = s.sample_exporter.get_sample(s.x_adv[0])
->>> type(img)
-<class 'PIL.Image.Image'>
-```
-
-### Exporting Data With Bounding Boxes
-For object detection and video tracking scenarios, Armory exports a set of raw images as well as images containing ground-truth (red)
-and predicted (white) bounding boxes. This will all occur automatically if using Armory in the normal/non-interactive mode, but we include
-the following interactive example as well:
-
-In the example below, we've already loaded an xView object detection scenario and run `evaluate_current()` for a single batch before running the following to export
-the adversarial image with ground-truth and predicted boxes overlaid:
-```python
->>> s.sample_exporter.export(
-        s.x_adv[0],
-        "adversarial_x_with_boxes",
-        y=s.y[0],
-        y_pred=s.y_pred_adv[0],
-        with_boxes=True)
-```
-
+Here is an image classification example where samples and targets will be exported every 5 batches.
 
 ```python
-ls ~/.armory/outputs/2022-03-18T181736.925088/saved_samples/
-adversarial_x_with_boxes.png
+import armory.evaluation
+import armory.export.criteria
+
+evaluation = armory.evaluation.Evaluation(
+    name=f"food101-classification",
+    description=f"Image classification of food-101",
+    author="TwoSix",
+)
+
+export_every_n_batches=5
+every_n = armory.export.criteria.every_n_batches(export_every_n_batches)
+exporter = armory.export.image_classification.ImageClassificationExporter(criterion=every_n)
+
+evaluation.use_exporters(exporter)
 ```
 
-As depicted earlier, the `get_sample()` method can be used to return the PIL image. The boolean `with_boxes` kwarg can be used to add
-bounding boxes to the image. When this is set to `True`, you must provide values for at least one of `y` and `y_pred`.
+### Export Criteria
+
+Armory-Library allows users to define criteria providing fine-grained control over the selection
+of batches and samples within a batch for export.
+
+* Batch selection using `every_n_batches` and `first_n_batches`;
+* Sample selection using `every_n_samples`, `first_n_samples` and `samples`;
+* Batch subselection using `every_n_samples_of_batch` and `first_n_samples_of_batch`;
+* Sample selection over metric values using `when_metric_eq|lt|gt`, `when_metric_isclose` and `when_metric_in`; and
+* Boolean operators over criteria using `all_satisfied`, `any_satisfied` and `not_satisfied`.
+
+### Explainable AI
+
+Armory-Library provides several exporters for Explainable AI that produce
+[saliency maps](https://en.wikipedia.org/wiki/Saliency_map) for image classifiers
+and detectors. A saliency map is a visual representation that highlights
+the most important regions in an image for classification or object detection. 
+
+#### Captum
+
+Armory-Library uses [Captum](https://captum.ai/) to export feature attributions using
+the [Integrated Gradients](https://arxiv.org/abs/1703.01365) algorithm.
+
 ```python
->>> adv_img = s.sample_exporter.get_sample(s.x_adv[0])
->>> type(adv_img)
-<class 'PIL.Image.Image'>
+import armory.export
 
->>> adv_img_with_boxes = s.sample_exporter.get_sample(s.x_adv[0], with_boxes=True, y=s.y[0], y_pred=s.y_pred_adv[0])
->>> type(adv_img_with_boxes)
-<class 'PIL.Image.Image'>
+saliency_n_steps = 50
+saliency_classes = [6, 23]
+is_saliency_class = armory.export.criteria.when_metric_in(
+    armory.export.criteria.batch_targets(),
+    saliency_classes,
+)
 
->>> s.sample_exporter.get_sample(s.x[0], with_boxes=True)
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-  File "/workspace/armory/utils/export.py", line 205, in get_sample
-    raise TypeError("Both y and y_pred are None, but with_boxes is True")
-TypeError: Both y and y_pred are None, but with_boxes is True
-
+exporter = armory.export.captum.CaptumImageClassificationExporter(
+    model=model,
+    criterion=is_saliency_class,
+    n_steps=saliency_n_steps,
+)
 ```
-If you'd like to include only ground-truth boxes (or only predicted boxes), provide an arg for only `y` (or only `y_pred`).
 
+#### XAITK
 
-### Exporting Multimodal Data
+Armory-Library provides an exporter for the [Explainable AI Toolkit (XAITK)](https://xaitk.org/) that generates saliency
+maps for image classifiers.
 
+```python
+import armory.export
 
-#### Multimodal CARLA Object Detection
-For the multimodal CARLA scenario, depth images are automatically outputted in addition to RGB when `"export_batches"` is set in the config. If you'd like to interactively return the depth image,
-call `get_sample(x_i[..., 3:])`.
+saliency_classes = [6, 23]
+is_saliency_class = armory.export.criteria.when_metric_in(
+    armory.export.criteria.batch_targets(),
+    saliency_classes,
+)
 
+armory.export.xaitksaliency.XaitkSaliencyBlackboxImageClassificationExporter(
+    name="slidingwindow",
+    model=model,
+    classes=saliency_classes,
+    criterion=is_saliency_class,
+)
+```
 
-#### So2Sat Image Classification
-The `get_sample()` method for the So2Sat scenario exporter takes a `modality` arg which must be one of `{'vh', 'vv', 'eo'}`. Calling `export()` will save off all three types of examples, which will occur automatically when running a config where `"export_batches"` is set.
+#### D-RISE
 
+Armory-Library supports [D-RISE](https://arxiv.org/abs/2006.03204) saliency maps that generate visual explanations
+for the predictions of object detectors.
 
-### Exporting COCO-Formatted Bounding Boxes
-For object detection scenarios, if `"export_batches"` is set in the config file, Armory will output COCO-formatted JSON
-files with ground-truth and predicted bounding boxes. These are saved in the scenario output directory as
-`ground_truth_boxes_coco_format.json`, `benign_predicted_boxes_coco_format.json`, and `adversarial_predicted_boxes_coco_format.json`. Note that
-this functionality exists separately from the exporters described in this document.
+```python
+import armory.export
+
+export_every_n_batches=5
+every_n = armory.export.criteria.every_n_batches(export_every_n_batches)
+
+armory.export.drise.DRiseSaliencyObjectDetectionExporter(
+    model=model,
+    criterion=every_n,
+    num_classes=1,
+    num_masks=10,
+)
+```

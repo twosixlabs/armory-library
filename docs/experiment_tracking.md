@@ -1,16 +1,16 @@
 # Experiment Tracking
 
-Armory provides integration with [MLFlow] to provide tracking of evaluation
-runs and storage of results from evaluations.
+Armory provides integration with [MLFlow](https://mlflow.org/) to track evaluation
+runs and store results of metrics evaluations.
 
-When the Armory evaluation engine runs, an experiment is created using the
+Running the Armory evaluation engine creates an experiment using the
 `evaluation.name` if one doesn't already exist. Then a parent run is created to
 store any global parameters that aren't chain-specific. Each chain within the
-evaluation results in a separate nested run. This nested run will contain all
-the chain-specific parameters, metrics, and exports for that chain.
+evaluation parent run produces a separate nested run. This nested run will contain all
+the chain-specific parameters, metrics, and exports.
 
 The following table summarizes how Armory evaluation components map to records
-in MLFlow:
+in MLFlow.
 
 | Armory Component      | MLFlow Record                          |
 |-----------------------|----------------------------------------|
@@ -19,7 +19,7 @@ in MLFlow:
 | Evaluation chain run  | Nested run                             |
 | Tracked params        | Parent or nested run parameters        |
 | Metrics               | Nested run metrics _or_ JSON artifacts |
-| Exports | Nested run artifacts
+| Exports               | Nested run artifacts
 
 ## Usage
 
@@ -55,7 +55,7 @@ class TheDataset:
 dataset = TheDataset(batch_size=...)
 ```
 
-For third-party functions or classes that cannot have the decorator already
+For third-party functions or classes that do not have the decorator already
 applied, use the `track_call` utility function.
 
 ```python
@@ -66,8 +66,8 @@ dataset = track_call(TheDataset, batch_size=...)
 ```
 
 `track_call` will invoke the function or class initializer given as the first
-positional argument, forwarding all following arguments to the function or class
-and recording the keyword arguments as parameters.
+positional argument, forward all following arguments to the function or class
+and record the keyword arguments as parameters.
 
 Additional parameters may be recorded manually using the
 `armory.track.track_param` function before the evaluation is run.
@@ -225,7 +225,7 @@ And you can view it at `http://localhost:5000` in your browser.
 
 ### Remote
 
-If using a remote MLFlow tracking server, set the `MLFLOW_TRACKING_URI`
+When using a remote MLFlow tracking server, set the `MLFLOW_TRACKING_URI`
 environment variable to the tracking server's URI.
 
 ```sh
