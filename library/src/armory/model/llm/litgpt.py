@@ -48,7 +48,7 @@ class LitGPT(ArmoryModel, ModelProtocol):
 
         responses = []
         for prompt in prompts:
-            response = self.model.generate(prompt)
+            response = self._model.generate(prompt)
             responses.append(response)
 
         batch.predictions.set(responses)

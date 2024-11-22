@@ -52,7 +52,9 @@ def load_dataset(batch_size: int, shuffle: bool, seed: Optional[int] = None):
     """Load jailbreak dataset from HuggingFace"""
 
     hf_dataset = armory.track.track_params(datasets.load_dataset)(
-        path="TrustAIRLab/in-the-wild-jailbreak-prompts", split="train"
+        path="TrustAIRLab/in-the-wild-jailbreak-prompts",
+        name="jailbreak_2023_05_07",
+        split="train",
     )
     assert isinstance(hf_dataset, datasets.Dataset)
 
