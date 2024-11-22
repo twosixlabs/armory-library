@@ -1,6 +1,6 @@
 """Armory model wrapper for LitGPT models."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from armory.data import TextPromptBatch
 from armory.evaluation import ModelProtocol
@@ -19,6 +19,7 @@ class LitGPT(ArmoryModel, ModelProtocol):
         self,
         name: str,
         model: "LLM",
+        static_context: Optional[str] = None,
     ):
         """
         Initializes the model wrapper.
@@ -32,6 +33,7 @@ class LitGPT(ArmoryModel, ModelProtocol):
             name=name,
             model=model,
         )
+        self._static_context = static_context
 
     def predict(self, batch: TextPromptBatch):
         """
@@ -45,10 +47,16 @@ class LitGPT(ArmoryModel, ModelProtocol):
         contexts = batch.contexts.get()
         if contexts:
             prompts = [f"{c} {p}" for c, p in zip(contexts, prompts)]
+        if self._static_context:
+            prompts = [f"{self._static_context} {p}" for p in prompts]
 
         responses = []
         for prompt in prompts:
             response = self._model.generate(prompt)
+            print("====")
+            print(f"{prompt=}")
+            print(f"{response=}")
+            print("====")
             responses.append(response)
 
         batch.predictions.set(responses)
