@@ -6,7 +6,6 @@ from typing import Optional
 
 import datasets
 import litgpt
-import torchmetrics.classification
 
 import armory.data
 import armory.dataset
@@ -14,8 +13,11 @@ import armory.engine
 import armory.evaluation
 import armory.logging
 import armory.metric
+import armory.metrics
+import armory.metrics.classification
 import armory.metrics.compute
 import armory.model.llm
+import armory.perturbation
 import armory.track
 import armory.utils
 
@@ -26,24 +28,23 @@ def parse_cli_args():
 
     parser = create_parser(
         description="Evaluate DeBERTa on the BoolQ dataset",
-        batch_size=2,
-        export_every_n_batches=5,
-        num_batches=5,
+        batch_size=1,
+        export_every_n_batches=50,
+        num_batches=34,
     )
     return parser.parse_args()
 
 
 def load_model():
     litgpt_model = armory.track.track_params(litgpt.LLM.load)(
-        model="meta-llama/Meta-Llama-3.1-8B"
-        # model="microsoft/phi-2"
+        # model="meta-llama/Meta-Llama-3.1-8B"
+        model="microsoft/phi-2"
     )
 
     armory_model = armory.model.llm.LitGPT(
-        name="Llama 3.2 1B",
+        name="Phi 2 2.7B",
         model=litgpt_model,
-        # static_context="System: You are a helpful AI assistant designed to respond only with the words 'true' or 'false' and no further explanation to the user's statement.\nUser:",
-        static_context="You are a helpful AI assistant designed to respond 'true' or 'false' to the user's statement.\nUser:",
+        static_context="System: You are a helpful AI assistant designed to respond 'true' or 'false' to the user's statement.\nUser:",
     )
 
     return armory_model
@@ -82,11 +83,29 @@ def load_dataset(batch_size: int, shuffle: bool, seed: Optional[int] = None):
     return dataset
 
 
+def create_attack(classifier, num_iters=25):
+    """Creates the PGD attack"""
+    from llm_pgd import RelaxedPGD
+
+    pgd = armory.track.track_init_params(RelaxedPGD)(
+        classifier,
+        num_iters=num_iters,
+    )
+
+    evaluation_attack = armory.perturbation.Relaxed_PGD_Classification(
+        name="LLM-PGD-BoolQ",
+        attack=pgd,
+    )
+
+    return evaluation_attack
+
+
 def create_metrics():
     """Create evaluation metrics"""
     return {
         "accuracy": armory.metric.PredictionMetric(
-            torchmetrics.classification.Accuracy(task="multiclass", num_classes=2)
+            armory.metrics.classification.TextClassificationAccuracy(),
+            spec=armory.data.NumpySpec,
         ),
     }
 
@@ -108,15 +127,17 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
 
     # Dataset
     with evaluation.autotrack():
-        dataset = load_dataset(batch_size, shuffle, seed)
+        dataset = load_dataset(batch_size, shuffle=True, seed=None)
     evaluation.use_dataset(dataset)
 
     # Metrics/Exporters
-    # evaluation.use_metrics(create_metrics())
+    evaluation.use_metrics(create_metrics())
 
     # Chains
     with evaluation.add_chain("benign"):
         pass
+    with evaluation.add_chain("pgd") as chain:
+        chain.add_perturbation(create_attack(model, num_iters=35))
 
     engine = armory.engine.EvaluationEngine(
         evaluation,
