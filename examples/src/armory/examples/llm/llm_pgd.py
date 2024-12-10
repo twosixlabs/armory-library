@@ -446,7 +446,7 @@ def attack(
             avg_discrete_loss = (
                 avg_discrete_loss_alpha * discrete_loss.item()
                 + (1 - avg_discrete_loss_alpha) * avg_discrete_loss
-            )  # type: ignore
+            )
             if (  # type: ignore
                 config.best_blend_alpha > 0.0
                 and discrete_loss.item()
