@@ -448,8 +448,8 @@ def attack(
                 + (1 - avg_discrete_loss_alpha) * avg_discrete_loss  # type: ignore
             )  # type: ignore
             if (  # type: ignore
-                config.best_blend_alpha > 0.0  # type: ignore
-                and discrete_loss.item()  # type: ignore
+                config.best_blend_alpha > 0.0
+                and discrete_loss.item()
                 < avg_discrete_loss * (1 - config.best_blend_threshold)  # type: ignore
             ):  # type: ignore
                 # v1 - Just bump the value of discrete tokens up a bit
