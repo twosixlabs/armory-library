@@ -442,9 +442,9 @@ def attack(
 
         if avg_discrete_loss is None:
             avg_discrete_loss = discrete_loss.item()
-        else:  # type: ignore
-            avg_discrete_loss = (  # type: ignore
-                avg_discrete_loss_alpha * discrete_loss.item()  # type: ignore
+        else:
+            avg_discrete_loss = (
+                avg_discrete_loss_alpha * discrete_loss.item()
                 + (1 - avg_discrete_loss_alpha) * avg_discrete_loss  # type: ignore
             )  # type: ignore
             if (  # type: ignore
