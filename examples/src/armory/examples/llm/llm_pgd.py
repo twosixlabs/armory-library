@@ -42,7 +42,7 @@ class Config:
     # Startup
     # checkpoint_dir: Path = Path("checkpoints/meta-llama/Meta-Llama-3-8B-Instruct")
     checkpoint_dir: Path = Path("checkpoints/microsoft/phi-2")
-    precision: str | None = None
+    precision: t.Union[str, None] = None
     console_logging: bool = True
 
     # Core
@@ -94,7 +94,7 @@ def get_vocab_size(model: GPT) -> int:
 
 
 def forward_relaxed_one_hot(
-    model: GPT, one_hot: torch.Tensor, mask: torch.Tensor | None = None
+    model: GPT, one_hot: torch.Tensor, mask: t.Union[torch.Tensor, None] = None
 ) -> torch.Tensor:
     _, T, V = one_hot.size()
 
@@ -265,7 +265,7 @@ def top_p_filtering(probs: torch.Tensor, top_p: float = 0.5) -> torch.Tensor:
 
 def attack(
     fabric: L.Fabric, model: GPT, tokenizer: Tokenizer, config: Config
-) -> tuple[float, str]:
+) -> t.Tuple[float, str]:
     # Setup optimizer
 
     optimizer: Optimizer
@@ -280,7 +280,7 @@ def attack(
     else:
         raise ValueError(f"Invalid optimizer: {config.optimizer}")
 
-    model, optimizer = t.cast(tuple[GPT, Optimizer], fabric.setup(model, optimizer))
+    model, optimizer = t.cast(t.Tuple[GPT, Optimizer], fabric.setup(model, optimizer))
 
     # Prepare the prompt inputs and targets
 
@@ -350,7 +350,7 @@ def attack(
 
     # Setup our LR scheduler
 
-    scheduler: torch.optim.lr_scheduler.LRScheduler | None = None
+    scheduler: t.Union[torch.optim.lr_scheduler.LRScheduler, None] = None
     if optimizer != "adamw-free":
         scheduler = CosineAnnealingWarmRestarts(
             optimizer, config.scheduler_t_0, config.scheduler_t_mult
@@ -364,7 +364,7 @@ def attack(
         0.1  # Smoothing factor, adjust based on responsiveness vs. noise reduction
     )
 
-    best_discrete_suffix: torch.Tensor | None = None
+    best_discrete_suffix: t.Union[torch.Tensor, None] = None
     # best_suffix: torch.Tensor | None = None
     iteration_since_best = 0
     current_entropy = config.start_entropy
