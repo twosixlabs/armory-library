@@ -451,7 +451,7 @@ def attack(
                 config.best_blend_alpha > 0.0
                 and discrete_loss.item()
                 < avg_discrete_loss * (1 - config.best_blend_threshold)  # type: ignore
-            ):  # type: ignore
+            ):
                 # v1 - Just bump the value of discrete tokens up a bit
                 # ---
                 # relaxed_discrete = to_relaxed_one_hot(discrete, get_vocab_size(model))
