@@ -202,3 +202,60 @@ class ArtPatchAttack(ArtEvasionAttack):
         perturbed = self.attack.apply_patch(x=x, **self.apply_patch_kwargs)
         batch.inputs.set(perturbed, self.inputs_spec)
         batch.metadata["perturbations"][self.name] = dict(patch=self.patch)
+
+
+@dataclass
+class LLM_PGD_Jailbreak(Trackable, PerturbationProtocol):
+    """
+    A perturbation supporting the LLM jailbreaking PGD attack
+
+    """
+
+    name: str
+    """Descriptive name of the attack"""
+    attack: T  # Placeholder
+    inputs_spec: DataSpecification = field(default_factory=NumpySpec)
+    # """Data specification to use for obtaining raw model inputs from batches"""
+
+    def apply(self, batch: Batch):
+
+        y_target = "Sure, I can help you with that."
+        perturbed = self.attack.generate(
+            # x=cast("np.ndarray", batch.inputs.get(self.inputs_spec)),
+            x=batch.inputs.get(),
+            target=y_target,
+            # **self.generate_kwargs,
+        )
+        # print(perturbed)
+        batch.inputs.set(perturbed)
+        batch.metadata["perturbations"][self.name] = dict(y_target=y_target)
+
+
+@dataclass
+class Relaxed_PGD_Classification(Trackable, PerturbationProtocol):
+    """
+    A perturbation supporting the LLM Boolean Classification PGD attack
+
+    """
+
+    name: str
+    attack: T  # placeholder
+    inputs_spec: DataSpecification = field(default_factory=NumpySpec)
+    targets_spec: DataSpecification = field(default_factory=NumpySpec)
+
+    def _generate_y_target(self, batch):
+        label = batch.targets.get(self.targets_spec)
+        assert len(label) == 1  # batch size should be 1 for now
+        target = "True" if label[0] == 0 else "False"
+        return target
+
+    def apply(self, batch: Batch):
+
+        y_target = self._generate_y_target(batch)
+        perturbed = self.attack.generate(
+            x=batch.inputs.get(),
+            target=y_target,
+            # **self.generate_kwargs,
+        )
+        batch.inputs.set(perturbed)
+        batch.metadata["perturbations"][self.name] = dict(y_target=y_target)
