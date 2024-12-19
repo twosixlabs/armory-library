@@ -205,7 +205,7 @@ class ArtPatchAttack(ArtEvasionAttack):
 
 
 @dataclass
-class LLM_PGD_Jailbreak(Trackable, PerturbationProtocol):
+class Relaxed_PGD_Jailbreak(Trackable, PerturbationProtocol):
     """
     A perturbation supporting the LLM jailbreaking PGD attack
 

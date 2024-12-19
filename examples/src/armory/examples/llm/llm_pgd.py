@@ -265,7 +265,7 @@ def top_p_filtering(probs: torch.Tensor, top_p: float = 0.5) -> torch.Tensor:
 
 def attack(
     fabric: L.Fabric, model: GPT, tokenizer: Tokenizer, config: Config
-) -> t.Tuple[str, list[float]]:
+) -> t.Tuple[str, t.List[float]]:
     # Setup optimizer
 
     optimizer: Optimizer
@@ -569,7 +569,7 @@ def attack(
     return config.prompt + best_discrete_text, losses
 
 
-def run_attack(config: Config) -> t.Tuple[str, list[float]]:
+def run_attack(config: Config) -> t.Tuple[str, t.List[float]]:
 
     # Setup Fabric
 
