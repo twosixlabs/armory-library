@@ -29,20 +29,21 @@ def parse_cli_args():
     parser = create_parser(
         description="Evaluate DeBERTa on the BoolQ dataset",
         batch_size=1,
-        export_every_n_batches=50,
-        num_batches=34,
+        export_every_n_batches=500,
+        num_batches=20,
     )
     return parser.parse_args()
 
 
 def load_model():
     litgpt_model = armory.track.track_params(litgpt.LLM.load)(
-        # model="meta-llama/Meta-Llama-3.1-8B"
-        model="microsoft/phi-2"
+        model="meta-llama/Llama-3.2-3B-Instruct"
+        # model="microsoft/phi-2"
     )
 
     armory_model = armory.model.llm.LitGPT(
-        name="Phi 2 2.7B",
+        # name="Phi 2 2.7B",
+        name="Llama 3.2 3B Instruct",
         model=litgpt_model,
         static_context="System: You are a helpful AI assistant designed to respond 'true' or 'false' to the user's statement.\nUser:",
     )
@@ -83,13 +84,14 @@ def load_dataset(batch_size: int, shuffle: bool, seed: Optional[int] = None):
     return dataset
 
 
-def create_attack(classifier, num_iters=25):
+def create_attack(classifier, num_iters=25, suffix_length=12):
     """Creates the PGD attack"""
     from llm_pgd import RelaxedPGD
 
     pgd = armory.track.track_init_params(RelaxedPGD)(
         classifier,
         num_iters=num_iters,
+        suffix_length=suffix_length,
     )
 
     evaluation_attack = armory.perturbation.Relaxed_PGD_Classification(
@@ -137,7 +139,7 @@ def main(batch_size, export_every_n_batches, num_batches, seed, shuffle):
     with evaluation.add_chain("benign"):
         pass
     with evaluation.add_chain("pgd") as chain:
-        chain.add_perturbation(create_attack(model, num_iters=35))
+        chain.add_perturbation(create_attack(model, num_iters=1, suffix_length=6))
 
     engine = armory.engine.EvaluationEngine(
         evaluation,

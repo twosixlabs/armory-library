@@ -265,7 +265,7 @@ def top_p_filtering(probs: torch.Tensor, top_p: float = 0.5) -> torch.Tensor:
 
 def attack(
     fabric: L.Fabric, model: GPT, tokenizer: Tokenizer, config: Config
-) -> t.Tuple[float, str]:
+) -> t.Tuple[str, list[float]]:
     # Setup optimizer
 
     optimizer: Optimizer
@@ -372,6 +372,8 @@ def attack(
 
     # print(f"[+] Running {config.iterations} iterations ...")
 
+    losses = []
+
     for i in range(1, config.iterations + 1):
         mask = get_mask(suffix_mask, len(all_tokens), suffix_slice)
 
@@ -473,6 +475,7 @@ def attack(
 
         # Store our best
 
+        losses.append(discrete_loss.item())
         if discrete_loss < best_loss:
             best_loss = discrete_loss.item()
             best_discrete_suffix = discrete.clone()
@@ -563,10 +566,10 @@ def attack(
         if config.masking:
             print(f" |- Mask:         {suffix_mask.data}")
 
-    return best_loss, config.prompt + best_discrete_text
+    return config.prompt + best_discrete_text, losses
 
 
-def run_attack(config: Config) -> str:
+def run_attack(config: Config) -> t.Tuple[str, list[float]]:
 
     # Setup Fabric
 
@@ -604,28 +607,32 @@ def run_attack(config: Config) -> str:
     load_checkpoint(fabric, model, config.checkpoint_dir / "lit_model.pth")
 
     # print("[+] Start Attack ...")
-    loss, adv_x = attack(fabric, model, tokenizer, config)
+    adv_x, loss = attack(fabric, model, tokenizer, config)
 
     # print()
     # print("[+] Done. Final loss:", loss)
     # print()
-    return adv_x
+    return adv_x, loss
 
 
 class RelaxedPGD:
 
-    def __init__(self, classifier, num_iters):
+    def __init__(self, classifier, num_iters, suffix_length=12):
         self.config = CLI(Config, as_positional=False)
         self.classifier = classifier
         self.num_iters = num_iters
+        self.suffix_length = suffix_length
+        self.all_losses = []
 
     def generate(self, x, target):
         assert len(x) == 1
         self.config.prompt = x[0]
         self.config.target = target
         self.config.iterations = self.num_iters
+        self.config.suffix_length = self.suffix_length
         # get classifier to line 603 below
-        adv_x = run_attack(self.config)
+        adv_x, losses = run_attack(self.config)
+        self.all_losses.append(losses)
         return [adv_x]
 
 
