@@ -618,7 +618,7 @@ def run_attack(config: Config) -> t.Tuple[str, t.List[float]]:
 class RelaxedPGD:
 
     def __init__(self, classifier, num_iters, suffix_length=12):
-        self.config = CLI(Config, as_positional=False)
+        self.config = CLI(Config, args=[], as_positional=False)
         self.classifier = classifier
         self.num_iters = num_iters
         self.suffix_length = suffix_length
