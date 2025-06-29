@@ -21,7 +21,7 @@ dependencies = [
     "lightning",
     "mlflow",
     "numpy",
-    "Pillow",
+    "Pillow < 11.2.1",
     "rich",
     "torch",
     "torchmetrics",
