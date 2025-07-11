@@ -49,7 +49,7 @@ extras = [
     "adversarial-robustness-toolbox",
     "albumentations<1.4.1",
     "captum>=0.7.0",
-    "matplotlib>=3.9.0",
+    "matplotlib>=3.7.0",
     "pandas>=2.0.0",
     "tidecv",
     "transformers>=4.41.0",
